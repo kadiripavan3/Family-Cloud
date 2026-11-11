@@ -1,0 +1,215 @@
+<title>Family Cloud Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Noto+Color+Emoji&display=swap">
+<style>
+{{TOKENS_CSS}}
+{{STYLES}}
+</style>
+{{ICONS}}
+<div class="app" data-screens="auto" data-accent="{{DEFAULT_ACCENT}}" data-name="{{DEFAULT_NAME}}">
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="brand" href="#overview"><span class="mark bm">{{BRAND_MARK}}</span>Family Cloud<span class="ver">Hub</span></a>
+      <nav class="nav" aria-label="Hub sections">
+        <a href="#overview">Overview</a>
+        <a href="#screens">Screens</a>
+        <a href="#name">The name</a>
+        <a href="#together">With Journey</a>
+        <a href="#requirements">What it does</a>
+        <a href="#tech">Tech and costs</a>
+        <a href="#system">Design system</a>
+        <a href="#cues">Cues</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="view" data-view="overview" id="view-overview">
+      <div class="ov-hero">
+        <div class="ov-text">
+          <p class="kicker">Project hub · {{STATUS_PHASE}}</p>
+          <h1>Family Cloud</h1>
+          <p class="lead">One private place for what a family, or a group of friends, keeps together: notes, photos and videos, the calendar, bills and budgets, goals, and the passwords everyone needs. Each thing is yours alone until you choose who sees it.</p>
+          <p class="status-line">{{STATUS_SUMMARY}}</p>
+          <div class="facts">
+            <span class="fact"><b>For</b>Families and close friends</span>
+            <span class="fact"><b>Platforms</b>iOS and Android</span>
+            <span class="fact"><b>Stack</b>Same as Journey</span>
+            <span class="fact"><b>Look</b>Journey Design 2.1, Sun</span>
+            <span class="fact"><b>Sister app</b>Journey, one account</span>
+            <span class="fact"><b>Name</b>Working title, 4 ideas</span>
+          </div>
+        </div>
+        <div class="collage" aria-hidden="true"><div class="cl" style="background-image:url(img/mum-kid.jpg)"><span class="cl-tag">The Linds · 4 people and a dog</span></div><div class="cl" style="background-image:url(img/canoe.jpg)"><span class="cl-tag">Saturday at the lake · 51</span></div><div class="cl" style="background-image:url(img/cookies.jpg)"><span class="cl-tag"><svg class="ic"><use href="#i-lock"/></svg>Grandma's recipe</span></div></div>
+      </div>
+
+      <div class="tiles">
+        <a class="tile big" href="#screens" style="--img: url(img/dining.jpg)"><span class="tile-eyebrow">First draft</span><b>Screens</b><span>{{SCREEN_SUMMARY}}, in light and dark, from sign-in to leaving a circle.</span></a>
+        <a class="tile" href="#name"><b>The name</b><span>Four ideas and the working title. Switch between them and every screen changes.</span></a>
+        <a class="tile" href="#together"><b>With Journey</b><span>One account, a switch between the apps, Keep a journey, Tell it as a journey.</span></a>
+        <a class="tile" href="#requirements"><b>What it does</b><span>Six places, who can see what, and the calls I made that need your yes.</span></a>
+        <a class="tile" href="#tech"><b>Tech and costs</b><span>Your question answered: what the two apps should share, and what they shouldn't.</span></a>
+        <a class="tile" href="#system"><b>Design system</b><span>Journey's tokens, copied: Sun, glass, Plus Jakarta Sans.</span></a>
+        <a class="tile" href="#cues"><b>Cues</b><span>What carries over from Journey and what is new here.</span></a>
+        <a class="tile wide" href="#screens-together"><span class="tile-new">Look first</span><b>The two apps, together</b><span>Group 10 of the screens: keep a finished journey as a book, turn an album into a journey, and a trip that plans here and is told there.</span></a>
+      </div>
+
+      <div class="duo">
+        <div class="panel"><h2 class="title2">Next steps</h2><ol class="steps">{{STATUS_NEXT}}</ol></div>
+        <div class="panel"><h2 class="title2">Questions for you</h2><div class="qs">{{STATUS_OPEN}}</div></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="title2">How we work together</h2>
+        <ol class="flow">
+          <li><b>You comment</b><span>Tap Comment under any screen or on any page of this hub. Say what you like, what to change and what is missing.</span></li>
+          <li><b>I update</b><span>I read your comments, change the screens and the docs, and republish this page at the same link.</span></li>
+          <li><b>We build</b><span>Once you approve, the app is built from these files: the tokens, the screens and the requirements, the way Journey was.</span></li>
+        </ol>
+      </div>
+
+      <div class="ov-section">
+        <h2 class="title2">Calls I made for this draft</h2>
+        <div class="doc">{{DECISIONS}}</div>
+      </div>
+
+      <div class="ov-section">
+        <h2 class="title2">Updates</h2>
+        <ul class="updates">{{UPDATES}}</ul>
+      </div>
+    </section>
+
+    <section class="view" data-view="screens" id="view-screens" hidden>
+      <div class="view-head">
+        <div>
+          <h1 class="vh">Screens</h1>
+          <p class="sub">{{SCREEN_SUMMARY}}, from the first sign-in to leaving a circle. Switch the theme, and try each name: the logo, the wording and the share links on every screen follow. Tap Comment under any screen to tell me what to change.</p>
+        </div>
+      </div>
+      <div class="sg-bar">
+        <div class="controls">
+          <div class="ctl"><span class="label" id="lbl-theme">Theme</span>
+            <div class="seg" role="group" aria-labelledby="lbl-theme">
+              <button type="button" id="th-auto" data-set-screens="auto" aria-pressed="true">Auto</button>
+              <button type="button" id="th-light" data-set-screens="light" aria-pressed="false">Light</button>
+              <button type="button" id="th-dark" data-set-screens="dark" aria-pressed="false">Dark</button>
+            </div>
+          </div>
+          <div class="ctl"><span class="label" id="lbl-name">Name</span>
+            <div class="swatches" role="group" aria-labelledby="lbl-name">{{NAME_BUTTONS}}</div>
+          </div>
+        </div>
+        <nav class="sg-nav" aria-label="Screen groups">{{SCREEN_NAV}}</nav>
+      </div>
+      <p class="hint">Swipe each row sideways to see every screen in a group.</p>
+{{SCREEN_SECTIONS}}
+    </section>
+
+    <section class="view" data-view="name" id="view-name" hidden>
+      <div class="doc-head"><span class="src">docs/03-name.md</span><button type="button" class="cbtn" data-comment-for="view-name" hidden><svg class="ic"><use href="#i-msg"/></svg>Comment on this page</button></div>
+      <div class="panel">
+        <h2 class="title2">Try each one on</h2>
+        <p>Pick a name and open the <a href="#screens">Screens</a>: the welcome screen, the logo, “Keep in …” and the share links all use it.</p>
+        <div class="acc-list nm-list">{{NAME_CARDS}}</div>
+      </div>
+      <div class="doc-layout">
+        <article class="doc">{{DOC_NAME}}</article>
+        <nav class="toc" aria-label="On this page">{{TOC_NAME}}</nav>
+      </div>
+    </section>
+
+    <section class="view" data-view="together" id="view-together" hidden>
+      <div class="doc-head"><span class="src">docs/04-journey-link.md</span><button type="button" class="cbtn" data-comment-for="view-together" hidden><svg class="ic"><use href="#i-msg"/></svg>Comment on this page</button></div>
+      <div class="doc-layout">
+        <article class="doc">{{DOC_TOGETHER}}</article>
+        <nav class="toc" aria-label="On this page">{{TOC_TOGETHER}}</nav>
+      </div>
+    </section>
+
+    <section class="view" data-view="requirements" id="view-requirements" hidden>
+      <div class="doc-head"><span class="src">docs/01-requirements.md</span><button type="button" class="cbtn" data-comment-for="view-requirements" hidden><svg class="ic"><use href="#i-msg"/></svg>Comment on this page</button></div>
+      <div class="doc-layout">
+        <article class="doc">{{DOC_REQUIREMENTS}}</article>
+        <nav class="toc" aria-label="On this page">{{TOC_REQUIREMENTS}}</nav>
+      </div>
+    </section>
+
+    <section class="view" data-view="tech" id="view-tech" hidden>
+      <div class="doc-head"><span class="src">docs/02-tech-stack.md</span><button type="button" class="cbtn" data-comment-for="view-tech" hidden><svg class="ic"><use href="#i-msg"/></svg>Comment on this page</button></div>
+      <div class="doc-layout">
+        <article class="doc">{{DOC_TECH}}</article>
+        <nav class="toc" aria-label="On this page">{{TOC_TECH}}</nav>
+      </div>
+    </section>
+
+    <section class="view" data-view="system" id="view-system" hidden>
+      <div class="view-head">
+        <div>
+          <h1 class="vh">Design system</h1>
+          <p class="sub">Generated from <code>design/tokens.json</code>, a copy of Journey's Design 2.1. The colours, the type and the shapes are the same in both apps; this one adds five small tints for telling people and categories apart.</p>
+        </div>
+        <button type="button" class="cbtn" data-comment-for="view-system" hidden><svg class="ic"><use href="#i-msg"/></svg>Comment on this page</button>
+      </div>
+      <div class="sys two">
+        <div class="panel">
+          <h3>Accent colour</h3>
+          <p>{{ACCENT_INTRO}}</p>
+          <div class="acc-list">{{SYS_ACCENTS}}</div>
+        </div>
+        <div class="panel">
+          <h3>Surfaces, status and tints</h3>
+          <p>Neutral greys with a faint cool tint, so the photos stay the most colourful thing on screen. The tints are new: a dot in the calendar, a bar in a chart, always beside a name.</p>
+          <div class="tok">{{SYS_LIGHT}}{{SYS_DARK}}</div>
+        </div>
+        <div class="panel">
+          <h3>Type</h3>
+          <p>One family, Plus Jakarta Sans, in five weights. Titles are set tight in ExtraBold. Numbers in sheets line up in columns.</p>
+          <div class="type-spec">{{SYS_TYPE}}</div>
+        </div>
+        <div class="panel">
+          <h3>Shape and spacing</h3>
+          <p>Corner radius by role, and a 4-point spacing scale.</p>
+          <ul class="radius" aria-label="Corner radius">{{SYS_RADIUS}}</ul>
+          <ul class="space" aria-label="Spacing scale">{{SYS_SPACE}}</ul>
+        </div>
+        <div class="panel wide">
+          <h3>Components</h3>
+          <p>Rendered with the live tokens. They follow the theme switch on the Screens tab. The audience chip is the new one: it sits on everything and says who can see it.</p>
+          <div class="comp-board ph">
+            <div class="row-wrap"><span class="btn">Mark as paid</span><span class="btn btn-soft">Share</span><span class="btn btn-sm">Add</span><span class="aud"><svg class="ic"><use href="#i-lock"/></svg>Only you</span><span class="aud"><span class="stack sm"><img src="img/av-alex.jpg" alt=""><img src="img/av-me.jpg" alt=""></span>Alex and you</span><span class="aud"><span class="em">👪</span>The Linds</span><span class="spill"><i style="background:var(--ok)"></i>Paid</span><span class="spill"><i style="background:var(--warn)"></i>Due tomorrow</span><span class="chip"><span class="em">✨</span>Sorted into 3 days</span></div>
+            <div class="comp-row">
+              <div class="jc"><div class="pic" style="background-image:url(img/canoe.jpg)"><span class="pill">12 new</span><svg class="fav on"><use href="#i-heart"/></svg></div><b>Saturday at the lake</b><span>51 photos · Lake Bled</span><span>Alex, Mia and you</span></div>
+              <div class="pic" style="height:232px; background-image:url(img/mum-kid.jpg)"><span class="btn btn-sm btn-glass" style="position:absolute; left:12px; bottom:12px">Glass on a photo</span><span class="gbtn" style="position:absolute; right:12px; top:12px"><svg class="ic"><use href="#i-share"/></svg></span></div>
+            </div>
+            <div class="tabbar static">
+              <span class="tab on"><svg class="ic"><use href="#i-home"/></svg>Home</span>
+              <span class="tab"><svg class="ic"><use href="#i-users"/></svg>People</span>
+              <span class="tab-plus"><svg class="ic"><use href="#i-plus"/></svg></span>
+              <span class="tab"><svg class="ic"><use href="#i-bell"/></svg>Activity<i class="dot"></i></span>
+              <span class="tab"><img src="img/av-me.jpg" alt="">You</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-view="cues" id="view-cues" hidden>
+      <div class="doc-head"><span class="src">docs/05-design-brief.md</span><button type="button" class="cbtn" data-comment-for="view-cues" hidden><svg class="ic"><use href="#i-msg"/></svg>Comment on this page</button></div>
+      <div class="doc-layout">
+        <article class="doc">{{DOC_CUES}}</article>
+        <nav class="toc" aria-label="On this page">{{TOC_CUES}}</nav>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="wrap"><p class="credits">Built {{BUILT_AT}} from the Family-Cloud repo (<code>design/hub</code>), on the design system of the Journey repo. Photos from Unsplash via Lorem Picsum, by Abigail Keenan, Alejandro Escamilla, Alex Talmon, Alexander Shustov, André Freitas, André Spieker, Annie Spratt, Benjamin Combs, Bino Storyteller, Breather, Brennan Ehrhardt, Carli Jean, Charlie Foster, Clark Street Mercantile, Daniela Cuevas, David Mao, Florian Klauer, Harman Abiwardani, Harvey Enrile, Hieu Le, Jared Erondu, Jeff Sheldon, Jeffrey Deng, Joanna Kosinska, John Kutcher, Jordan McQueen, Joschko Hammermann, Joshua Earle, Julia Caesar, Kazuend, Kelley Bozarth, Kyle Szegedi, Lechon Kirb, Linh Nguyen, London Scout, Lucas Boesche, Lukas Budimaier, Luke Pamer, Léa Dubedout, Maja Petric, Matthew Clark, Matthew Wiebe, Mayur Gala, Monika Majkowska, Morgan Sessions, Olenka Kotyk, Padurariu Alexandru, Paulo Simões Mendes, Rafael Leão, Roberto Nickson, Roksolana Zasiadko, Rula Sibai, Scott Webb, Stefan Kunze, Stephy Pariande, Steven Lewis, Sylwia Bartyzel, Thong Vo, Todd Quackenbush, Veeterzy and Webvilla. 3D icons are Microsoft's Fluent Emoji (MIT licence). People, names, bills and passwords in the screens are made up.</p></footer>
+</div>
+
+<script>
+{{APP_JS}}
+</script>

@@ -1,0 +1,82 @@
+<screen id="home" title="Today" class="s-home" note="Home opens on Today: what is on, what is due and what is new, across everything. The row of six icons switches Home between the places things live, the way Airbnb's top row does." label="Home on Today: a search pill, six icon tabs (Today, Plan, Notes, Library, Money, Vault), a summary card, today's dentist visit, bins and electricity bill, and new photos, above a floating glass tab bar.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="today">
+    <div class="ctx"><div><b>Dentist at 3:30, bins tonight</b><span>3 things left today · 2 done</span></div><div class="ring" style="--p:40"><span class="em">📅</span></div></div>
+    <div class="group hm-list">
+      <div class="grow"><span class="hm-t">15:30</span><span class="tx"><b>Dentist · Mia</b><small>Dr Novak · Alex is taking her</small></span><span class="stack sm"><img src="img/av-mia.jpg" alt=""><img src="img/av-alex.jpg" alt=""></span></div>
+      <div class="grow"><span class="hm-t"><i class="ck"></i></span><span class="tx"><b>Take the bins out</b><small>Tonight · your turn</small></span>[[repeat chev]]</div>
+      <div class="grow"><span class="hm-t">€84</span><span class="tx"><b>Electricity</b><small>Due tomorrow · split with Alex</small></span><span class="btn btn-sm btn-soft">Pay</span></div>
+    </div>
+    <div class="sec"><h3>New in the library</h3>[[right]]</div>
+    <div class="rail">
+      <div class="jc sm"><div class="pic" style="background-image:url(img/canoe.jpg)"><span class="pill acc">19 new</span></div><b>Saturday at the lake</b><span>Alex, Mia and you</span></div>
+      <div class="jc sm"><div class="pic" style="background-image:url(img/cookies.jpg)"><span class="pill">[[file]]Recipe</span></div><b>Grandma's cookies</b><span>Astrid added a page</span></div>
+      <div class="jc sm"><div class="pic" style="background-image:url(img/pug.jpg)"></div><b>Biscuit</b><span>6 new this week</span></div>
+    </div>
+  </div>
+  <tabbar active="home" dot>
+</screen>
+
+<screen id="circle-switch" title="Your circles" note="The round button in the search pill is the circle you're in. Tap it to change: family, friends, the two of you, or just you. Each circle has its own Home.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="today">
+    <div class="ctx"><div><b>Dentist at 3:30, bins tonight</b><span>3 things left today · 2 done</span></div><div class="ring" style="--p:40"><span class="em">📅</span></div></div>
+  </div>
+  <tabbar active="home">
+  <div class="scrim"></div>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="sh-t">Your circles</div>
+    <div class="pj"><div class="pic" style="background-image:url(img/mum-kid.jpg)"></div><div class="tx"><b>The Linds</b><small>Family · 4 people and Biscuit</small></div><span class="tick">[[check]]</span></div>
+    <div class="pj"><div class="pic" style="background-image:url(img/market.jpg)"></div><div class="tx"><b>Lisbon crew</b><small>Friends · 5 people · you're owed €64</small></div></div>
+    <div class="pj"><div class="pic" style="background-image:url(img/bench.jpg)"></div><div class="tx"><b>Nora and Alex</b><small>Couple · 2 people</small></div></div>
+    <div class="mrow">[[lock]]<span class="tx">Just me<small>38 things only you can see</small></span>[[right chev]]</div>
+    <div class="mrow">[[plus]]<span class="tx">New circle<small>Family, friends, housemates, a club</small></span>[[right chev]]</div>
+  </div>
+</screen>
+
+<screen id="search" title="Find anything" note="One search across every place. “passport” finds the ID in the Vault, the scan in the Library, the page that mentions it and the reminder to renew it. Words inside scans count.">
+  <sb>
+  <div class="pg">
+    <div class="sbar"><div class="sfield on">[[search]]<span>passport<i class="caret"></i></span><span class="clr">[[x]]</span></div><span class="cancel">Cancel</span></div>
+    <div class="fchips"><span class="fchip on">Everything</span><span class="fchip">Notes</span><span class="fchip">Library</span><span class="fchip">Plan</span><span class="fchip">Vault</span></div>
+    <div class="glabel">Vault</div>
+    <div class="up"><span class="itile acc">[[idcard]]</span><div class="tx"><b>Nora's passport</b><small>ID · expires 14 Mar 2031</small></div>[[lock]]</div>
+    <div class="up"><span class="itile acc">[[idcard]]</span><div class="tx"><b>Mia's passport</b><small class="warn-t">[[alert]]Expires 2 Aug 2027 · renew soon</small></div>[[lock]]</div>
+    <div class="glabel">Library</div>
+    <div class="up"><span class="dthumb"><b>PDF</b></span><div class="tx"><b>Passport scan, Alex</b><small>Found in the scan · 2 pages</small></div><aud two></div>
+    <div class="glabel">Notes</div>
+    <div class="up"><span class="itile">[[file]]</span><div class="tx"><b>What to bring to Norway</b><small>“…all four passports and…”</small></div><aud all></div>
+    <div class="glabel">Plan</div>
+    <div class="up"><span class="itile">[[bell]]</span><div class="tx"><b>Renew Mia's passport</b><small>Reminder · 2 Jan · Alex</small></div></div>
+  </div>
+</screen>
+
+<screen id="plus" title="The + button" note="The + always creates. Type a sentence and it works out what you mean, or pick one of ten things. Whatever you add starts as “Only you” unless you say otherwise.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="today">
+    <div class="ctx"><div><b>Dentist at 3:30, bins tonight</b><span>3 things left today · 2 done</span></div><div class="ring" style="--p:40"><span class="em">📅</span></div></div>
+  </div>
+  <tabbar active="home">
+  <div class="scrim"></div>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="qa-field">[[sparkle]]<span class="ph-t">Type it: “Haircut for Leo, Saturday 10”</span>[[mic]]</div>
+    <div class="qa-grid">
+      <span><i><span class="em">📝</span></i>Note</span>
+      <span><i><span class="em">✅</span></i>Checklist</span>
+      <span><i><span class="em">📷</span></i>Photos</span>
+      <span><i><span class="em">📄</span></i>Scan</span>
+      <span><i><span class="em">📅</span></i>Event</span>
+      <span><i><span class="em">🔔</span></i>Reminder</span>
+      <span><i><span class="em">🧾</span></i>Bill</span>
+      <span><i><span class="em">📊</span></i>Sheet</span>
+      <span><i><span class="em">🔑</span></i>Password</span>
+      <span><i><span class="em">🎯</span></i>Goal</span>
+    </div>
+    <div class="qa-to"><span>Goes into</span><aud all><span>seen by</span><span class="aud">[[lock]]Only you[[down]]</span></div>
+  </div>
+</screen>

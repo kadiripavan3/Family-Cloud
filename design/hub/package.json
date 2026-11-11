@@ -1,0 +1,16 @@
+{
+  "name": "family-cloud-hub",
+  "private": true,
+  "type": "module",
+  "description": "Builds the Family Cloud Hub page from the repo's docs, design tokens and screens.",
+  "scripts": {
+    "build": "node build.mjs",
+    "icons": "node build.mjs --icons"
+  },
+  "dependencies": {
+    "marked": "12.0.2"
+  },
+  "devDependencies": {
+    "@lobehub/fluent-emoji-3d": "1.1.0"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "phase": "First draft · design",
+  "updated": "2026-11-11",
+  "summary": "This is the first draft you asked for: 75 screens in 13 groups, end to end, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). It also answers your three questions: a name (four ideas you can try on every screen), how the two apps tie together (Keep and Tell), and whether they should share a database and a server (share the account and the services, keep the data and the API apart). Nothing is built yet and nothing here is decided.",
+  "next": [
+    "Look through the **Screens**, group by group, and comment on anything: what you like, what is wrong, what is missing. Group 10, *With Journey*, and the sheet screens in group 8 are the ones I most want your eye on.",
+    "Try the names with the **Name** switch on the Screens page, then read *The name*. Tell me which feel right, or give me words you like.",
+    "Read *The two apps, together* and tell me which links matter most to you. Some need small changes inside Journey.",
+    "Answer the five questions under *What it does*. Two of them shape the build: how private is private, and whether there is a paid plan.",
+    "When you are happy with the direction I add the screens you want next (the list of what is not designed yet is at the end of *Cues*), then we plan the build."
+  ],
+  "open": [
+    {"q": "The name", "a": "My pick is Porchlight. Hearth would have been perfect and is taken by a family organiser. None of the names has had a trademark, store or domain check yet."},
+    {"q": "How private is private?", "a": "In this draft only the Vault is scrambled so that the service can't read it. Notes, photos and files are private to the people you choose but readable by the service, so that search inside scans, reminders from documents and moments can work. Scrambling everything is possible and switches those off."},
+    {"q": "Is there a paid plan?", "a": "Keeping a family's full-size photos and videos costs roughly US$0.75 to 3 a month per family. A free amount with a family plan is the usual answer. The numbers are yours to set."},
+    {"q": "What is the first version?", "a": "All six places is several apps' worth of work. I suggest: circles and sharing, then Library, Plan, Notes, Money, Vault, in that order, each one going to a few test families before the next."},
+    {"q": "The top row", "a": "Today, Plan, Notes, Library, Money, Vault. Are these the right six, in the right order? Is anything you'd use daily more than one tap away?"},
+    {"q": "Faces", "a": "Grouping photos by who is in them is powerful and sensitive, most of all with children. On the phone only, off by default, or not at all? The draft leaves it out."}
+  ],
+  "updates": [
+    {"date": "2026-11-11", "text": "First draft: the hub, 75 screens in 13 groups, the design system copied from Journey's Design 2.1, a name shortlist with a switch on every screen, the link with Journey, the requirements, and the answer on sharing a database and a server."}
+  ]
+}

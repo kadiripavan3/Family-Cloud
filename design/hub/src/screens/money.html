@@ -1,0 +1,183 @@
+<screen id="money" title="Money" class="s-money" note="The month in one card: what is paid, what is coming, who owes whom. Bills are things the house pays; sheets are where the maths lives. Nothing here connects to a bank." label="Money: a card showing 1,240 of 1,900 euros of November's bills paid, three bills due soon and a rail of sheets.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="money">
+    <div class="mn-sum">
+      <span class="eyebrow">November bills</span>
+      <div class="mn-big">€1,240<small>of €1,900 paid</small></div>
+      <div class="pbar"><b style="width:65%"></b></div>
+      <div class="mn-3"><div><b>€214</b><small>due this week</small></div><div><b>€86</b><small>in subscriptions</small></div><div><b>€42</b><small>Alex owes you</small></div></div>
+    </div>
+    <div class="sec"><h3>Due soon</h3>[[right]]</div>
+    <div class="group mn-list">
+      <div class="grow"><span class="itile"><span class="em">⚡</span></span><span class="tx"><b>Electricity</b><small class="warn-t">Tomorrow · split with Alex</small></span><span class="amt">€84.20</span></div>
+      <div class="grow"><span class="itile"><span class="em">🏠</span></span><span class="tx"><b>Rent</b><small>Mon 16 Nov · standing order</small></span><span class="amt">€980.00</span></div>
+      <div class="grow"><span class="itile"><span class="em">📺</span></span><span class="tx"><b>Netflix</b><small>Fri 20 Nov · login in the Vault</small></span><span class="amt">€13.99</span></div>
+    </div>
+    <div class="sec"><h3>Sheets</h3>[[right]]</div>
+    <div class="rail">
+      <div class="mini"><span class="itile acc">[[table]]</span><div><small>Trip</small><b>Norway budget</b></div></div>
+      <div class="mini"><span class="itile acc">[[table]]</span><div><small>Monthly</small><b>Budget 2026</b></div></div>
+    </div>
+  </div>
+  <tabbar active="home">
+</screen>
+
+<screen id="bill" title="A bill" note="A bill knows its history, who pays, and where the login is. “Log in to Elektro” opens the site already signed in, from the Vault. One button when it's done.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Electricity<small>Elektro Ljubljana</small></span><span class="soft-round">[[more]]</span></div>
+    <div class="mn-due"><span class="itile"><span class="em">⚡</span></span><b>€84.20</b><small>Due tomorrow, Thu 12 Nov</small><span class="spill"><i style="background:var(--warn)"></i>Your half isn't paid yet</span></div>
+    <div class="mn-hist">
+      <div class="cal-head"><b>The last six</b><small>usually about €63</small></div>
+      <div class="gap16"></div>
+      <div class="mn-bars"><i data-v="52" style="height:62%"></i><i data-v="49" style="height:58%"></i><i data-v="55" style="height:65%"></i><i data-v="61" style="height:72%"></i><i data-v="78" style="height:93%"></i><i class="on" data-v="84" style="height:100%"></i></div>
+      <div class="mn-mon"><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
+    </div>
+    <div class="group">
+      <div class="grow">[[users]]<span class="tx"><b>Split 50/50 with Alex</b><small>€42.10 each · Alex has paid his</small></span><span class="stack sm"><img src="img/av-me.jpg" alt=""><img src="img/av-alex.jpg" alt=""></span></div>
+      <div class="grow">[[repeat]]<span class="tx"><b>Every month, around the 12th</b><small>Reminds you 2 days before</small></span>[[right chev]]</div>
+      <div class="grow">[[key]]<span class="tx"><b>Log in to Elektro</b><small>From the Vault · opens signed in</small></span>[[right chev]]</div>
+      <div class="grow">[[clip]]<span class="tx"><b>Invoice, November</b><small>Scanned from the letter · in Files</small></span>[[right chev]]</div>
+    </div>
+    <div class="foot"><span class="btn btn-lg btn-block">[[check]]Mark my half as paid</span></div>
+  </div>
+</screen>
+
+<screen id="scan-bill" title="Scan a bill" theme="dark" home="photo" class="s-scan" note="Point the camera at a letter or a receipt. The payee, the amount and the date are read off the paper; you check them and tap once. The scan is kept with the bill.">
+  <img class="bgimg" src="img/coffee-receipt.jpg" alt="">
+  <div class="sc-frame"></div>
+  <sb photo>
+  <div class="sc-top"><span class="gbtn photo">[[x]]</span><span class="counter">Hold steady</span><span class="gbtn photo">[[image]]</span></div>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="sh-t">Is this right?</div>
+    <div class="fields">
+      <div class="fld"><small>Who to pay</small><span>Elektro Ljubljana[[check ok]]</span></div>
+      <div class="fld-row"><div class="fld"><small>Amount</small><span>€84.20</span></div><div class="fld"><small>Due</small><span>[[calendar]]12 Nov</span></div></div>
+      <div class="fld"><small>Reference</small><span>SI12 3456 7890 1184</span></div>
+    </div>
+    <div class="sc-chips"><span class="chip">[[repeat]]Comes every month</span><span class="chip">[[users]]Split with Alex</span></div>
+    <div class="sh-foot"><span class="btn btn-lg btn-block">Add bill</span></div>
+  </div>
+</screen>
+
+<screen id="sheets" title="Sheets" note="Sheets are their own place, not tables squeezed into notes. Start from a template that already has the formulas; the ones marked LIVE have sliders to play with.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Sheets</span><span class="soft-round">[[plus]]</span></div>
+    <div class="glabel">Yours</div>
+    <div class="up"><span class="itile acc">[[table]]</span><div class="tx"><b>Norway budget</b><small>3 tabs · Alex edited it today</small></div><span class="amt">€7,640</span></div>
+    <div class="up"><span class="itile acc">[[table]]</span><div class="tx"><b>Budget 2026</b><small>12 tabs · one a month</small></div><aud two></div>
+    <div class="glabel">Start from a template</div>
+    <div class="tgrid">
+      <div class="tcard"><span class="em">💰</span><b>Monthly budget</b><small>Money in, bills out, what's left</small></div>
+      <div class="tcard"><span class="em">🧳</span><b>Trip budget</b><small>Costs, who paid, who owes</small></div>
+      <div class="tcard on"><span class="tag live">LIVE</span><span class="em">🏦</span><b>Loan planner</b><small>Slide the rate, watch the payment</small></div>
+      <div class="tcard"><span class="tag live">LIVE</span><span class="em">📈</span><b>Savings plan</b><small>How long until the goal</small></div>
+      <div class="tcard"><span class="em">🧾</span><b>Tax checklist</b><small>Papers to find, with totals</small></div>
+      <div class="tcard"><span class="em">🚗</span><b>Car costs</b><small>Fuel, service, cost per km</small></div>
+    </div>
+  </div>
+</screen>
+
+<screen id="sheet" title="A sheet" class="s-sheet" note="A real spreadsheet, shaped for a phone. Columns have a kind (text, person, money, tick), so a cost can't be typed as a word. Totals sit on top as tiles. The bar under the grid says what the selected cell is doing, in words." label="Norway budget sheet: three summary tiles (planned 7,640, paid 2,500, still to pay 5,140), a grid of six costs with who pays and a paid tick, the total cell selected, and a formula bar reading SUM of Cost.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Norway budget<small>Alex is here too</small></span><aud all><span class="soft-round">[[more]]</span></div>
+    <div class="rail sh-tiles"><div class="sh-tile"><small>Planned</small><b>€7,640</b></div><div class="sh-tile"><small>Paid</small><b>€2,500</b></div><div class="sh-tile acc"><small>Still to pay</small><b>€5,140</b></div></div>
+    <div class="sh-grid">
+      <div class="sh-r hd"><span class="n"></span><span>[[type]]Item</span><span>[[user]]Who</span><span class="num">[[euro]]Cost</span><span>[[check]]Paid</span></div>
+      <div class="sh-r"><span class="n">1</span><span>Flights</span><span><img src="img/av-alex.jpg" alt=""></span><span class="num">1,480.00</span><span><i class="ck on">[[check]]</i></span></div>
+      <div class="sh-r"><span class="n">2</span><span>Rail passes</span><span><img src="img/av-me.jpg" alt=""></span><span class="num">1,020.00</span><span><i class="ck on">[[check]]</i></span></div>
+      <div class="sh-r"><span class="n">3</span><span>Cabins, 9 nights</span><span><img src="img/av-alex.jpg" alt=""></span><span class="num">2,350.00</span><span><i class="ck"></i></span></div>
+      <div class="sh-r"><span class="n">4</span><span>Ferries</span><span><img src="img/av-me.jpg" alt=""></span><span class="num">640.00</span><span><i class="ck"></i></span></div>
+      <div class="sh-r"><span class="n">5</span><span>Food</span><span><img src="img/av-me.jpg" alt=""><img src="img/av-alex.jpg" alt=""></span><span class="num">1,400.00</span><span><i class="ck"></i></span></div>
+      <div class="sh-r"><span class="n">6</span><span>Fun money</span><span><img src="img/av-mia.jpg" alt=""><img src="img/av-leo.jpg" alt=""></span><span class="num">750.00</span><span><i class="ck"></i></span></div>
+      <div class="sh-r addr"><span class="n">[[plus]]</span><span>Add a row</span><span></span><span></span><span></span></div>
+      <div class="sh-r tot"><span class="n">[[sigma]]</span><span>Total</span><span></span><span class="num sel">7,640.00</span><span>2 of 6</span></div>
+    </div>
+    <div class="sh-fx">[[sigma]]<span class="fx">SUM</span><span class="fx col">Cost</span><span class="sp"></span><b>7,640.00</b></div>
+    <p class="sh-say">Adds up every row in Cost. Tap a row to open it as a card.</p>
+    <div class="sh-tabs"><span class="on">Budget</span><span>Day by day</span><span>Savings</span><span class="sp"></span>[[plus]]</div>
+  </div>
+</screen>
+
+<screen id="sheet-row" title="A row, as a card" class="s-sheetrow" note="Nobody should pinch a tiny grid to fix one number. Every row opens as a card with proper fields, a date picker, a person picker and room for the receipt. Swipe to the next row.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Row 3 of 6<small>Norway budget</small></span><span class="lnk">Done</span></div>
+    <div class="gap8"></div>
+    <div class="fields">
+      <div class="fld"><small>Item</small><span>Cabins, 9 nights</span></div>
+      <div class="fld-row"><div class="fld on"><small>Cost</small><span>€2,350.00<i class="caret"></i></span></div><div class="fld"><small>Who pays</small><span><img src="img/av-alex.jpg" alt="">Alex</span></div></div>
+      <div class="fld-row"><div class="fld"><small>Due</small><span>[[calendar]]15 Jan</span></div><div class="fld"><small>Paid</small><span>Not yet<i class="toggle off"></i></span></div></div>
+      <div class="fld area"><small>Note</small><span>€470 deposit paid on 2 Nov. The rest is due six weeks before we go.</span></div>
+    </div>
+    <div class="glabel">Receipts and papers</div>
+    <div class="media"><div class="m" style="background-image:url(img/coffee-receipt.jpg)"><span class="x">[[x]]</span></div><div class="m add">[[scan]]Scan</div></div>
+    <div class="foot"><div class="sr-nav"><span class="btn btn-soft">[[left]]Rail passes</span><span class="btn btn-soft">Ferries[[right]]</span></div></div>
+  </div>
+</screen>
+
+<screen id="formula" title="A formula you can read" note="Formulas are built from chips, not typed from memory. Columns are named, not lettered. Under it, the same formula in a sentence, and the answer before you commit. Or ask in words.">
+  <sb>
+  <div class="pg au-bg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Norway budget</span><aud all><span class="soft-round">[[more]]</span></div>
+    <div class="rail sh-tiles"><div class="sh-tile"><small>Planned</small><b>€7,640</b></div><div class="sh-tile"><small>Paid</small><b>€2,500</b></div><div class="sh-tile acc"><small>Still to pay</small><b>€5,140</b></div></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="sh-t">Still to pay</div>
+    <div class="fx-box"><span class="fx">SUM</span><span class="fx col">Cost</span><span class="fx-op">−</span><span class="fx">SUM IF</span><span class="fx col">Paid</span><span class="fx-op">is ticked</span><span class="fx col">Cost</span></div>
+    <p class="sh-say">Everything in Cost, minus the Cost of rows where Paid is ticked.</p>
+    <div class="fx-res">€5,140.00<small>changes as rows change</small></div>
+    <div class="glabel">Columns</div>
+    <div class="fx-pick"><span class="fx col">Item</span><span class="fx col">Who</span><span class="fx col">Cost</span><span class="fx col">Paid</span><span class="fx col">Due</span></div>
+    <div class="glabel">Maths</div>
+    <div class="fx-pick"><span class="fx">SUM</span><span class="fx">SUM IF</span><span class="fx">AVERAGE</span><span class="fx">COUNT</span><span class="fx">IF</span><span class="fx">PAYMENT</span><span class="fx">More</span></div>
+    <div class="qa-field">[[sparkle]]<span class="ph-t">Or ask: “How much has Alex paid?”</span></div>
+    <div class="sh-foot"><span class="btn btn-lg btn-block">Use this formula</span></div>
+  </div>
+</screen>
+
+<screen id="what-if" title="Template: loan planner" note="A template with the maths already inside. Drag a slider and the payment changes as you move. The switch at the bottom answers the question people really have: what if we paid a bit more?">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Loan planner</span><span class="soft-round">[[more]]</span></div>
+    <div class="wi-out"><small>You'd pay each month</small><b>€1,189</b><small>€116,600 of interest over 25 years</small></div>
+    <div class="wi-sl">
+      <div class="wi-s"><div><span>Borrowed</span><b>€240,000</b></div><div class="wi-tr"><b style="width:42%"></b><i style="left:42%"></i></div></div>
+      <div class="wi-s"><div><span>Interest a year</span><b>3.4%</b></div><div class="wi-tr"><b style="width:43%"></b><i style="left:43%"></i></div></div>
+      <div class="wi-s"><div><span>Over</span><b>25 years</b></div><div class="wi-tr"><b style="width:67%"></b><i style="left:67%"></i></div></div>
+    </div>
+    <svg class="wi-chart" viewBox="0 0 350 132" aria-hidden="true">
+      <path class="ar" d="M10 10L76 23.8L142 40.2L208 59.7L274 82.7L340 110H10Z"/>
+      <path class="ax" d="M10 110H340"/>
+      <path class="ln" d="M10 10L76 23.8L142 40.2L208 59.7L274 82.7L340 110"/>
+      <path class="ln2" d="M10 10L76 26.6L142 46.2L208 69.4L274 97L301.6 110"/>
+      <circle class="dotk" cx="301.6" cy="110" r="4.5"/>
+      <text x="10" y="127">Now</text><text x="142" y="127" text-anchor="middle">10 years</text><text x="301.6" y="127" text-anchor="middle">22</text><text x="340" y="127" text-anchor="end">25</text><text x="18" y="100">What you still owe</text>
+    </svg>
+    <div class="note-b soft wi-note">[[sparkle]]<div><b>Pay €100 more a month</b>Done 2 years 11 months sooner, with about €15,000 less interest.</div><i class="toggle"></i></div>
+    <div class="foot"><span class="btn btn-lg btn-block">Keep as a sheet</span></div>
+  </div>
+</screen>
+
+<screen id="split" title="Splitting with friends" note="A circle of friends gets the same tools. Everyone adds what they paid; the app works out the fewest payments that settle it. No bank link, no fees: it only keeps count.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Lisbon weekend<small>Lisbon crew · 5 friends</small></span><span class="soft-round">[[more]]</span></div>
+    <div class="sp-bal"><small>After 14 expenses, €1,236 in all</small><b>You're owed €64</b><span class="stack sm"><img src="img/av-me.jpg" alt=""><img src="img/av-lea.jpg" alt=""><img src="img/av-kai.jpg" alt=""><img src="img/av-lena.jpg" alt=""><img src="img/av-ana.jpg" alt=""></span></div>
+    <div class="glabel">The fewest payments to settle up</div>
+    <div class="sp-pay"><img src="img/av-lea.jpg" alt="">[[right]]<img src="img/av-me.jpg" alt=""><span class="tx">Lea pays you</span><span class="amt">€44</span><span class="btn btn-sm btn-soft">Remind</span></div>
+    <div class="sp-pay"><img src="img/av-kai.jpg" alt="">[[right]]<img src="img/av-me.jpg" alt=""><span class="tx">Kai pays you</span><span class="amt">€20</span><span class="btn btn-sm btn-soft">Remind</span></div>
+    <div class="sp-pay"><img src="img/av-lena.jpg" alt="">[[right]]<img src="img/av-ana.jpg" alt=""><span class="tx">Lena pays Ana</span><span class="amt">€31</span></div>
+    <div class="glabel">Latest</div>
+    <div class="up"><span class="itile"><span class="em">🍽️</span></span><div class="tx"><b>Dinner at Ramiro</b><small>Kai paid · split 5 ways</small></div><span class="amt">€186</span></div>
+    <div class="up"><span class="itile"><span class="em">🚕</span></span><div class="tx"><b>Airport taxi</b><small>You paid · split with Lea</small></div><span class="amt">€24</span></div>
+    <div class="up"><span class="itile"><span class="em">🏠</span></span><div class="tx"><b>Flat, 3 nights</b><small>Lena paid · split 5 ways</small></div><span class="amt">€720</span></div>
+    <div class="cta-bar"><div><b>Add what you paid</b><small>Or scan the receipt</small></div><span class="btn btn-sm btn-soft">[[scan]]Scan</span><span class="btn btn-sm">[[plus]]Add</span></div>
+  </div>
+</screen>

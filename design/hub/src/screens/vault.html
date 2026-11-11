@@ -1,0 +1,119 @@
+<screen id="vault-locked" title="The Vault, locked" class="s-vault" note="The Vault is the one place that locks by itself. What is inside is scrambled on the phone with a key only you hold, so the service can store it but never read it.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="vault">
+    <div class="empty vt-lock"><span class="blob">🔐</span><b>The Vault is locked</b><p>Passwords, cards, IDs and door codes. Scrambled on this phone before they leave it: nobody at {app} can read them.</p><span class="btn btn-lg">[[face]]Unlock with Face ID</span><span class="btn btn-quiet">Use your Vault key</span></div>
+  </div>
+  <tabbar active="home">
+</screen>
+
+<screen id="vault" title="The Vault" class="s-vault" note="Six drawers, a nudge about weak passwords, and what other people have shared with you. It locks again after two minutes, and says so.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="vault">
+    <div class="vt-cats">
+      <div class="vt-cat"><span class="em">🔑</span><b>Logins</b><small>31</small></div>
+      <div class="vt-cat"><span class="em">💳</span><b>Cards</b><small>4</small></div>
+      <div class="vt-cat"><span class="em">🪪</span><b>IDs</b><small>9</small></div>
+      <div class="vt-cat"><span class="em">📶</span><b>Wi‑Fi</b><small>2</small></div>
+      <div class="vt-cat"><span class="em">🚪</span><b>Codes</b><small>5</small></div>
+      <div class="vt-cat"><span class="em">📝</span><b>Secrets</b><small>6</small></div>
+    </div>
+    <div class="note-b warn vt-warn">[[alert]]<div><b>Two passwords need a look</b>One is used on three sites. One showed up in a known leak.</div></div>
+    <div class="sec"><h3>Shared with you</h3>[[right]]</div>
+    <div class="up"><span class="itile ink">N</span><div class="tx"><b>Netflix</b><small>From Alex · you can see it</small></div>[[copy]]</div>
+    <div class="up"><span class="itile"><span class="em">🚪</span></span><div class="tx"><b>Front door code</b><small>Everyone in The Linds</small></div>[[copy]]</div>
+  </div>
+  <div class="toast vt-auto">[[clock]]Locks itself in 1:48</div>
+  <tabbar active="home">
+</screen>
+
+<screen id="vault-item" title="A password" note="Copy without showing, a one-time code that counts down, and the part no other family app has: Mia can use Netflix without ever seeing the password. It fills in for her and stays hidden.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t"></span><span class="soft-round">[[edit]]</span></div>
+    <div class="vt-head"><span class="itile ink">N</span><div><h2>Netflix</h2><small>Login · netflix.com</small></div></div>
+    <div class="group vt-f">
+      <div class="grow"><span class="tx"><small>Email</small><b>linds.home@example.com</b></span>[[copy]]</div>
+      <div class="grow"><span class="tx"><small>Password</small><b class="vt-dots">••••••••••••••</b></span>[[eye]][[copy]]</div>
+      <div class="grow"><span class="tx"><small>One-time code</small><b>482 913</b></span><i class="vt-ring"></i>[[copy]]</div>
+    </div>
+    <div class="glabel">Who can use it</div>
+    <div class="prow"><img src="img/av-me.jpg" alt=""><div class="tx"><b>You</b><small>It's yours</small></div></div>
+    <div class="prow"><img src="img/av-alex.jpg" alt=""><div class="tx"><b>Alex</b><small>Changed it 3 weeks ago</small></div><span class="rsel">Can see[[down]]</span></div>
+    <div class="prow"><img src="img/av-mia.jpg" alt=""><div class="tx"><b>Mia</b><small>It fills in for her. She never sees it</small></div><span class="rsel">Can use[[down]]</span></div>
+    <div class="gap8"></div>
+    <div class="note-b">[[shield]]<div><b>Strong, and used nowhere else</b>14 characters. Not found in any known leak.</div></div>
+  </div>
+</screen>
+
+<screen id="vault-share" title="Share a secret" note="Three ways to share one thing: use without seeing, see, or change. It can vanish after it's opened once, or stop working tomorrow. Good for a door code and a friend who is feeding the dog.">
+  <sb>
+  <div class="pg au-bg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t"></span><span class="soft-round">[[edit]]</span></div>
+    <div class="vt-head"><span class="itile"><span class="em">🚪</span></span><div><h2>Front door code</h2><small>Code · home</small></div></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="sh-t">Share “Front door code”</div>
+    <div class="vs-avs">
+      <span class="on"><img src="img/av-alex.jpg" alt=""><i class="tick">[[check]]</i>Alex</span>
+      <span><img src="img/av-mia.jpg" alt="">Mia</span>
+      <span class="on"><img src="img/av-lea.jpg" alt=""><i class="tick">[[check]]</i>Lea</span>
+      <span><img src="img/av-ines.jpg" alt="">Ines</span>
+      <span><i class="avi">[[plus]]</i>Other</span>
+    </div>
+    <div class="opts">
+      <div class="opt on"><span class="gi">[[eye-off]]</span><span class="tx"><b>Can use, can't keep</b><small>Shows once when needed, then hides again</small></span><i class="radio on"></i></div>
+      <div class="opt"><span class="gi">[[eye]]</span><span class="tx"><b>Can see</b><small>Can look it up any time</small></span><i class="radio"></i></div>
+      <div class="opt"><span class="gi">[[edit]]</span><span class="tx"><b>Can change</b><small>For another adult in the house</small></span><i class="radio"></i></div>
+    </div>
+    <div class="group vs-g">
+      <div class="grow">[[flame]]<span class="tx"><b>Gone after it's opened once</b></span><i class="toggle off"></i></div>
+      <div class="grow">[[clock]]<span class="tx"><b>Stops working</b></span><span class="val">Sunday evening</span></div>
+    </div>
+    <div class="sh-foot"><span class="btn btn-lg btn-block">Share with 2 people</span></div>
+  </div>
+</screen>
+
+<screen id="emergency" title="If something happens" note="The feature people only think about too late. A person you trust can ask for your Vault; you get two days to say no; after that it opens to them, with a note you wrote for the family.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t"></span><span class="sp"></span></div>
+    <h2 class="xl">If something happens to you</h2>
+    <p class="lead-t">Someone you trust can get to what the family would need. Until then they see <b>none of it</b>.</p>
+    <div class="em-steps">
+      <div><img src="img/av-alex.jpg" alt="">Alex asks</div>[[right]]
+      <div class="on">[[bell]]You have 48 hours to say no</div>[[right]]
+      <div>[[unlock]]It opens to Alex</div>
+    </div>
+    <div class="group">
+      <div class="grow"><img class="sav" src="img/av-alex.jpg" alt=""><span class="tx"><b>Alex Strand</b><small>The person who can ask</small></span>[[right chev]]</div>
+      <div class="grow"><span class="gi">[[clock]]</span><span class="tx"><b>Time to say no</b></span><span class="val">48 hours</span></div>
+      <div class="grow"><span class="gi">[[key]]</span><span class="tx"><b>What opens</b><small>Bank, insurance, the house, 14 things</small></span>[[right chev]]</div>
+      <div class="grow"><span class="gi">[[file]]</span><span class="tx"><b>A note for the family</b><small>Where the will is, who to call, what to cancel</small></span>[[right chev]]</div>
+    </div>
+    <div class="foot"><span class="btn btn-lg btn-block">Turn it on</span><p class="fine">You can change the person or switch it off whenever you like.</p></div>
+  </div>
+</screen>
+
+<screen id="vault-key" title="Your Vault key" note="Said plainly, because it matters: there is no “forgot my key” button. The key is saved or printed once, and two people you trust can together let you back in.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t"></span><span class="sp"></span></div>
+    <h2 class="xl">Your Vault key</h2>
+    <p class="lead-t">It unscrambles the Vault on a new phone. We don't have a copy, so <b>we can't reset it for you</b>.</p>
+    <div class="vk-card">
+      <div class="vk-top"><span class="vk-qr"></span><div class="vk-code">KT4M 9QXZ PL2A<br>77HD VB3N E8RW</div></div>
+      <div class="pz-btns"><span class="btn btn-soft">[[download]]Save as PDF</span><span class="btn btn-soft">[[copy]]Copy</span></div>
+    </div>
+    <div class="glabel">If you lose it</div>
+    <div class="group">
+      <div class="grow"><img class="sav" src="img/av-alex.jpg" alt=""><span class="tx"><b>Alex can help you back in</b><small>Helper · said yes</small></span>[[check okc]]</div>
+      <div class="grow"><span class="avi">AL</span><span class="tx"><b>Astrid can help too</b><small>Any two helpers together</small></span>[[check okc]]</div>
+      <div class="grow"><span class="avi">[[plus]]</span><span class="tx"><b>Add a third helper</b><small>So two are always reachable</small></span>[[right chev]]</div>
+    </div>
+    <div class="foot"><span class="btn btn-lg btn-block">I've saved my key</span></div>
+  </div>
+</screen>

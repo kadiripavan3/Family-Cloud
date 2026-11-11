@@ -1,0 +1,37 @@
+<figure class="arch" aria-labelledby="arch-cap">
+  <div class="arch-zones">
+    <div class="zone">
+      <p class="zone-h"><b>On the phone</b><span>Two Expo apps, one sign-in</span></p>
+      <ul>
+        <li>This app<span class="n">1</span><span class="n">2</span><small>Screens, a store of changes waiting to send, the Vault's keys</small></li>
+        <li>Journey<span class="n">1</span><span class="n">3</span><small>As it is today</small></li>
+        <li>Scrambling the Vault<span class="n">4</span><small>Happens here, before anything is sent</small></li>
+      </ul>
+    </div>
+    <span class="arch-link" aria-hidden="true"><svg class="ic"><use href="#i-right"/></svg></span>
+    <div class="zone hl">
+      <p class="zone-h"><b>Two APIs</b><span>Spring Boot, Java · two small servers on Fly.io</span></p>
+      <ul>
+        <li>This app's API<span class="n">1</span><span class="n">2</span><span class="n">3</span><small>Circles, who can see what, live updates</small></li>
+        <li>Journey API<span class="n">1</span><span class="n">3</span><small>Unchanged, plus two answers for Keep and Tell</small></li>
+      </ul>
+    </div>
+    <span class="arch-link" aria-hidden="true"><svg class="ic"><use href="#i-right"/></svg></span>
+    <div class="zone">
+      <p class="zone-h"><b>Shared services</b><span>One account for each</span></p>
+      <ul>
+        <li>Sign-in<span class="n">1</span><small>One Supabase Auth: the same person in both</small></li>
+        <li>Database<span class="n">2</span><small>One PostgreSQL, a schema per app, a user per API</small></li>
+        <li>Files<span class="n">2</span><span class="n">4</span><small>Cloudflare R2, a bucket per app</small></li>
+        <li>Push, email, clips<small>Expo Push, Resend, Mux</small></li>
+      </ul>
+    </div>
+  </div>
+  <ol class="arch-flows">
+    <li><span><b>Sign in once.</b> Both apps sign in with the same Supabase Auth, so a person has one identity and each API can check the same token.</span></li>
+    <li><span><b>Read and write.</b> Each app talks only to its own API. Each API reads only its own schema and its own bucket.</span></li>
+    <li><span><b>Keep and Tell.</b> This app's API asks the Journey API for a journey as the person, with their token. Journey's rules decide the answer. Nothing reads the other's tables.</span></li>
+    <li><span><b>The Vault.</b> Scrambled on the phone with a key the person holds. The API stores it and can't read it.</span></li>
+  </ol>
+  <figcaption id="arch-cap">What is shared and what is kept apart. A number on a part means it takes part in that numbered flow.</figcaption>
+</figure>

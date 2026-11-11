@@ -1,0 +1,5 @@
+node_modules/
+# Built by design/hub/build.mjs; the sources are the record.
+design/hub/index.html
+.DS_Store
+.preview.html
