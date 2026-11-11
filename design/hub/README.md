@@ -40,7 +40,7 @@ Each group file holds `<screen>` blocks. The build adds the phone frame, the cam
 
 Rules the build checks: ids are unique and use lowercase letters, digits and hyphens; every icon exists; nothing sits outside a `<screen>` block; every image exists.
 
-Class names in `phone.css` and `styles.css` share one page. `phone.css` begins with Journey's file, unchanged, and this app's parts follow under "Family Cloud". New classes take a short prefix for their group (`nt-` notes, `lb-` library, `pl-` plan, `mn-` and `sh-` money and sheets, `vt-` vault, `jl-` the link with Journey), and must not reuse a name either file already has (`.dots` did, once).
+Class names in `phone.css` and `styles.css` share one page. `phone.css` begins with Journey's file, unchanged, and this app's parts follow under "Family Cloud". New classes take a short prefix for their group (`nt-` notes, `lb-` library, `pl-` plan, `mn-` and `sh-` money and sheets, `vt-` vault, `jl-` the link with Journey, `jt-` jot, `ks-` keepsakes, `pk-` fair and fun), and must not reuse a name either file already has (`.dots` did, once).
 
 ## The name switch
 

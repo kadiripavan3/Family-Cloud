@@ -13,6 +13,9 @@
     {"id": "together", "file": "together.html", "title": "With Journey", "intro": "Journey is the story you tell; this is where the family keeps it. Keep a finished journey as a book, turn an album into a journey, and let a trip plan here and be told there.", "tag": "two apps"},
     {"id": "activity", "file": "activity.html", "title": "Activity", "intro": "One calm inbox for a busy household: who added what, what is due, and who is asking for something. A Sunday summary instead of a stream of pings."},
     {"id": "you", "file": "you.html", "title": "You", "intro": "Your circles, your storage, your security, and a plain way out with everything you brought."},
-    {"id": "states", "file": "states.html", "title": "States", "intro": "Loading, offline and brand new: every state says what is happening and what you can do next."}
+    {"id": "states", "file": "states.html", "title": "States", "intro": "Loading, offline and brand new: every state says what is happening and what you can do next."},
+    {"id": "jot", "file": "jot.html", "title": "Jot", "intro": "Adding something without opening the app: widgets on the Home Screen, a note pinned in your notifications that you type into again and again, your voice, and the share button of any other app. Whatever you jot is read and filed for you.", "tag": "new"},
+    {"id": "keepsakes", "file": "keepsakes.html", "title": "Keepsakes", "intro": "More like the time capsule: templates that keep what a family would otherwise lose. What the children said, how tall they were, the stories only Grandma knows.", "tag": "new"},
+    {"id": "perks", "file": "perks.html", "title": "Fair and fun", "intro": "More like the chore wheel: small things that settle an argument, teach something, or make an ordinary week a bit lighter.", "tag": "new"}
   ]
 }

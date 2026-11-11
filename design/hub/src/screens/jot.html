@@ -1,0 +1,149 @@
+<screen id="jot-widgets" title="Widgets on the Home Screen" theme="dark" home="photo" class="s-homescreen" note="Three widgets. The chips add in one tap and the circles tick, right on the Home Screen, with nothing opening. Neither iPhone nor Android lets you type inside a widget, so the line opens the jot bar (next screen)." label="An iPhone Home Screen with three widgets: a Jot widget with a line to add something and one-tap chips for milk, eggs, bread and coffee; a Groceries list with ticks; and Today with three lines.">
+  <img class="bgimg" src="img/lake.jpg" alt="">
+  <div class="lk-shade"></div>
+  <sb photo>
+  <div class="jt-grid">
+    <div class="jt-w wide">
+      <div class="jt-wh"><span class="jmark bm">[[brand]]</span><b>Jot</b><aud all></div>
+      <div class="jt-field">[[plus]]<span>Milk, a reminder, a thought…</span><i class="send">[[mic]]</i></div>
+      <div class="jt-chips"><span>[[plus]]Milk</span><span>[[plus]]Eggs</span><span>[[plus]]Bread</span><span>[[plus]]Coffee</span></div>
+    </div>
+    <div class="jt-w">
+      <div class="jt-wh"><b>Groceries</b><small>7 left</small></div>
+      <div class="jt-tick"><i class="ck"></i>Bananas</div>
+      <div class="jt-tick"><i class="ck"></i>Strawberries</div>
+      <div class="jt-tick done"><i class="ck on">[[check]]</i>Butter</div>
+    </div>
+    <div class="jt-w">
+      <div class="jt-wh"><b>Today</b><small>Wed 11</small></div>
+      <div class="jt-line"><b>15:30</b>Dentist · Mia</div>
+      <div class="jt-line"><b>19:00</b>Bins, your turn</div>
+      <div class="jt-line"><b>€84</b>Electricity</div>
+    </div>
+  </div>
+  <div class="jt-apps"><span><i class="own bm">[[brand]]</i>{app}</span><span><i class="own">[[route]]</i>Journey</span><span><i>[[camera]]</i>Camera</span><span><i>[[mail]]</i>Mail</span></div>
+  <div class="jt-dock"><i>[[msg]]</i><i>[[globe]]</i><i>[[image]]</i><i>[[map]]</i></div>
+</screen>
+
+<screen id="jot-bar" title="The jot bar" theme="dark" home="photo" class="s-homescreen" note="What the widget's line opens: one line, the keyboard, and nothing else of the app. Return adds and keeps the bar open, so ten things are ten lines. On Android it floats over the Home Screen. On iPhone nothing may float there, so the app opens straight onto this bar.">
+  <img class="bgimg" src="img/lake.jpg" alt="">
+  <div class="dim"></div>
+  <sb photo>
+  <div class="jt-done"><span class="jt-ok">[[check]]Milk<small>Groceries</small></span><span class="jt-ok">[[check]]Bread<small>Groceries</small></span></div>
+  <div class="jt-bar">
+    <p>Eggs, and remind Alex about the car at 6<i class="caret"></i></p>
+    <div class="jt-read"><span class="chip">[[checksq]]Eggs · Groceries</span><span class="chip">[[bell]]Alex · today 18:00</span></div>
+    <div class="jt-row"><aud all><span class="sp"></span><span class="soft-round">[[mic]]</span><span class="btn btn-sm">Add</span></div>
+  </div>
+  <kb>
+</screen>
+
+<screen id="jot-pinned" title="A note pinned in notifications" theme="dark" home="photo" class="s-android" note="The one you asked for, on Android: a notification that stays at the top with a line to type in. Type, send, type again; the app never opens. Android lets you swipe a pinned notification away, so this one comes straight back. The Jot tile above it does the same from any screen." label="An Android notification shade with quick-settings tiles including Jot, and a pinned notification holding today's jots and a text line being typed in, above the keyboard.">
+  <img class="bgimg" src="img/autumn.jpg" alt="">
+  <div class="dim"></div>
+  <sb photo>
+  <div class="jt-qs"><span class="on">[[wifi]]Linds-Home</span><span>[[moon]]Do not disturb</span><span>[[sun]]Torch</span><span>[[edit]]Jot</span></div>
+  <div class="jt-note">
+    <div class="jt-nh"><span class="appic bm">[[brand]]</span><b>{app}</b><small>pinned · The Linds</small>[[up]]</div>
+    <div class="jt-nl">[[checksq]]<span>Milk, bread<small>Groceries · 8:12</small></span></div>
+    <div class="jt-nl">[[file]]<span>Mia needs €5 for the class photo<small>Note · 8:40</small></span></div>
+    <div class="jt-nf"><span>Call the plumber tomorrow at 9<i class="caret"></i></span><i class="send">[[send]]</i></div>
+  </div>
+  <kb>
+</screen>
+
+<screen id="jot-filed" title="It files itself" theme="dark" home="photo" class="s-android" note="Each line is read the way “Type it” reads it: something to buy joins the list, a time makes a reminder, a name hands it to that person. Something that looks like a code is not put anywhere until you say where. Every line can be undone or moved without opening the app.">
+  <img class="bgimg" src="img/autumn.jpg" alt="">
+  <div class="dim"></div>
+  <sb photo>
+  <div class="jt-note up2">
+    <div class="jt-nh"><span class="appic bm">[[brand]]</span><b>{app}</b><small>pinned · 4 filed just now</small>[[up]]</div>
+    <div class="jt-nl">[[bell]]<span>Call the plumber<small>Reminder · tomorrow 9:00</small></span><u>Undo</u></div>
+    <div class="jt-nl">[[checksq]]<span>Eggs<small>Groceries</small></span><u>Move</u></div>
+    <div class="jt-nl">[[users]]<span>The car service<small>Asked Alex · today 18:00</small></span><u>Undo</u></div>
+    <div class="jt-ask">[[key]]<div><b>“Gate code 4471” looks like a code</b><small>It hasn't been kept anywhere yet.</small></div></div>
+    <div class="jt-acts"><span class="btn btn-sm">[[lock]]Keep in the Vault</span><span class="btn btn-sm btn-soft">It's just a note</span></div>
+    <div class="jt-nf"><span class="ph-t">Add anything</span><i class="send">[[mic]]</i></div>
+  </div>
+  <div class="jt-note low">
+    <div class="jt-nh"><span class="appic bm">[[brand]]</span><b>{app}</b><small>2h ago</small></div>
+    <div class="jt-nl"><span>Alex added 19 photos<small>Saturday at the lake</small></span><i class="th" style="background-image:url(img/canoe.jpg)"></i></div>
+  </div>
+</screen>
+
+<screen id="jot-lock" title="On the iPhone Lock Screen" theme="dark" home="photo" class="s-lock" note="Three ways in before the phone is unlocked: small widgets under the clock, a list you can tick while it is in use, and the pinned note. Press and hold the note and a line to type in appears. Apple doesn't let a notification stay for ever, so this one returns after each add and every morning.">
+  <img class="bgimg" src="img/bed-mug.jpg" alt="">
+  <div class="lk-shade"></div>
+  <sb photo>
+  <div class="lk-time"><small>Wednesday 11 November</small><b>9:41</b></div>
+  <div class="jt-lw"><span>[[plus]]</span><span>[[mic]]</span><span><b>7</b><small>to buy</small></span></div>
+  <div class="lk-notes">
+    <div class="lnote"><span class="appic bm">[[brand]]</span><div class="tx"><b>Groceries<span>Alex is at the shop</span></b><div class="jt-la"><span><i class="ck"></i>Bananas</span><span><i class="ck"></i>Milk</span><span class="done"><i class="ck on">[[check]]</i>Butter</span></div></div></div>
+    <div class="lnote"><span class="appic bm">[[brand]]</span><div class="tx"><b>Jot it down<span>pinned</span></b><p>Press and hold to type. 3 added today.</p></div></div>
+  </div>
+</screen>
+
+<screen id="jot-voice" title="Say it all at once" theme="dark" home="photo" class="s-homescreen" note="Hold any mic (the widget, the pinned note, the jot bar) and say everything in one breath. It comes apart into separate things, each in its place. The code was noticed and offered to the Vault instead of being left in a list.">
+  <img class="bgimg" src="img/lake.jpg" alt="">
+  <div class="dim"></div>
+  <sb photo>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="jt-wave"><i style="height:20%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:40%"></i><i style="height:90%"></i><i style="height:60%"></i><i style="height:30%"></i><i style="height:75%"></i><i style="height:100%"></i><i style="height:55%"></i><i style="height:35%"></i><i style="height:80%"></i><i style="height:50%"></i><i style="height:25%"></i><i style="height:65%"></i><i style="height:95%"></i><i style="height:45%"></i><i style="height:30%"></i><i style="height:70%"></i><i style="height:40%"></i><i style="height:20%"></i></div>
+    <p class="jt-heard">“Eggs and flour, remind me to call Mum at six, and the gate code is 4471.”</p>
+    <div class="glabel">Four things</div>
+    <div class="group">
+      <div class="grow">[[checksq]]<span class="tx"><b>Eggs</b><small>Groceries</small></span>[[check okc]]</div>
+      <div class="grow">[[checksq]]<span class="tx"><b>Flour</b><small>Groceries</small></span>[[check okc]]</div>
+      <div class="grow">[[bell]]<span class="tx"><b>Call Mum</b><small>Reminder · today 18:00 · for you</small></span>[[check okc]]</div>
+      <div class="grow">[[key]]<span class="tx"><b>Gate code 4471</b><small>Looks like a code · the Vault</small></span><aud me></div>
+    </div>
+    <div class="sh-foot jt-vf"><span class="btn btn-lg">Add all four</span><span class="send">[[mic]]</span></div>
+  </div>
+</screen>
+
+<screen id="jot-share" title="Share into it" class="s-share" note="From any app's share button, without leaving that app. One school letter becomes four things: the trip on the calendar, the form to sign, the €12 to pay and the letter itself. Each can be switched off before saving.">
+  <sb>
+  <div class="pg au-bg">
+    <div class="appbar"><span class="lnk">Inbox</span><span class="t">School trip.pdf</span><span class="soft-round">[[share]]</span></div>
+    <div class="jt-letter"><b>Class 4B · trip to the Postojna caves</b><i></i><i></i><i class="s"></i><i></i><i></i><i class="s"></i></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="bsheet">
+    <div class="grab"></div>
+    <div class="cm-head"><b>Save to {app}</b><span class="soft-round">[[x]]</span></div>
+    <div class="pj"><span class="dthumb"><b>PDF</b></span><div class="tx"><b>School trip to the caves</b><small>1 page · from Mail</small></div><aud two></div>
+    <div class="glabel">Read from the letter</div>
+    <div class="group">
+      <div class="grow">[[calendar]]<span class="tx"><b>Trip · Fri 20 Nov, 8:00</b><small>On the calendar, for Mia</small></span><i class="toggle"></i></div>
+      <div class="grow">[[bell]]<span class="tx"><b>Sign the form by Wed 18 Nov</b><small>A reminder for you</small></span><i class="toggle"></i></div>
+      <div class="grow">[[euro]]<span class="tx"><b>€12 to pay the school</b><small>A bill, due Wed 18 Nov</small></span><i class="toggle"></i></div>
+      <div class="grow">[[folder]]<span class="tx"><b>Keep the letter</b><small>Files › School</small></span><i class="toggle"></i></div>
+    </div>
+    <div class="sh-foot"><span class="btn btn-lg btn-block">Save 4 things</span></div>
+  </div>
+</screen>
+
+<screen id="jot-ways" title="Every way in" note="One place to switch the ways on, and to say where a jot goes when it isn't obvious. Forwarding an email is the quiet one: send on a booking or a bill and it arrives as an event or a bill.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Jot</span><span class="sp"></span></div>
+    <p class="lead-t jt-lead">Ways to add something without opening the app.</p>
+    <div class="gap16"></div>
+    <div class="group">
+      <div class="grow"><span class="gi">[[bell]]</span><span class="tx"><b>Pinned note</b><small>A line to type in, in your notifications</small></span><i class="toggle"></i></div>
+      <div class="grow"><span class="gi">[[grid]]</span><span class="tx"><b>Widgets</b><small>Jot, a list with ticks, Today</small></span><span class="val">3 added</span></div>
+      <div class="grow"><span class="gi">[[mic]]</span><span class="tx"><b>Voice</b><small>“Hey Siri, jot…”, or hold any mic</small></span><i class="toggle"></i></div>
+      <div class="grow"><span class="gi">[[sparkle]]</span><span class="tx"><b>A button on the phone</b><small>Action Button, Back Tap, a settings tile</small></span><span class="val">Set up</span></div>
+      <div class="grow"><span class="gi">[[share]]</span><span class="tx"><b>Share from any app</b><small>A letter, a link, a photo, a booking</small></span><i class="toggle"></i></div>
+      <div class="grow"><span class="gi">[[mail]]</span><span class="tx"><b>Forward an email</b><small>linds-4f2k@in.{domain}</small></span>[[copy chev]]</div>
+    </div>
+    <div class="glabel">Where a jot goes</div>
+    <div class="group">
+      <div class="grow"><span class="tx"><b>Something to buy</b></span><span class="val">Groceries</span>[[right chev]]</div>
+      <div class="grow"><span class="tx"><b>A day or a time</b></span><span class="val">Reminder</span>[[right chev]]</div>
+      <div class="grow"><span class="tx"><b>Anything else</b></span><span class="val">Notes › Inbox</span>[[right chev]]</div>
+      <div class="grow"><span class="tx"><b>A code or a password</b></span><span class="val">Ask first</span>[[right chev]]</div>
+    </div>
+  </div>
+</screen>

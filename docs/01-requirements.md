@@ -53,8 +53,10 @@ The bottom bar has the same shape as Journey's: **Home · People · + · Activit
 - **Spaces → folders → sub-folders → pages**, as deep as you like. A page can be a note, a checklist or a sheet.
 - A page is built from blocks: text, checklist, photo, file, place, and live blocks from other places (a bill, an event, a sheet total, a goal, a password that copies without showing).
 - Shared lists update while two people use them, and work with no signal.
-- **Templates, about 40 to start:** house manual, babysitter notes, packing list, birthday planner, recipe book, medical record, pet care, home inventory, emergency plan, school year, moving house and more.
+- **Templates, about 50 to start:** house manual, babysitter notes, packing list, birthday planner, recipe book, medical record, pet care, home inventory, emergency plan, school year, moving house and more.
 - **Templates that do work**, marked LIVE: the weekly meal plan writes the shopping list; the chore wheel rotates jobs and counts stars; the time capsule seals letters until a date.
+- **Keepsakes** (added 11 Nov, after your comment on the time capsule): Open when… letters that open at a moment instead of a date; the birthday interview, the same ten questions every year; Things they said, with the age added by itself; Same spot, every year, a photo lined up with last year's; Grandma's stories, one spoken answer a week; the good things jar, opened on New Year's Eve; the doorframe, for height marks.
+- **Fair and fun** (added 11 Nov, after your comment on the chore wheel): Whose turn?, which remembers who chose last; the piggy bank, pocket money in three jars with interest from the parents; secret missions, one small kindness a week; the Saturday jar, shaken for something to do; Sleeps until…, a paper-chain countdown; Where is it?, a list of where things were put.
 
 ## Library
 
@@ -73,6 +75,25 @@ The bottom bar has the same shape as Journey's: **Home · People · + · Activit
 - An event gathers who is coming, a checklist, a budget and an album.
 - **Goals** with rings: a money goal reads a sheet, a challenge reads Journey, others are ticked by hand.
 - Apple, Google and school calendars can be laid over the family's.
+
+## Jot: adding without opening the app
+
+Added on 11 Nov, after your comment that every app makes you open it, find the note, edit and save.
+
+**One line that takes anything.** The same line appears in several places. Whatever is typed or said into it is read the way "Type it" reads it and filed: something to buy joins the list, a day or a time makes a reminder, a name hands it to that person, anything else becomes a note. Something that looks like a code or a password is held back until you say whether it belongs in the Vault. Every line can be undone or moved from where it was jotted.
+
+| Way in | iPhone | Android |
+|---|---|---|
+| **A note pinned in notifications** | A notification with a line to type in when pressed and held. Apple doesn't allow a permanent notification, so it returns after each add and every morning. | Stays at the top of the shade with the line always showing. It can be swiped away since Android 14, and comes straight back. |
+| **Widgets** | One-tap chips for the things you add most, and lists you tick, right on the Home Screen and Lock Screen. | The same |
+| **Typing from a widget** | Neither platform allows typing inside a widget. The line opens the app straight onto a bare bar with the keyboard up. | The line opens a small bar floating over the Home Screen; the app itself never shows. |
+| **A list in use** | A Live Activity on the Lock Screen with ticks, for up to 8 hours | Part of the pinned note |
+| **Voice** | Siri, or hold any mic. One sentence can hold several things. | Hold any mic |
+| **A button** | Action Button or Back Tap | A quick-settings tile, or a long press on the icon |
+| **Share** | From any app's share button | The same |
+| **Email** | Forward a booking, a bill or a school letter to the circle's own address | The same |
+
+What I believe is unusual here is the combination: one line, in every one of those places, that sorts shopping from reminders from notes from secrets, and hands a job to another person. I have not surveyed every app, so treat "nobody else has this" as a goal, not a finding.
 
 ## Money
 
@@ -117,6 +138,8 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 | 7 | The name on the screens is Porchlight, with a switch to try others | You asked for a better name. See [The name](03-name.md). | Yes: one setting |
 | 8 | The same account, look and stack as Journey | You asked for this | No, and it shouldn't be |
 | 9 | Euros and a family in Slovenia in the examples | Made-up people need a currency and a place | Yes |
+| 10 | Jot is shown with each phone's real limits | An iPhone can't keep a notification for ever or take typing in a widget; an Android phone can do more. The screens show what each can really do, and say so. | The limits are Apple's and Google's |
+| 11 | The three new groups sit at the end of the screens for now | So the numbers of the screens you have already reviewed don't move. They go into their proper places once you've seen them. | Yes |
 
 ## Questions for you
 
@@ -125,6 +148,8 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 3. **How private is private?** Call 4 above. If you want the service unable to read notes and photos too, some features have to go or move onto the phone.
 4. **Will it cost money?** Storing a family's full-size photos and videos has a real monthly cost. A free amount with a paid family plan is the usual answer.
 5. **Faces.** Grouping photos by who is in them is what makes "every photo of Mia" magic. It is also sensitive, most of all with children. On the phone only, off by default, or not at all?
+6. **Forwarding an email in.** It needs a service that receives mail for the app, which Journey doesn't have. Worth it for the first version, or later?
+7. **Which keepsakes and perks first?** Thirteen are drawn. They are templates, so they can arrive a few at a time. Tell me your favourites.
 
 ## A suggested order
 
@@ -132,7 +157,7 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 |---|---|---|
 | 1 | Sign-in shared with Journey, circles, roles, the audience chip | Everything else stands on it |
 | 2 | Library: the wall, backup, moments, albums, sharing | It is why people open the app every day |
-| 3 | Plan: calendar, reminders, lists | The second daily habit |
+| 3 | Plan: calendar, reminders, lists, and Jot (the pinned note and the widgets) | The second daily habit, and Jot is what makes it effortless |
 | 4 | Notes: spaces, pages, checklists, the first ten templates | |
 | 5 | Money: bills, then sheets | Sheets are the largest single piece |
 | 6 | Vault | Needs a security review before anyone trusts it with real passwords |

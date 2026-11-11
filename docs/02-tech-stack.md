@@ -79,6 +79,16 @@ Journey is a feed of entries. This app has six kinds of thing, live editing and 
 | **Moments** | Group by time and place across people in a circle, on the server | Medium |
 | **Text inside scans** | Read on the phone with the system's own text recognition (Apple Vision, Google ML Kit), so a scan is searchable without sending it anywhere to be read | Medium |
 | **"Type it"** | A date-and-time parser plus a few patterns. No AI service needed for the first version. | Small |
+| **Jot: the pinned note** | A notification with a text-reply action on both platforms. On Android it is marked ongoing and re-posted if swiped away. Reading the reply and filing it while the app stays closed needs a little native code on each side. | Medium. Expo's notification library has text-input actions; whether it can handle the reply with the app closed is not checked yet. |
+| **Jot: widgets** | Native code on each platform (WidgetKit on iPhone, app widgets on Android), sharing the list data with the app. Buttons and ticks only: neither platform lets a widget take typing. | Medium to hard. This is outside what Expo does by itself; it needs native targets added to the build. |
+| **Jot: a list on the Lock Screen** | A Live Activity on iPhone, which Apple limits to 8 hours | Medium, native |
+| **Jot: voice** | The phone's own speech recognition, then the same parser, splitting on "and" and commas | Medium |
+| **Jot: share from other apps** | A share extension on iPhone and a share target on Android, each with its own small screen | Medium, native |
+| **Jot: forwarding an email** | A service that receives mail and hands it to the API. Journey has none; not chosen. | Medium, and a new service to pay for |
+| **Noticing a code** | Patterns on the phone ("code", "PIN", "password", runs of digits). When it matches, nothing is sent until the person chooses. | Small |
+| **The Saturday jar's weather** | A forecast service, or simply asking "is it raining?" | Small. A forecast is a new service; the question is free. |
+| **Same spot, every year** | The camera with last year's photo drawn faintly on top | Small |
+| **Grandma's stories** | A web page behind a link that records a voice answer, like Journey's share pages, plus speech-to-text on the server | Medium. Speech-to-text is a new service. |
 | **Long videos** | Kept as files in R2 and played from there. Mux charges by the stored minute, which suits Journey's 60-second clips and not a family's hours of video. | Medium, and a cost decision |
 | **Faces** | Not in the first version. If wanted: on the phone only. | Hard, and sensitive |
 | **Filling passwords into other apps** | Needs native code on each platform | Later |
@@ -109,7 +119,13 @@ So a family plan has to exist. A common shape: a free amount (say 5 to 10 GB, en
 - Journey's stack, services and prices: read from Journey's own tech doc, dated 9 Nov 2026.
 - The cost of a second Supabase project: sources say about US$10 a month for a small machine, and disagree on whether the included credit applies per project or per organisation. Not confirmed on Supabase's own pricing page.
 - Not checked: any library version, the formula engine's licence, Apple's and Google's current rules for apps that store passwords.
+- For Jot (11 Nov): Apple's WidgetKit guide lists buttons and toggles as the controls a widget can have, and I found no report of text fields in widgets in iOS 27. Apple documents a text-reply action for notifications, and says a Live Activity runs for at most 8 hours and stays on the Lock Screen for up to 12. Android 14 made pinned ("ongoing") notifications dismissible, and posting one again brings it back. I read these in documentation and developer write-ups; none of it has been tried on a phone.
 
 ## Sources
 
 - Supabase pricing, as summarised by third parties on 11 Nov 2026: <https://makerkit.dev/blog/saas/supabase-pricing>, <https://www.costbench.com/software/database-as-service/supabase/>
+- Widgets take buttons and toggles: <https://developer.apple.com/tutorials/data/documentation/widgetkit/adding-interactivity-to-widgets-and-live-activities.md>
+- iOS 27 widget changes: <https://9to5mac.com/2026/06/08/ios-27-adds-extra-large-widgets-for-your-extra-large-needs/>
+- A text-reply action on a notification: <https://developer.apple.com/documentation/usernotifications/untextinputnotificationaction.md>
+- How long a Live Activity lasts: <https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities.md>, <https://developer.apple.com/forums/thread/797676>
+- Android 14 and pinned notifications: <https://coderapp.vercel.app/answer/77668315>, <https://groups.google.com/g/automate-user/c/sNZabwadqbU>

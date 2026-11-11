@@ -64,6 +64,17 @@ Today a private journey is shared by inviting people one at a time. With a circl
 
 Journey already sends a weekly digest. With both apps, there is one message: the household's week, then the journeys.
 
+### 10. Goodnight from far away
+
+Added on 11 Nov. When someone is on a journey and has children in a circle, Journey offers one small thing at the children's bedtime: record a goodnight. The clip goes to the circle only and is never part of the journey other people see. At home it is waiting on Today.
+
+### Smaller ties in the new keepsakes
+
+- An **Open when…** letter marked "when I'm away" comes forward by itself while its writer is on a journey.
+- **Grandma's stories** can become a journey told in parts, with her voice.
+- A slip can be dropped into **the good things jar** from Journey's composer.
+- A **secret mission** can be completed from the road.
+
 ## What they must never share
 
 | Rule | Why |
@@ -86,6 +97,7 @@ Journey already sends a weekly digest. With both apps, there is one message: the
 | Goals and challenges | Tell this app when a check-in is posted | Link a goal to a challenge | Small |
 | Circle as audience | A new visibility, "a circle", checked against this app | Answer "is this person in that circle?" | Medium, and it touches Journey's privacy rules, so it needs care and tests |
 | One summary | Let the digest be composed with this app's part | Supply the household's week | Small |
+| Goodnight from far away | At the circle's bedtime, offer to record a clip that is sent here instead of posted | Show it on Today; a reply clip | Small to medium |
 
 One detail matters for "the originals". Journey deliberately does not keep the file the phone sent: it makes clean, smaller copies and discards the rest. So originals come from this app's own backup of the phone, matched by a fingerprint the phone computes when it posts. A photo that was never backed up here is kept at Journey's largest size, and the screen says how many matched ("201 of 214").
 

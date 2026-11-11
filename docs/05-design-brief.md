@@ -1,6 +1,6 @@
 # Design cues
 
-> **Status:** first draft, 75 screens in 13 groups. · **Updated:** 11 Nov 2026
+> **Status:** first draft, 97 screens in 16 groups. · **Updated:** 11 Nov 2026
 >
 > The design is Journey's Design 2.1. This page says what carries over unchanged and what is new here. Journey's own brief (`docs/04-design-brief.md` in the Journey repo) is the longer read.
 
@@ -31,6 +31,8 @@
 | **The Vault** | The same look as the rest, on purpose: no black-and-green "security" theme. It is marked by the lock, by saying when it will lock, and by plain sentences about what the service can't see. |
 | **Live things** | A block that comes from another place (a bill in a page, a total in a note) has a soft grey box and a small icon of where it lives. |
 | **Journey** | Journey is always shown by its route mark on a gold square. Anything that came from Journey, or goes there, carries it. |
+| **Outside the app** | Widgets, the pinned note and the share sheet use the same line, the same chips and the same gold as the app, on the phone's own dark surfaces. An Android screen is drawn with a small round camera where the iPhone has its island. |
+| **Sealed things** | A letter, a capsule or a jar that can't be read yet shows a lock and says when or how it opens. Nothing sealed is shown blurred or teased. |
 
 ## Writing
 
@@ -65,10 +67,15 @@ Nora Lind is the person using the app, the same Nora as in Journey's screens. Th
 | 7 | Plan | Plan · Month · An event · Type it · Reminders · Goals · A goal |
 | 8 | Money | Money · A bill · Scan a bill · Sheets · A sheet · A row, as a card · A formula you can read · Loan planner · Splitting with friends |
 | 9 | Vault | Locked · The Vault · A password · Share a secret · If something happens · Your Vault key |
-| 10 | With Journey | One account, two apps · In Journey: keep it · What to keep · A journey, kept as a book · Tell it as a journey · Before it leaves home · A trip, start to finish · Journey, at home |
+| 10 | With Journey | One account, two apps · In Journey: keep it · What to keep · A journey, kept as a book · Tell it as a journey · Before it leaves home · A trip, start to finish · Journey, at home · Goodnight from far away |
 | 11 | Activity | Activity · Notifications · The Sunday summary |
 | 12 | You | You · Storage and backup · Privacy and security · Export and leaving |
 | 13 | States | Loading · Offline · A brand-new circle |
+| 14 | Jot | Widgets on the Home Screen · The jot bar · A note pinned in notifications · It files itself · On the iPhone Lock Screen · Say it all at once · Share into it · Every way in |
+| 15 | Keepsakes | Open when… · The birthday interview · Things they said · Same spot, every year · Grandma's stories · The good things jar · The doorframe |
+| 16 | Fair and fun | Whose turn? · The piggy bank · Secret missions · The Saturday jar · Sleeps until… · Where is it? |
+
+Groups 14 to 16 were added on 11 Nov after the owner's first comments. They sit at the end so the numbers of the screens already reviewed don't move; Jot belongs after Home, and the other two with Notes.
 
 ## Not designed yet
 
