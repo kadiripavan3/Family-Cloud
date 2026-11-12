@@ -17,6 +17,9 @@ export const common = {
   goHome: 'Go to Home',
   showMore: 'Show more',
   keepIt: 'Keep it',
+  done: 'Done',
+  cancel: 'Cancel',
+  ok: 'OK',
   copy: 'Copy',
   copied: 'Copied',
   /** On a row for something that is not built yet. */
@@ -24,6 +27,10 @@ export const common = {
 
   /** Facts that stand side by side on one line: "Wed 15:30 · Dentist". Parts that are empty are left out. */
   join: (parts: readonly (string | null | undefined | false)[]) => parts.filter(Boolean).join(' · '),
+  /** A few lighter words after a bold line, in the same line: "Add this week · school, bins, dentist". */
+  after: (rest: string) => ` · ${rest}`,
+  /** 3180 becomes "3,180". */
+  number: (count: number) => count.toLocaleString('en-US'),
   /** 1200 becomes "1.2k". */
   compact: (count: number) => compact(count),
 

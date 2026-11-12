@@ -11,4 +11,16 @@ export const search = {
     money: { title: 'Search money', sub: 'Bills · sheets · who owes who' },
     vault: { title: 'Search the Vault', sub: 'Logins · cards · IDs · codes' },
   },
+
+  /** The box you type in. */
+  field: (circle: string) => `Search ${circle}`,
+  clear: 'Clear',
+  cancel: 'Cancel',
+  /** The first of the chips that narrow a search to one place. */
+  everything: 'Everything',
+  /** What was found inside a thing, shown under its title. */
+  found: (snippet: string) => `“${snippet.trim()}”`,
+
+  start: { title: 'One search across every place', body: 'A title, or words inside a page or a list. Only what you can see is searched.' },
+  none: { title: (words: string) => `Nothing found for “${words}”`, body: "Try fewer words. Things that aren't shared with you don't show up." },
 } as const;

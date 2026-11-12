@@ -1,11 +1,11 @@
 import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/tabs';
 import { Bell, House, Plus, Users } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useGetMe } from '@/api/generated/homeport';
+import { PlusSheet } from '@/features/today/PlusSheet';
 import { radius, useTheme } from '@/theme';
 import { Avatar } from '@/ui/Avatar';
 import { Tap } from '@/ui/Motion';
@@ -24,8 +24,8 @@ const ICONS: Record<string, (color: string) => ReactNode> = {
  */
 export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabBarProps) {
   const { colors, scheme, shadow } = useTheme();
-  const router = useRouter();
   const profile = useGetMe().data?.profile;
+  const [adding, setAdding] = useState(false);
 
   const tab = (routeIndex: number) => {
     const route = state.routes[routeIndex];
@@ -75,7 +75,7 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
           <Tap
             accessibilityRole="button"
             accessibilityLabel={words.common.add}
-            onPress={() => router.push('/plus')}
+            onPress={() => setAdding(true)}
             scaleTo={0.9}
             style={{ width: 54, height: 54, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
             <Plus size={26} color={colors.onAccent} strokeWidth={2.4} />
@@ -84,6 +84,8 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
           {tab(3)}
         </View>
       </View>
+      {/* What the + button opens: a sheet over the tab it was pressed on. */}
+      <PlusSheet visible={adding} onClose={() => setAdding(false)} />
     </View>
   );
 }

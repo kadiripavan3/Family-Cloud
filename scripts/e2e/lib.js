@@ -26,7 +26,8 @@ const CODE = '123456';
  *   second(name)         a second, new person on a second phone, signed in: { page, T, R, L, shot, signOut,
  *                        close, name, email, token }. For the steps where sharing matters: what one shares,
  *                        the other must or must not find
- *   webPage, opened      a web page the API serves: by its address, or as the tab a tap opens
+ *   webPage, opened      a web page the API serves: by its address (`webPage(url, expected, name, act?)`), or as
+ *                        the tab a tap opens
  *   api(token, …)        a call to the API, as someone else or as nobody
  *   signUp(name)         another person, made through the API: signed in there, with a profile
  *   errors               what went wrong on the way; `expectNotFound = true` while a "not there" is meant
@@ -140,10 +141,14 @@ async function start(out, scheme) {
     console.log('shot', name, web.url());
   };
   const signedOut = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: SHARPNESS, colorScheme: scheme });
-  /** A web page by its address, as someone who is not signed in. */
-  ctx.webPage = async (url, expected, name) => {
+  /**
+   * A web page by its address, as someone who is not signed in. `act(web)` does something on it first
+   * (types the code of a guest pass and presses Open) before `expected` is looked for.
+   */
+  ctx.webPage = async (url, expected, name, act) => {
     const web = await signedOut.newPage();
     await web.goto(url);
+    if (act) await act(web);
     await webShot(web, expected, name);
     await web.close();
   };

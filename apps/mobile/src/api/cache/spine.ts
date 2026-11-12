@@ -89,10 +89,18 @@ export const spineCache = (tools: CacheTools) => {
       return Promise.all([stale(`/v1/circles/${circle.id}/`), staleOnly('/v1/circles', '/v1/me/overview')]);
     },
 
-    /** Someone was added to a circle, or what the circle keeps about one of its people changed: the API sent the person back. */
+    /** Someone was added to a circle (invited, or a child or a pet without a phone): the API sent the person back, and they stand in the circle at once. */
+    memberAdded: (member: MemberResponse) => {
+      client.setQueryData<CircleResponse[]>(getGetCirclesQueryKey(), (circles) =>
+        circles?.map((circle) => (circle.id === member.circleId ? { ...circle, members: [...circle.members.filter((old) => old.id !== member.id), member] } : circle)),
+      );
+      return Promise.all([staleOnly('/v1/circles'), stale('/v1/things/')]);
+    },
+
+    /** What a circle keeps about one of its people changed (their role, birthday, facts, what they may see): the API sent the person back. */
     memberSaved: (member: MemberResponse) => {
       put((old) => 'circleId' in old && 'tint' in old, member);
-      return Promise.all([staleOnly('/v1/circles'), stale(`/v1/members/${member.id}`)]);
+      return Promise.all([staleOnly('/v1/circles'), stale(`/v1/members/${member.id}`, '/v1/things/')]);
     },
 
     /** Someone was taken out of a circle (or left it): the circles, and every list of that circle, are asked for again. */
@@ -111,6 +119,9 @@ export const spineCache = (tools: CacheTools) => {
       client.setQueryData(getGetPageQueryKey(page.id), page);
       return tools.thingChanged(page);
     },
+
+    /** One line of a list was ticked, added, changed or removed: the list is asked for again (its counts changed), and what lists show of it. */
+    checklistLineChanged: (list: { id: string; circleId: string }) => stale(`/v1/checklists/${list.id}`, `/v1/circles/${list.circleId}/`, '/v1/things/', '/v1/members/'),
 
     /** A list changed (a line ticked, added or removed, its name): the API sent the list back. Only what lists show of it is asked for again. */
     checklistSaved: (list: ChecklistResponse) => {

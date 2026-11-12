@@ -43,8 +43,6 @@ function SignedInApp() {
     <OfflineStrip>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        {/* What the + button opens is a sheet on an iPhone, over the tab it was opened from. */}
-        <Stack.Screen name="plus" options={{ presentation: 'modal' }} />
       </Stack>
     </OfflineStrip>
   );

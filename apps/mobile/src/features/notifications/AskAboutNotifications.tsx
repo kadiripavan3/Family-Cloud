@@ -15,10 +15,10 @@ export type Moment = [method: string, path: RegExp];
 
 /**
  * The moments when the question makes sense: the person has just done something that others will answer, so
- * there is something worth hearing about. None exists yet. The first ones arrive with circles (joining one,
- * asking someone to do a job): add the API call here when its screen is built.
+ * there is something worth hearing about. The first is joining a circle by its link. The next arrive with
+ * their screens (asking someone to do a job): add the API call here when its screen is built.
  */
-const GOOD_MOMENTS: Moment[] = [];
+const GOOD_MOMENTS: Moment[] = [['PUT', /^\/v1\/join\/[^/]+$/]];
 
 /** How long after the moment the question comes up, so the screen first shows what was just done. */
 const A_MOMENT_MS = 900;
@@ -29,7 +29,7 @@ const A_MOMENT_MS = 900;
  * something to say (`after`; the app's own list unless a test gives another). Where they can't work (a
  * browser, Expo Go) it does nothing.
  *
- * Sits in the layout of the signed-in app, above every screen.
+ * Sits in the root layout for everyone who is signed in with a profile, above every screen.
  */
 export function AskAboutNotifications({ after = GOOD_MOMENTS }: { after?: readonly Moment[] }) {
   const [visible, setVisible] = useState(false);

@@ -7,7 +7,7 @@ import { useEffect } from 'react';
  */
 export const paged = {
   initialPageParam: undefined as string | undefined,
-  getNextPageParam: (last: { nextCursor: string | null }) => last.nextCursor ?? undefined,
+  getNextPageParam: (last: { nextCursor?: string | null }) => last.nextCursor ?? undefined,
 };
 
 /**
@@ -17,11 +17,11 @@ export const paged = {
  * the next page was on its way arrives a second time. It is shown where it was first, so a list never has
  * the same row (and the same key) twice.
  */
-export function rows<T>(data: InfiniteData<{ items: T[] }> | undefined): T[] | undefined {
+export function rows<T>(data: InfiniteData<{ items?: T[] }, unknown> | undefined): T[] | undefined {
   if (!data) return undefined;
   const seen = new Set<unknown>();
   return data.pages
-    .flatMap((page) => page.items)
+    .flatMap((page) => page.items ?? [])
     .filter((row) => {
       const id = typeof row === 'object' && row !== null ? (row as { id?: unknown }).id : undefined;
       if (id === undefined) return true;

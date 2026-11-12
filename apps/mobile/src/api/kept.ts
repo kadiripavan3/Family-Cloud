@@ -24,11 +24,12 @@ const WRITE_AFTER_MS = 3000;
 /** Always kept, whatever else was read since: without these (who you are, and your circles) the app can't open. */
 const NEEDED = ['/v1/me', '/v1/circles'];
 /**
- * Never kept, by how the address starts. Nothing yet. What belongs here as it is built: searches, addresses
- * that hold a one-time invitation, and everything of the Vault, which must not be written to the phone in
- * the clear.
+ * Never kept, by how the address starts: addresses that hold an invitation. What belongs here as it is
+ * built: everything of the Vault, which must not be written to the phone in the clear.
  */
-const NOT_KEPT: string[] = [];
+const NOT_KEPT: string[] = ['/v1/join/'];
+/** And by how it ends: what someone searched for is nobody's business once the app is closed. */
+const NOT_KEPT_ENDING: string[] = ['/search'];
 
 type KeptQuery = { key: readonly unknown[]; data: unknown; at: number };
 type Kept = { owner: string; queries: KeptQuery[] };
@@ -40,7 +41,7 @@ function addressOf(query: Pick<Query, 'queryKey'>): string | null {
 }
 
 function mayKeep(address: string): boolean {
-  return !NOT_KEPT.some((start) => address.startsWith(start));
+  return !NOT_KEPT.some((start) => address.startsWith(start)) && !NOT_KEPT_ENDING.some((end) => address.endsWith(end));
 }
 
 /** What to write: the needed answers first, then the newest, as text, within the limits. */

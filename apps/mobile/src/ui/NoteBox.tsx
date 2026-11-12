@@ -13,14 +13,18 @@ type Props = {
   children: ReactNode;
   /** "warn" colours the icon for something that needs attention; the box itself stays quiet. */
   tone?: 'plain' | 'warn';
+  /** On the accent's soft ground instead of grey: for something good to know, not a warning. */
+  soft?: boolean;
+  /** Shown at the right, such as an arrow. */
+  trailing?: ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
 /** A quiet box that explains something: an icon, an optional bold line and a sentence or two. */
-export function NoteBox({ icon, title, children, tone = 'plain', style }: Props) {
+export function NoteBox({ icon, title, children, tone = 'plain', soft, trailing, style }: Props) {
   const { colors } = useTheme();
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: radius.photo, backgroundColor: colors.fill }, style]}>
+    <View style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: radius.photo, backgroundColor: soft ? colors.accentSoft : colors.fill }, style]}>
       <View style={{ marginTop: 1 }}>{icon(tone === 'warn' ? colors.warn : colors.text)}</View>
       <View style={{ flex: 1 }}>
         {title ? (
@@ -30,6 +34,7 @@ export function NoteBox({ icon, title, children, tone = 'plain', style }: Props)
         ) : null}
         <Txt variant="note">{children}</Txt>
       </View>
+      {trailing}
     </View>
   );
 }
