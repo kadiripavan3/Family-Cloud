@@ -22,10 +22,11 @@ const SAYS_SO_ITSELF: RegExp[] = [];
 
 /**
  * Screens whose top is a photo or the dark stage, with a light status bar. There the strip is dark as well,
- * so the clock and the battery above it stay readable. Jot's screens on a photo: the bar, what was filed,
- * voice, and the pictures of the widgets, the pinned note and the Lock Screen.
+ * so the clock and the battery above it stay readable. Jot's screens on a photo (the bar, what was filed,
+ * voice, and the pictures of the widgets, the pinned note and the Lock Screen), and a photo or a video in the
+ * Library's viewer.
  */
-const DARK_ON_TOP: RegExp[] = [/^\/jot(\/(filed|voice|pinned|widgets|lock))?$/];
+const DARK_ON_TOP: RegExp[] = [/^\/jot(\/(filed|voice|pinned|widgets|lock))?$/, /^\/(photo|video)\/[^/]+$/];
 
 type Props = {
   children: ReactNode;

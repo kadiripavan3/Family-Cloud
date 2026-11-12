@@ -19,6 +19,12 @@ export const dates = {
   },
   /** "April 2026": the month a calendar shows. */
   month: (month: number, year: number) => `${MONTHS[month]} ${year}`,
+  /** "November": a month on its own, where the year stands beside it. */
+  monthName: (month: number) => MONTHS[month]!,
+  /** "Nov 2028": a month and its year, short. */
+  monthShort: (month: number, year: number) => `${MONTHS[month]!.slice(0, 3)} ${year}`,
+  /** "Tue 24 Sep 2019": a day that was written without its year, with it. */
+  withYear: (day: string, year: number) => `${day} ${year}`,
 
   // The day picker
   /** One letter for each day of the week, Monday first. */

@@ -4,7 +4,6 @@ import { useGetOverview } from '@/api/generated/homeport';
 import Leaving from '@/app/(app)/settings/leaving';
 import SettingsIndex from '@/app/(app)/settings/index';
 import PrivacyAndSecurity from '@/app/(app)/settings/security';
-import Storage from '@/app/(app)/settings/storage';
 import { keep } from '@/lib/keep';
 import { forgetKeptChoices } from '@/lib/useKept';
 import { onPhone } from '@/test/phone';
@@ -100,13 +99,6 @@ describe('the pages around it', () => {
     expect(mockRouter.push).toHaveBeenLastCalledWith('/settings/notifications');
     await user.press(screen.getByRole('button', { name: 'Appearance. Dark' }));
     expect(mockRouter.push).toHaveBeenLastCalledWith('/settings/appearance');
-  });
-
-  it('"Storage and backup" says it is on its way, with a way back', async () => {
-    await render(onPhone(<Storage />));
-    expect(screen.getByRole('header', { name: 'Storage and backup' })).toBeOnTheScreen();
-    expect(screen.getByText("This part of Homeport isn't built yet. It's on its way.")).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
   });
 
   it('"Export and leaving" says what arrives later, logs out with one tap, and asks on a page of its own before deleting the account', async () => {
