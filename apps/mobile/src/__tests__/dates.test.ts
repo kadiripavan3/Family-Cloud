@@ -1,4 +1,4 @@
-import { addDays, daysBetween, formatDay, formatDayLong, fromISODate, timeAgo, today, toISODate } from '@/lib/dates';
+import { addDays, ageOn, atTime, daysBetween, formatComingDay, formatDay, formatDayLong, formatSpan, formatTime, formatWeekday, fromISODate, nextBirthday, timeAgo, today, toISODate } from '@/lib/dates';
 
 describe('dates', () => {
   it('keeps a day the same through text and back', () => {
@@ -33,5 +33,44 @@ describe('dates', () => {
     expect(formatDayLong(today())).toBe('Today');
     expect(formatDayLong(addDays(today(), -1))).toBe('Yesterday');
     expect(formatDayLong('2019-04-01')).toBe('1 April 2019');
+  });
+});
+
+describe('days and times that are coming up', () => {
+  // Wednesday 11 November 2026: "today" in the drawings.
+  const from = '2026-11-11';
+
+  it('says today and tomorrow in those words, and any other day with its weekday', () => {
+    expect(formatComingDay('2026-11-11', from)).toBe('Today');
+    expect(formatComingDay('2026-11-12', from)).toBe('Tomorrow');
+    expect(formatComingDay('2026-12-04', from)).toBe('Fri 4 Dec');
+    expect(formatWeekday('2026-12-05')).toBe('Sat 5 Dec');
+  });
+
+  it("writes a time on this phone's clock, and a stretch of time in one line", () => {
+    expect(formatTime(new Date(2026, 10, 11, 9, 5))).toBe('09:05');
+    const [start, end] = [new Date(2026, 10, 11, 18, 0).toISOString(), new Date(2026, 10, 11, 23, 30).toISOString()];
+    expect(formatSpan(start, end, from)).toBe('Today, 18:00 to 23:30');
+    expect(formatSpan(start, new Date(2026, 10, 12, 10, 0).toISOString(), from)).toBe('Today 18:00 to Tomorrow 10:00');
+    expect(formatSpan(new Date(2026, 11, 5, 14, 0).toISOString(), new Date(2026, 11, 5, 18, 0).toISOString(), from)).toBe('Sat 5 Dec, 14:00 to 18:00');
+  });
+
+  it('reads a time that was typed, or says it is not one', () => {
+    expect(atTime('2026-11-11', '18:00')).toEqual(new Date(2026, 10, 11, 18, 0));
+    expect(atTime('2026-11-11', ' 7.30 ')).toEqual(new Date(2026, 10, 11, 7, 30));
+    for (const wrong of ['', 'late', '24:00', '12:60', '1800', '6pm']) expect(atTime('2026-11-11', wrong)).toBeNull();
+  });
+
+  it('knows how old someone is, before and after their birthday', () => {
+    expect(ageOn('2016-12-04', '2026-11-11')).toBe(9);
+    expect(ageOn('2016-12-04', '2026-12-04')).toBe(10);
+    expect(ageOn('2016-12-04', '2026-12-03')).toBe(9);
+    expect(ageOn('2020-03-14', '2026-11-11')).toBe(6);
+  });
+
+  it('finds the next birthday: later this year, today, or next year', () => {
+    expect(nextBirthday('2016-12-04', from)).toEqual({ day: '2026-12-04', inDays: 23 });
+    expect(nextBirthday('2016-11-11', from)).toEqual({ day: '2026-11-11', inDays: 0 });
+    expect(nextBirthday('2020-03-14', from)).toEqual({ day: '2027-03-14', inDays: 123 });
   });
 });

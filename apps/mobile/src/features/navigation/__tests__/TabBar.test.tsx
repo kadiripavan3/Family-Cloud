@@ -6,10 +6,14 @@ import { loaded, me, nora } from '@/test/samples';
 
 import { TabBar } from '../TabBar';
 
-const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('@/features/today/PlusSheet', () => ({ PlusSheet: ({ visible }: { visible: boolean }) => mockSheet(visible) }));
 jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn() }));
 jest.mock('expo-blur', () => ({ BlurView: () => null }));
+
+function mockSheet(visible: boolean) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return visible ? <Text>the sheet of things to add</Text> : null;
+}
 
 const TABS = [
   ['index', 'Home'],
@@ -52,8 +56,11 @@ describe('the tab bar', () => {
 
   it('opens the ways to add something from the + button, whichever tab is open', async () => {
     await render(bar(2));
+    expect(screen.queryByText('the sheet of things to add')).toBeNull();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Add something' }));
-    expect(mockPush).toHaveBeenCalledWith('/plus');
+    // A sheet over the tab that is open: the tab underneath stays where it was.
+    expect(screen.getByText('the sheet of things to add')).toBeOnTheScreen();
+    expect(navigateToTab).not.toHaveBeenCalled();
   });
 
   it("draws the You tab as the person's own picture: their photo, or their initials until they have one", async () => {

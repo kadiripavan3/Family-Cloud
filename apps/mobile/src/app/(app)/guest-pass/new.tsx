@@ -125,15 +125,16 @@ export default function NewGuestPass() {
             {things.map((thing, index) => {
               const on = chosen.includes(thing.id ?? '');
               return (
-                <View key={thing.id} accessibilityRole="checkbox" accessibilityLabel={says.pick(thing.title ?? '', on)} aria-checked={on}>
-                  <ThingRow
-                    look="grouped"
-                    first={index === 0}
-                    thing={thing}
-                    onPress={() => toggle(thing.id ?? '')}
-                    trailing={on ? <CircleCheck size={22} color={colors.ok} strokeWidth={2.4} /> : <View style={{ width: 20, height: 20, margin: 1, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.lineStrong }} />}
-                  />
-                </View>
+                <ThingRow
+                  key={thing.id}
+                  look="grouped"
+                  first={index === 0}
+                  thing={thing}
+                  picked={on}
+                  spoken={says.pick(thing.title ?? '', on)}
+                  onPress={() => toggle(thing.id ?? '')}
+                  trailing={on ? <CircleCheck size={22} color={colors.ok} strokeWidth={2.4} /> : <View style={{ width: 20, height: 20, margin: 1, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.lineStrong }} />}
+                />
               );
             })}
           </RowGroup>

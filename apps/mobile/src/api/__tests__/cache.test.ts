@@ -177,6 +177,42 @@ describe('circles and their people', () => {
     expect(stale(client, ['/v1/circles'])).toBe(true);
   });
 
+  it('a person who was added stands in their circle at once', async () => {
+    const client = newClient();
+    client.setQueryData(['/v1/circles'], [linds, soloCircle]);
+    const astrid = { ...alex, id: 'm-astrid', name: 'Astrid Lind', status: 'invited' as const };
+    await cacheFor(client).memberAdded(astrid);
+    const circles = client.getQueryData<(typeof linds)[]>(['/v1/circles']);
+    expect(circles?.[0]?.members.map((one) => one.id)).toEqual([...linds.members.map((one) => one.id), 'm-astrid']);
+    expect(circles?.[1]).toEqual(soloCircle);
+    // Adding the same person again (the answer came twice) doesn't list them twice.
+    await cacheFor(client).memberAdded(astrid);
+    expect(client.getQueryData<(typeof linds)[]>(['/v1/circles'])?.[0]?.members).toHaveLength(linds.members.length + 1);
+  });
+
+  it('a ticked line asks for its list again, and for what lists show of it', async () => {
+    const client = newClient();
+    const list = checklist();
+    client.setQueryData(['/v1/checklists/' + list.id], list);
+    client.setQueryData(['/v1/circles/c-linds/today'], {});
+    client.setQueryData(['/v1/pages/' + ID], page());
+    await cacheFor(client).checklistLineChanged(list);
+    expect(stale(client, ['/v1/checklists/' + list.id])).toBe(true);
+    expect(stale(client, ['/v1/circles/c-linds/today'])).toBe(true);
+    expect(stale(client, ['/v1/pages/' + ID])).toBe(false);
+  });
+
+  it('a guest pass that was given or ended asks for the passes again', async () => {
+    const client = newClient();
+    client.setQueryData(['/v1/circles/c-linds/guest-passes'], []);
+    client.setQueryData(['/v1/guest-passes/g-1'], {});
+    client.setQueryData(['/v1/circles/c-linds/today'], {});
+    await cacheFor(client).guestPassChanged('c-linds');
+    expect(stale(client, ['/v1/circles/c-linds/guest-passes'])).toBe(true);
+    expect(stale(client, ['/v1/guest-passes/g-1'])).toBe(true);
+    expect(stale(client, ['/v1/circles/c-linds/today'])).toBe(false);
+  });
+
   it('a person who was taken out is forgotten, and the circles are asked for again', async () => {
     const client = newClient();
     client.setQueryData(['/v1/circles'], [linds]);

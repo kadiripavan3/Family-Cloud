@@ -27,13 +27,20 @@ type Props = {
   trailing?: ReactNode;
   /** What pressing does, in place of opening the thing. */
   onPress?: () => void;
+  /**
+   * For a list to pick things from (what goes on a guest pass): the row is a box to tick, and this says
+   * whether it is ticked. Give `onPress` to tick it and `trailing` to draw the tick.
+   */
+  picked?: boolean;
+  /** What a screen reader says in place of the row's own title, kind and line. */
+  spoken?: string;
 };
 
 /**
  * A thing of any kind as a row: an icon by its kind, its title, a line on where it stands (`glance`), and
  * who sees it. Pressing opens the thing, whatever kind it is.
  */
-export function ThingRow({ thing, line, look = 'tile', first, trailing, onPress }: Props) {
+export function ThingRow({ thing, line, look = 'tile', first, trailing, onPress, picked, spoken }: Props) {
   const { colors } = useTheme();
   const open = useOpenThing();
   const kind = kindOf(thing.kind);
@@ -43,8 +50,11 @@ export function ThingRow({ thing, line, look = 'tile', first, trailing, onPress 
   const tile = look === 'tile';
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={words.things.row(title, kind.name, second)}
+      accessibilityRole={picked === undefined ? 'button' : 'checkbox'}
+      accessibilityLabel={spoken ?? words.things.row(title, kind.name, second)}
+      accessibilityState={picked === undefined ? undefined : { checked: picked }}
+      // Said this way, a browser hears whether it is ticked as well: the web takes no `accessibilityState`.
+      aria-checked={picked}
       onPress={onPress ?? (() => open(thing))}
       style={({ pressed }) => [
         { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? colors.fill : 'transparent' },

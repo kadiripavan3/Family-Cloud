@@ -1,25 +1,28 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { useGetMe } from '@/api/generated/homeport';
+import { useGetMe, useGetOverview } from '@/api/generated/homeport';
 import You from '@/app/(app)/(tabs)/you';
+import { keep } from '@/lib/keep';
+import { forgetKeptChoices } from '@/lib/useKept';
 import { onPhone } from '@/test/phone';
-import { loaded, me, nora } from '@/test/samples';
-import { setAppearance } from '@/theme/appearance';
+import { loaded, me, nora, pending } from '@/test/samples';
 
 const mockPush = jest.fn();
-const mockSignOut = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
-jest.mock('@/auth/session', () => ({ useSession: () => ({ status: 'signedIn', signOut: mockSignOut }) }));
-jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn() }));
-jest.mock('expo-secure-store', () => ({ setItemAsync: jest.fn(() => Promise.resolve()), getItemAsync: jest.fn(() => Promise.resolve(null)) }));
+jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetOverview: jest.fn() }));
+jest.mock('@/lib/keep', () => ({ keep: { get: jest.fn(() => Promise.resolve(null)), set: jest.fn(() => Promise.resolve()), remove: jest.fn(() => Promise.resolve()) } }));
 
 const who = jest.mocked(useGetMe) as unknown as jest.Mock;
+const overview = jest.mocked(useGetOverview) as unknown as jest.Mock;
+const GB = 1024 ** 3;
 
 describe('12.1 You', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    forgetKeptChoices();
+    jest.mocked(keep.get).mockResolvedValue(null);
     who.mockReturnValue(loaded(me()));
-    setAppearance('system');
+    overview.mockReturnValue(loaded({ circles: ['The Linds', 'Lisbon crew', 'Nora and Alex'], notes: 214, bytesKept: 48 * GB, phones: ['ios'] }));
   });
 
   it('shows who you are: the first name large, the whole name under it', async () => {
@@ -35,32 +38,69 @@ describe('12.1 You', () => {
     expect(screen.getAllByText('Biscuit')).toHaveLength(1);
   });
 
-  it('opens the notification settings and the appearance, and says which appearance is chosen', async () => {
-    setAppearance('dark');
+  it('counts your circles, your notes and what you keep', async () => {
     await render(onPhone(<You />));
-    const user = userEvent.setup();
-    await user.press(screen.getByRole('button', { name: 'Notifications' }));
-    expect(mockPush).toHaveBeenLastCalledWith('/settings/notifications');
-    await user.press(screen.getByRole('button', { name: 'Appearance. Dark' }));
-    expect(mockPush).toHaveBeenLastCalledWith('/settings/appearance');
+    expect(screen.getByLabelText('3 Circles')).toBeOnTheScreen();
+    expect(screen.getByLabelText('214 Notes')).toBeOnTheScreen();
+    expect(screen.getByLabelText('48 GB Kept')).toBeOnTheScreen();
   });
 
-  it('logs out with one tap, and asks on a page of its own before deleting the account', async () => {
+  it('shows a dash for a number it does not know yet, never a nought', async () => {
+    overview.mockReturnValue(pending());
     await render(onPhone(<You />));
-    const user = userEvent.setup();
-    await user.press(screen.getByRole('button', { name: 'Delete account' }));
-    expect(mockPush).toHaveBeenLastCalledWith('/settings/delete-account');
-    expect(mockSignOut).not.toHaveBeenCalled();
-    await user.press(screen.getByRole('button', { name: 'Log out' }));
-    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('– Circles')).toBeOnTheScreen();
+    expect(screen.getByLabelText('– Kept')).toBeOnTheScreen();
+    expect(screen.queryByText(/kept · backup/)).toBeNull();
   });
 
-  it('names the parts that are still to come, and does not pretend they open', async () => {
+  it('lists circles, storage, security, notifications and appearance, and the way out, each with where it leads', async () => {
     await render(onPhone(<You />));
-    for (const row of ['Your circles', 'Storage and backup', 'Privacy and security', 'Export and leaving']) {
-      expect(screen.getByText(row)).toBeOnTheScreen();
-      expect(screen.queryByRole('button', { name: new RegExp(`^${row}`) })).toBeNull();
-    }
-    expect(screen.getAllByText('Soon')).toHaveLength(4);
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'Your circles. The Linds, Lisbon crew, Nora and Alex' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/circles');
+    await user.press(screen.getByRole('button', { name: 'Storage and backup. 48 GB kept · backup arrives with the Library' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/settings/storage');
+    await user.press(screen.getByRole('button', { name: 'Privacy and security. Face ID on · Vault locks after 2 minutes' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/settings/security');
+    await user.press(screen.getAllByRole('button', { name: 'Notifications and appearance' }).pop()!);
+    expect(mockPush).toHaveBeenLastCalledWith('/settings');
+    await user.press(screen.getByRole('button', { name: 'Export and leaving' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/settings/leaving');
+  });
+
+  it('says what was chosen on this phone for security', async () => {
+    jest.mocked(keep.get).mockImplementation((key: string) => Promise.resolve(key === 'homeport.security.a-nora' ? JSON.stringify({ faceId: false, lockAfterMinutes: 1, hideDetails: true }) : null));
+    await render(onPhone(<You />));
+    expect(await screen.findByText('Face ID off · Vault locks after 1 minute')).toBeOnTheScreen();
+  });
+
+  it('the gear opens notifications and appearance', async () => {
+    await render(onPhone(<You />));
+    await userEvent.setup().press(screen.getAllByRole('button', { name: 'Notifications and appearance' })[0]!);
+    expect(mockPush).toHaveBeenLastCalledWith('/settings');
+  });
+
+  it('the swap button says that Journey opens from here once both apps are on the phone', async () => {
+    await render(onPhone(<You />));
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'Switch to Journey' }));
+    expect(screen.getByText("The other app, Journey, opens from here once both apps are on this phone. It's the same account: nothing to sign in to again.")).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Got it' }));
+    expect(screen.queryByRole('header', { name: 'Over to Journey' })).toBeNull();
+  });
+
+  it('draws the line about the one account, and says the link arrives later', async () => {
+    await render(onPhone(<You />));
+    expect(screen.getByText('One account with Journey')).toBeOnTheScreen();
+    expect(screen.getByText('The link between the two apps arrives later')).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'One account with Journey' }));
+    expect(screen.getByText('What you post in Journey shows up here, and the way over there, once the link between the two apps is built.')).toBeOnTheScreen();
+  });
+
+  it('writes what is kept in the unit that reads well', async () => {
+    overview.mockReturnValue(loaded({ circles: ['The Linds'], notes: 4, bytesKept: 203622, phones: [] }));
+    await render(onPhone(<You />));
+    expect(screen.getByLabelText('199 KB Kept')).toBeOnTheScreen();
+    expect(screen.getByLabelText('1 Circles')).toBeOnTheScreen();
   });
 });

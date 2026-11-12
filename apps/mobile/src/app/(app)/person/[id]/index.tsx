@@ -30,7 +30,7 @@ import { NoteBox } from '@/ui/NoteBox';
 import { RoundButton } from '@/ui/RoundButton';
 import { RowGroup } from '@/ui/Rows';
 import { Sheet, SheetRow } from '@/ui/Sheet';
-import { HeroSkeleton } from '@/ui/Skeleton';
+import { Sk } from '@/ui/Skeleton';
 import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
@@ -68,7 +68,18 @@ export default function Person() {
       ) : !data ? (
         <>
           <AppBar />
-          <HeroSkeleton photo={0} />
+          {/* Grey shapes in the layout that is coming: the picture and the name, a note, a few rows. */}
+          <View accessibilityLabel={words.states.loading} style={{ gap: 14, marginTop: 2, paddingHorizontal: layout.rowGutter }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <Sk width={84} height={84} radius="pill" />
+              <View style={{ flex: 1, gap: 10 }}>
+                <Sk width="55%" height={28} />
+                <Sk width="75%" height={13} />
+              </View>
+            </View>
+            <Sk height={62} radius="photo" />
+            <Sk height={150} radius="card" style={{ marginTop: 12 }} />
+          </View>
         </>
       ) : (
         <Loaded data={data} />

@@ -42,8 +42,21 @@ describe('the catalog of words', () => {
     expect(words.common.appName).toBe(brand.name);
     expect(words.states.unreachable).toBe("Can't reach Homeport right now. Check your connection and try again.");
     const all = Object.entries(sentences(en, ''));
-    // Journey is named where the two apps meet: the one account. Nowhere is this app called by its name.
-    expect(all.filter(([, text]) => /Journey/.test(text)).map(([path]) => path)).toEqual(['signIn.welcome.oneAccount.1.text', 'signIn.choose.body', 'signIn.choose.journeyAccount']);
+    // Journey is named where the two apps meet: the one account, bringing things in from it, and the way over
+    // to it. Nowhere is this app called by its name.
+    expect(all.filter(([, text]) => /Journey/.test(text)).map(([path]) => path)).toEqual([
+      'setup.bringIn.journey.label',
+      'signIn.welcome.oneAccount.1.text',
+      'signIn.choose.body',
+      'signIn.choose.journeyAccount',
+      'you.swap',
+      'you.swapSheet.title',
+      'you.swapSheet.body',
+      'you.account.title',
+      'you.account.later',
+      'you.rows.deleteAccountNote',
+      'you.security.signInNote',
+    ]);
     expect(all.filter(([, text]) => /\b(journeys?|entry|entries|followers?|following)\b/.test(text))).toEqual([]);
   });
 
