@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API (Java ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    # 21 is what the code is written for and what runs on a developer's computer; 25 is what runs in production.
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ["21", "25"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: homeport
+          POSTGRES_PASSWORD: homeport
+          POSTGRES_DB: homeport_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homeport -d homeport_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Build, test and check the formatting (also checks openapi.json is current)
+        run: ./mvnw -B -ntp verify
+
+  image:
+    name: API image (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The image the API is deployed as still builds
+        run: docker build -t homeport-api apps/api
+
+  mobile:
+    name: App (Expo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - name: Generated files are current (theme, icons and API client)
+        run: |
+          npm run theme
+          npm run icons
+          npm run api:generate
+          git diff --exit-code -- src/theme/tokens.ts src/ui/icons3d.ts assets/icons3d src/api/generated ../api/src/main/resources/static/share/tokens.css
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  walkthrough:
+    name: Walk-through (the app in a browser, against the API)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: homeport
+          POSTGRES_PASSWORD: homeport
+          POSTGRES_DB: homeport
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homeport -d homeport"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25" # the version the API runs on in production
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Start the API in local mode
+        working-directory: apps/api
+        run: |
+          ./mvnw -q -B -ntp -DskipTests package
+          nohup java -jar target/homeport-api-*.jar --spring.profiles.active=local > "$RUNNER_TEMP/api.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf localhost:8080/actuator/health | grep -q UP; then exit 0; fi
+            sleep 2
+          done
+          echo "The API did not start"; tail -50 "$RUNNER_TEMP/api.log"; exit 1
+      - name: Build the web version of the app
+        working-directory: apps/mobile
+        run: |
+          npm ci
+          CI=1 npx expo export -p web
+      - name: Walk through every screen, in light and in dark
+        run: |
+          npm install --prefix scripts/e2e
+          (cd scripts/e2e && npx playwright install --with-deps chromium)
+          node scripts/e2e/serve.js "$PWD/apps/mobile/dist" 8081 &
+          node scripts/e2e/walkthrough.js "$RUNNER_TEMP/shots" light
+          node scripts/e2e/walkthrough.js "$RUNNER_TEMP/shots" dark
+      - name: Keep the screenshots and the API's log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: walkthrough
+          path: |
+            ${{ runner.temp }}/shots
+            ${{ runner.temp }}/api.log
+          retention-days: 7
+

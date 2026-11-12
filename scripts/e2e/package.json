@@ -1,0 +1,8 @@
+{
+  "name": "homeport-e2e",
+  "private": true,
+  "description": "The browser walk-through of the app. CI installs this; in the cloud environment Playwright is already there.",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

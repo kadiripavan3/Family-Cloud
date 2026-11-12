@@ -1,6 +1,6 @@
 # The build plan
 
-> **Status:** for your go-ahead. Nothing is built yet. · **Written:** 12 Nov 2026
+> **Status:** approved on 12 Nov 2026: "go ahead with the defaults", every milestone, one after another, under the name Homeport. Being built now; the hub's overview says which milestone is done. · **Written:** 12 Nov 2026
 >
 > **In one line:** the app is built the way Journey was: on one computer first, with stand-ins for the outside services, one milestone at a time, every screen from its design, each milestone ending with its tests green and a walk-through you can watch.
 
@@ -70,14 +70,14 @@ Later milestones go back into earlier screens to switch on what was waiting: a p
 
 ## Calls I need from you
 
-The build can start on the defaults. Tell me if you want any of them different.
+You said on 12 Nov: build on the defaults. They are decisions now (decision 6 under *What it does*), and each can still be changed later.
 
 | # | Question | Default I'll build |
 |---|---|---|
 | 1 | **Children.** Profiles a parent looks after, or children signing in themselves? | **Profiles only.** A child has a page, photos, jobs and stars; anything they tick is ticked on a parent's device. No sign-in for under-13s. Screen 4.6 becomes what a parent chooses to show on a child's page. |
 | 2 | **Understanding text.** Several screens read a sentence, a letter or a voice note. By rules on the device, or by an AI service? | **Rules, no AI service.** Private and free. It will read dates, times, amounts, names and shopping well, and a free-form letter only roughly; it always shows its reading for you to correct. An AI service would do better, costs per use, and means the text leaves the phone. It can be added later behind the same door. |
 | 3 | **Faces.** “Every photo Mia is in” | **No face recognition.** People are tagged by hand, and albums fill from tags. |
-| 4 | **The name.** | **Built as “Family Cloud”,** with the name in one place. The name and the app's id in the stores are settled before milestone 11. |
+| 4 | **The name.** | **Homeport**, your choice on 12 Nov, kept in one place. It has had a web search, not a legal check ([The name](03-name.md)); the check and the app's id in the stores are settled before milestone 11. |
 | 5 | **Three new services:** mail in, typing out a voice, the weather | **Stand-ins now.** You decide at milestone 11 which are worth an account. |
 | 6 | **Journey's code.** Keep, Tell and the switch need small changes in Journey. | **A stand-in for Journey until milestone 10.** Then I need your go-ahead to change Journey, in its own repo. |
 

@@ -1,8 +1,18 @@
 # The name
 
-> **Status:** not decided. "Family Cloud" is the working title. · **Updated:** 11 Nov 2026
+> **Status:** decided. You chose **Homeport** on 12 Nov 2026. · **Updated:** 12 Nov 2026
 >
-> My pick is **Porchlight**. The screens can show every candidate: use the Name switch on the Screens page.
+> The app, its links and its logo use Homeport from one setting (`brand.chosen` in `design/tokens.json`). The name has **not** been cleared: see "What was checked" below. The repository keeps the name Family-Cloud.
+
+## What was checked on 12 Nov 2026, and what was not
+
+A web search, not a legal search:
+
+- **App stores:** a search for a family organiser or password app called Homeport found none. That is one search, not a look through both stores.
+- **Trademarks:** third-party pages that list US trademark records show several HOMEPORT marks, most of them dead. One is listed as live (registration 7625469; the pages don't say for which goods) and one application was filed in June 2026 for a software platform for local business information. No EU filing turned up. These pages are not the official registers.
+- **Not checked:** the official registers (USPTO, EUIPO), the App Store and Google Play by hand, the domain `homeport.app`, social handles.
+
+Before the stores: have the name checked properly in the countries you launch in, and decide the domain. If it has to change, it is one setting.
 
 ## What the name has to do
 

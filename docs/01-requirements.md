@@ -167,6 +167,8 @@ I am not a lawyer and can't promise that anything needs no legal look at all. Wh
 | 2 | The kind of circle chosen at setup shapes what that circle is offered | 12 Nov |
 | 3 | Notes keeps its name. Lore was tried and dropped. | 12 Nov |
 | 4 | No Health in the app. It was added, put in the first version, then removed the same day because it would need a legal check. Only the parts with no health details stay, moved elsewhere. | 12 Nov |
+| 5 | The app is called **Homeport**. | 12 Nov |
+| 6 | Build every milestone of [the build plan](06-build-plan.md) on its six defaults: children are profiles a parent looks after, with no sign-in under 13; text is read by rules on our own side, with no AI service; no face recognition, people are tagged by hand; mail in, speech to text and the weather are stand-ins until the accounts are connected; Journey is a stand-in until its code can be changed. | 12 Nov |
 
 ## Calls I made for this draft
 

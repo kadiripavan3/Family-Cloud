@@ -1,0 +1,50 @@
+name: Deploy
+
+# Puts the API on Fly.io: after CI has passed on the main branch, or by hand from the Actions tab.
+# It needs one secret in the repository's settings: FLY_API_TOKEN (see docs/08-connect-services.md).
+# Until that secret exists, the job says so and does nothing.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API to Fly.io
+    runs-on: ubuntu-latest
+    # Only what CI has passed is deployed. (Started by hand, it deploys the branch it is started on.)
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Is Fly.io connected?
+        id: connected
+        env:
+          CONNECTED: ${{ secrets.FLY_API_TOKEN != '' }}
+        run: |
+          if [ "$CONNECTED" != "true" ]; then
+            echo "FLY_API_TOKEN is not set, so there is nowhere to deploy to yet. See docs/08-connect-services.md."
+          fi
+          echo "yes=$CONNECTED" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.connected.outputs.yes == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      # The token is given only to the step that deploys, not to the step that installs the tool.
+      # After the first deploy that works, replace "master" with that version's commit (it is in the run's log).
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: steps.connected.outputs.yes == 'true'
+      - name: Deploy (the new version brings the database up to date as it starts; the old one runs until it has)
+        if: steps.connected.outputs.yes == 'true'
+        working-directory: apps/api
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only
