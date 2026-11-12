@@ -683,7 +683,7 @@ class LibraryTest extends LibraryApiTest {
                 .isEqualTo(404);
         assertThat(wall(alex, circle, "")).containsExactly(his, clip);
 
-        send(HttpMethod.DELETE, "/v1/me", nora, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", nora, null, 200);
         assertThat(wall(alex, circle, "")).containsExactly(his);
         assertThat(jdbc.sql("select count(*) from library_items")
                         .query(Integer.class)

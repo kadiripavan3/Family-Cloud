@@ -12,6 +12,31 @@ import java.util.UUID;
  */
 public interface TodaySource {
 
+    /**
+     * The button a line has when there is something to do right from it.
+     *
+     * @param act what kind of act it is, for the app to know what to call: {@code pay} marks the signed-in
+     *     person's share of a bill as paid ({@code PUT /v1/bills/{id}/paid})
+     */
+    record TodayAction(
+            @Schema(description = "What the button says: Pay")
+            String label,
+
+            @Schema(description = "What kind of act it is: pay")
+            String act) {}
+
+    /**
+     * For something that is due rather than on: the day, and what Activity says about it when the day is
+     * near ("Electricity is due tomorrow, €84.20 · Your half is €42.10").
+     *
+     * @param amount how much, to the cent, when it is money
+     * @param note the small line for Activity; the line's own note when left out
+     */
+    record TodayDue(
+            LocalDate on,
+            @Schema(nullable = true) String amount,
+            @Schema(nullable = true) String note) {}
+
     /** One line of the day's list: an event with its time, a job with its tick, a bill with its amount. */
     record TodayItem(
             UUID thingId,
@@ -33,7 +58,34 @@ public interface TodaySource {
             int minute,
 
             @Schema(description = "Pictures of the people it concerns, two at most")
-            List<String> avatarUrls) {}
+            List<String> avatarUrls,
+
+            @Schema(nullable = true, description = "Its button, when there is something to do right here: Pay")
+            TodayAction action,
+
+            @Schema(description = "True for something that comes round again: the repeat mark")
+            boolean repeats,
+
+            @Schema(nullable = true, description = "For a bill or a reminder: when it is due, and how Activity says it")
+            TodayDue due) {
+
+        /** A line with no button, that doesn't repeat and isn't due: what most places bring. */
+        public TodayItem(
+                UUID thingId,
+                ThingKind kind,
+                String title,
+                String note,
+                String lead,
+                Boolean done,
+                int minute,
+                List<String> avatarUrls) {
+            this(thingId, kind, title, note, lead, done, minute, avatarUrls, null, false, null);
+        }
+
+        public TodayItem with(TodayAction button, boolean comesRound, TodayDue when) {
+            return new TodayItem(thingId, kind, title, note, lead, done, minute, avatarUrls, button, comesRound, when);
+        }
+    }
 
     /** A card in "New in the library" and its cousins: something that arrived lately. */
     record FreshCard(

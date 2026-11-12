@@ -86,6 +86,13 @@ public class LocalDiskStorage implements MediaStorage {
         store(storageKey, new java.io.ByteArrayInputStream(bytes), Long.MAX_VALUE);
     }
 
+    @Override
+    public void put(String storageKey, Path file, String contentType) throws IOException {
+        try (InputStream data = Files.newInputStream(file)) {
+            store(storageKey, data, Long.MAX_VALUE);
+        }
+    }
+
     /** Proof that the API itself issued this upload link. */
     public String tokenFor(UUID mediaId) {
         try {

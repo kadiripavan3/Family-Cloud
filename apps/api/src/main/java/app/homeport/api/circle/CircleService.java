@@ -1,5 +1,8 @@
 package app.homeport.api.circle;
 
+import app.homeport.api.activity.ActivityKind;
+import app.homeport.api.activity.ActivityLog;
+import app.homeport.api.activity.ActivityLog.Happened;
 import app.homeport.api.circle.CircleStore.CircleRow;
 import app.homeport.api.circle.MemberStore.MemberRow;
 import app.homeport.api.common.ApiProblem;
@@ -99,14 +102,24 @@ public class CircleService {
     private final ProfileStore profiles;
     private final MediaService media;
     private final PublicUrls urls;
+    private final ActivityLog activity;
+    private final List<Leaving> leaving;
 
     CircleService(
-            CircleStore circles, MemberStore members, ProfileStore profiles, MediaService media, PublicUrls urls) {
+            CircleStore circles,
+            MemberStore members,
+            ProfileStore profiles,
+            MediaService media,
+            PublicUrls urls,
+            ActivityLog activity,
+            List<Leaving> leaving) {
         this.circles = circles;
         this.members = members;
         this.profiles = profiles;
         this.media = media;
         this.urls = urls;
+        this.activity = activity;
+        this.leaving = leaving;
     }
 
     // ---------- reading ----------
@@ -448,7 +461,67 @@ public class CircleService {
                             "owner_needed", "Make another adult the owner before you leave, or remove the circle."));
             members.makeOwner(next.id());
         }
+        // What the "Export and leaving" screen promises, in this same transaction. What they kept private
+        // here leaves with them: it is deleted (someone who is taken out by others keeps theirs, unseen, for
+        // the day they come back). What they shared stays for the others, in their name. And whatever a
+        // place has to undo when someone goes, it undoes: the Vault takes back the keys to their passwords.
+        if (myself) {
+            members.deleteOnlyTheirs(id);
+        }
+        leaving.forEach(place -> place.left(member));
         members.markLeft(id);
+        activity.record(Happened.in(circle.id(), ActivityKind.LEFT)
+                .by(id)
+                .saying(myself ? "" : "was taken out of the circle", false));
+    }
+
+    /** What leaving a circle will do, in numbers, before it is done. */
+    public record LeavingResponse(
+            UUID circleId,
+            String circleName,
+
+            @Schema(description = "Things only you can see here: they leave with you, which means they are deleted")
+            int onlyYours,
+
+            @Schema(description = "Things you shared here: they stay for the others, in your name")
+            int shared,
+
+            @Schema(description = "Passwords you shared here: they stop working for the others")
+            int passwords,
+
+            @Schema(description = "True when you are the last one here: the circle and everything in it goes with you")
+            boolean lastOne,
+
+            @Schema(nullable = true, description = "For the owner: the first name of who becomes the owner when you go")
+            String nextOwner,
+
+            @Schema(description = "True when you can't leave yet: you are the owner and no other adult can take over")
+            boolean ownerNeeded) {}
+
+    /**
+     * What will happen when the signed-in person leaves this circle: "38 things only you can see will be
+     * deleted, 214 shared things stay, 3 passwords stop working for others". The same rules as
+     * {@link #remove}, asked without doing anything.
+     */
+    public LeavingResponse leaving(UUID circleId, UUID me) {
+        CircleRow circle = require(circleId, me);
+        MemberRow mine = me(circleId, me);
+        List<MemberRow> others = members.of(List.of(circleId)).stream()
+                .filter(m -> m.userId() != null && m.status() == MemberStatus.JOINED && !m.id().equals(mine.id()))
+                .toList();
+        MemberRow next = mine.role() != Role.OWNER
+                ? null
+                : others.stream().filter(m -> runs(circle, m)).findFirst().orElse(null);
+        int passwords = leaving.stream().mapToInt(place -> place.stops(mine)).sum();
+        return new LeavingResponse(
+                circleId,
+                circle.name(),
+                members.onlyTheirs(mine.id()),
+                members.sharedBy(mine.id()) - passwords,
+                passwords,
+                others.isEmpty(),
+                next == null ? null : app.homeport.api.common.Names.first(next.name()),
+                mine.role() == Role.OWNER && !others.isEmpty() && next == null);
     }
 
     /** The owner hands the circle to another adult and becomes an adult in it. */
@@ -534,6 +607,8 @@ public class CircleService {
                     members.countIn(circle.id()) % 5 + 1,
                     null);
         }
+        activity.record(Happened.in(circle.id(), ActivityKind.JOINED)
+                .by(me(circle.id(), me).id()));
         return get(circle.id(), me);
     }
 

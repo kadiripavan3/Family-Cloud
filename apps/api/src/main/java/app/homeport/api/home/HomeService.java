@@ -1,7 +1,9 @@
 package app.homeport.api.home;
 
+import app.homeport.api.circle.CircleKind;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.circle.CircleService.MemberResponse;
+import app.homeport.api.circle.MemberKind;
 import app.homeport.api.circle.MemberStore.MemberRow;
 import app.homeport.api.common.Keyset;
 import app.homeport.api.home.SearchSource.Found;
@@ -63,23 +65,88 @@ public class HomeService {
             @Schema(description = "What is kept for them that you may see")
             List<ThingBrief> kept) {}
 
+    /** One circle in the switcher's sheet. */
+    public record SwitcherCircle(
+            UUID id,
+            String name,
+            CircleKind kind,
+            @Schema(nullable = true) String coverUrl,
+
+            @Schema(description = "The line under its name: Friends · 5 people · you're owed €64")
+            String line) {}
+
+    public record SwitcherResponse(
+            @Schema(description = "Your circles, in the order you joined them. Twenty at most.")
+            List<SwitcherCircle> circles,
+
+            @Schema(description = "How many things in all your circles only you can see: what Just me counts")
+            int onlyYou) {}
+
     private final CircleService circles;
     private final ThingStore thingStore;
     private final ThingService things;
     private final List<TodaySource> todaySources;
     private final List<SearchSource> searchSources;
+    private final List<SwitcherSource> switcherSources;
 
     HomeService(
             CircleService circles,
             ThingStore thingStore,
             ThingService things,
             List<TodaySource> todaySources,
-            List<SearchSource> searchSources) {
+            List<SearchSource> searchSources,
+            List<SwitcherSource> switcherSources) {
         this.circles = circles;
         this.thingStore = thingStore;
         this.things = things;
         this.todaySources = todaySources;
         this.searchSources = searchSources;
+        this.switcherSources = switcherSources;
+    }
+
+    /**
+     * The sheet behind the round button in the search pill: each of a person's circles with one short line
+     * ("Family · 4 people and Biscuit", "Friends · 5 people · you're owed €64"), and how many things only
+     * they can see. What a place has to add to a line it adds itself ({@link SwitcherSource}).
+     */
+    public SwitcherResponse switcher(UUID me) {
+        List<SwitcherCircle> lines = circles.mine(me).stream()
+                .map(circle -> {
+                    List<String> pieces = new ArrayList<>();
+                    pieces.add(kindWord(circle.kind()));
+                    pieces.add(peopleWords(circle.members()));
+                    for (SwitcherSource source : switcherSources) {
+                        source.line(circle.id(), me).ifPresent(pieces::add);
+                    }
+                    return new SwitcherCircle(
+                            circle.id(), circle.name(), circle.kind(), circle.coverUrl(), String.join(" · ", pieces));
+                })
+                .toList();
+        return new SwitcherResponse(lines, thingStore.onlyMine(me));
+    }
+
+    static String kindWord(CircleKind kind) {
+        return switch (kind) {
+            case FAMILY -> "Family";
+            case COUPLE -> "Couple";
+            case FLAT -> "Housemates";
+            case CREW -> "Friends";
+            case SOLO -> "Just you";
+        };
+    }
+
+    /** "4 people and Biscuit": the people, then the pets by name (or how many, when there are several). */
+    static String peopleWords(List<MemberResponse> members) {
+        long people = members.stream().filter(m -> m.kind() != MemberKind.PET).count();
+        List<String> pets = members.stream()
+                .filter(m -> m.kind() == MemberKind.PET)
+                .map(MemberResponse::name)
+                .toList();
+        String words = people == 1 ? "1 person" : people + " people";
+        if (pets.isEmpty()) {
+            return words;
+        }
+        return words + " and " + (pets.size() == 1 ? pets.get(0) : pets.size() + " pets");
     }
 
     public TodayResponse today(UUID circleId, UUID me, LocalDate day) {
@@ -144,7 +211,7 @@ public class HomeService {
         }
         for (SearchSource source : searchSources) {
             if (place == null || source.place() == place) {
-                for (Found found : source.find(circleId, typed, MAX_FOUND)) {
+                for (Found found : source.find(circleId, me, typed, MAX_FOUND)) {
                     snippets.merge(found.thingId(), found.snippet(), (title, inside) -> inside);
                 }
             }
