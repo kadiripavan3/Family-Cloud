@@ -1,4 +1,4 @@
-import { Bell, Calendar, File, FileText, Folder, Gift, IdCard, Image, Images, KeyRound, type LucideIcon, Receipt, SquareCheck, Table, Target, Video } from 'lucide-react-native';
+import { Bell, Calendar, File, FileText, Folder, Gift, HandCoins, IdCard, Image, Images, KeyRound, LayoutTemplate, type LucideIcon, Receipt, SquareCheck, Table, Target, Video } from 'lucide-react-native';
 
 import { words } from '@/words';
 
@@ -19,6 +19,8 @@ const ICONS: Record<string, LucideIcon> = {
   file: File,
   document: File,
   album: Images,
+  board: LayoutTemplate,
+  split: HandCoins,
   moment: Images,
   bill: Receipt,
   sheet: Table,

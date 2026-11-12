@@ -99,7 +99,9 @@ class StoryPages {
     @GetMapping("/s/{token}")
     String open(@PathVariable String token, HttpServletResponse response, Model model) {
         response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Referrer-Policy", "no-referrer");
+        response.setHeader(
+                "Referrer-Policy",
+                "same-origin"); // "no-referrer" makes a browser post with Origin: null, which is refused
         EntryRow question = question(token);
         Door door = question == null ? Door.GONE : question.done() ? Door.THANKS : Door.ASK;
         model.addAttribute("state", door.name().toLowerCase(java.util.Locale.ROOT));

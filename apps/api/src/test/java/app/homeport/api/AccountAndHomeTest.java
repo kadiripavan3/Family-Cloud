@@ -97,6 +97,41 @@ class AccountAndHomeTest extends ApiTest {
     }
 
     @Test
+    void anAccountCanBeDeletedAlthoughSomeoneWhoHasSinceGoneTickedAndAddedOnItsLists() throws Exception {
+        String nora = person("Nora");
+        String sam = person("Sam");
+        String circle = circle(nora, "crew", "Lisbon crew");
+        join(nora, circle, sam);
+        String list = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/checklists",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Shopping\",\"items\":[\"Milk\"]}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String line = JsonPath.read(fetch("/v1/checklists/" + list, sam), "$.items[0].id");
+        send(HttpMethod.PATCH, "/v1/checklist-items/" + line, sam, "{\"done\":true}", 200);
+        send(
+                HttpMethod.POST,
+                "/v1/checklists/" + list + "/items",
+                sam,
+                "{\"clientId\":\"%s\",\"text\":\"Eggs\"}".formatted(id()),
+                201);
+        page(sam, circle, "Sam's page", "circle");
+
+        // Sam goes first; then Nora, who is now the last one in the circle.
+        send(HttpMethod.DELETE, "/v1/me", sam, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", nora, null, 204);
+
+        assertThat(jdbc.sql("select count(*) from circles").query(Integer.class).single())
+                .isZero();
+        assertThat(jdbc.sql("select count(*) from things").query(Integer.class).single())
+                .isZero();
+    }
+
+    @Test
     void anUploadIsOnlyUsableOnceItIsCompleteAndOnlyByWhoeverSentIt() throws Exception {
         String nora = person("Nora");
         String alex = person("Alex");

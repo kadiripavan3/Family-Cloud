@@ -209,6 +209,11 @@ public final class Scene {
         return memberId == null ? null : people.get(memberId);
     }
 
+    /** Everyone who is or was in the circle, those who left included, in the circle's own order. */
+    public List<Person> everyone() {
+        return List.copyOf(people.values());
+    }
+
     /** Everyone in the circle now: people, children and pets, in the circle's own order. */
     public List<Person> members() {
         return people.values().stream().filter(p -> !p.left()).toList();

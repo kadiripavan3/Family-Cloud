@@ -18,7 +18,6 @@ import { NoteRow } from '@/features/notes/NoteRow';
 import { paged, rows } from '@/features/notes/pages';
 import { useCircleOf } from '@/features/notes/people';
 import { SaySheet } from '@/features/notes/SaySheet';
-import { TEMPLATES } from '@/features/notes/templates';
 import { AudienceChip } from '@/features/sharing/AudienceChip';
 import { PageProblem } from '@/features/states/PageProblem';
 import { useOpenThing } from '@/features/things/open';
@@ -190,7 +189,7 @@ function Loaded({ folder }: { folder: FolderResponse }) {
               {words.notes.space.newWhat}
             </Txt>
           </View>
-          <Button size="sm" variant="soft" inline label={words.notes.space.templates} onPress={() => (TEMPLATES ? router.push(TEMPLATES) : setSaid(words.notes.space.templatesLater))} />
+          <Button size="sm" variant="soft" inline label={words.notes.space.templates} onPress={() => router.push('/templates')} />
           <Button size="sm" inline label={words.notes.space.new} spoken={words.notes.space.newIn(name)} icon={(c) => <Plus size={16} color={c} strokeWidth={2.4} />} onPress={() => setSheet('new')} />
         </GlassBar>
       ) : null}

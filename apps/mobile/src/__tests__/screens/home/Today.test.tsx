@@ -3,6 +3,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { ApiError } from '@/api/fetcher';
 import { useGetToday } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
+import { stillOn } from '@/features/today/about';
 import { TodayHome } from '@/features/today/TodayHome';
 import { today } from '@/lib/dates';
 import { onPhone } from '@/test/phone';
@@ -44,9 +45,15 @@ describe('3.1 Today', () => {
   });
 
   it('sums the day up: what is first, how much is left and done', async () => {
-    await render(onPhone(<TodayHome />));
-    expect(screen.getByText('Dentist · Mia, Take the bins out and 1 more')).toBeOnTheScreen();
-    expect(screen.getByText('3 things left today · 2 done')).toBeOnTheScreen();
+    // (Seen in the morning: the dentist at 15:30 is still to come.)
+    jest.useFakeTimers({ now: new Date(2026, 10, 11, 9, 41), doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'] });
+    try {
+      await render(onPhone(<TodayHome />));
+      expect(screen.getByText('Dentist · Mia, Take the bins out and 1 more')).toBeOnTheScreen();
+      expect(screen.getByText('3 things left today · 2 done')).toBeOnTheScreen();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("draws the day's list the same way whatever each thing is, and opens each by its kind", async () => {
@@ -123,5 +130,26 @@ describe('3.1 Today', () => {
     expect(screen.getByText('Something went wrong on our side. Try again.')).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Try again' }));
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('what the day is still about', () => {
+  const at = (hours: number, minutes = 0) => new Date(2026, 10, 11, hours, minutes);
+  const on = (title: string, minute: number, done: boolean | null = null) => ({ thingId: title, kind: 'event' as const, title, minute, done });
+  const items = [on('Feed Biscuit', 450, true), on('School run', 480), on('Dentist · Mia', 930), on('Take the bins out', 1140, false), on('Electricity', 1440)];
+  const titles = (now: Date) => stillOn(items, now).map((one) => one.title);
+
+  it('leaves out what is done and what is over, and keeps what has no time all day', () => {
+    expect(titles(at(7))).toEqual(['School run', 'Dentist · Mia', 'Take the bins out', 'Electricity']);
+    expect(titles(at(9, 50))).toEqual(['Dentist · Mia', 'Take the bins out', 'Electricity']);
+    expect(titles(at(15, 30))).toEqual(['Dentist · Mia', 'Take the bins out', 'Electricity']);
+    expect(titles(at(23))).toEqual(['Electricity']);
+  });
+
+  it('is about what is still open when everything timed is over, and about the whole day when all is done', () => {
+    const timed = items.slice(0, 4);
+    expect(stillOn(timed, at(23)).map((one) => one.title)).toEqual(['School run', 'Dentist · Mia', 'Take the bins out']);
+    expect(stillOn([on('Feed Biscuit', 450, true)], at(23)).map((one) => one.title)).toEqual(['Feed Biscuit']);
+    expect(stillOn([], at(9))).toEqual([]);
   });
 });

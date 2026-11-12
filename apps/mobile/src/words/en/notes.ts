@@ -36,7 +36,6 @@ export const notes = {
     newWhat: 'Page, checklist, sheet or folder',
     templates: 'Templates',
     new: 'New',
-    templatesLater: `Templates open from here as soon as their own screens are part of this build of ${APP}.`,
     empty: 'Nothing in here yet. Start a page, a list or a folder below.',
     emptyReadOnly: 'Nothing in here that you can see.',
     /** The list of what isn't filed anywhere, opened from Notes. */

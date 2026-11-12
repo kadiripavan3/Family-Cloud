@@ -19,8 +19,8 @@ import { NEW_THINGS, newThingHref } from './newThings';
 /**
  * 3.4 The + button: the sheet behind it. The + always creates. Pick one of ten things; each opens its own
  * screen. Whatever is added goes into the current circle and starts as that circle's kind says ("Only you"
- * in a family), unless it is changed here for this one thing. The line to type a sentence into is drawn,
- * and says that it arrives with Plan.
+ * in a family), unless it is changed here for this one thing. The line on top opens Plan's "Type it"
+ * (`/plan/quick-add`), where a sentence is read as it is typed.
  */
 export function PlusSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   return (
@@ -36,7 +36,6 @@ function Things({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const circle = useCircle();
   const [audience, setAudience] = useState<Audience | null>(null);
-  const [typeItLater, setTypeItLater] = useState(false);
   const startsAs = audience ?? circle.startsAs;
 
   return (
@@ -44,7 +43,11 @@ function Things({ onClose }: { onClose: () => void }) {
       <Tap
         accessibilityRole="button"
         accessibilityLabel={words.today.plus.typeItLabel}
-        onPress={() => setTypeItLater(true)}
+        onPress={() => {
+          onClose();
+          // Plan's "Type it": the line is read as it is typed. Who it starts as seen by goes along, as for the ten.
+          router.push(audience ? { pathname: '/plan/quick-add', params: { audience } } : '/plan/quick-add');
+        }}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, marginTop: 8, marginHorizontal: layout.barGutter, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.fill }}>
         <Sparkles size={19} color={colors.accentText} />
         <Txt variant="control" weight={500} color="muted" numberOfLines={1} style={{ flex: 1 }}>
@@ -52,11 +55,6 @@ function Things({ onClose }: { onClose: () => void }) {
         </Txt>
         <Mic size={19} color={colors.text} />
       </Tap>
-      {typeItLater ? (
-        <Txt variant="caption" color="muted" accessibilityLiveRegion="polite" style={{ marginTop: 8, marginHorizontal: layout.gutter }}>
-          {words.today.plus.typeItLater}
-        </Txt>
-      ) : null}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, marginTop: 18, marginBottom: 6, marginHorizontal: 12 }}>
         {NEW_THINGS.map((thing) => (

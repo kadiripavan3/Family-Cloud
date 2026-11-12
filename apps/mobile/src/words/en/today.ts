@@ -9,6 +9,8 @@ const anyOfYou = (people: number) => (people <= 1 ? 'you' : people === 2 ? 'eith
 export const today = {
   // 3.1 Today
   summary: {
+    /** The emoji in the ring of the summary card, by kind of circle: the calendar for a family, the kind's own among equals. */
+    emoji: { family: '📅', couple: '❤️', flat: '🏠', crew: '🤝', solo: '📅' },
     /** The bold line of the card: the first things of the day by their titles. */
     headline: (titles: readonly string[], more: number) => {
       if (titles.length === 0) return 'Nothing on today';
@@ -71,7 +73,6 @@ export const today = {
     title: 'Add something',
     typeIt: 'Type it: “Haircut for Leo, Saturday 10”',
     typeItLabel: 'Type what to add',
-    typeItLater: 'Typing a sentence that files itself arrives with Plan. Pick one of the ten below for now.',
     /** The ten things it makes, by the last part of the address each one opens ("/new/note"). */
     things: { note: 'Note', checklist: 'Checklist', photos: 'Photos', scan: 'Scan', event: 'Event', reminder: 'Reminder', bill: 'Bill', sheet: 'Sheet', password: 'Password', goal: 'Goal' },
     goesInto: 'Goes into',

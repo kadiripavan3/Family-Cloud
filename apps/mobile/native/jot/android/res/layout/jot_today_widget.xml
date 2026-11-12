@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEVER RUN. Copied into the Android project by plugins/withJotAndroid.js; first built on a phone build made with JOT_NATIVE=1. See ../../../README.md. -->
+<!-- The small widget of design 14.1 with what is next today: three lines at most. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/jot_today" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="14dp" android:background="@drawable/jot_card">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/jot_today" android:textColor="@color/jot_text" android:textSize="15sp" android:textStyle="bold" />
+  <TextView android:id="@+id/jot_next_1" style="@style/JotRow" />
+  <TextView android:id="@+id/jot_next_2" style="@style/JotRow" />
+  <TextView android:id="@+id/jot_next_3" style="@style/JotRow" />
+</LinearLayout>

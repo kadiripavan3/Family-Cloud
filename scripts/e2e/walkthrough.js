@@ -9,8 +9,10 @@
 // Before running: the API on port 8080 with the local profile, and the web build served on 8081
 // (`node scripts/e2e/serve.js <dist> 8081`). Other addresses: set API_URL and WEB_URL, and build the web
 // app with EXPO_PUBLIC_API_URL set to the same API address.
-// While working on one part, run only its file (or a few, with commas between): `ONLY=04-notes node …`.
+// To run some parts only, name their files without ".js": ONLY=04-templates,07-keepsakes node scripts/e2e/walkthrough.js …
 // usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>
+// While building one part, run only its steps: ONLY=03-jot node scripts/e2e/walkthrough.js <outDir> light
+// (several: ONLY=03-jot,03-plan). The whole walk-through is the same command without ONLY.
 const fs = require('fs');
 const path = require('path');
 const { start } = require('./lib');
@@ -22,18 +24,15 @@ const STEPS = path.join(__dirname, 'steps');
   if (!out || !['light', 'dark'].includes(scheme)) throw new Error('usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>');
   fs.mkdirSync(out, { recursive: true });
   const only = (process.env.ONLY || '').split(',').map((name) => name.trim().replace(/\.js$/, '')).filter(Boolean);
-  const milestones = fs
-    .readdirSync(STEPS)
-    .filter((file) => /^\d\d-[\w-]+\.js$/.test(file))
-    .sort()
-    .filter((file) => only.length === 0 || only.includes(file.replace(/\.js$/, '')));
-  if (only.length && milestones.length === 0) throw new Error(`no steps file is called ${only.join(' or ')}`);
+  const milestones = fs.readdirSync(STEPS).filter((file) => /^\d\d-[\w-]+\.js$/.test(file) && (only.length === 0 || only.includes(file.replace(/\.js$/, '')))).sort();
+  if (only.length && milestones.length !== only.length) throw new Error(`ONLY names a steps file that isn't there: ${only.join(', ')}`);
   const ctx = await start(out, scheme);
   try {
-    // Every steps file starts on the welcome screen. The first one opens it; without that one, this does.
+    // Every steps file starts signed out on the welcome screen. The first file opens the app itself; without
+    // it, the app is opened here.
     if (only.length && !milestones.includes('01-spine.js')) {
       await ctx.page.goto(ctx.WEB_URL + '/');
-      await ctx.T('Get started').waitFor({ timeout: 20000 });
+      await ctx.T('Get started').waitFor({ timeout: 30000 });
     }
     for (const file of milestones) {
       console.log('milestone', file);

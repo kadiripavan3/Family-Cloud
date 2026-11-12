@@ -2,16 +2,9 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import Activity from '@/app/(app)/(tabs)/activity';
 import NewBill from '@/app/(app)/new/bill';
-import NewEvent from '@/app/(app)/new/event';
-import NewGoal from '@/app/(app)/new/goal';
 import NewPassword from '@/app/(app)/new/password';
-import NewPhotos from '@/app/(app)/new/photos';
-import NewReminder from '@/app/(app)/new/reminder';
-import NewScan from '@/app/(app)/new/scan';
 import NewSheet from '@/app/(app)/new/sheet';
-import { LibraryHome } from '@/features/library/LibraryHome';
 import { MoneyHome } from '@/features/money/MoneyHome';
-import { PlanHome } from '@/features/plan/PlanHome';
 import { VaultHome } from '@/features/vault/VaultHome';
 import { onPhone } from '@/test/phone';
 
@@ -30,8 +23,6 @@ describe('the screens that are still to be built', () => {
   });
 
   it.each([
-    ['Plan', <PlanHome key="plan" />],
-    ['Library', <LibraryHome key="library" />],
     ['Money', <MoneyHome key="money" />],
     ['Vault', <VaultHome key="vault" />],
   ])("%s, one of Home's places, says which place it is and that it is on its way", async (name, place) => {
@@ -41,14 +32,9 @@ describe('the screens that are still to be built', () => {
   });
 
   it.each([
-    ['Photos', <NewPhotos key="photos" />],
-    ['Scan', <NewScan key="scan" />],
-    ['Event', <NewEvent key="event" />],
-    ['Reminder', <NewReminder key="reminder" />],
     ['Bill', <NewBill key="bill" />],
     ['Sheet', <NewSheet key="sheet" />],
     ['Password', <NewPassword key="password" />],
-    ['Goal', <NewGoal key="goal" />],
   ])('%s, one of the things the + sheet opens, says what it is and closes', async (name, page) => {
     await render(onPhone(page));
     expect(screen.getByRole('header', { name })).toBeOnTheScreen();

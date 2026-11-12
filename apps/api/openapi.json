@@ -13609,6 +13609,58 @@
               "$ref" : "#/components/schemas/GoodJarSettings"
             }, {
               "$ref" : "#/components/schemas/DoorframeSettings"
+            }, {
+              "$ref" : "#/components/schemas/WhoseTurnSettings"
+            }, {
+              "$ref" : "#/components/schemas/PiggyBankSettings"
+            }, {
+              "$ref" : "#/components/schemas/SecretMissionsSettings"
+            }, {
+              "$ref" : "#/components/schemas/SaturdayJarSettings"
+            }, {
+              "$ref" : "#/components/schemas/SleepsSettings"
+            }, {
+              "$ref" : "#/components/schemas/WhereIsItSettings"
+            }, {
+              "$ref" : "#/components/schemas/HabitChartsSettings"
+            }, {
+              "$ref" : "#/components/schemas/OurStorySettings"
+            }, {
+              "$ref" : "#/components/schemas/TuckedNotesSettings"
+            }, {
+              "$ref" : "#/components/schemas/AnniversarySettings"
+            }, {
+              "$ref" : "#/components/schemas/MysteryDateSettings"
+            }, {
+              "$ref" : "#/components/schemas/BothYesSettings"
+            }, {
+              "$ref" : "#/components/schemas/FairShareSettings"
+            }, {
+              "$ref" : "#/components/schemas/HeardSettings"
+            }, {
+              "$ref" : "#/components/schemas/GuestBookSettings"
+            }, {
+              "$ref" : "#/components/schemas/LivedHereSettings"
+            }, {
+              "$ref" : "#/components/schemas/KittySettings"
+            }, {
+              "$ref" : "#/components/schemas/FairerSplitSettings"
+            }, {
+              "$ref" : "#/components/schemas/HeadsUpSettings"
+            }, {
+              "$ref" : "#/components/schemas/FindDateSettings"
+            }, {
+              "$ref" : "#/components/schemas/SecretSantaSettings"
+            }, {
+              "$ref" : "#/components/schemas/WhereNextSettings"
+            }, {
+              "$ref" : "#/components/schemas/DictionarySettings"
+            }, {
+              "$ref" : "#/components/schemas/PredictionsSettings"
+            }, {
+              "$ref" : "#/components/schemas/AwardsSettings"
+            }, {
+              "$ref" : "#/components/schemas/WalkTogetherSettings"
             } ]
           },
           "view" : {
@@ -13633,6 +13685,58 @@
               "$ref" : "#/components/schemas/GoodJarView"
             }, {
               "$ref" : "#/components/schemas/DoorframeView"
+            }, {
+              "$ref" : "#/components/schemas/WhoseTurnResponse"
+            }, {
+              "$ref" : "#/components/schemas/PiggyBankResponse"
+            }, {
+              "$ref" : "#/components/schemas/SecretMissionsResponse"
+            }, {
+              "$ref" : "#/components/schemas/SaturdayJarResponse"
+            }, {
+              "$ref" : "#/components/schemas/SleepsResponse"
+            }, {
+              "$ref" : "#/components/schemas/WhereIsItResponse"
+            }, {
+              "$ref" : "#/components/schemas/HabitChartsResponse"
+            }, {
+              "$ref" : "#/components/schemas/OurStoryResponse"
+            }, {
+              "$ref" : "#/components/schemas/TuckedNotesResponse"
+            }, {
+              "$ref" : "#/components/schemas/AnniversaryResponse"
+            }, {
+              "$ref" : "#/components/schemas/MysteryDateResponse"
+            }, {
+              "$ref" : "#/components/schemas/BothYesResponse"
+            }, {
+              "$ref" : "#/components/schemas/FairShareResponse"
+            }, {
+              "$ref" : "#/components/schemas/HeardViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/GuestBookViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/LivedHereViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/KittyViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/FairerSplitViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/HeadsUpViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/FindDateViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/SecretSantaViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/WhereNextViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/DictionaryViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/PredictionsViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/AwardsViewResponse"
+            }, {
+              "$ref" : "#/components/schemas/WalkTogetherViewResponse"
             } ]
           }
         },
@@ -18426,6 +18530,38 @@
                 "$ref" : "#/components/schemas/StoriesQuestion"
               }, {
                 "$ref" : "#/components/schemas/GoodJarSlip"
+              }, {
+                "$ref" : "#/components/schemas/WhoseTurnThingResponse"
+              }, {
+                "$ref" : "#/components/schemas/PiggyBankMoneyResponse"
+              }, {
+                "$ref" : "#/components/schemas/SecretMissionsMissionResponse"
+              }, {
+                "$ref" : "#/components/schemas/SaturdayJarIdeaResponse"
+              }, {
+                "$ref" : "#/components/schemas/SleepsCountResponse"
+              }, {
+                "$ref" : "#/components/schemas/WhereIsItItemResponse"
+              }, {
+                "$ref" : "#/components/schemas/HabitChartsChartResponse"
+              }, {
+                "$ref" : "#/components/schemas/OurStoryMomentResponse"
+              }, {
+                "$ref" : "#/components/schemas/TuckedNotesNoteResponse"
+              }, {
+                "$ref" : "#/components/schemas/MysteryDatePastResponse"
+              }, {
+                "$ref" : "#/components/schemas/BothYesIdeaResponse"
+              }, {
+                "$ref" : "#/components/schemas/HeardQuoteResponse"
+              }, {
+                "$ref" : "#/components/schemas/GuestBookLineResponse"
+              }, {
+                "$ref" : "#/components/schemas/KittyLineResponse"
+              }, {
+                "$ref" : "#/components/schemas/HeadsUpNoticeResponse"
+              }, {
+                "$ref" : "#/components/schemas/DictionaryWordResponse"
               } ]
             }
           },
@@ -19823,6 +19959,3903 @@
           }
         },
         "required" : [ "children", "comparisons", "landmarks", "marks" ]
+      },
+      "WhoseTurnSettings" : {
+        "type" : "object"
+      },
+      "WhoseTurnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "things" : {
+            "type" : "array",
+            "description" : "What people take turns at, in the list's order. Forty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/WhoseTurnThingResponse"
+            }
+          },
+          "turns" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many turns were kept, ever"
+          },
+          "since" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day the list was started: turns are kept since then"
+          },
+          "canChange" : {
+            "type" : "boolean",
+            "description" : "True when this person may write down what happened: in a family, the grown-ups"
+          },
+          "historyFrom" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The first day of the stretch whose turns are in `history`"
+          },
+          "historyTo" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "history" : {
+            "type" : "array",
+            "description" : "The turns of that stretch, newest first, each with its date",
+            "items" : {
+              "$ref" : "#/components/schemas/WhoseTurnTurnResponse"
+            }
+          }
+        },
+        "required" : [ "canChange", "history", "historyFrom", "historyTo", "since", "things", "turns" ]
+      },
+      "WhoseTurnThingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "does" : {
+            "type" : [ "string", "null" ],
+            "description" : "What the one whose turn it is does: chooses the film"
+          },
+          "when" : {
+            "type" : [ "string", "null" ],
+            "description" : "When it comes round, in the family's words: Every evening"
+          },
+          "onDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it is next on, when someone set one"
+          },
+          "tonight" : {
+            "type" : "boolean",
+            "description" : "True when it is on today: Tonight is film night"
+          },
+          "next" : {
+            "description" : "Whose turn it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yourTurn" : {
+            "type" : "boolean",
+            "description" : "True when it is the turn of the person looking, or of a child they look after"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "The people who take turns at it, in their order",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "last" : {
+            "description" : "The last turn that was taken",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WhoseTurnTurnResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "line" : {
+            "type" : [ "string", "null" ],
+            "description" : "The small line under it: Mia chose last Friday. Frozen, again. Null when there is nothing to say yet."
+          }
+        },
+        "required" : [ "does", "emoji", "id", "last", "line", "name", "next", "onDay", "people", "tonight", "when", "yourTurn" ]
+      },
+      "WhoseTurnTurnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "thing" : {
+            "type" : "string"
+          },
+          "who" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True when it was the turn of the person looking"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "A few words someone added: Frozen, again"
+          }
+        },
+        "required" : [ "day", "id", "note", "thing", "thingId", "who", "you" ]
+      },
+      "PiggyBankFund" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "name", "stars" ]
+      },
+      "PiggyBankSettings" : {
+        "type" : "object",
+        "properties" : {
+          "forMemberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The child whose piggy bank it is"
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The currency of every amount, as three letters: EUR"
+          },
+          "interestPercent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "What the bank pays on Save, in whole percent a month. 0: no interest."
+          },
+          "paidThrough" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Every first of the month up to this day is settled: interest is due from the next"
+          },
+          "starCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What one star is worth, in cents, when stars turn into money"
+          },
+          "fund" : {
+            "description" : "What Save is for, counted in stars: Skates fund, 50 stars",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PiggyBankFund"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "spendGoalCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How full Spend is drawn against, in cents"
+          },
+          "saveGoalCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How full Save is drawn against when there is no fund, in cents"
+          },
+          "giveGoalCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How full Give is drawn against, in cents"
+          }
+        },
+        "required" : [ "currency", "forMemberId", "fund", "giveGoalCents", "interestPercent", "paidThrough", "saveGoalCents", "spendGoalCents", "starCents" ]
+      },
+      "PiggyBankFundResponse" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many stars it takes"
+          },
+          "starsIn" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many stars were paid in so far"
+          },
+          "percent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "0 to 100"
+          },
+          "starsToGo" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "name", "percent", "stars", "starsIn", "starsToGo" ]
+      },
+      "PiggyBankInterestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "cents", "day" ]
+      },
+      "PiggyBankJarResponse" : {
+        "type" : "object",
+        "properties" : {
+          "jar" : {
+            "type" : "string",
+            "description" : "spend, save or give"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "goalCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What it is drawn against, in cents"
+          },
+          "fill" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How full to draw it, 0 to 100. Null when it has nothing to be full of."
+          }
+        },
+        "required" : [ "cents", "fill", "goalCents", "jar" ]
+      },
+      "PiggyBankMoneyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Null for interest that is due and not written down yet"
+          },
+          "kind" : {
+            "type" : "string",
+            "description" : "in, out, move or interest"
+          },
+          "jar" : {
+            "type" : "string",
+            "description" : "The jar it went into or came out of: spend, save or give"
+          },
+          "toJar" : {
+            "type" : [ "string", "null" ],
+            "description" : "For money moved between jars: where it went"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "In cents: above zero for money in, below zero for money out"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "fromName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Who it came from, when that is someone outside the circle"
+          },
+          "stars" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many stars it stands for"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "by" : {
+            "description" : "Who wrote it down. Null for the bank's interest.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "by", "cents", "day", "fromName", "id", "jar", "kind", "note", "stars", "title", "toJar" ]
+      },
+      "PiggyBankResponse" : {
+        "type" : "object",
+        "properties" : {
+          "child" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "totalCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Everything in the three jars, in cents"
+          },
+          "jars" : {
+            "type" : "array",
+            "description" : "Spend, Save and Give, in that order",
+            "items" : {
+              "$ref" : "#/components/schemas/PiggyBankJarResponse"
+            }
+          },
+          "interestPercent" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lastInterest" : {
+            "description" : "The last interest the bank paid: €0.60 arrived on 1 November",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PiggyBankInterestResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "nextInterestOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day the next interest arrives. Null while the rate is 0."
+          },
+          "fund" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PiggyBankFundResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "starCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What one star is worth, in cents"
+          },
+          "lately" : {
+            "type" : "array",
+            "description" : "The last three things that happened, newest first. The interest is not among them.",
+            "items" : {
+              "$ref" : "#/components/schemas/PiggyBankMoneyResponse"
+            }
+          },
+          "canChange" : {
+            "type" : "boolean",
+            "description" : "True when this person runs the bank: in a family, the grown-ups"
+          }
+        },
+        "required" : [ "canChange", "child", "currency", "fund", "interestPercent", "jars", "lastInterest", "lately", "nextInterestOn", "starCents", "totalCents" ]
+      },
+      "SecretMissionsSettings" : {
+        "type" : "object"
+      },
+      "SecretMissionsMissionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Null until something happened to it: it is then named by its person"
+          },
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "doer" : {
+            "description" : "Whose mission it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when it is the mission of the person looking"
+          },
+          "target" : {
+            "description" : "Who it is for",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "forYou" : {
+            "type" : "boolean",
+            "description" : "True when it was for the person looking"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "did" : {
+            "type" : [ "string", "null" ],
+            "description" : "What they did, in their own words"
+          },
+          "done" : {
+            "type" : "boolean"
+          },
+          "doneAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "revealed" : {
+            "type" : "boolean",
+            "description" : "True once everyone may read it"
+          },
+          "reply" : {
+            "type" : [ "string", "null" ],
+            "description" : "A line added after it was revealed: You guessed by Wednesday"
+          },
+          "liked" : {
+            "type" : "boolean",
+            "description" : "True when the one it was for gave it a heart"
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "did", "doer", "done", "doneAt", "forYou", "id", "liked", "photo", "reply", "revealed", "target", "text", "weekStart", "yours" ]
+      },
+      "SecretMissionsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "week" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The number of this week, as calendars count it"
+          },
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "revealsOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Sunday this week's missions are revealed on"
+          },
+          "people" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people have a mission this week"
+          },
+          "yours" : {
+            "type" : "array",
+            "description" : "This week's missions that are this person's to do: their own first, then those of the children they read them to. Nobody else's is ever in here.",
+            "items" : {
+              "$ref" : "#/components/schemas/SecretMissionsMissionResponse"
+            }
+          },
+          "revealedWeekStart" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The Monday of the week whose missions are in `revealed`"
+          },
+          "revealed" : {
+            "type" : "array",
+            "description" : "What was done in that week, for everyone to read",
+            "items" : {
+              "$ref" : "#/components/schemas/SecretMissionsMissionResponse"
+            }
+          }
+        },
+        "required" : [ "people", "revealed", "revealedWeekStart", "revealsOn", "week", "weekStart", "yours" ]
+      },
+      "SaturdayJarSettings" : {
+        "type" : "object",
+        "properties" : {
+          "weather" : {
+            "type" : [ "string", "null" ],
+            "description" : "What the sky is doing today. A weather source would write it here; none is connected, so it is always null and the jar asks “indoors or outdoors?” instead."
+          }
+        },
+        "required" : [ "weather" ]
+      },
+      "SaturdayJarAskedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "minutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "The time there is, in minutes"
+          },
+          "cents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What it may cost, in cents"
+          },
+          "outdoors" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "True for outdoors, false for indoors"
+          }
+        },
+        "required" : [ "cents", "minutes", "outdoors" ]
+      },
+      "SaturdayJarIdeaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "by" : {
+            "description" : "Who put it in",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "place" : {
+            "type" : [ "string", "null" ],
+            "description" : "home, indoors or outdoors. Null for anywhere."
+          },
+          "minutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How long it takes, in minutes"
+          },
+          "cents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "About what it costs, in cents. Null or 0: free."
+          },
+          "addedOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it was put in"
+          },
+          "done" : {
+            "type" : "boolean",
+            "description" : "True once someone said yes to it: it has left the jar"
+          },
+          "doneOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it is done on"
+          },
+          "eventId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The event it became in the calendar"
+          },
+          "albumId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The album waiting for its photos"
+          }
+        },
+        "required" : [ "addedOn", "albumId", "by", "cents", "done", "doneOn", "emoji", "eventId", "id", "mine", "minutes", "place", "text" ]
+      },
+      "SaturdayJarResponse" : {
+        "type" : "object",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many ideas are in the jar"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many were done so far"
+          },
+          "asked" : {
+            "description" : "What the jar was asked today. Null when it wasn't shaken today.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SaturdayJarAskedResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pulled" : {
+            "description" : "The slip pulled today",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SaturdayJarIdeaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "weather" : {
+            "type" : [ "string", "null" ],
+            "description" : "Always null for now: see the settings"
+          },
+          "everyoneFree" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "True when nobody has anything on today, by the calendar. Null while the calendar doesn't say."
+          },
+          "people" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people that is about"
+          },
+          "comingUp" : {
+            "type" : "array",
+            "description" : "What someone said yes to, for today or later. Ten at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/SaturdayJarIdeaResponse"
+            }
+          }
+        },
+        "required" : [ "asked", "comingUp", "count", "done", "everyoneFree", "people", "pulled", "weather" ]
+      },
+      "SleepsSettings" : {
+        "type" : "object"
+      },
+      "SleepsCountResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "What comes after “sleeps until”: Grandma Astrid comes"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "A few words under it: from the trip"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it counts to. For one that comes every year, its next time round."
+          },
+          "yearly" : {
+            "type" : "boolean"
+          },
+          "sleeps" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many sleeps are left: the nights from today to the day. 0 on the day."
+          },
+          "links" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many links the chain has: the sleeps there were when it was started, 60 at most"
+          },
+          "off" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them are gone, tonight's included once it was torn off"
+          },
+          "tornTonight" : {
+            "type" : "boolean",
+            "description" : "True when tonight's link was torn off already"
+          },
+          "canTear" : {
+            "type" : "boolean",
+            "description" : "True while there is a link to tear off tonight"
+          },
+          "tearer" : {
+            "description" : "Who tears the links off",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "canTear", "day", "emoji", "id", "links", "note", "off", "sleeps", "tearer", "title", "tornTonight", "yearly" ]
+      },
+      "SleepsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "first" : {
+            "description" : "The nearest day there is to count down to: the one with the chain",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SleepsCountResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "others" : {
+            "type" : "array",
+            "description" : "The others that are still to come, nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/SleepsCountResponse"
+            }
+          },
+          "passed" : {
+            "type" : "array",
+            "description" : "The last few whose day has been, newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/SleepsCountResponse"
+            }
+          }
+        },
+        "required" : [ "first", "others", "passed" ]
+      },
+      "WhereIsItSettings" : {
+        "type" : "object"
+      },
+      "WhereIsItItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "place" : {
+            "type" : "string",
+            "description" : "Where it is: Attic, blue crate 3"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "What else to know: Tent, pegs and both mats."
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "putBy" : {
+            "description" : "Who put it there",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "putOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "seen" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it was last seen since: on the hall hook"
+          },
+          "seenBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "seenAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "only" : {
+            "type" : "array",
+            "description" : "The people it is kept to. Empty: everyone who sees the list.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "emoji", "id", "mine", "name", "note", "only", "photo", "place", "putBy", "putOn", "seen", "seenAt", "seenBy" ]
+      },
+      "WhereIsItResponse" : {
+        "type" : "object",
+        "properties" : {
+          "asked" : {
+            "type" : [ "string", "null" ],
+            "description" : "The question that was asked with `show`"
+          },
+          "found" : {
+            "description" : "What answers it. Null when nothing was asked, or nothing fits.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WhereIsItItemResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "Everything else put away that this person may see, newest first. 200 at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/WhereIsItItemResponse"
+            }
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things are put away, of those this person may see"
+          }
+        },
+        "required" : [ "asked", "count", "found", "items" ]
+      },
+      "HabitChartsSettings" : {
+        "type" : "object"
+      },
+      "HabitChartsCellResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "due" : {
+            "type" : "boolean",
+            "description" : "True when the chart is on that day"
+          },
+          "done" : {
+            "type" : "boolean"
+          },
+          "today" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "day", "done", "due", "today" ]
+      },
+      "HabitChartsChartResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who it is for. Empty: everyone.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "who" : {
+            "type" : "string",
+            "description" : "Who it is for, in words: Leo, Everyone, You and Alex"
+          },
+          "earnsStars" : {
+            "type" : "boolean",
+            "description" : "True on a chart whose ticks are stars"
+          },
+          "stars" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Every star its person ever earned on these charts"
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "The days of the week it is on, as mon to sun. Empty: every day.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "rows" : {
+            "type" : "array",
+            "description" : "Its rows, each with the seven days of the week shown",
+            "items" : {
+              "$ref" : "#/components/schemas/HabitChartsRowResponse"
+            }
+          },
+          "doneThisWeek" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Ticks given in the week shown"
+          },
+          "possibleSoFar" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Ticks there could have been in the week shown, up to today"
+          },
+          "streak" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many days in a row were kept, up to today (100 at most)"
+          },
+          "dueToday" : {
+            "type" : "boolean",
+            "description" : "True when it is on today"
+          },
+          "doneToday" : {
+            "type" : "boolean",
+            "description" : "True when every row is ticked for today"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The small line under its name: 5 of 6 so far this week, 9 days in a row, Thursdays"
+          }
+        },
+        "required" : [ "days", "doneThisWeek", "doneToday", "dueToday", "earnsStars", "emoji", "id", "line", "people", "possibleSoFar", "rows", "stars", "streak", "title", "who" ]
+      },
+      "HabitChartsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Monday of the week shown"
+          },
+          "weekEnd" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "charts" : {
+            "type" : "array",
+            "description" : "The charts, in their order. Thirty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/HabitChartsChartResponse"
+            }
+          }
+        },
+        "required" : [ "charts", "weekEnd", "weekStart" ]
+      },
+      "HabitChartsRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "row" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Which row, counted from 0"
+          },
+          "label" : {
+            "type" : [ "string", "null" ]
+          },
+          "icon" : {
+            "type" : [ "string", "null" ],
+            "description" : "A word the app has a picture for: sun, moon, book"
+          },
+          "cells" : {
+            "type" : "array",
+            "description" : "Seven days, Monday first",
+            "items" : {
+              "$ref" : "#/components/schemas/HabitChartsCellResponse"
+            }
+          }
+        },
+        "required" : [ "cells", "icon", "label", "row" ]
+      },
+      "OurStorySettings" : {
+        "type" : "object",
+        "properties" : {
+          "since" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day the count starts from. Null: the day of the first moment."
+          },
+          "sinceWords" : {
+            "type" : [ "string", "null" ],
+            "description" : "What it began with, to say after “Since”: a wedding in Piran"
+          }
+        },
+        "required" : [ "since", "sinceWords" ]
+      },
+      "OurStoryMomentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "precision" : {
+            "type" : "string",
+            "description" : "day, month or year: how much of the date to show"
+          },
+          "label" : {
+            "type" : [ "string", "null" ],
+            "description" : "The word next to its date: Piran, First trip"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "text" : {
+            "type" : [ "string", "null" ]
+          },
+          "star" : {
+            "type" : "boolean",
+            "description" : "True for a moment marked with a star"
+          },
+          "from" : {
+            "type" : [ "string", "null" ],
+            "description" : "journey: it came from a journey that was kept"
+          },
+          "photos" : {
+            "type" : "array",
+            "description" : "Its photos, the first one first",
+            "items" : {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }
+          },
+          "addedBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "addedBy", "day", "from", "id", "label", "mine", "photos", "precision", "star", "text", "title" ]
+      },
+      "OurStoryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "since" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day the count starts from. Null while there is no moment."
+          },
+          "days" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The days from then to today: 4,503 days so far"
+          },
+          "sinceWords" : {
+            "type" : [ "string", "null" ],
+            "description" : "What it began with: a wedding in Piran"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many moments there are"
+          },
+          "moments" : {
+            "type" : "array",
+            "description" : "The moments, oldest first. 300 at most; the list of entries has them all.",
+            "items" : {
+              "$ref" : "#/components/schemas/OurStoryMomentResponse"
+            }
+          }
+        },
+        "required" : [ "count", "days", "moments", "since", "sinceWords" ]
+      },
+      "TuckedNotesSettings" : {
+        "type" : "object"
+      },
+      "TuckedNotesNoteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "from" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "forPerson" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "turnsUp" : {
+            "type" : "string",
+            "description" : "this_week, at, lands or rains"
+          },
+          "at" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The time its writer set. Null for every other way."
+          },
+          "before" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "For this_week, to its writer: the day it will have turned up by. The moment itself is told to nobody."
+          },
+          "waiting" : {
+            "type" : "boolean",
+            "description" : "True for a note that waits for a signal nothing sends yet"
+          },
+          "found" : {
+            "type" : "boolean"
+          },
+          "foundAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "at", "before", "forPerson", "found", "foundAt", "from", "id", "mine", "text", "turnsUp", "waiting" ]
+      },
+      "TuckedNotesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "tucked" : {
+            "type" : "array",
+            "description" : "The notes this person tucked away that haven't been found yet, newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/TuckedNotesNoteResponse"
+            }
+          },
+          "turnedUp" : {
+            "type" : "array",
+            "description" : "Notes for this person that have turned up and wait to be read",
+            "items" : {
+              "$ref" : "#/components/schemas/TuckedNotesNoteResponse"
+            }
+          },
+          "found" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many were found so far, of those this person wrote or was given"
+          },
+          "foundLately" : {
+            "type" : "array",
+            "description" : "The last five that were found, newest first. The list of entries has them all.",
+            "items" : {
+              "$ref" : "#/components/schemas/TuckedNotesNoteResponse"
+            }
+          },
+          "readers" : {
+            "type" : "array",
+            "description" : "Who a note can be tucked away for",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "ways" : {
+            "type" : "array",
+            "description" : "The ways a note can turn up, and which of them work today",
+            "items" : {
+              "$ref" : "#/components/schemas/TuckedNotesWayResponse"
+            }
+          }
+        },
+        "required" : [ "found", "foundLately", "readers", "tucked", "turnedUp", "ways" ]
+      },
+      "TuckedNotesWayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "way" : {
+            "type" : "string",
+            "description" : "this_week, at, lands or rains"
+          },
+          "works" : {
+            "type" : "boolean",
+            "description" : "False for a way that waits for a signal nothing sends yet"
+          },
+          "waitsFor" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a way that doesn't work yet: what it is waiting for"
+          }
+        },
+        "required" : [ "waitsFor", "way", "works" ]
+      },
+      "AnniversarySettings" : {
+        "type" : "object",
+        "properties" : {
+          "since" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it all began: the anniversary is this day of every year"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "The members who answer",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "firstYear" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The first year this board asks about"
+          }
+        },
+        "required" : [ "firstYear", "people", "since" ]
+      },
+      "AnniversaryAnswerResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yours" : {
+            "type" : "boolean"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "person", "text", "yours" ]
+      },
+      "AnniversaryMineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "questionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "answerId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The entry of this person's answer, to change it"
+          },
+          "answer" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "answer", "answerId", "question", "questionId" ]
+      },
+      "AnniversaryNextResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it opens, when everyone has answered by then"
+          },
+          "daysToGo" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Days until that day; 0 from the day on"
+          },
+          "dayHasCome" : {
+            "type" : "boolean",
+            "description" : "True from that day on: it now opens as soon as everyone has answered"
+          },
+          "yours" : {
+            "type" : "array",
+            "description" : "The questions of this year, each with this person's own answer so far",
+            "items" : {
+              "$ref" : "#/components/schemas/AnniversaryMineResponse"
+            }
+          },
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them this person has answered"
+          },
+          "youAreDone" : {
+            "type" : "boolean",
+            "description" : "True when this person has answered them all: theirs are sealed"
+          },
+          "others" : {
+            "type" : "array",
+            "description" : "The others who answer, and whether each has finished. Never what they wrote.",
+            "items" : {
+              "$ref" : "#/components/schemas/AnniversaryOtherResponse"
+            }
+          }
+        },
+        "required" : [ "answered", "dayHasCome", "daysToGo", "opensOn", "others", "year", "youAreDone", "yours" ]
+      },
+      "AnniversaryOtherResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "done" : {
+            "type" : "boolean",
+            "description" : "True when they have answered every question: theirs are sealed"
+          }
+        },
+        "required" : [ "done", "person" ]
+      },
+      "AnniversaryQuestionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "answers" : {
+            "type" : "array",
+            "description" : "Everyone's answer, side by side, in the order of the people",
+            "items" : {
+              "$ref" : "#/components/schemas/AnniversaryAnswerResponse"
+            }
+          },
+          "same" : {
+            "type" : [ "string", "null" ],
+            "description" : "A word all the answers share: You both said Bled"
+          }
+        },
+        "required" : [ "answers", "id", "same", "text" ]
+      },
+      "AnniversaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "since" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "people" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "youAnswer" : {
+            "type" : "boolean",
+            "description" : "True when the person looking is one of those who answer"
+          },
+          "years" : {
+            "type" : "array",
+            "description" : "The years that have opened, newest first",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "shown" : {
+            "description" : "The opened year that is shown: the newest, or the one asked for",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AnniversaryYearResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "next" : {
+            "$ref" : "#/components/schemas/AnniversaryNextResponse",
+            "description" : "The year that is being written"
+          }
+        },
+        "required" : [ "next", "people", "shown", "since", "years", "youAnswer" ]
+      },
+      "AnniversaryYearResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Which anniversary: 12 for year twelve"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AnniversaryQuestionResponse"
+            }
+          }
+        },
+        "required" : [ "day", "questions", "year" ]
+      },
+      "MysteryDateSettings" : {
+        "type" : "object"
+      },
+      "MysteryDateClueResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "opensAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The moment it opens. Null: it was open from the start."
+          },
+          "open" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "id", "open", "opensAt", "text" ]
+      },
+      "MysteryDateDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "time" : {
+            "type" : [ "string", "null" ],
+            "description" : "The time, as the planner's clock says it: 20:00"
+          },
+          "at" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The moment it starts, and is revealed"
+          },
+          "planner" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when the person looking plans it"
+          },
+          "hint" : {
+            "type" : [ "string", "null" ],
+            "description" : "All the other one gets besides the time: Wear something warm."
+          },
+          "revealed" : {
+            "type" : "boolean"
+          },
+          "title" : {
+            "type" : [ "string", "null" ],
+            "description" : "What it is. Null for everyone but the planner until it is revealed."
+          },
+          "plan" : {
+            "type" : "array",
+            "description" : "The plan. Empty for everyone but the planner until it is revealed.",
+            "items" : {
+              "$ref" : "#/components/schemas/MysteryDateLineResponse"
+            }
+          },
+          "clues" : {
+            "type" : "array",
+            "description" : "The clues. For everyone but the planner: only those whose moment has come.",
+            "items" : {
+              "$ref" : "#/components/schemas/MysteryDateClueResponse"
+            }
+          },
+          "cluesToCome" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many clues are still to open"
+          },
+          "suggestion" : {
+            "type" : [ "string", "null" ],
+            "description" : "For the planner: the idea the jar gave last"
+          }
+        },
+        "required" : [ "at", "clues", "cluesToCome", "day", "hint", "id", "plan", "planner", "revealed", "suggestion", "time", "title", "yours" ]
+      },
+      "MysteryDateLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "icon" : {
+            "type" : [ "string", "null" ],
+            "description" : "A word the app has a picture for: pin, euro, users"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "ready" : {
+            "type" : "boolean",
+            "description" : "True for a line that is sorted: the tick"
+          },
+          "cents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What it costs, in cents"
+          }
+        },
+        "required" : [ "cents", "icon", "id", "note", "ready", "title" ]
+      },
+      "MysteryDatePastResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "planner" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when the person looking planned it"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "day", "id", "planner", "title", "yours" ]
+      },
+      "MysteryDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "next" : {
+            "description" : "The date that is coming. Null when none is planned.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MysteryDateDateResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "turn" : {
+            "description" : "Whose turn it is to plan the one after",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yourTurn" : {
+            "type" : "boolean"
+          },
+          "thisYear" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many dates there are in this calendar year, the coming one included"
+          },
+          "past" : {
+            "type" : "array",
+            "description" : "The last five dates there have been, newest first. The list of entries has them all.",
+            "items" : {
+              "$ref" : "#/components/schemas/MysteryDatePastResponse"
+            }
+          },
+          "ideas" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many ideas are in this board's jar"
+          }
+        },
+        "required" : [ "ideas", "next", "past", "thisYear", "turn", "yourTurn" ]
+      },
+      "BothYesSettings" : {
+        "type" : "object",
+        "properties" : {
+          "people" : {
+            "type" : "array",
+            "description" : "The members who answer. An idea is a match when all of them said yes.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        },
+        "required" : [ "people" ]
+      },
+      "BothYesDeckResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "A short word for a tab: Dinner"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "locked" : {
+            "type" : "boolean",
+            "description" : "True for a deck the app keeps behind the phone's lock. The API hands it out all the same."
+          },
+          "day" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it is for, when it has one"
+          },
+          "picture" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "ideas" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many ideas it holds"
+          },
+          "seen" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them this person has answered"
+          },
+          "youFinished" : {
+            "type" : "boolean",
+            "description" : "True when this person has answered them all"
+          },
+          "finished" : {
+            "type" : "array",
+            "description" : "The others who have answered them all. Never what they answered.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "matches" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many ideas everyone said yes to"
+          }
+        },
+        "required" : [ "day", "emoji", "finished", "id", "ideas", "label", "locked", "matches", "name", "picture", "seen", "youFinished" ]
+      },
+      "BothYesIdeaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "deckId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "yours" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "This person's own answer. Null: not answered yet."
+          },
+          "match" : {
+            "type" : "boolean",
+            "description" : "True when everyone said yes"
+          }
+        },
+        "required" : [ "deckId", "emoji", "id", "match", "text", "yours" ]
+      },
+      "BothYesOpenDeckResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "card" : {
+            "description" : "The next idea this person hasn't answered. Null when they are through.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BothYesIdeaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Which one that is: 6, of 8"
+          },
+          "of" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "matches" : {
+            "type" : "array",
+            "description" : "What everyone said yes to, in the deck's order",
+            "items" : {
+              "$ref" : "#/components/schemas/BothYesIdeaResponse"
+            }
+          }
+        },
+        "required" : [ "card", "id", "matches", "number", "of" ]
+      },
+      "BothYesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "people" : {
+            "type" : "array",
+            "description" : "The people who answer",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "youAnswer" : {
+            "type" : "boolean",
+            "description" : "True when the person looking is one of them"
+          },
+          "decks" : {
+            "type" : "array",
+            "description" : "The decks, in their order. Thirty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/BothYesDeckResponse"
+            }
+          },
+          "deck" : {
+            "description" : "The deck that is open: the one asked for, or the first with something left",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BothYesOpenDeckResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "deck", "decks", "people", "youAnswer" ]
+      },
+      "FairShareSettings" : {
+        "type" : "object",
+        "properties" : {
+          "people" : {
+            "type" : "array",
+            "description" : "The members whose share it is about",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        },
+        "required" : [ "people" ]
+      },
+      "FairShareHoursResponse" : {
+        "type" : "object",
+        "properties" : {
+          "jobId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "hours" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "emoji", "hours", "jobId", "name" ]
+      },
+      "FairShareJobResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "yourHours" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "This person's hours for it in the month shown. Null: not theirs."
+          }
+        },
+        "required" : [ "emoji", "id", "name", "yourHours" ]
+      },
+      "FairShareOfferResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "by" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when the person looking suggested it"
+          },
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "line" : {
+            "type" : "string"
+          },
+          "accepted" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "What the other one said: true, false, or null for nothing yet"
+          }
+        },
+        "required" : [ "accepted", "at", "by", "id", "line", "yours" ]
+      },
+      "FairSharePersonResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "hours" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "percent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Their share of all the hours, 0 to 100. Everyone's add up to 100."
+          },
+          "jobs" : {
+            "type" : "array",
+            "description" : "The jobs they ticked, the biggest first",
+            "items" : {
+              "$ref" : "#/components/schemas/FairShareHoursResponse"
+            }
+          }
+        },
+        "required" : [ "hours", "jobs", "percent", "person", "you" ]
+      },
+      "FairShareResponse" : {
+        "type" : "object",
+        "properties" : {
+          "month" : {
+            "type" : "string",
+            "description" : "The month shown, as 2026-10"
+          },
+          "monthName" : {
+            "type" : "string",
+            "description" : "Its name: October"
+          },
+          "months" : {
+            "type" : "array",
+            "description" : "The months there is something for, newest first, as 2026-10",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "totalHours" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The hours of everyone together"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Each person's side of it, in the order of the people",
+            "items" : {
+              "$ref" : "#/components/schemas/FairSharePersonResponse"
+            }
+          },
+          "gapHours" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many hours the heaviest share is above the lightest"
+          },
+          "close" : {
+            "type" : "boolean",
+            "description" : "True when the shares are within 53 to 47 of each other, or nobody ticked anything"
+          },
+          "swap" : {
+            "description" : "One swap that would bring it close. Null when it is close, or none would.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FairShareSwapResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "offered" : {
+            "description" : "A swap one of them suggested for this month",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FairShareOfferResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "jobs" : {
+            "type" : "array",
+            "description" : "Every job on the list, with this person's own hours in the month shown",
+            "items" : {
+              "$ref" : "#/components/schemas/FairShareJobResponse"
+            }
+          },
+          "canTick" : {
+            "type" : "boolean",
+            "description" : "True when the month shown can still be ticked: this month and the one before"
+          }
+        },
+        "required" : [ "canTick", "close", "gapHours", "jobs", "month", "monthName", "months", "offered", "people", "swap", "totalHours" ]
+      },
+      "FairShareSwapResponse" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "gives" : {
+            "$ref" : "#/components/schemas/FairShareHoursResponse"
+          },
+          "to" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "takes" : {
+            "$ref" : "#/components/schemas/FairShareHoursResponse"
+          },
+          "gapAfter" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The gap in hours there would be afterwards"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "In words, for the person looking: Alex takes the school things; you take the car."
+          }
+        },
+        "required" : [ "from", "gapAfter", "gives", "line", "takes", "to" ]
+      },
+      "HeardSettings" : {
+        "type" : "object"
+      },
+      "HeardPersonResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "count", "person", "you" ]
+      },
+      "HeardQuoteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "who" : {
+            "description" : "The flatmate who said it, also after they moved out",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "whoName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Who said it, when that is someone outside the flat"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True when the viewer said it"
+          },
+          "about" : {
+            "type" : [ "string", "null" ],
+            "description" : "A few words on when or what about: the first cold night"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it was said"
+          },
+          "writtenAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it was written down"
+          },
+          "writtenBy" : {
+            "description" : "Who wrote it down",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "about", "day", "id", "mine", "text", "who", "whoName", "writtenAt", "writtenBy", "you" ]
+      },
+      "HeardViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who said them, with how many each: the chips. Thirty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/HeardPersonResponse"
+            }
+          },
+          "latest" : {
+            "type" : "array",
+            "description" : "The newest thirty. The rest is read a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/HeardQuoteResponse"
+            }
+          }
+        },
+        "required" : [ "latest", "people", "total" ]
+      },
+      "GuestBookSettings" : {
+        "type" : "object"
+      },
+      "GuestBookLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "about" : {
+            "type" : [ "string", "null" ],
+            "description" : "Who they are, in a few words: from Leeds"
+          },
+          "nights" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "waiting" : {
+            "type" : "boolean",
+            "description" : "True while it waits for a flatmate's yes"
+          },
+          "fromTheDoor" : {
+            "type" : "boolean",
+            "description" : "True when it came through the code by the door"
+          },
+          "letInBy" : {
+            "description" : "The flatmate who let it in, or wrote it down",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "about", "day", "fromTheDoor", "id", "letInBy", "name", "nights", "photo", "text", "waiting" ]
+      },
+      "GuestBookViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "guests" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many guests are in the book"
+          },
+          "nights" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The nights they stayed, added up"
+          },
+          "since" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "The year of the first line"
+          },
+          "link" : {
+            "type" : [ "string", "null" ],
+            "description" : "The link behind the code by the door, for the people who live here. The app draws it as a code to print."
+          },
+          "decides" : {
+            "type" : "boolean",
+            "description" : "True when this person is one of the people who live here and decides what is let in"
+          },
+          "waiting" : {
+            "type" : "array",
+            "description" : "Lines from the door that wait for a yes. Empty for everyone who doesn't decide.",
+            "items" : {
+              "$ref" : "#/components/schemas/GuestBookLineResponse"
+            }
+          },
+          "latest" : {
+            "type" : "array",
+            "description" : "The newest thirty lines in the book. The rest is read a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/GuestBookLineResponse"
+            }
+          }
+        },
+        "required" : [ "decides", "guests", "latest", "link", "nights", "since", "waiting" ]
+      },
+      "LivedHereSettings" : {
+        "type" : "object"
+      },
+      "LivedHereHandedOnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "entryId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "thing" : {
+            "$ref" : "#/components/schemas/ThingBrief"
+          }
+        },
+        "required" : [ "entryId", "thing" ]
+      },
+      "LivedHereRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "entryId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The entry behind what the flat wrote by hand, to change or remove it"
+          },
+          "person" : {
+            "description" : "The member, for someone who is or was in the circle",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people the row stands for: 1, or 2 for “two people before you”"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "fromYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "untilYear" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "The year they left. Null while they live here."
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "byHand" : {
+            "type" : "boolean",
+            "description" : "True when the years were typed by the flat, not taken from the circle"
+          }
+        },
+        "required" : [ "byHand", "count", "entryId", "fromYear", "name", "note", "person", "untilYear", "you" ]
+      },
+      "LivedHereViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "hereNow" : {
+            "type" : "array",
+            "description" : "The people who live here now, the newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/LivedHereRowResponse"
+            }
+          },
+          "before" : {
+            "type" : "array",
+            "description" : "The people who lived here before, the last to leave first",
+            "items" : {
+              "$ref" : "#/components/schemas/LivedHereRowResponse"
+            }
+          },
+          "handedOn" : {
+            "type" : "array",
+            "description" : "What is handed on to the next person, as far as this person may see it",
+            "items" : {
+              "$ref" : "#/components/schemas/LivedHereHandedOnResponse"
+            }
+          }
+        },
+        "required" : [ "before", "handedOn", "hereNow" ]
+      },
+      "KittySettings" : {
+        "type" : "object",
+        "properties" : {
+          "eachCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What each person pays in every month, in whole cents"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "payInDay" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The day of the month it is paid in on: 1"
+          }
+        },
+        "required" : [ "currency", "eachCents", "payInDay" ]
+      },
+      "KittyItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "low" : {
+            "type" : "boolean",
+            "description" : "True while it is marked as running low"
+          },
+          "tappedBy" : {
+            "description" : "Who marked it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "id", "low", "name", "tappedBy" ]
+      },
+      "KittyLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string",
+            "description" : "in for money paid in, out for something bought"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "What was bought, or: Paid in for November"
+          },
+          "who" : {
+            "description" : "Who paid in, or who shopped",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Whole cents: above zero for money in, below for money out"
+          },
+          "receipt" : {
+            "description" : "The receipt, when one was kept",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "cents", "day", "id", "kind", "mine", "receipt", "title", "who" ]
+      },
+      "KittyViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "balanceCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What the pot holds now, in whole cents. Below zero when it is short."
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "low" : {
+            "type" : "boolean",
+            "description" : "True when it holds less than one person pays in"
+          },
+          "eachCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "payInDay" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "month" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The first day of the month shown"
+          },
+          "monthName" : {
+            "type" : "string",
+            "description" : "That month's name: November"
+          },
+          "paidIn" : {
+            "type" : "array",
+            "description" : "Who has paid in this month",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "notPaidIn" : {
+            "type" : "array",
+            "description" : "Who hasn't yet",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "paidInCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What was paid in this month, in whole cents"
+          },
+          "youPaidIn" : {
+            "type" : "boolean"
+          },
+          "yourPayInId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The viewer's own paying-in of this month, to take it back"
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "The flat's usual things, with which are running low",
+            "items" : {
+              "$ref" : "#/components/schemas/KittyItemResponse"
+            }
+          },
+          "shopper" : {
+            "description" : "Whose turn it is to shop",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yourTurn" : {
+            "type" : "boolean"
+          },
+          "leftOverCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What the pot held when the month began"
+          },
+          "leftOverFrom" : {
+            "type" : "string",
+            "description" : "The month before: October"
+          },
+          "lines" : {
+            "type" : "array",
+            "description" : "This month's lines, newest first. Earlier months are read a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/KittyLineResponse"
+            }
+          }
+        },
+        "required" : [ "balanceCents", "currency", "eachCents", "items", "leftOverCents", "leftOverFrom", "lines", "low", "month", "monthName", "notPaidIn", "paidIn", "paidInCents", "payInDay", "shopper", "youPaidIn", "yourPayInId", "yourTurn" ]
+      },
+      "FairerSplitSettings" : {
+        "type" : "object"
+      },
+      "FairerSplitShareResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "This person's share, in whole cents"
+          },
+          "byRuleCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What the rule alone gives, before anyone changed the numbers by hand"
+          },
+          "measure" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What the rule goes by: square metres, nights at home, or units used"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "A few words: the big room"
+          },
+          "percent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The share as a part of the total, 0 to 100"
+          },
+          "paid" : {
+            "type" : "boolean",
+            "description" : "For a bill paid once: true when this share is paid"
+          }
+        },
+        "required" : [ "byRuleCents", "cents", "measure", "note", "paid", "percent", "person", "you" ]
+      },
+      "FairerSplitSplitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "What is split: Rent, Electricity"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "As a heading: October's electricity"
+          },
+          "group" : {
+            "type" : "string",
+            "description" : "rent, bills, kitty or other: the tab it stands under"
+          },
+          "repeats" : {
+            "type" : "boolean",
+            "description" : "True for something split the same way every month; false for a bill paid once"
+          },
+          "from" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The first day a bill is for"
+          },
+          "to" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The last day a bill is for"
+          },
+          "payer" : {
+            "description" : "Who paid the bill, and is paid back",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "agreed" : {
+            "description" : "The split that counts: the last one everyone agreed to",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FairerSplitVersionResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "proposed" : {
+            "description" : "A split that was proposed and still waits for someone's yes",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FairerSplitVersionResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "settled" : {
+            "type" : "boolean",
+            "description" : "True for a bill whose every share is paid"
+          }
+        },
+        "required" : [ "agreed", "currency", "from", "group", "id", "name", "payer", "proposed", "repeats", "settled", "title", "to" ]
+      },
+      "FairerSplitVersionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "way" : {
+            "type" : "string",
+            "description" : "equal, room, nights, use or own"
+          },
+          "totalCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "shared" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "By room size: the shared space, in square metres"
+          },
+          "shares" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FairerSplitShareResponse"
+            }
+          },
+          "proposedBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "proposedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "agreedOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day the last housemate said yes"
+          },
+          "agreedBy" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "waitingFor" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "youAgreed" : {
+            "type" : "boolean"
+          },
+          "needsYou" : {
+            "type" : "boolean",
+            "description" : "True when it waits for this person's yes"
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when this person proposed it and can take it back"
+          }
+        },
+        "required" : [ "agreedBy", "agreedOn", "id", "needsYou", "proposedAt", "proposedBy", "shared", "shares", "totalCents", "waitingFor", "way", "youAgreed", "yours" ]
+      },
+      "FairerSplitViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "splits" : {
+            "type" : "array",
+            "description" : "Everything the flat splits, in the order it was added",
+            "items" : {
+              "$ref" : "#/components/schemas/FairerSplitSplitResponse"
+            }
+          },
+          "waitingForYou" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many proposals wait for this person's yes"
+          }
+        },
+        "required" : [ "splits", "waitingForYou" ]
+      },
+      "HeadsUpSettings" : {
+        "type" : "object",
+        "properties" : {
+          "standing" : {
+            "type" : [ "string", "null" ],
+            "description" : "A line that always stands under the notices: Quiet after 23:00"
+          },
+          "standingNote" : {
+            "type" : [ "string", "null" ],
+            "description" : "A line under it: From the House rules, agreed by all three."
+          }
+        },
+        "required" : [ "standing", "standingNote" ]
+      },
+      "HeadsUpNoticeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "detail" : {
+            "type" : [ "string", "null" ],
+            "description" : "A few words more: on the sofa"
+          },
+          "what" : {
+            "type" : "string",
+            "description" : "away, guests or note"
+          },
+          "from" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "writtenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "fromDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it starts"
+          },
+          "untilDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it ends"
+          },
+          "nightsAway" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For time away: the nights that come off the bills"
+          },
+          "replies" : {
+            "type" : "array",
+            "description" : "Everyone who answered, in the order they did",
+            "items" : {
+              "$ref" : "#/components/schemas/HeadsUpReplyResponse"
+            }
+          },
+          "waitingFor" : {
+            "type" : "array",
+            "description" : "Who hasn't answered yet",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "everyoneFine" : {
+            "type" : "boolean",
+            "description" : "True when everyone else said it's fine"
+          },
+          "yourAnswer" : {
+            "type" : [ "string", "null" ],
+            "description" : "The viewer's own answer: fine or talk"
+          },
+          "needsYou" : {
+            "type" : "boolean",
+            "description" : "True when it is someone else's, isn't over, and this person hasn't answered"
+          },
+          "over" : {
+            "type" : "boolean",
+            "description" : "True once it is over"
+          }
+        },
+        "required" : [ "detail", "everyoneFine", "from", "fromDay", "id", "mine", "needsYou", "nightsAway", "over", "replies", "text", "untilDay", "waitingFor", "what", "writtenAt", "yourAnswer" ]
+      },
+      "HeadsUpReplyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "who" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "says" : {
+            "type" : "string",
+            "description" : "fine or talk"
+          },
+          "text" : {
+            "type" : [ "string", "null" ],
+            "description" : "A few words with it: will water the plants"
+          },
+          "yours" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "says", "text", "who", "yours" ]
+      },
+      "HeadsUpViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "notices" : {
+            "type" : "array",
+            "description" : "The notices that aren't over, newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/HeadsUpNoticeResponse"
+            }
+          },
+          "earlier" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many older ones there are, read a page at a time"
+          },
+          "needYou" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many wait for this person's answer"
+          },
+          "standing" : {
+            "type" : [ "string", "null" ]
+          },
+          "standingNote" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "earlier", "needYou", "notices", "standing", "standingNote" ]
+      },
+      "FindDateSettings" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The first day offered"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The last day offered"
+          },
+          "setFor" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it was set for, once someone set it"
+          },
+          "eventId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The event in the calendar it became"
+          }
+        },
+        "required" : [ "eventId", "from", "setFor", "to" ]
+      },
+      "FindDateBestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "free" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "allWhoAnswered" : {
+            "type" : "boolean",
+            "description" : "True when everyone who answered can do it"
+          },
+          "everyone" : {
+            "type" : "boolean",
+            "description" : "True when everyone who is asked can do it"
+          },
+          "names" : {
+            "type" : "array",
+            "description" : "Who can: first names, with “you” for this person",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "allWhoAnswered", "day", "everyone", "free", "names" ]
+      },
+      "FindDateDayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "free" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many can do it"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True when this person can"
+          },
+          "best" : {
+            "type" : "boolean",
+            "description" : "True for the best day"
+          },
+          "past" : {
+            "type" : "boolean",
+            "description" : "True for a day that has passed"
+          },
+          "who" : {
+            "type" : "array",
+            "description" : "The people of the circle who can",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "byLink" : {
+            "type" : "array",
+            "description" : "The names of those who can and answered by link",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "best", "byLink", "day", "free", "past", "who", "you" ]
+      },
+      "FindDateOutsiderResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "days" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many days they can do"
+          }
+        },
+        "required" : [ "days", "id", "name" ]
+      },
+      "FindDateViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "Every day offered, with how many can do it",
+            "items" : {
+              "$ref" : "#/components/schemas/FindDateDayResponse"
+            }
+          },
+          "asked" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people are asked: everyone in the circle, and whoever answered by link"
+          },
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them have answered"
+          },
+          "best" : {
+            "description" : "The best day so far. Null while nobody can do any.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FindDateBestResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "waitingFor" : {
+            "type" : "array",
+            "description" : "The people of the circle who haven't answered",
+            "items" : {
+              "$ref" : "#/components/schemas/FindDateWaitingResponse"
+            }
+          },
+          "byLink" : {
+            "type" : "array",
+            "description" : "People who answered by link",
+            "items" : {
+              "$ref" : "#/components/schemas/FindDateOutsiderResponse"
+            }
+          },
+          "youAnswered" : {
+            "type" : "boolean"
+          },
+          "youCant" : {
+            "type" : "boolean",
+            "description" : "True when this person said none of the days work"
+          },
+          "link" : {
+            "type" : [ "string", "null" ],
+            "description" : "The link for people without the app, for those who may change the board"
+          },
+          "askedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it was sent round"
+          },
+          "setFor" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it was set for"
+          },
+          "eventId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The event in the calendar it became, while that is still there"
+          }
+        },
+        "required" : [ "answered", "asked", "askedAt", "best", "byLink", "days", "eventId", "from", "link", "setFor", "to", "waitingFor", "youAnswered", "youCant" ]
+      },
+      "FindDateWaitingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "opened" : {
+            "type" : "boolean",
+            "description" : "True when they have opened it"
+          },
+          "nudgedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When they were last nudged"
+          }
+        },
+        "required" : [ "nudgedAt", "opened", "person", "you" ]
+      },
+      "SecretSantaSettings" : {
+        "type" : "object",
+        "properties" : {
+          "budgetCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The most a present should cost, in whole cents. 0 for no limit."
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "swapOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day the presents are swapped"
+          },
+          "swapAt" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where or when, in the crew's words: the reunion dinner"
+          },
+          "swapThingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Something of the circle the swap belongs to: the dinner's own board"
+          },
+          "drawnOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day the names were drawn"
+          }
+        },
+        "required" : [ "budgetCents", "currency", "drawnOn", "swapAt", "swapOn", "swapThingId" ]
+      },
+      "SecretSantaApartResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "a" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "b" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "why" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why, in the crew's words: they're a couple"
+          }
+        },
+        "required" : [ "a", "b", "id", "why" ]
+      },
+      "SecretSantaNameResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "you" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "id", "person", "you" ]
+      },
+      "SecretSantaSwapResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "kind", "title" ]
+      },
+      "SecretSantaViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "drawn" : {
+            "type" : "boolean"
+          },
+          "drawnOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "names" : {
+            "type" : "array",
+            "description" : "Who is in the hat",
+            "items" : {
+              "$ref" : "#/components/schemas/SecretSantaNameResponse"
+            }
+          },
+          "inTheHat" : {
+            "type" : "boolean",
+            "description" : "True when this person is in the hat"
+          },
+          "apart" : {
+            "type" : "array",
+            "description" : "The pairs who can't draw each other",
+            "items" : {
+              "$ref" : "#/components/schemas/SecretSantaApartResponse"
+            }
+          },
+          "budgetCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "swapOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "swapAt" : {
+            "type" : [ "string", "null" ]
+          },
+          "swapThing" : {
+            "description" : "What the swap belongs to, when this person can see it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SecretSantaSwapResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "yours" : {
+            "description" : "The one name this person drew, with that person's wish list. Null before the draw.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SecretSantaYoursResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "myWishes" : {
+            "type" : "array",
+            "description" : "This person's own wish list",
+            "items" : {
+              "$ref" : "#/components/schemas/SecretSantaWishResponse"
+            }
+          }
+        },
+        "required" : [ "apart", "budgetCents", "currency", "drawn", "drawnOn", "inTheHat", "myWishes", "names", "swapAt", "swapOn", "swapThing", "yours" ]
+      },
+      "SecretSantaWishResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "text" ]
+      },
+      "SecretSantaYoursResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "wishes" : {
+            "type" : "array",
+            "description" : "What they would like, in their own words",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "gotIt" : {
+            "type" : "boolean",
+            "description" : "True once this person ticked that they have the present"
+          }
+        },
+        "required" : [ "gotIt", "person", "wishes" ]
+      },
+      "WhereNextSettings" : {
+        "type" : "object",
+        "properties" : {
+          "when" : {
+            "type" : [ "string", "null" ],
+            "description" : "When the trip would be, in the crew's words: Spring 2027"
+          },
+          "closesOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The last day to vote, when one was set"
+          },
+          "closedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The moment the vote closed"
+          },
+          "tripFolderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder the winner was given in Notes"
+          }
+        },
+        "required" : [ "closedAt", "closesOn", "tripFolderId", "when" ]
+      },
+      "WhereNextIdeaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "days" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "costCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Roughly what it costs each person, in whole cents"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addedBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True for the idea this person voted for"
+          },
+          "votes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Its votes. Null until the vote is closed."
+          },
+          "percent" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Its votes as a part of all votes, 0 to 100. Null until the vote is closed."
+          },
+          "voters" : {
+            "type" : "array",
+            "description" : "Who voted for it. Empty until the vote is closed.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "winner" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "addedBy", "costCents", "currency", "days", "id", "mine", "name", "note", "percent", "photo", "voters", "votes", "winner", "yours" ]
+      },
+      "WhereNextViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "when" : {
+            "type" : [ "string", "null" ]
+          },
+          "closesOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "asked" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people are asked to vote"
+          },
+          "voted" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them have"
+          },
+          "waitingFor" : {
+            "type" : "array",
+            "description" : "Who hasn't voted yet",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "youVoted" : {
+            "type" : "boolean"
+          },
+          "ideas" : {
+            "type" : "array",
+            "description" : "The ideas: in the order they were added while the vote is open, the winner first after",
+            "items" : {
+              "$ref" : "#/components/schemas/WhereNextIdeaResponse"
+            }
+          },
+          "winnerId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The winning idea. Null until the vote is closed."
+          },
+          "tied" : {
+            "type" : "boolean",
+            "description" : "True when the winner had as many votes as another idea, and won by being added first"
+          },
+          "tripFolderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder in Notes the winner was given, once it was made a trip"
+          }
+        },
+        "required" : [ "asked", "closed", "closesOn", "ideas", "tied", "tripFolderId", "voted", "waitingFor", "when", "winnerId", "youVoted" ]
+      },
+      "DictionarySettings" : {
+        "type" : "object"
+      },
+      "DictionaryViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "words" : {
+            "type" : "array",
+            "description" : "The newest fifty words. The rest is read a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/DictionaryWordResponse"
+            }
+          }
+        },
+        "required" : [ "total", "words" ]
+      },
+      "DictionaryWordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "word" : {
+            "type" : "string"
+          },
+          "part" : {
+            "type" : [ "string", "null" ],
+            "description" : "What kind of word: verb, noun"
+          },
+          "meaning" : {
+            "type" : "string"
+          },
+          "coinedBy" : {
+            "description" : "Who coined it, also after they left the circle",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "coinedByName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Who coined it, when that is someone outside the circle"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True when the viewer coined it"
+          },
+          "origin" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it came from: Lisbon airport"
+          },
+          "firstRecorded" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it was first recorded"
+          },
+          "seeAlso" : {
+            "type" : [ "string", "null" ],
+            "description" : "Another word to look up: just one more plate"
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "addedAt", "coinedBy", "coinedByName", "firstRecorded", "id", "meaning", "mine", "origin", "part", "photo", "seeAlso", "word", "you" ]
+      },
+      "PredictionsSettings" : {
+        "type" : "object",
+        "properties" : {
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day they open"
+          },
+          "occasion" : {
+            "type" : [ "string", "null" ],
+            "description" : "What the day is, in the crew's words: the reunion"
+          }
+        },
+        "required" : [ "occasion", "opensOn" ]
+      },
+      "PredictionsItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "by" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "about" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "draft" : {
+            "type" : "boolean",
+            "description" : "True for the viewer's own, not sealed yet"
+          },
+          "sealed" : {
+            "type" : "boolean",
+            "description" : "True while this person may not read it"
+          },
+          "sealedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "text" : {
+            "type" : [ "string", "null" ],
+            "description" : "The words. Null while it is sealed for this person."
+          },
+          "right" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many said it came true. 0 until they open."
+          },
+          "wrong" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many said it didn't. 0 until they open."
+          },
+          "verdict" : {
+            "type" : [ "string", "null" ],
+            "description" : "right or wrong, once more people said one than the other"
+          },
+          "yourMark" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "What this person said: true for right, false for wrong"
+          }
+        },
+        "required" : [ "about", "by", "draft", "id", "mine", "right", "sealed", "sealedAt", "text", "verdict", "wrong", "yourMark" ]
+      },
+      "PredictionsViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "occasion" : {
+            "type" : [ "string", "null" ]
+          },
+          "open" : {
+            "type" : "boolean",
+            "description" : "True from the day they open"
+          },
+          "daysToGo" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "writers" : {
+            "type" : "array",
+            "description" : "Everyone who writes, with how far each has got",
+            "items" : {
+              "$ref" : "#/components/schemas/PredictionsWriterResponse"
+            }
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "Every prediction this person may know of: sealed ones as envelopes, their own drafts, and from the day on all of them in full",
+            "items" : {
+              "$ref" : "#/components/schemas/PredictionsItemResponse"
+            }
+          }
+        },
+        "required" : [ "daysToGo", "items", "occasion", "open", "opensOn", "writers" ]
+      },
+      "PredictionsWriterResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "written" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many they have written. For others: only the sealed ones."
+          },
+          "of" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many there are to write: one about each of the others"
+          },
+          "drafts" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "For the viewer: how many of theirs aren't sealed yet. 0 for everyone else."
+          },
+          "stillAbout" : {
+            "type" : "array",
+            "description" : "For the viewer: who they haven't written about yet. Empty for everyone else.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          }
+        },
+        "required" : [ "drafts", "of", "person", "stillAbout", "written", "you" ]
+      },
+      "AwardsSettings" : {
+        "type" : "object"
+      },
+      "AwardsAwardResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "decided" : {
+            "type" : "boolean",
+            "description" : "True once its vote is closed and the result is shown"
+          },
+          "voted" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people have voted for it"
+          },
+          "asked" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people are asked to"
+          },
+          "youVoted" : {
+            "type" : "boolean"
+          },
+          "yourNomineeId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The nominee this person voted for"
+          },
+          "totalVotes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "All votes it had. Null until it is decided."
+          },
+          "nominees" : {
+            "type" : "array",
+            "description" : "The nominees: in the order they were named while it is open, the winner first after",
+            "items" : {
+              "$ref" : "#/components/schemas/AwardsNomineeResponse"
+            }
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "asked", "decided", "emoji", "id", "mine", "name", "nominees", "totalVotes", "voted", "youVoted", "yourNomineeId" ]
+      },
+      "AwardsNomineeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "person" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "what" : {
+            "type" : [ "string", "null" ],
+            "description" : "What for: the tiled bar in Alfama"
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "namedBy" : {
+            "description" : "Who named them",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "votes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Their votes. Null until the award is decided."
+          },
+          "winner" : {
+            "type" : "boolean",
+            "description" : "True for a winner. False until the award is decided."
+          },
+          "ownVoteIncluded" : {
+            "type" : "boolean",
+            "description" : "True for a winner whose own vote was among theirs. False until the award is decided."
+          }
+        },
+        "required" : [ "id", "mine", "namedBy", "ownVoteIncluded", "person", "photo", "votes", "what", "winner" ]
+      },
+      "AwardsViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The year shown"
+          },
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day whatever is still open is decided: 31 December"
+          },
+          "open" : {
+            "type" : "boolean",
+            "description" : "True from that day on"
+          },
+          "daysToGo" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "awards" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AwardsAwardResponse"
+            }
+          },
+          "years" : {
+            "type" : "array",
+            "description" : "The other years that have awards, newest first",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        },
+        "required" : [ "awards", "daysToGo", "open", "opensOn", "year", "years" ]
+      },
+      "WalkTogetherSettings" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where the walk starts: Ljubljana"
+          },
+          "to" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it ends: Lisbon"
+          },
+          "goal" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How far it is: metres on a board in km, steps on a board in steps"
+          },
+          "unit" : {
+            "type" : "string",
+            "description" : "km or steps"
+          }
+        },
+        "required" : [ "from", "goal", "to", "unit" ]
+      },
+      "WalkTogetherPersonResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "thisWeek" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "person", "thisWeek", "total", "you" ]
+      },
+      "WalkTogetherStopResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "at" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How far along the way it lies"
+          },
+          "reached" : {
+            "type" : "boolean",
+            "description" : "True once the crew has walked that far"
+          }
+        },
+        "required" : [ "at", "id", "name", "reached" ]
+      },
+      "WalkTogetherViewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "type" : [ "string", "null" ]
+          },
+          "to" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "type" : "string",
+            "description" : "km or steps. On a board in km every amount is in metres."
+          },
+          "goal" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What everyone has walked, added up"
+          },
+          "percent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How much of the way that is, 0 to 100"
+          },
+          "reached" : {
+            "type" : "boolean"
+          },
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Monday of this week"
+          },
+          "thisWeek" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What everyone walked this week, added up"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Each person, the one who walked most this week first",
+            "items" : {
+              "$ref" : "#/components/schemas/WalkTogetherPersonResponse"
+            }
+          },
+          "stops" : {
+            "type" : "array",
+            "description" : "Places along the way, in their order",
+            "items" : {
+              "$ref" : "#/components/schemas/WalkTogetherStopResponse"
+            }
+          },
+          "yours" : {
+            "type" : "array",
+            "description" : "The viewer's own walks of the last 31 days, newest first, to put a number right",
+            "items" : {
+              "$ref" : "#/components/schemas/WalkTogetherWalkResponse"
+            }
+          }
+        },
+        "required" : [ "from", "goal", "people", "percent", "reached", "stops", "thisWeek", "to", "total", "unit", "weekStart", "yours" ]
+      },
+      "WalkTogetherWalkResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "amount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "amount", "day", "id" ]
       }
     },
     "securitySchemes" : {
@@ -19896,6 +23929,178 @@
       "settings" : "DoorframeSettings",
       "view" : "DoorframeView",
       "guide" : [ "settings: none", "entry mark: memberId, heightMm (300 to 2500), day (left out: today), note, mediaId (a photo upload)", "entry landmark: text (Up to Grandma Astrid's shoulder), heightMm" ]
+    },
+    "whose_turn" : {
+      "name" : "Whose turn?",
+      "settings" : "WhoseTurnSettings",
+      "view" : "WhoseTurnResponse",
+      "entry" : "WhoseTurnThingResponse",
+      "guide" : [ "settings: none", "entry thing: name, emoji, does (words: chooses the film), did (the same in the past: chose), when (words: Every evening), people (member ids in their order; left out: everyone), nextMemberId (whose turn it is; left out: the first), onDay (the day it is next on, or null)", "entry turn: thingId, memberId (who took it; left out: whoever's turn it was), note, day (left out: today). Adding one is “Done, pass it on”; removing it takes the turn back.", "show: a month as 2026-11, for the turns kept in it (`history`). Left out: the last 31 days." ]
+    },
+    "piggy_bank" : {
+      "name" : "The piggy bank",
+      "settings" : "PiggyBankSettings",
+      "view" : "PiggyBankResponse",
+      "entry" : "PiggyBankMoneyResponse",
+      "guide" : [ "settings: forMemberId (the child), currency (left out: EUR), interestPercent (0 to 100 a month, paid on Save on the first of the month), starCents (what a star is worth), fund ({name, stars} or null), spendGoalCents, saveGoalCents, giveGoalCents", "entry in: jar (spend, save or give), cents, title, note, fromName, stars (with starCents set, cents may be left out), day (left out: today)", "entry out: jar, cents, title, note, day", "entry move: jar, toJar, cents, note, day", "Changing an entry changes its title and note. Interest is written by the bank, never sent." ]
+    },
+    "secret_missions" : {
+      "name" : "Secret missions",
+      "settings" : "SecretMissionsSettings",
+      "view" : "SecretMissionsResponse",
+      "entry" : "SecretMissionsMissionResponse",
+      "guide" : [ "settings: none", "verb done: memberId (whose mission; left out: yours), did (what you did, in your words), mediaId (a photo upload), done (false takes the tick back, until it is revealed)", "verb another: memberId (left out: you). Gives a different mission for the same person.", "verb like: entryId, liked (left out: true). For the one a revealed mission was for.", "verb reply: entryId, text. A line under a revealed mission, from the one it was for or the one who did it.", "Changing an entry: text (your own words for your mission) or did, until it is revealed.", "show: any day of a week, as a date, for what was revealed in it. Left out: the last week revealed.", "Everyone who sees the board may use these verbs, also with a board they may only look at." ]
+    },
+    "saturday_jar" : {
+      "name" : "The Saturday jar",
+      "settings" : "SaturdayJarSettings",
+      "view" : "SaturdayJarResponse",
+      "entry" : "SaturdayJarIdeaResponse",
+      "guide" : [ "settings: none to send. weather is kept for a weather source and is always null for now.", "entry idea: text, emoji, place (home, indoors or outdoors), minutes, cents, byMemberId (you, or a child you look after). Everyone who sees the jar may add one. Changing one can also send done: false, to put it back in the jar.", "verb shake: minutes (the time there is), cents (what it may cost), outdoors (true or false). Each may be left out: it then doesn't matter.", "verb do: ideaId (left out: the slip pulled today), day (left out: today), timeZone (the phone's; left out: UTC). It leaves the jar and becomes an event of that day with an album next to it.", "filter (for the list of entries): fits (what was asked today), rainy, home, free", "Everyone who sees the board may use these verbs, also with a board they may only look at." ]
+    },
+    "sleeps" : {
+      "name" : "Sleeps until…",
+      "settings" : "SleepsSettings",
+      "view" : "SleepsResponse",
+      "entry" : "SleepsCountResponse",
+      "guide" : [ "settings: none", "entry count: title (what comes after “sleeps until”), day (a date), emoji, note, yearly (true for a birthday or Christmas), tearerMemberId (who tears the links off), from (the day the chain starts; left out: today)", "verb tear: entryId, torn (left out: true; false puts tonight's link back). Everyone who sees the board may tear, also with a board they may only look at." ]
+    },
+    "where_is_it" : {
+      "name" : "Where is it?",
+      "settings" : "WhereIsItSettings",
+      "view" : "WhereIsItResponse",
+      "entry" : "WhereIsItItemResponse",
+      "guide" : [ "settings: none", "entry item: name, place, emoji, note, mediaId (a photo upload), putByMemberId (left out: you), day (when it was put there; left out: today), onlyMemberIds (the members it is kept to; left out or empty: everyone who sees the list). Changing its place forgets where it was last seen.", "verb seen: entryId, place (where you saw it), byMemberId (left out: you). Everyone who sees the thing may say so, also with a board they may only look at.", "show: a question or a few words (where's the tent). `found` is what answers it." ]
+    },
+    "habit_charts" : {
+      "name" : "Habit charts",
+      "settings" : "HabitChartsSettings",
+      "view" : "HabitChartsResponse",
+      "entry" : "HabitChartsChartResponse",
+      "guide" : [ "settings: none", "entry chart: title, emoji, people (member ids; left out or empty: everyone), rows (one to three of {label, icon}; left out: one row), days (mon to sun; left out or empty: every day), stars (true when every tick is a star; left out: true for one child's chart), unit (what a kept day is called when not “day”: dinner)", "verb tick: chartId, row (counted from 0; left out: 0), day (today or one of the last seven days; left out: today), done (left out: true; false takes the tick back). Everyone who sees the charts may tick, also with a board they may only look at.", "show: any day of the week to show, as a date. Left out: this week." ]
+    },
+    "our_story" : {
+      "name" : "Our story",
+      "settings" : "OurStorySettings",
+      "view" : "OurStoryResponse",
+      "entry" : "OurStoryMomentResponse",
+      "guide" : [ "settings: since (the day the count starts from; left out: the day of the first moment), sinceWords (what it began with: a wedding in Piran)", "entry moment: title, day (a date; for a month or a year, its first day), precision (day, month or year; left out: day), label (the word next to the date), text, star (true or false), from (journey, or null), mediaId (a photo upload)", "entry photo: momentId, mediaId (one more photo for a moment)" ]
+    },
+    "tucked_notes" : {
+      "name" : "Tucked notes",
+      "settings" : "TuckedNotesSettings",
+      "view" : "TuckedNotesResponse",
+      "entry" : "TuckedNotesNoteResponse",
+      "guide" : [ "settings: none", "entry note: text, forMemberId (left out between two people: the other one), turnsUp (this_week, at, lands or rains; left out: this_week), at (for turnsUp at: the moment, as 2026-11-13T19:30:00Z). lands and rains wait for a signal nothing sends yet.", "verb found: entryId. The person a note is for says they have read it, once it has turned up.", "Everyone who sees the board may tuck a note away and find theirs, also with a board they may only look at." ]
+    },
+    "anniversary" : {
+      "name" : "The anniversary questions",
+      "settings" : "AnniversarySettings",
+      "view" : "AnniversaryResponse",
+      "guide" : [ "settings: since (the day it all began; needed to start), people (member ids; left out: everyone in the circle)", "entry question: text. It is asked from the year that is being written.", "entry answer: questionId, text. It is this person's answer for the year that is being written; sending another for the same question replaces it. Everyone who answers may, also with a board they may only look at.", "show: a year that has opened, as its number (12). Left out: the newest." ]
+    },
+    "mystery_date" : {
+      "name" : "Mystery date",
+      "settings" : "MysteryDateSettings",
+      "view" : "MysteryDateResponse",
+      "entry" : "MysteryDatePastResponse",
+      "guide" : [ "settings: none", "entry date: day (a date), time (as the clock says it: 20:00), at (the moment it starts, as 2026-11-13T19:00:00Z; left out: that day and time read as UTC), hint, title (what it is: only you see it until it is revealed). One date is planned at a time.", "entry line: dateId, title, note, icon (pin, euro, users), ready (true or false), cents. Only the planner sees the plan's lines until the date is revealed.", "entry clue: dateId, text, opensAt (the moment it opens; left out: at once)", "entry idea: text (an idea for the jar; everyone sees the jar)", "verb reveal: entryId (your own date: show all of it now)", "verb shake: pulls an idea from the jar for the date you are planning. It is in `suggestion`." ]
+    },
+    "both_yes" : {
+      "name" : "Both said yes",
+      "settings" : "BothYesSettings",
+      "view" : "BothYesResponse",
+      "entry" : "BothYesIdeaResponse",
+      "guide" : [ "settings: people (the member ids who answer; left out: everyone in the circle). They stay as they are once anyone has answered.", "entry deck: name, label (a short word for a tab), emoji, day (the day it is for, or null), mediaId (a photo upload), locked (true keeps it behind the phone's lock, in the app)", "entry idea: deckId, text, emoji. Rewording an idea asks it again: its answers are forgotten.", "verb say: ideaId, yes (true or false; null takes your answer back). Everyone who answers may, also with a board they may only look at.", "show: a deck's id, to open that deck. Left out: the first deck you haven't finished." ]
+    },
+    "fair_share" : {
+      "name" : "The fair share",
+      "settings" : "FairShareSettings",
+      "view" : "FairShareResponse",
+      "guide" : [ "settings: people (the member ids whose share it is about; left out: everyone in the circle)", "entry job: name, emoji", "verb tick: jobId, hours (1 to 744; left out: your guess from last time, or 1), mine (left out: true; false takes it off your side), month (as 2026-11; this month or the one before; left out: this month). You only ever tick for yourself.", "verb suggest: month (left out: the month shown by default). Puts the swap the board offers in front of the other one.", "verb answer: entryId (the suggested swap), yes (true or false). For the one it was suggested to.", "show: a month, as 2026-10. Left out: last month when something was ticked in it, else this month.", "Everyone the share is about may use these verbs, also with a board they may only look at." ]
+    },
+    "heard" : {
+      "name" : "Heard in the kitchen",
+      "settings" : "HeardSettings",
+      "view" : "HeardViewResponse",
+      "entry" : "HeardQuoteResponse",
+      "guide" : [ "settings: none", "entry quote: text, saidByMemberId (or saidByName for someone outside the flat), about (a few words on when or what about), day (left out: today)", "entries list: member (who said it), q (words)" ]
+    },
+    "guest_book" : {
+      "name" : "The guest book",
+      "settings" : "GuestBookSettings",
+      "view" : "GuestBookViewResponse",
+      "entry" : "GuestBookLineResponse",
+      "guide" : [ "settings: none", "entry line (written in the app by someone who lives here; it is in the book at once): text, name, about, nights, day (left out: today), mediaId (a photo upload)", "changing a line: name, about, nights, day; text only for a line you wrote down yourself", "verb let_in: entryId (a line from the door joins the book)", "verb new_code: the door gets a new link and the old one stops working", "removing a line: anyone who lives here. That is also how a line from the door is turned away.", "entries list: filter waiting (only lines that wait for a yes)" ]
+    },
+    "lived_here" : {
+      "name" : "Everyone who's lived here",
+      "settings" : "LivedHereSettings",
+      "view" : "LivedHereViewResponse",
+      "guide" : [ "settings: none", "entry resident (what the flat writes about someone who is or was in the circle; one per person, adding again changes it): memberId, fromYear, untilYear, note", "entry before (people who lived here before the app): name, count (how many people; left out: 1), fromYear, untilYear, note", "entry handed_on: thingId (something of this circle that you can see)" ]
+    },
+    "kitty" : {
+      "name" : "The kitty",
+      "settings" : "KittySettings",
+      "view" : "KittyViewResponse",
+      "entry" : "KittyLineResponse",
+      "guide" : [ "settings: eachCents (what each pays in a month, whole cents; left out: 1000), currency (left out: EUR), payInDay (1 to 28; left out: 1)", "entry in: cents (left out: eachCents), day (left out: today). Your own paying in.", "entry out: what (what was bought), cents, day (left out: today), mediaId (a photo of the receipt), itemIds (usual things this bought: they stop running low)", "entry item: name (one of the flat's usual things)", "verb low: itemId, low (true or false; left out: true)", "entries list: every line there ever was, newest first; kind in or out" ]
+    },
+    "fairer_split" : {
+      "name" : "A fairer split",
+      "settings" : "FairerSplitSettings",
+      "view" : "FairerSplitViewResponse",
+      "guide" : [ "settings: none", "entry split: name, group (rent, bills, kitty or other; left out: bills), repeats (left out: true for rent and kitty), from and to (the days a bill is for; needed for nights), payerMemberId (who paid a bill), currency, and its first proposal: way, totalCents, shared, parts", "a proposal's fields: way (equal, room, nights, use or own), totalCents, shared (square metres of shared space, for room), parts ([{memberId, measure, note, cents}]: measure is square metres, nights at home or units used; nights left out are counted from Heads-up; cents for every part sets the shares by hand and has to add up to the total; parts left out: everyone)", "verb propose: splitId and a proposal's fields (what is left out stays as it was). Everyone is asked again.", "verb agree: proposalId", "verb paid: splitId, paid (true or false; left out: true), memberId (left out: you; whoever paid the bill may tick for others)", "changing a split entry: name, group, payerMemberId. Removing: a proposal by whoever proposed it; a split only while nobody agreed to it." ]
+    },
+    "heads_up" : {
+      "name" : "Heads-up",
+      "settings" : "HeadsUpSettings",
+      "view" : "HeadsUpViewResponse",
+      "entry" : "HeadsUpNoticeResponse",
+      "guide" : [ "settings: standing (a line that always stands under the notices), standingNote", "entry notice: text, detail (a few words more), what (away, guests or note; left out: note), from (the day it starts), until (the day it ends). Time away needs both days.", "verb answer: noticeId, says (fine or talk; null takes your answer back), text (a few words with it)", "entries list: kind notice gives every notice there ever was, newest first" ]
+    },
+    "find_date" : {
+      "name" : "When can everyone?",
+      "settings" : "FindDateSettings",
+      "view" : "FindDateViewResponse",
+      "guide" : [ "settings: from and to (the days offered, 62 at most; left out: the three weeks from today)", "verb tap: day, free (true or false; left out: true). Your own day.", "verb cant: cant (true or false; left out: true). None of the days work for you.", "verb opened: says you have looked at it (the app sends it when the board is opened)", "verb nudge: memberId (someone who hasn't answered; once a day)", "verb set: day (left out: the best day), time (HH:mm; left out: all day), timeZone (left out: UTC). It becomes an event with everyone on it.", "verb new_link: the link for people without the app is replaced, and the old one stops working", "removing an entry: an answer that came by link, by anyone who may change the board" ]
+    },
+    "secret_santa" : {
+      "name" : "Secret Santa",
+      "settings" : "SecretSantaSettings",
+      "view" : "SecretSantaViewResponse",
+      "guide" : [ "settings: budgetCents (0 for no limit), currency, swapOn (a date), swapAt (words), swapThingId (something of the circle to open from the swap's row)", "entry name: memberId (someone with their own sign-in). Before the draw only; a new board starts with everyone in the hat.", "entry apart: memberId, otherMemberId, why. Two people who can't draw each other. Before the draw only.", "entry wish: text. Your own wish list: you and whoever drew you read it.", "verb draw: draws the names. Each person is shown only the one they drew.", "verb undo_draw: everyone draws again. Only while nobody has their present.", "verb got_it: got (true or false; left out: true). Seen by nobody else." ]
+    },
+    "where_next" : {
+      "name" : "Where next?",
+      "settings" : "WhereNextSettings",
+      "view" : "WhereNextViewResponse",
+      "guide" : [ "settings: when (words: Spring 2027), closesOn (the last day to vote; left out: until everyone has)", "entry idea: name, days, costCents (roughly, each), currency, note, mediaId (a photo upload). While the vote is open.", "verb vote: ideaId (your one vote; voting again moves it). The vote closes when everyone has voted.", "verb unvote: takes your vote back, while the vote is open", "verb close: closes the vote early", "verb make_trip: gives the winner a folder and a page in Notes, to plan in" ]
+    },
+    "dictionary" : {
+      "name" : "The dictionary",
+      "settings" : "DictionarySettings",
+      "view" : "DictionaryViewResponse",
+      "entry" : "DictionaryWordResponse",
+      "guide" : [ "settings: none", "entry word: word, meaning, part (verb, noun…), coinedByMemberId (or coinedByName; left out: you), origin (where it came from), firstRecorded (a date), seeAlso, mediaId (a photo upload)", "entries list: q (words), member (who coined it)" ]
+    },
+    "predictions" : {
+      "name" : "Predictions",
+      "settings" : "PredictionsSettings",
+      "view" : "PredictionsViewResponse",
+      "guide" : [ "settings: opensOn (a date after today), occasion (words: the reunion)", "entry prediction: aboutMemberId, text, seal (left out: true; false keeps it a draft only you see). One about each of the others. Changing: text, seal, while it is your own draft.", "verb seal: entryId (your own draft; left out: all your drafts)", "verb mark: predictionId, right (true, false, or null to take it back). From the day they open." ]
+    },
+    "awards" : {
+      "name" : "The awards",
+      "settings" : "AwardsSettings",
+      "view" : "AwardsViewResponse",
+      "guide" : [ "settings: none", "entry award: name, emoji. A category for this year.", "entry nominee: awardId, memberId, what (what for), mediaId (a photo upload). While the award is open.", "verb vote: nomineeId (your one vote for that award; voting again moves it). The award is decided when everyone has voted.", "verb unvote: awardId", "verb decide: awardId (closes its vote early)", "show: a year, to see that year's awards. Left out: this year." ]
+    },
+    "walk_together" : {
+      "name" : "A goal you walk together",
+      "settings" : "WalkTogetherSettings",
+      "view" : "WalkTogetherViewResponse",
+      "guide" : [ "settings: from and to (the names of the two places), unit (km or steps; left out: km), goal (how far it is: metres for km, steps for steps)", "entry walk: amount (metres on a board in km, steps on a board in steps), day (left out: today). Your own walks only.", "entry stop: name, at (how far along the way, in the same unit as the goal)" ]
     }
   }
 }

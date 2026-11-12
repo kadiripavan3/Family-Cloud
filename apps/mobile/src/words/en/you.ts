@@ -39,6 +39,8 @@ export const you = {
     notifications: 'Notifications',
     appearance: 'Appearance',
     notificationsAndAppearance: 'Notifications and appearance',
+    jot: 'Adding without opening the app',
+    jotNote: 'The pinned note, widgets, voice and sharing in',
     leaving: 'Export and leaving',
     deleteAccount: 'Delete account',
     deleteAccountNote: `You choose: only ${APP}, or ${JOURNEY} too`,

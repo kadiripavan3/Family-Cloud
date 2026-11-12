@@ -129,10 +129,10 @@ describe('5.2 a space', () => {
     await waitFor(() => expect(mockCache.noteMade).toHaveBeenCalledWith('c-linds'));
   });
 
-  it('says that templates open from here once their screens are in the build', async () => {
+  it('opens the gallery of templates', async () => {
     await render(inApp(<FolderScreen />));
     await userEvent.setup().press(screen.getByRole('button', { name: 'Templates' }));
-    expect(screen.getByText('Templates open from here as soon as their own screens are part of this build of Homeport.')).toBeOnTheScreen();
+    expect(mockRouter.push).toHaveBeenCalledWith('/templates');
   });
 
   it("moves a row up and down in its folder's order, from the menu that holding it opens", async () => {

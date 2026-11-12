@@ -133,10 +133,11 @@ exports.run = async function run(ctx) {
       await R('button', { name: /^Christmas plan\. Page\. Not Mia or Leo$/ }).waitFor();
       await T('Page, checklist, sheet or folder').waitFor();
       await shot('space');
-      // Templates are their own screens: until those are part of this build, the button says so.
+      // Templates opens the gallery (its own steps are in 04-templates.js); closing it comes back to the space.
       await R('button', { name: 'Templates', exact: true }).click();
-      await T(/^Templates open from here as soon as/).waitFor();
-      await R('button', { name: 'OK', exact: true }).click();
+      await R('heading', { name: 'Templates' }).waitFor({ timeout: 20000 });
+      await R('button', { name: 'Close', exact: true }).click();
+      await T('Page, checklist, sheet or folder').waitFor();
     });
 
     await step('page', async () => {

@@ -2,6 +2,7 @@ package app.homeport.api.board;
 
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.home.TodaySource.FreshCard;
+import app.homeport.api.home.TodaySource.TodayCard;
 import app.homeport.api.home.TodaySource.TodayItem;
 import java.util.List;
 import java.util.Set;
@@ -140,6 +141,14 @@ public interface BoardRules {
 
     /** What it has for this viewer today: a capsule that opens, whose turn it is tonight. */
     default List<TodayItem> today(Scene scene) {
+        return List.of();
+    }
+
+    /**
+     * The cards it puts at the top of this viewer's Today, one or two at most: whose turn it is to plan, a match,
+     * what the kitty holds, a day that works for four. Like everything else, only what this viewer may know.
+     */
+    default List<TodayCard> cards(Scene scene) {
         return List.of();
     }
 

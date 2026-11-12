@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('When can you?')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+
+    <th:block th:if="${state == 'gone'}">
+      <h1>This link doesn't work any more</h1>
+      <p class="lede">It may have been replaced. Ask the person who sent it for a new one.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'set'}">
+      <p class="eyebrow" th:text="${title}">Reunion dinner</p>
+      <h1 th:text="${'It is set for ' + setFor}">It is set</h1>
+      <p class="lede" th:text="${asker + ' has the details.'}">They have the details.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'over'}">
+      <p class="eyebrow" th:text="${title}">Reunion dinner</p>
+      <h1>Those days have passed</h1>
+      <p class="lede" th:text="${'Ask ' + asker + ' whether new days are on offer.'}">Ask them whether new days are on offer.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'ask' or state == 'thanks'}">
+      <p class="eyebrow" th:text="${asker + ' is asking'}">Lea is asking</p>
+      <h1 th:text="${title}">Reunion dinner</h1>
+      <p class="lede" th:if="${state == 'thanks'}">Thank you. Your days are with them. You can change them here, on this phone, until a day is set.</p>
+      <p class="lede" th:if="${state == 'ask'}">Tick the days you can do. There is no account to make.</p>
+
+      <form method="post" th:action="@{'/when/' + ${token}}">
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" maxlength="50" autocomplete="given-name" th:value="${name}" required>
+        <p class="problem" role="alert" th:if="${problem != null}" th:text="${problem}">Something is missing.</p>
+        <p class="note">The days you can do</p>
+        <div class="item" th:each="day : ${days}">
+          <label th:for="${'d' + day.value}">
+            <input type="checkbox" name="days" th:id="${'d' + day.value}" th:value="${day.value}" th:checked="${day.ticked}">
+            <span th:text="${day.words}">Sat 28 Nov</span>
+          </label>
+        </div>
+        <button class="btn big" type="submit" th:text="${state == 'thanks'} ? 'Change my days' : 'Send my days'">Send my days</button>
+      </form>
+      <p class="note">Only the people who sent you this link see your name and your days.</p>
+    </th:block>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>
