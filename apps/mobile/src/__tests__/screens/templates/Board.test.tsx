@@ -2,7 +2,7 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import { Text } from 'react-native';
 
 import { ApiError } from '@/api/fetcher';
-import { changeBoard, deleteThing, useGetBoard } from '@/api/generated/homeport';
+import { type Template, changeBoard, deleteThing, useGetBoard } from '@/api/generated/homeport';
 import Board from '@/app/(app)/board/[id]';
 import { inApp } from '@/test/phone';
 import { failed, linds, loaded, me, notMia, pending } from '@/test/samples';
@@ -27,8 +27,11 @@ function mockSheet({ thingId, visible }: { thingId: string; visible: boolean }) 
 }
 const asked = jest.mocked(useGetBoard) as unknown as jest.Mock;
 
-/** A board of a template whose screen this version of the app doesn't have: the frame and nothing else. */
-const toCome = (over = {}) => board({ template: 'walk_together', title: 'To the sea and back', emoji: '🏃', ...over });
+/**
+ * A board of a template whose screen this version of the app doesn't have: the frame and nothing else. Its
+ * code is one a later API might send; every template the API has today may have its screen by now.
+ */
+const toCome = (over = {}) => board({ template: 'from_a_later_version' as Template, title: 'To the sea and back', emoji: '🏃', ...over });
 
 describe('a board, and the frame every board stands in', () => {
   beforeEach(() => {
