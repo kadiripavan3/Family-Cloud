@@ -70,7 +70,7 @@ describe('10.9 Goodnight from far away', () => {
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: 'Leo loved it. Change' }));
     expect(screen.getByRole('header', { name: 'A heart from' })).toBeOnTheScreen();
-    expect(screen.getByRole('switch', { name: 'Leo' }).props['aria-checked']).toBe(true);
+    expect(screen.getByRole('switch', { name: 'Leo' })).toBeChecked();
     await user.press(screen.getByRole('switch', { name: 'Mia' }));
     await waitFor(() => expect(loveGoodnight).toHaveBeenCalledWith(NIGHT, { as: 'm-mia' }));
     await waitFor(() => expect(mockCache.goodnightLoved).toHaveBeenCalledWith(goodnight()));

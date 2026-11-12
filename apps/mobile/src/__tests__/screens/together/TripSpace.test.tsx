@@ -69,10 +69,11 @@ describe('10.7 A trip, start to finish', () => {
     await userEvent.setup().press(screen.getByRole('button', { name: 'See the draft' }));
     expect(screen.getByRole('header', { name: 'The draft' })).toBeOnTheScreen();
     expect(screen.getByText('What Journey is told when this starts. Everything else in the trip stays here.')).toBeOnTheScreen();
-    expect(screen.getByText('3 to 17 Apr')).toBeOnTheScreen();
+    // Its dates stand under "Go" on the page and in the draft.
+    expect(screen.getAllByText('3 to 17 Apr')).toHaveLength(2);
     expect(screen.getByText('Bergen, Flåm, Tromsø · Stays here: Journey is told the title and the dates')).toBeOnTheScreen();
     expect(screen.getByText('Alex')).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: 'Private' }).props['aria-checked']).toBe(true);
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeChecked();
     // Before day one it can start early; the main way is to come back that day.
     expect(screen.getByText("The trip starts on 3 April 2027. Start the journey that day, or now if you're on your way already. A trip becomes a journey once.")).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Start it now' })).toBeOnTheScreen();
@@ -216,12 +217,12 @@ describe('a folder that is a trip, and one that is not', () => {
 
   it('stays a folder when they do not, when they can not be asked, and when it was opened "as a folder"', async () => {
     trips.mockReturnValue(loaded([]));
-    await render(inApp(<Probe />));
+    expect((await render(inApp(<Probe />))).getByText('folder')).toBeOnTheScreen();
     trips.mockReturnValue(failed(new ApiError(0, 'unreachable', 'Nothing answered.')));
-    await render(inApp(<Probe />));
+    expect((await render(inApp(<Probe />))).getByText('folder')).toBeOnTheScreen();
     trips.mockReturnValue(loaded([{ id: TRIP }]));
-    await render(inApp(<Probe plain />));
-    expect(screen.getAllByText('folder')).toHaveLength(3);
+    expect((await render(inApp(<Probe plain />))).getByText('folder')).toBeOnTheScreen();
+    expect(trips).toHaveBeenLastCalledWith('c-linds', { day: today() }, { query: { enabled: false } });
   });
 
   it('is not known yet while the trips are on their way', async () => {

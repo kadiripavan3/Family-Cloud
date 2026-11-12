@@ -1,28 +1,30 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 
 import { ApiError } from '@/api/fetcher';
-import { useGetLenses, useGetStorage } from '@/api/generated/homeport';
+import { useGetStorage } from '@/api/generated/homeport';
 import Storage from '@/app/(app)/settings/storage';
 import { formatBytes, formatDuration } from '@/features/library/sizes';
 import { inApp } from '@/test/phone';
 import { failed, linds, loaded, pending, soloCircle } from '@/test/samples';
-import { lenses, storage } from '@/test/samples/library';
+import { storage } from '@/test/samples/library';
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
 let mockCircle = linds;
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({}) }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockCircle }));
-jest.mock('@/api/generated/homeport', () => ({ useGetStorage: jest.fn(), useGetLenses: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetStorage: jest.fn() }));
+// What was kept from Journey, in numbers, comes from the link with Journey.
+jest.mock('@/features/journeyLink/keep/useKeptTotals', () => ({ useKeptTotals: () => mockKept }));
 
 const asked = jest.mocked(useGetStorage) as unknown as jest.Mock;
-const counts = jest.mocked(useGetLenses) as unknown as jest.Mock;
+let mockKept: { journeys: number; here: number; matched: number } | undefined = { journeys: 0, here: 0, matched: 0 };
 
 describe('12.2 Storage and backup', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCircle = linds;
     asked.mockReturnValue(loaded(storage));
-    counts.mockReturnValue(loaded(lenses));
+    mockKept = { journeys: 0, here: 0, matched: 0 };
   });
 
   it('says what is used of what the circle may keep, by what', async () => {
@@ -51,17 +53,18 @@ describe('12.2 Storage and backup', () => {
     const user = userEvent.setup();
     expect(screen.getByText('This phone')).toBeOnTheScreen();
     expect(screen.getByText('Kept from Journey')).toBeOnTheScreen();
-    expect(screen.getByText('Nothing yet. It fills when Homeport and Journey are linked.')).toBeOnTheScreen();
+    expect(screen.getByText('Nothing yet. Keep one from Journey and its photos land here.')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: /^Backing up, on Wi‑Fi only\./ }));
     expect(screen.getByText('Backing up a camera roll by itself needs the app on a phone. In a browser, add photos with the + button.')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Free up' }));
     expect(screen.getByText('Freeing up space needs the app on a phone: a browser keeps no copies to remove.')).toBeOnTheScreen();
   });
 
-  it('says how many albums came home from Journey once there are some', async () => {
-    counts.mockReturnValue(loaded({ ...lenses, albums: { shared: 3, onlyYou: 1, fromJourney: 2 } }));
+  it('says how much came home from Journey and how much of it was here already, and leads to the kept journeys', async () => {
+    mockKept = { journeys: 1, here: 214, matched: 201 };
     await render(inApp(<Storage />));
-    expect(screen.getByText('2 albums of originals')).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Kept from Journey. 214 · 201 matched to photos you already had' }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith('/journey/kept');
   });
 
   it('names nobody to share with in a circle of one', async () => {

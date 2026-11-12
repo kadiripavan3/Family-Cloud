@@ -100,8 +100,8 @@ describe('10.8 Journey, at home: on Today', () => {
     await user.press(screen.getByRole('button', { name: 'Mia loved it. Change' }));
     expect(screen.getByRole('header', { name: 'A heart from' })).toBeOnTheScreen();
     expect(screen.getByText('It stays at home: Journey is not told.')).toBeOnTheScreen();
-    expect(screen.getByRole('switch', { name: 'Mia' }).props['aria-checked']).toBe(true);
-    expect(screen.getByRole('switch', { name: 'You' }).props['aria-checked']).toBe(false);
+    expect(screen.getByRole('switch', { name: 'Mia' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'You' })).not.toBeChecked();
     // The dog has no heart to give.
     expect(screen.queryByRole('switch', { name: 'Biscuit' })).toBeNull();
     await user.press(screen.getByRole('switch', { name: 'Leo' }));

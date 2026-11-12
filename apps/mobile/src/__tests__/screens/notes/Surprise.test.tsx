@@ -14,6 +14,9 @@ jest.mock('@/api/cache', () => ({ useCache: () => mockCache, cacheFor: () => moc
 jest.mock('@/api/online', () => ({ useOnline: jest.fn(() => true) }));
 jest.mock('@/features/circles/current', () => ({ useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// Whether a page is a kept journey's book is asked of the link with Journey, which has its own test (together/JourneyBook).
+jest.mock('@/features/journeyLink/book/useBookOf', () => ({ useBookOf: () => mockBookOrPage }));
+jest.mock('@/features/journeyLink/book/JourneyBook', () => ({ JourneyBook: ({ pageId }: { pageId: string }) => mockBook(pageId) }));
 jest.mock('@/features/notes/changes/store', () => ({ changeStore: {} }));
 jest.mock('@/features/notes/MoveSheet', () => ({ MoveSheet: () => null }));
 jest.mock('@/features/notes/page/LinkPicker', () => ({ LinkPicker: () => null }));
@@ -47,6 +50,12 @@ const mockLinds = linds;
 const mockMe = loaded(me());
 const audience = jest.mocked(useGetAudience) as unknown as jest.Mock;
 const onPhone = () => inApp(<ChangesProvider store={memoryStore().store}>{<Page />}</ChangesProvider>);
+
+let mockBookOrPage: 'book' | 'page' | 'asking' = 'page';
+function mockBook(pageId: string) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>{`the book of ${pageId}`}</Text>;
+}
 
 describe('4.4 Keep it a surprise: a page that is hidden from one person', () => {
   beforeEach(() => {

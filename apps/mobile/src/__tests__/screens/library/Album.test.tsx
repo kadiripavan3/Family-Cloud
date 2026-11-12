@@ -67,6 +67,14 @@ describe("an album's own page", () => {
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/library/select', params: { album: id(41) } });
   });
 
+  it('tells it as a journey from the three dots: the draft is made from this album', async () => {
+    await render(inApp(<Album />));
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'More' }));
+    await user.press(screen.getByRole('button', { name: 'Tell it as a journey' }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/journey/tell/new', params: { album: id(41), circle: 'c-linds' } });
+  });
+
   it('renames it', async () => {
     const renamed = album({ title: 'Summer by the sea' });
     jest.mocked(changeAlbum).mockResolvedValue(renamed);

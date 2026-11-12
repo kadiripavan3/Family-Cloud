@@ -41,14 +41,15 @@ describe('the catalog of words', () => {
   it("calls the app by the name in the tokens, and nothing of the sister app's is left but its name", () => {
     expect(words.common.appName).toBe(brand.name);
     expect(words.states.unreachable).toBe("Can't reach Homeport right now. Check your connection and try again.");
-    const all = Object.entries(sentences(en, ''));
+    // `together` is the catalog of the link with Journey: there the sister app is named throughout, and its
+    // own words (a journey, an entry, following) belong. Everywhere else they are looked for.
+    const all = Object.entries(sentences(en, '')).filter(([path]) => !path.startsWith('together.'));
+    expect(Object.keys(sentences(en.together, 'together')).length).toBeGreaterThan(100);
     // Journey is named where the two apps meet: the one account, bringing things in from it, the way over to
     // it, telling a keepsake's stories there, and the Library's ways to it. Nowhere is this app called by its name.
     expect(all.filter(([, text]) => /Journey/.test(text)).map(([path]) => path)).toEqual([
       'keepsakes.stories.book.journey',
-      // The Library: a moment or a selection sent on to Journey, the albums that came home from it, what is kept from it.
-      'library.notYet.story',
-      'library.notYet.send',
+      // The Library: a moment or a selection told as a journey, the albums that came home from it, what is kept from it.
       'library.moment.turnInto.journey',
       'library.albums.tabs.journey',
       'library.albums.journey',
@@ -62,10 +63,7 @@ describe('the catalog of words', () => {
       'signIn.choose.body',
       'signIn.choose.journeyAccount',
       'you.swap',
-      'you.swapSheet.title',
-      'you.swapSheet.body',
       'you.account.title',
-      'you.account.later',
       'you.rows.deleteAccountNote',
       'you.security.signInNote',
     ]);

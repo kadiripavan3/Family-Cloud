@@ -13,6 +13,8 @@ const mockRouter = { push: jest.fn(), navigate: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/features/circles/current', () => ({ useCircle: jest.fn() }));
 jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn() }));
+// Journey's cards on Today have their own test (together/OnJourney): here every card is Today's own to draw.
+jest.mock('@/features/journeyLink/TodayJourneyCard', () => ({ JourneyOnToday: ({ cards, children }: { cards: unknown[]; children: (rest: unknown[]) => unknown }) => children(cards) }));
 // A bill's line ends in Money's own "Pay" button, which has its own test; here only that it is there matters.
 jest.mock('@/features/money/PayBill', () => ({ PayBillButton: (props: { billId: string; title: string }) => mockPay(props) }));
 

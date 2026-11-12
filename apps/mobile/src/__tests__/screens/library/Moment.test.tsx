@@ -71,10 +71,10 @@ describe('6.3 A moment', () => {
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'album', id: id(77) } });
   });
 
-  it('says why it can not become a story in Journey yet', async () => {
+  it('tells it as a journey: the draft is made from this moment', async () => {
     await render(inApp(<Moment />));
     await userEvent.setup().press(screen.getByRole('button', { name: 'Journey' }));
-    expect(screen.getByText('Turning this into a story arrives when Homeport and Journey are linked.')).toBeOnTheScreen();
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/journey/tell/new', params: { moment: id(1), circle: 'c-linds' } });
   });
 
   it('starts selecting from the three dots', async () => {

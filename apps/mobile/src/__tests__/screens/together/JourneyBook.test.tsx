@@ -157,12 +157,10 @@ describe('a page that is a book, and one that is not', () => {
 
   it('is not known yet while the kept journeys are on their way, or before the page has said its circle', async () => {
     keptAsked.mockReturnValue({ ...pending(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
-    await render(inApp(<Probe pageId={BOOK} circleId="c-linds" />));
-    expect(screen.getByText('asking')).toBeOnTheScreen();
+    expect((await render(inApp(<Probe pageId={BOOK} circleId="c-linds" />))).getByText('asking')).toBeOnTheScreen();
     // In the current circle's list it is not: the page may still be in another circle.
     keptAsked.mockReturnValue(pages([]));
-    await render(inApp(<Probe pageId="elsewhere" />));
-    expect(screen.getAllByText('asking')).toHaveLength(2);
+    expect((await render(inApp(<Probe pageId="elsewhere" />))).getByText('asking')).toBeOnTheScreen();
   });
 
   it('is found in the current circle before the page itself has loaded', async () => {
@@ -173,11 +171,9 @@ describe('a page that is a book, and one that is not', () => {
 
   it("is the page it is when the kept journeys can't be asked, and when it was opened \"as a page\"", async () => {
     keptAsked.mockReturnValue({ ...failed(new ApiError(0, 'unreachable', 'Nothing answered.')), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
-    await render(inApp(<Probe pageId={BOOK} circleId="c-linds" />));
-    expect(screen.getByText('page')).toBeOnTheScreen();
+    expect((await render(inApp(<Probe pageId={BOOK} circleId="c-linds" />))).getByText('page')).toBeOnTheScreen();
     keptAsked.mockReturnValue(pages([kept()]));
-    await render(inApp(<Probe pageId={BOOK} circleId="c-linds" plain />));
-    expect(screen.getAllByText('page')).toHaveLength(2);
+    expect((await render(inApp(<Probe pageId={BOOK} circleId="c-linds" plain />))).getByText('page')).toBeOnTheScreen();
     expect(keptAsked).toHaveBeenLastCalledWith('c-linds', undefined, expect.objectContaining({ query: expect.objectContaining({ enabled: false }) }));
   });
 });

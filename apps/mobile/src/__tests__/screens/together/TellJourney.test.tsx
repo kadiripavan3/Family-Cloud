@@ -57,13 +57,20 @@ describe('10.5 Tell it as a journey', () => {
     expect(screen.getByText('+3')).toBeOnTheScreen();
   });
 
+  it('keeps the title it had when the box is left empty', async () => {
+    await render(inApp(<TellJourney />));
+    await userEvent.setup().clear(screen.getByLabelText('Title'));
+    expect(change).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Title')).toHaveDisplayValue('A weekend at Lake Bled');
+  });
+
   it('saves a new title when the box is left', async () => {
     await render(inApp(<TellJourney />));
     const user = userEvent.setup();
-    await user.clear(screen.getByLabelText('Title'));
-    await user.type(screen.getByLabelText('Title'), 'Three days at the lake', { submitEditing: true });
-    await waitFor(() => expect(change).toHaveBeenCalledWith(DRAFT, { title: 'Three days at the lake' }));
-    await waitFor(() => expect(mockCache.journeyDraftChanged).toHaveBeenCalledWith(expect.objectContaining({ id: DRAFT, title: 'Three days at the lake' })));
+    await user.type(screen.getByLabelText('Title'), ', all three days', { submitEditing: true });
+    await waitFor(() => expect(change).toHaveBeenCalledWith(DRAFT, { title: 'A weekend at Lake Bled, all three days' }));
+    await waitFor(() => expect(mockCache.journeyDraftChanged).toHaveBeenCalledWith(expect.objectContaining({ id: DRAFT, title: 'A weekend at Lake Bled, all three days' })));
+    expect(change).toHaveBeenCalledTimes(1);
   });
 
   it("changes a day's first line", async () => {
@@ -71,9 +78,8 @@ describe('10.5 Tell it as a journey', () => {
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: 'Day 1. Fri 6 Nov · the drive up · 9 photos. Change' }));
     expect(screen.getByRole('header', { name: 'Day 1' })).toBeOnTheScreen();
-    await user.clear(screen.getByLabelText('What the day was'));
-    await user.type(screen.getByLabelText('What the day was'), 'over the pass', { submitEditing: true });
-    await waitFor(() => expect(change).toHaveBeenCalledWith(DRAFT, { days: [{ day: '2026-11-06', line: 'over the pass' }] }));
+    await user.type(screen.getByLabelText('What the day was'), ', over the pass', { submitEditing: true });
+    await waitFor(() => expect(change).toHaveBeenCalledWith(DRAFT, { days: [{ day: '2026-11-06', line: 'the drive up, over the pass' }] }));
   });
 
   it('moves a photo to another day, or leaves it out', async () => {

@@ -4,6 +4,7 @@ import { ApiError } from '@/api/fetcher';
 import { addToAlbum, createAlbum, deleteSelected, hideSelected, shareSelected, useGetAlbum, useGetAlbumsInfinite, useGetWallInfinite } from '@/api/generated/homeport';
 import Select from '@/app/(app)/library/select';
 import { saveFiles } from '@/features/library/save';
+import { takeOnly } from '@/features/journeyLink/tell/start';
 import { inApp } from '@/test/phone';
 import { failed, linds, loaded, pending } from '@/test/samples';
 import { album, canoe, clip, id, lakeItems, pages, photoBook, wallPage } from '@/test/samples/library';
@@ -178,10 +179,19 @@ describe('6.9 Select and share', () => {
     expect(screen.getByRole('header', { name: 'Select' })).toBeOnTheScreen();
   });
 
-  it('says why they can not be sent to Journey yet', async () => {
+  it('tells what is picked as a journey: the draft is made from the moment they are in, with only these in it', async () => {
+    const user = await withTwo();
+    await user.press(screen.getByRole('button', { name: 'Journey' }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/journey/tell/new', params: { moment: canoe.id, circle: 'c-linds' } });
+    expect([...(takeOnly() ?? [])]).toEqual(both);
+  });
+
+  it('asks for something to be picked first', async () => {
+    mockParams = {};
     await render(inApp(<Select />));
     await userEvent.setup().press(screen.getByRole('button', { name: 'Journey' }));
-    expect(screen.getByText('Sending these to Journey arrives when Homeport and Journey are linked.')).toBeOnTheScreen();
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    expect(takeOnly()).toBeNull();
   });
 
   it("puts photos into an album from the album's own page, and goes back to it", async () => {

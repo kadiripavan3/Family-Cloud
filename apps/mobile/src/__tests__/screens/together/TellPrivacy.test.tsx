@@ -23,7 +23,6 @@ const draftAsked = jest.mocked(useGetJourneyDraft) as unknown as jest.Mock;
 const jobAsked = jest.mocked(useGetJourneyJob) as unknown as jest.Mock;
 const change = jest.mocked(changeJourneyDraftCheck);
 const send = jest.mocked(postJourneyDraft);
-const on = (name: string | RegExp) => screen.getByRole('switch', { name }).props['aria-checked'];
 
 describe('10.6 Before it leaves home', () => {
   beforeEach(() => {
@@ -43,11 +42,11 @@ describe('10.6 Before it leaves home', () => {
 
   it('has three switches, all on to begin with, each saying what it leaves out', async () => {
     await render(inApp(<BeforeItLeaves />));
-    expect(on('Leave out Mia and Leo')).toBe(true);
+    expect(screen.getByRole('switch', { name: 'Leave out Mia and Leo' })).toBeChecked();
     expect(screen.getByText('14 of 51 are tagged with a child')).toBeOnTheScreen();
-    expect(on('Show the town, not the spot')).toBe(true);
+    expect(screen.getByRole('switch', { name: 'Show the town, not the spot' })).toBeChecked();
     expect(screen.getByText('“Lake Bled”, not the exact spot you stood on')).toBeOnTheScreen();
-    expect(on('Skip photos taken at home')).toBe(true);
+    expect(screen.getByRole('switch', { name: 'Skip photos taken at home' })).toBeChecked();
     expect(screen.getByText('2 photos')).toBeOnTheScreen();
   });
 
@@ -55,7 +54,7 @@ describe('10.6 Before it leaves home', () => {
     await render(inApp(<BeforeItLeaves />));
     expect(screen.getByText('Files, bills and the Vault')).toBeOnTheScreen();
     expect(screen.getByText('Never go to Journey')).toBeOnTheScreen();
-    expect(on('Files, bills and the Vault')).toBe(false);
+    expect(screen.getByRole('switch', { name: 'Files, bills and the Vault' })).not.toBeChecked();
   });
 
   it('says what the app can not know: only who is tagged', async () => {
@@ -89,7 +88,7 @@ describe('10.6 Before it leaves home', () => {
   it('starts as Private, and says what each choice means', async () => {
     await render(inApp(<BeforeItLeaves />));
     expect(screen.getByText('In Journey it starts as')).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: 'Private' }).props['aria-checked']).toBe(true);
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeChecked();
     expect(screen.getByText('Only you can read it there, until you change that in Journey.')).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('radio', { name: 'Public' }));
     await waitFor(() => expect(change).toHaveBeenCalledWith(DRAFT, { visibility: 'public' }));

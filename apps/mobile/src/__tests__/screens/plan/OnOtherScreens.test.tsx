@@ -14,6 +14,8 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds, useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// Journey's cards on Today have their own test (together/OnJourney): here every card is Today's own to draw.
+jest.mock('@/features/journeyLink/TodayJourneyCard', () => ({ JourneyOnToday: ({ cards, children }: { cards: unknown[]; children: (rest: unknown[]) => unknown }) => children(cards) }));
 jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn(), useGetPlan: jest.fn(), useGetMe: jest.fn(() => ({ data: undefined })), getReminder: jest.fn(), tickReminder: jest.fn() }));
 
 const mockLinds = linds;

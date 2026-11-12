@@ -19,7 +19,8 @@ jest.mock('@/api/generated/homeport', () => ({
   useGetKeepOptions: jest.fn(),
   useGetKeptJourney: jest.fn(),
   useGetJourneyJob: jest.fn(),
-  useGetTrip: jest.fn(() => mockTrip),
+  // A trip is only asked for when the address names one.
+  useGetTrip: jest.fn((tripId: string) => (tripId ? mockTrip : mockNoTrip)),
   useGetNotes: jest.fn(),
   useGetMe: jest.fn(() => mockMe),
   keepJourney: jest.fn(),
@@ -28,12 +29,12 @@ jest.mock('@/api/generated/homeport', () => ({
 const mockLinds = linds;
 const mockMe = loaded({ ...me(), id: 'a-nora' });
 const mockTrip = loaded({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-000000000006', title: 'Norway 2027' });
+const mockNoTrip = { ...mockTrip, data: undefined };
 const asked = jest.mocked(useGetKeepOptions) as unknown as jest.Mock;
 const keptAsked = jest.mocked(useGetKeptJourney) as unknown as jest.Mock;
 const jobAsked = jest.mocked(useGetJourneyJob) as unknown as jest.Mock;
 const notes = jest.mocked(useGetNotes) as unknown as jest.Mock;
 const keep = jest.mocked(keepJourney);
-const on = (name: string) => screen.getByRole('switch', { name }).props['aria-checked'];
 
 describe('10.3 What to keep', () => {
   beforeEach(() => {
@@ -59,10 +60,10 @@ describe('10.3 What to keep', () => {
     expect(screen.getByText('214 photos, 9 clips · 201 already in your Library')).toBeOnTheScreen();
     expect(screen.getByText('Drawn on your Places map')).toBeOnTheScreen();
     expect(screen.getByText('The kind words, kept with each day')).toBeOnTheScreen();
-    expect(on('The story, as a book')).toBe(true);
-    expect(on('The originals')).toBe(true);
-    expect(on('The route')).toBe(true);
-    expect(on('Comments and likes')).toBe(false);
+    expect(screen.getByRole('switch', { name: 'The story, as a book' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'The originals' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'The route' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Comments and likes' })).not.toBeChecked();
   });
 
   it('says where it is kept and who can see it, as the API would have it', async () => {

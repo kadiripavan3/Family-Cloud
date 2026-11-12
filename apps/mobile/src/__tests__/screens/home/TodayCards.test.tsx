@@ -11,6 +11,8 @@ const mockRouter = { push: jest.fn(), navigate: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/features/circles/current', () => ({ useCircle: jest.fn() }));
 jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn() }));
+// Journey's cards on Today have their own test (together/OnJourney): here every card is Today's own to draw.
+jest.mock('@/features/journeyLink/TodayJourneyCard', () => ({ JourneyOnToday: ({ cards, children }: { cards: unknown[]; children: (rest: unknown[]) => unknown }) => children(cards) }));
 
 const asked = jest.mocked(useGetToday) as unknown as jest.Mock;
 const OWED = 'aaaaaaaa-2222-4222-8222-222222222222';
