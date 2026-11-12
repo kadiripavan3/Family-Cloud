@@ -239,7 +239,7 @@ function Loaded({ data }: { data: PersonPageResponse }) {
         ) : null}
       </Sheet>
       <FactsSheet member={member} visible={editingFacts} onClose={() => setEditingFacts(false)} />
-      <DayPicker visible={pickingDay} onClose={() => setPickingDay(false)} title={says.menu.birthdayTitle(name)} value={member.birthday ?? today()} max={today()} onChange={(day) => change.mutate({ birthday: day })} />
+      <DayPicker visible={pickingDay} onClose={() => setPickingDay(false)} title={says.menu.birthdayTitle(name)} value={member.birthday ?? today()} max={today()} byYear onChange={(day) => change.mutate({ birthday: day })} />
       <ConfirmSheet
         visible={removing}
         onClose={() => setRemoving(false)}

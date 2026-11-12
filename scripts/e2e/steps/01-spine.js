@@ -418,9 +418,11 @@ async function newFamily(ctx) {
     // Her birthday, from the menu: the page works out the rest.
     await R('button', { name: 'More', exact: true }).click();
     await R('button', { name: /^Birthday\. Not set/ }).click();
+    for (let years = 0; years < 9; years += 1) await R('button', { name: 'A year back' }).click();
     await R('button', { name: 'Previous month' }).click();
     await R('button', { name: /^15 / }).click();
     await T(/^Birthday in \d+ days$/).waitFor();
+    await T('9 years old · Child in The Linds').waitFor();
     await shot('person-new');
   });
 
@@ -594,7 +596,6 @@ async function newFamily(ctx) {
   });
 
   await step('log-out', async () => {
-    await sam.close();
     await R('button', { name: /^Export and leaving/ }).click();
     await T(/^Exporting everything and leaving a circle arrive later/).waitFor();
     await shot('leaving');
@@ -646,6 +647,9 @@ async function newFamily(ctx) {
     await R('button', { name: 'Delete my account' }).click();
     await T('Get started').waitFor({ timeout: 20000 });
     await shot('after-delete');
+    // Sam's phone is put away last. (Known, and the API's to fix: had Sam, who ticked a line of Nora's list,
+    // deleted their account first, the API would have answered Nora's own deleting with 409.)
+    await sam.close();
   });
 }
 
@@ -722,8 +726,9 @@ async function otherKinds(ctx) {
     await R('button', { name: 'Add something' }).click();
     await R('button', { name: 'Seen by Lisbon crew. Change' }).waitFor();
     await shot('plus-crew');
-    await ctx.page.keyboard.press('Escape');
-    await ctx.page.mouse.click(195, 60);
+    // Pressing outside the sheet closes it.
+    await R('button', { name: 'Close' }).click({ position: { x: 195, y: 60 } });
+    await T('Goes into').waitFor({ state: 'detached' });
     await ctx.signOut();
     await ctx.api(kai.token, 'DELETE', '/v1/me');
   });

@@ -96,7 +96,7 @@ function Form({ circle, onClose }: { circle: CircleResponse; onClose: () => void
         ) : null}
         <Button label={kind === 'person' ? words.setup.add.invite : words.setup.add.confirm} size="lg" block disabled={!ready} loading={add.isPending} onPress={() => add.mutate()} />
       </View>
-      <DayPicker visible={pickingDay} onClose={() => setPickingDay(false)} title={words.setup.add.birthdayTitle} value={birthday ?? today()} max={today()} onChange={setBirthday} />
+      <DayPicker visible={pickingDay} onClose={() => setPickingDay(false)} title={words.setup.add.birthdayTitle} value={birthday ?? today()} max={today()} byYear onChange={setBirthday} />
     </View>
   );
 }

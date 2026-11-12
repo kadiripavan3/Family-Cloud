@@ -24,6 +24,8 @@ export const dates = {
   weekdayInitials: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
+  previousYear: 'A year back',
+  nextYear: 'A year on',
   /** "3 April 2026": what a screen reader says for a day in the calendar. */
   dayInCalendar: (day: number, month: number, year: number) => `${day} ${MONTHS[month]} ${year}`,
 

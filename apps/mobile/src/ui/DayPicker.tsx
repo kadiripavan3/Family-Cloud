@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -19,10 +19,12 @@ type Props = {
   /** The earliest and latest days that can be picked. */
   min?: string;
   max?: string;
+  /** Also offer a year back and a year on at a time: for a day that can be long ago, a birthday. */
+  byYear?: boolean;
 };
 
 /** A month calendar in a sheet, for picking one day. Days outside the allowed range are greyed out. */
-export function DayPicker({ visible, onClose, title, value, onChange, min, max }: Props) {
+export function DayPicker({ visible, onClose, title, value, onChange, min, max, byYear }: Props) {
   const { colors } = useTheme();
   const chosen = fromISODate(value);
   const [shown, setShown] = useState({ year: chosen.getFullYear(), month: chosen.getMonth() });
@@ -47,16 +49,24 @@ export function DayPicker({ visible, onClose, title, value, onChange, min, max }
   const firstOfNext = toISODate(new Date(shown.year, shown.month + 1, 1));
   const canGoBack = !min || lastOfPrevious >= min;
   const canGoForward = !max || firstOfNext <= max;
+  const canGoBackAYear = !min || toISODate(new Date(shown.year - 1, shown.month + 1, 0)) >= min;
+  const canGoOnAYear = !max || toISODate(new Date(shown.year + 1, shown.month, 1)) <= max;
 
   return (
     <Sheet visible={visible} onClose={onClose} title={title}>
       <View style={{ paddingHorizontal: layout.barGutter, paddingTop: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6, paddingBottom: 8 }}>
-          <MonthButton label={words.dates.previousMonth} disabled={!canGoBack} onPress={() => move(-1)} icon={<ChevronLeft size={20} color={colors.text} />} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {byYear ? <MonthButton label={words.dates.previousYear} disabled={!canGoBackAYear} onPress={() => move(-12)} icon={<ChevronsLeft size={20} color={colors.text} />} /> : null}
+            <MonthButton label={words.dates.previousMonth} disabled={!canGoBack} onPress={() => move(-1)} icon={<ChevronLeft size={20} color={colors.text} />} />
+          </View>
           <Txt variant="headline" accessibilityLiveRegion="polite" weight={800}>
             {words.dates.month(shown.month, shown.year)}
           </Txt>
-          <MonthButton label={words.dates.nextMonth} disabled={!canGoForward} onPress={() => move(1)} icon={<ChevronRight size={20} color={colors.text} />} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <MonthButton label={words.dates.nextMonth} disabled={!canGoForward} onPress={() => move(1)} icon={<ChevronRight size={20} color={colors.text} />} />
+            {byYear ? <MonthButton label={words.dates.nextYear} disabled={!canGoOnAYear} onPress={() => move(12)} icon={<ChevronsRight size={20} color={colors.text} />} /> : null}
+          </View>
         </View>
         <View style={{ flexDirection: 'row' }}>
           {words.dates.weekdayInitials.map((d, i) => (
