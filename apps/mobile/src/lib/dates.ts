@@ -52,6 +52,37 @@ export function formatDayLong(day: string): string {
   return words.dates.dayLong(date.getDate(), date.getMonth(), yearIfNotThis(date));
 }
 
+/** "November 2026" for the month "2026-11", or for any day in it. */
+export function formatMonth(month: string): string {
+  const date = fromISODate(`${month.slice(0, 7)}-01`);
+  return words.dates.month(date.getMonth(), date.getFullYear());
+}
+
+/** "November" for the month "2026-11": its name alone, where the year stands beside it. */
+export function formatMonthName(month: string): string {
+  return words.dates.monthName(fromISODate(`${month.slice(0, 7)}-01`).getMonth());
+}
+
+/** "Nov 2028" for a day in that month: when the month is all that matters. */
+export function formatMonthShort(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.monthShort(date.getMonth(), date.getFullYear());
+}
+
+/** "Sat 7 Nov", or "Tue 24 Sep 2019" when it isn't this year: the day something was taken or added. */
+export function formatWeekdayPast(day: string): string {
+  const date = fromISODate(day);
+  const short = words.dates.dayWithWeekday(date.getDay(), date.getDate(), date.getMonth());
+  const year = yearIfNotThis(date);
+  return year === undefined ? short : words.dates.withYear(short, year);
+}
+
+/** "11:42" from "2026-11-07T11:42:00": the clock where a photo was taken, wherever the phone is now. */
+export function formatClock(local: string): string | null {
+  const match = /T(\d{2}):(\d{2})/.exec(local);
+  return match ? words.dates.time(Number(match[1]), Number(match[2])) : null;
+}
+
 /** "just now", "5 min ago", "2h ago", "yesterday", "4 days ago" or a date. */
 export function timeAgo(instant: string, now: Date = new Date()): string {
   const then = new Date(instant);

@@ -531,7 +531,8 @@ async function newFamily(ctx) {
     await R('button', { name: 'Got it' }).click();
     await R('button', { name: /^Storage and backup/ }).click();
     await R('heading', { name: 'Storage and backup' }).waitFor();
-    await R('button', { name: 'Back' }).click();
+    // (Exactly "Back": the page has a row that starts with "Backing up".)
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('security', async () => {

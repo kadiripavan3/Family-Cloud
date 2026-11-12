@@ -45,6 +45,17 @@ describe('the catalog of words', () => {
     // Journey is named where the two apps meet: the one account, bringing things in from it, and the way over
     // to it. Nowhere is this app called by its name.
     expect(all.filter(([, text]) => /Journey/.test(text)).map(([path]) => path)).toEqual([
+      // The Library: a moment or a selection sent on to Journey, the albums that came home from it, what is kept from it.
+      'library.notYet.story',
+      'library.notYet.send',
+      'library.moment.turnInto.journey',
+      'library.albums.tabs.journey',
+      'library.albums.journey',
+      'library.albums.none.journey.title',
+      'library.albums.none.journey.body',
+      'library.select.bar.journey',
+      'library.storage.journey.title',
+      'library.storage.journey.none',
       'setup.bringIn.journey.label',
       'signIn.welcome.oneAccount.1.text',
       'signIn.choose.body',
