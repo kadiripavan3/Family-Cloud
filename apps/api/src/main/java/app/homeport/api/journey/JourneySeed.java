@@ -70,7 +70,7 @@ import org.springframework.stereotype.Component;
 class JourneySeed implements Seeder {
 
     private static final Logger log = LoggerFactory.getLogger(JourneySeed.class);
-    private static final ZoneId HOME_TIME = ZoneId.of("Europe/Ljubljana");
+    private static final ZoneId HOME_TIME = SeedWorld.HOME;
     private static final Progress QUIETLY = new Progress() {
         @Override
         public void step(String words, int done, int total) {}

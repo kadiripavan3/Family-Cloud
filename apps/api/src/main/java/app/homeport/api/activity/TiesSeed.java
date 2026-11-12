@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "homeport.seed.enabled", havingValue = "true")
 class TiesSeed implements Seeder {
 
-    private static final ZoneId HOME = ZoneId.of("Europe/Ljubljana");
+    private static final ZoneId HOME = SeedWorld.HOME;
 
     private final ThingService things;
     private final ActivityLog activity;

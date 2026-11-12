@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component;
 class LibrarySeed implements Seeder {
 
     private static final Logger log = LoggerFactory.getLogger(LibrarySeed.class);
-    private static final ZoneId HOME_TIME = ZoneId.of("Europe/Ljubljana");
+    private static final ZoneId HOME_TIME = SeedWorld.HOME;
 
     /** A place, as a phone would name it. */
     private record Spot(String name, String country, double lat, double lng, ZoneId zone) {}

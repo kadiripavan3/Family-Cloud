@@ -7,6 +7,7 @@ import app.homeport.api.media.MediaStore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,23 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "homeport.seed.enabled", havingValue = "true")
 public class SeedWorld {
+
+    /**
+     * The clock the sample people live by: Ljubljana's, where the drawings' family lives, unless
+     * {@code HOMEPORT_SEED_ZONE} names another ("America/New_York"). The sample data is laid out around
+     * "today" on that clock (the dentist at 15:30, Biscuit fed at 7:40), so on a computer far from Ljubljana it
+     * should be the computer's own zone, or the sample's today is tomorrow for part of the day.
+     * {@code scripts/dev.sh} sets it from the computer.
+     */
+    public static final ZoneId HOME = ZoneId.of(homeZone());
+
+    /** The same, by its name, where a time zone is handed over as a word. */
+    public static final String HOME_ZONE = HOME.getId();
+
+    private static String homeZone() {
+        String asked = System.getenv("HOMEPORT_SEED_ZONE");
+        return asked == null || asked.isBlank() ? "Europe/Ljubljana" : asked.trim();
+    }
 
     private static final Logger log = LoggerFactory.getLogger(SeedWorld.class);
 

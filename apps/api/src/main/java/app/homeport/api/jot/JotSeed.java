@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "homeport.seed.enabled", havingValue = "true")
 class JotSeed implements Seeder {
 
-    private static final String ZONE = "Europe/Ljubljana";
+    private static final String ZONE = SeedWorld.HOME_ZONE;
 
     private final JotService jots;
     private final JotStore store;

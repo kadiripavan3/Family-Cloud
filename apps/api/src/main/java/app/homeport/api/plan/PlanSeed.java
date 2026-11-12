@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "homeport.seed.enabled", havingValue = "true")
 class PlanSeed implements Seeder {
 
-    static final String ZONE = "Europe/Ljubljana";
+    static final String ZONE = SeedWorld.HOME_ZONE;
 
     private final EventService events;
     private final ReminderService reminders;

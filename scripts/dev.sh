@@ -21,6 +21,11 @@ else
   exit 1
 fi
 
+# The sample people keep this computer's clock, so their "today" is yours (see SeedWorld.HOME).
+if [ -z "${HOMEPORT_SEED_ZONE:-}" ] && [ -L /etc/localtime ]; then
+  export HOMEPORT_SEED_ZONE="$(readlink /etc/localtime | sed 's|.*/zoneinfo/||')"
+fi
+
 # 2. The API (skipped when you already run it yourself, for example from your IDE)
 if api_up; then
   say "API: already running on port 8080."
