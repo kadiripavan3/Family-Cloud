@@ -11,6 +11,7 @@ const KINDS: Record<string, { name: string; a: string }> = {
   goal: { name: 'Goal', a: 'a goal' },
   photo: { name: 'Photo', a: 'a photo' },
   video: { name: 'Video', a: 'a video' },
+  goodnight: { name: 'Goodnight', a: 'a goodnight' },
   file: { name: 'File', a: 'a file' },
   document: { name: 'Document', a: 'a document' },
   album: { name: 'Album', a: 'an album' },
