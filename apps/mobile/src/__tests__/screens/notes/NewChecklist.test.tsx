@@ -1,23 +1,29 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import { createChecklist } from '@/api/generated/homeport';
+import { createChecklist, useGetFolder } from '@/api/generated/homeport';
 import NewChecklist from '@/app/(app)/new/checklist';
 import { bySection, linesOf } from '@/features/things/lines';
 import { inApp } from '@/test/phone';
-import { checklist, item, linds } from '@/test/samples';
+import { checklist, item, linds, loaded } from '@/test/samples';
+import { folder } from '@/test/samples/notes';
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) };
 const mockMade = jest.fn(() => Promise.resolve());
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ audience: 'circle' }), usePreventRemove: () => jest.fn() }));
-jest.mock('@/api/cache', () => ({ useCache: () => ({ thingMade: mockMade }) }));
+let mockParams: { audience?: string; folder?: string } = { audience: 'circle' };
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => mockParams, usePreventRemove: () => jest.fn() }));
+jest.mock('@/api/cache', () => ({ useCache: () => ({ noteMade: mockMade }) }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds }));
-jest.mock('@/api/generated/homeport', () => ({ createChecklist: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ createChecklist: jest.fn(), useGetFolder: jest.fn(() => ({ data: undefined })) }));
 jest.mock('@/lib/ids', () => ({ newClientId: () => 'client-1' }));
 
 const mockLinds = linds;
 
 describe('/new/checklist', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockParams = { audience: 'circle' };
+    (jest.mocked(useGetFolder) as unknown as jest.Mock).mockReturnValue({ data: undefined });
+  });
 
   it('makes a list with its first lines, one per row, and opens it', async () => {
     jest.mocked(createChecklist).mockResolvedValue(checklist({ id: 'l-new' }));
@@ -29,8 +35,22 @@ describe('/new/checklist', () => {
     await user.type(screen.getByLabelText('Lines to start with'), 'Milk\n\n  Bread  \nApples');
     await user.press(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'checklist', id: 'l-new' } }));
-    expect(createChecklist).toHaveBeenCalledWith({ clientId: 'client-1', circleId: 'c-linds', title: 'Groceries', items: ['Milk', 'Bread', 'Apples'], audience: 'circle' });
+    expect(createChecklist).toHaveBeenCalledWith({ clientId: 'client-1', circleId: 'c-linds', title: 'Groceries', items: ['Milk', 'Bread', 'Apples'], audience: 'circle', aisles: false });
     expect(mockMade).toHaveBeenCalledWith('c-linds');
+  });
+
+  it('makes a shopping list that sorts by aisle, filed in the folder it was started from', async () => {
+    mockParams = { folder: 'f-home' };
+    (jest.mocked(useGetFolder) as unknown as jest.Mock).mockReturnValue(loaded(folder()));
+    jest.mocked(createChecklist).mockResolvedValue(checklist({ id: 'l-new' }));
+    await render(inApp(<NewChecklist />));
+    expect(screen.getByText('Goes into Home')).toBeOnTheScreen();
+    expect(screen.getByText('New lines find their aisle, and the aisles keep the order of a shop')).toBeOnTheScreen();
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText('Name of the list'), 'Groceries');
+    await user.press(screen.getByRole('switch', { name: 'A shopping list' }));
+    await user.press(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(createChecklist).toHaveBeenCalledWith({ clientId: 'client-1', circleId: 'c-linds', title: 'Groceries', items: [], audience: 'me', aisles: true, folderId: 'f-home' }));
   });
 
   it('needs a name, and no lines', async () => {

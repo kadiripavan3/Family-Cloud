@@ -11,7 +11,6 @@ import NewScan from '@/app/(app)/new/scan';
 import NewSheet from '@/app/(app)/new/sheet';
 import { LibraryHome } from '@/features/library/LibraryHome';
 import { MoneyHome } from '@/features/money/MoneyHome';
-import { NotesHome } from '@/features/notes/NotesHome';
 import { PlanHome } from '@/features/plan/PlanHome';
 import { VaultHome } from '@/features/vault/VaultHome';
 import { onPhone } from '@/test/phone';
@@ -32,7 +31,6 @@ describe('the screens that are still to be built', () => {
 
   it.each([
     ['Plan', <PlanHome key="plan" />],
-    ['Notes', <NotesHome key="notes" />],
     ['Library', <LibraryHome key="library" />],
     ['Money', <MoneyHome key="money" />],
     ['Vault', <VaultHome key="vault" />],
