@@ -1229,6 +1229,25 @@
         }
       }
     },
+    "/v1/me/overview" : {
+      "get" : {
+        "tags" : [ "Account and safety" ],
+        "summary" : "What the You screen counts: your circles, your notes, how much you keep",
+        "operationId" : "getOverview",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OverviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/guest-passes/{id}" : {
       "get" : {
         "tags" : [ "guest passes" ],
@@ -2620,6 +2639,36 @@
           }
         },
         "required" : [ "email", "id", "profile" ]
+      },
+      "OverviewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "circles" : {
+            "type" : "array",
+            "description" : "The names of the circles they are in, in the order they joined",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "notes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Pages and lists they wrote, in every circle"
+          },
+          "bytesKept" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How much their uploads take, in bytes"
+          },
+          "phones" : {
+            "type" : "array",
+            "description" : "The kinds of phone that are signed in for notifications: ios, android, web",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "bytesKept", "circles", "notes", "phones" ]
       },
       "JoinPreview" : {
         "type" : "object",

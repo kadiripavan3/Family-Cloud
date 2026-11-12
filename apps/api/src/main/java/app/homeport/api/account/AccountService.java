@@ -36,6 +36,20 @@ public class AccountService {
         }
     }
 
+    /** What the You screen says about a person at a glance. */
+    public record OverviewResponse(
+            @Schema(description = "The names of the circles they are in, in the order they joined")
+            List<String> circles,
+
+            @Schema(description = "Pages and lists they wrote, in every circle")
+            int notes,
+
+            @Schema(description = "How much their uploads take, in bytes")
+            long bytesKept,
+
+            @Schema(description = "The kinds of phone that are signed in for notifications: ios, android, web")
+            List<String> phones) {}
+
     /** What someone has until they change anything: everything on except email. */
     public static final SettingsResponse DEFAULTS = new SettingsResponse(true, true, false);
 
@@ -73,6 +87,10 @@ public class AccountService {
 
     public SettingsResponse settings(UUID me) {
         return accounts.settings(me).orElse(DEFAULTS);
+    }
+
+    public OverviewResponse overview(UUID me) {
+        return accounts.overview(me);
     }
 
     @Transactional

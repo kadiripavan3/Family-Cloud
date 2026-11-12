@@ -42,6 +42,23 @@ public class AccountStore {
                 .update();
     }
 
+    /** What the You screen counts: the circles a person is in, the notes and lists they wrote, and how much they keep. */
+    public AccountService.OverviewResponse overview(UUID userId) {
+        return jdbc.sql("""
+            select
+              (select coalesce(array_agg(c.name order by m.created_at), '{}') from members m join circles c on c.id = m.circle_id
+                where m.user_id = :me and m.status = 'joined') as circles,
+              (select count(*) from things t join members m on m.id = t.owner_id
+                where m.user_id = :me and m.status = 'joined' and t.place = 'notes') as notes,
+              (select coalesce(sum(bytes), 0) from media where owner_id = :me and status = 'ready') as bytes,
+              (select coalesce(array_agg(distinct platform), '{}') from devices where user_id = :me) as phones
+            """)
+                .param("me", userId)
+                .query((rs, n) -> new AccountService.OverviewResponse(
+                        Sql.strings(rs, "circles"), rs.getInt("notes"), rs.getLong("bytes"), Sql.strings(rs, "phones")))
+                .single();
+    }
+
     /** Deleting an account takes its circles' things with it, which can be a lot of rows. */
     public void roomToDeleteAnAccount() {
         jdbc.sql(Sql.ROOM_FOR_A_JOB).update();

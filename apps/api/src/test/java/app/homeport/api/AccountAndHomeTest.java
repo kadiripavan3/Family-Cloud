@@ -41,6 +41,26 @@ class AccountAndHomeTest extends ApiTest {
     }
 
     @Test
+    void theYouScreenCountsCirclesNotesAndWhatIsKept() throws Exception {
+        String nora = person("Nora");
+        String alex = person("Alex");
+        String linds = circle(nora, "family", "The Linds");
+        circle(nora, "crew", "Lisbon crew");
+        join(nora, linds, alex);
+        page(nora, linds, "One", "me");
+        page(nora, linds, "Two", "circle");
+        page(alex, linds, "Alex's", "circle");
+        uploadPhoto(nora);
+
+        String overview = fetch("/v1/me/overview", nora);
+
+        assertThat(JsonPath.<List<String>>read(overview, "$.circles")).containsExactly("The Linds", "Lisbon crew");
+        assertThat(JsonPath.<Integer>read(overview, "$.notes")).isEqualTo(2);
+        assertThat(JsonPath.<Integer>read(overview, "$.bytesKept")).isPositive();
+        assertThat(JsonPath.<List<String>>read(overview, "$.phones")).isEmpty();
+    }
+
+    @Test
     void deletingAnAccountTakesWhatWasTheirsAndLeavesTheCircleToTheOthers() throws Exception {
         String nora = person("Nora");
         String alex = person("Alex");

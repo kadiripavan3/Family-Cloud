@@ -29,6 +29,14 @@ class AccountController {
         this.account = account;
     }
 
+    @GetMapping("/me/overview")
+    @Operation(
+            operationId = "getOverview",
+            summary = "What the You screen counts: your circles, your notes, how much you keep")
+    AccountService.OverviewResponse overview(@Me UUID me) {
+        return account.overview(me);
+    }
+
     @GetMapping("/me/settings")
     @Operation(operationId = "getSettings", summary = "Your notification choices")
     SettingsResponse settings(@Me UUID me) {
