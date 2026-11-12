@@ -7,6 +7,7 @@ import {
   formatDay,
   formatDayFull,
   formatDayLong,
+  formatDayOfYear,
   formatMonthAndYear,
   formatRange,
   formatSpan,
@@ -110,6 +111,7 @@ describe('a week on a board, and a mark on a ruler', () => {
 
   it('writes a day out with its year, and a month as short as it goes', () => {
     expect(formatDayFull('2034-12-04')).toBe('4 December 2034');
+    expect(formatDayOfYear('2016-12-04')).toBe('4 December');
     expect(formatMonthAndYear('2026-11-02')).toBe('Nov 26');
     expect(formatMonthAndYear('2005-01-31')).toBe('Jan 05');
   });

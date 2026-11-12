@@ -1,4 +1,18 @@
-import type { BoardCard, BoardResponse, MealPlanMeal, MealPlanView, PersonBrief, StartedResponse, TemplateCard, TemplateGalleryResponse } from '@/api/generated/homeport';
+import type {
+  BoardCard,
+  BoardMedia,
+  BoardResponse,
+  ChoreWheelJob,
+  ChoreWheelView,
+  MealPlanMeal,
+  MealPlanView,
+  PersonBrief,
+  StartedResponse,
+  TemplateCard,
+  TemplateGalleryResponse,
+  TimeCapsuleItem,
+  TimeCapsuleView,
+} from '@/api/generated/homeport';
 
 import { everyone, onlyMe, thing } from './spine';
 
@@ -134,4 +148,77 @@ export function mealPlanView(over: Partial<MealPlanView> = {}): MealPlanView {
 
 export function mealPlanBoard(view: MealPlanView = mealPlanView(), over: Partial<BoardResponse> = {}): BoardResponse {
   return board({ template: 'meal_plan', title: 'Weekly meal plan', emoji: '🍽️', settings: { cookingFor: view.cookingFor, toGroceries: view.groceries.on, groceriesListId: view.groceries.listId }, view, ...over });
+}
+
+/** A recording, and a photo, as a board hands them over. */
+export function recording(seconds: number, id = `rec-${seconds}`): BoardMedia {
+  return { id, kind: 'audio', url: `https://media.test/${id}.m4a`, thumbUrl: null, seconds };
+}
+export function picture(id = 'pic-1'): BoardMedia {
+  return { id, kind: 'photo', url: `https://media.test/${id}.jpg`, thumbUrl: `https://media.test/${id}.small.jpg`, seconds: null };
+}
+
+// ---------- 5.8 the chore wheel ----------
+
+export function job(over: Partial<ChoreWheelJob> = {}): ChoreWheelJob {
+  return { id: 'job-bins', name: 'Bins and recycling', emoji: '🗑️', when: 'Tuesday and Friday evening', timesAWeek: 2, who: noraBrief, next: alexBrief, doneThisWeek: 0, doneOn: [], doneToday: false, complete: false, lastDoneAt: null, ...over };
+}
+
+/** Week 46 as the drawing has it: Nora's bins not done, Alex's laundry done, Mia part of the way, Leo done this morning. */
+export function wheelView(over: Partial<ChoreWheelView> = {}): ChoreWheelView {
+  const stars = { stars: 10, cents: 200, currency: 'EUR', into: "Mia's skates fund" };
+  return {
+    week: 46,
+    weekStart: '2026-11-09',
+    weekEnd: '2026-11-15',
+    people: [
+      { person: noraBrief, kind: 'person', stars: 0 },
+      { person: alexBrief, kind: 'person', stars: 2 },
+      { person: miaBrief, kind: 'child', stars: 34 },
+      { person: leoBrief, kind: 'child', stars: 21 },
+    ],
+    jobs: [
+      job(),
+      job({ id: 'job-laundry', name: 'Laundry', emoji: '🧺', when: 'Two loads', who: alexBrief, next: miaBrief, doneThisWeek: 2, doneOn: ['2026-11-09', '2026-11-10'], complete: true, lastDoneAt: '2026-11-10T19:10:00' }),
+      job({ id: 'job-table', name: 'Set the table', emoji: '🍽️', when: 'Every day', timesAWeek: 7, who: miaBrief, next: leoBrief, doneThisWeek: 5, doneOn: ['2026-11-09', '2026-11-10'] }),
+      job({ id: 'job-biscuit', name: 'Feed Biscuit', emoji: '🐶', when: 'Every morning', timesAWeek: 7, who: leoBrief, next: noraBrief, doneThisWeek: 3, doneOn: ['2026-11-09', '2026-11-10', '2026-11-11'], doneToday: true, lastDoneAt: '2026-11-11T07:10:00' }),
+    ],
+    done: 1,
+    stars,
+    ...over,
+  };
+}
+
+export function wheelBoard(view: ChoreWheelView = wheelView(), over: Partial<BoardResponse> = {}): BoardResponse {
+  return board({ template: 'chore_wheel', title: 'Chore wheel', emoji: '🧹', settings: { people: ['m-nora', 'm-alex', 'm-mia', 'm-leo'], startsOn: '2026-09-14', stars: view.stars }, view, ...over });
+}
+
+// ---------- 5.9 the time capsule ----------
+
+export function capsuleItem(over: Partial<TimeCapsuleItem> = {}): TimeCapsuleItem {
+  return { id: 'item-letter', kind: 'letter', title: 'A letter from Nora', note: null, from: noraBrief, fromName: null, mine: true, draft: false, sealed: true, sealedAt: '2026-11-03T21:05:00', pages: 2, seconds: null, photos: null, text: null, media: null, pictures: [], ...over };
+}
+
+/** The capsule for Mia's 18th as the drawing has it: four things sealed inside, 55% of the wait over. */
+export function capsuleView(over: Partial<TimeCapsuleView> = {}): TimeCapsuleView {
+  return {
+    opensOn: '2034-12-04',
+    open: false,
+    openForYou: false,
+    daysToGo: 2945,
+    progress: 55,
+    forPeople: [miaBrief],
+    sealedInside: 4,
+    items: [
+      capsuleItem(),
+      capsuleItem({ id: 'item-voice', kind: 'voice', title: 'A voice message from Alex', from: alexBrief, mine: false, pages: null, seconds: 134, sealedAt: '2026-11-05T10:00:00' }),
+      capsuleItem({ id: 'item-recipe', kind: 'photo', title: "Grandma Astrid's cookie recipe", note: 'In her handwriting, with a photo', from: null, fromName: 'Astrid Lind', pages: null }),
+      capsuleItem({ id: 'item-photos', kind: 'photos', title: '12 photos from this year', note: 'One a month, picked by the family', pages: null, photos: 12 }),
+    ],
+    ...over,
+  };
+}
+
+export function capsuleBoard(view: TimeCapsuleView = capsuleView(), over: Partial<BoardResponse> = {}): BoardResponse {
+  return board({ template: 'time_capsule', title: 'For Mia, on her 18th birthday', emoji: '⏳', chip: { audience: 'circle', people: [], hiddenFrom: ['Mia'] }, settings: { opensOn: view.opensOn, countFrom: '2016-12-04', forMemberIds: ['m-mia'], hideFromThem: true }, view, ...over });
 }

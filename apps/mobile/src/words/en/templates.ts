@@ -128,4 +128,107 @@ export const templates = {
       remove: 'Take it off the plan',
     },
   },
+
+  // 5.8 The chore wheel
+  choreWheel: {
+    /** Under the board's name in the bar. */
+    turns: 'Turns every Monday',
+    nextWeekFrom: (day: string) => `Next week, from ${day}`,
+    /** Under the number in the middle of the wheel. */
+    week: 'week',
+    /** The wheel, for a screen reader: what tapping it does. */
+    wheel: (week: number) => `Week ${week}. Turn the wheel to next week`,
+    wheelNext: (week: number) => `Week ${week}, next week. Turn the wheel back`,
+    nextWeek: 'See next week',
+    thisWeek: 'Back to this week',
+    /**
+     * Where a job stands this week, after its person's name: done, done this morning, "3 of 7 days", or
+     * when it is to be done. `morning` says whether the last tick was before noon.
+     */
+    jobLine: (job: { complete: boolean; doneToday: boolean; doneThisWeek: number; timesAWeek: number; when: string | null }, at: string | null, morning: boolean) => {
+      if (job.complete) return job.timesAWeek === 1 ? 'done' : `all ${job.timesAWeek} done`;
+      if (job.doneToday) return morning ? 'done this morning' : at ? `done today at ${at}` : 'done today';
+      if (job.doneThisWeek > 0) return job.timesAWeek === 7 ? `${job.doneThisWeek} of 7 days` : `${job.doneThisWeek} of ${job.timesAWeek} done`;
+      return job.when;
+    },
+    stars: (stars: number) => (stars === 1 ? '1 star' : `${stars} stars`),
+    starsRule: {
+      title: 'Stars turn into pocket money',
+      /** `money` is "€2", `into` what they pay into in the family's words. */
+      body: (stars: number, money: string, into: string | null) => (into ? `${stars} stars pay ${money} into “${into}”.` : `${stars} stars pay ${money}.`),
+    },
+    empty: { title: 'No jobs on the wheel yet', body: 'Add the jobs that keep the house going. Every Monday each one moves to the next person.' },
+    add: {
+      title: 'Add a job',
+      lead: 'It joins the wheel and changes hands every Monday.',
+      name: 'The job',
+      namePlaceholder: 'Bins and recycling',
+      when: 'When it is done',
+      whenPlaceholder: 'Tuesday and Friday evening',
+      times: 'Times a week',
+      timesNote: 'From 1 to 7. A job that is done that often is done for the week.',
+      save: 'Put it on the wheel',
+    },
+  },
+
+  // 5.9 The time capsule
+  timeCapsule: {
+    /** "Opens 4 December 2034". */
+    opens: (day: string) => `Opens ${day}`,
+    /** How long until it opens: "8 years to go", "5 months to go", "23 days to go", "Opens tomorrow". */
+    toGo: (days: number) => {
+      if (days <= 0) return 'today';
+      if (days === 1) return '1 day to go';
+      if (days < 60) return `${days} days to go`;
+      if (days < 730) return `${Math.round(days / 30.44)} months to go`;
+      return `${Math.round(days / 365.25)} years to go`;
+    },
+    openedLine: (day: string) => `Opened on ${day}`,
+    sealedInside: 'Sealed inside',
+    inside: 'Inside',
+    empty: 'Nothing inside yet. A letter is a good first thing.',
+    pages: (pages: number) => (pages === 1 ? '1 page' : `${pages} pages`),
+    photos: (photos: number) => (photos === 1 ? '1 photo' : `${photos} photos`),
+    sealedOn: (day: string) => `sealed ${day}`,
+    sealedWord: 'Sealed',
+    draftLine: 'Draft · only you can see it',
+    draftNote: 'A draft is yours alone. Once you seal it, nobody reads it before the day, you included.',
+    /** What a sealed envelope says when it is pressed. */
+    sealedUntil: (day: string) => `Sealed means sealed. It opens on ${day}, and nobody can read it before then.`,
+    seal: 'Seal it in',
+    removeDraft: 'Throw the draft away',
+    play: (title: string) => `Play: ${title}`,
+    fine: 'Sealed means sealed. You can add, but nobody can read it before the date.',
+    opened: (day: string) => `It opened on ${day}. Everything inside is there to read and keep.`,
+    add: {
+      button: 'Add to the capsule',
+      title: 'Add to the capsule',
+      lead: 'A letter, a photo or a voice message.',
+      kind: 'What to add',
+      letter: 'Letter',
+      photo: 'Photo',
+      voice: 'Voice',
+      letterLabel: 'Your letter',
+      letterPlaceholder: 'Dear…',
+      choosePhoto: 'Choose a photo',
+      changePhoto: 'Choose another photo',
+      photoChosen: 'The photo you chose',
+      chooseRecording: 'Add a recording',
+      changeRecording: 'Choose another recording',
+      note: 'A line for the outside',
+      notePlaceholder: 'In her handwriting',
+      sealNote: "Once it is sealed, nobody can read it before the day it opens. That includes you.",
+      seal: 'Seal it in',
+      draft: 'Keep it as a draft',
+    },
+    // Before it starts
+    setup: {
+      name: 'What it is called',
+      namePlaceholder: 'For Mia, on her 18th birthday',
+      opensOn: 'The day it opens',
+      choose: 'Choose a day',
+      forWhom: 'Who it is for',
+      surprise: (name: string) => `Keep it from ${name} until it opens`,
+    },
+  },
 } as const;

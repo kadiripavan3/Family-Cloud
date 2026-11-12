@@ -143,6 +143,12 @@ export function formatDayFull(day: string): string {
   return words.dates.dayLong(date.getDate(), date.getMonth(), date.getFullYear());
 }
 
+/** "4 December": the day of the year a date falls on, without its year: a birthday. */
+export function formatDayOfYear(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.dayLong(date.getDate(), date.getMonth());
+}
+
 /** "Nov 26": the month and year of a day, as short as they go. */
 export function formatMonthAndYear(day: string): string {
   const date = fromISODate(day);

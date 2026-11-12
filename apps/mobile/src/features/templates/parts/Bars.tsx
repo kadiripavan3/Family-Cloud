@@ -32,7 +32,7 @@ export function CtaBar({ title, line, children }: { title: string; line?: string
           {title}
         </Txt>
         {line ? (
-          <Txt variant="footnote" color="muted" numberOfLines={1}>
+          <Txt variant="footnote" color="muted" numberOfLines={2}>
             {line}
           </Txt>
         ) : null}
