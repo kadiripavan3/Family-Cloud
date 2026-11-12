@@ -6,7 +6,7 @@ import Board from '@/app/(app)/board/[id]';
 import { PiggyBankSetup } from '@/features/perks/piggy-bank/PiggyBankSetup';
 import { BOARD_ID, mockBoardCache } from '@/test/boards';
 import { inApp } from '@/test/phone';
-import { linds, loaded, pending } from '@/test/samples';
+import { failed, linds, loaded, pending } from '@/test/samples';
 import { money, piggyBoard, piggyView } from '@/test/samples/perks';
 
 jest.mock('expo-router', () => jest.requireActual('@/test/boards').mockBoardRouter());
@@ -155,6 +155,15 @@ describe('16.2 The piggy bank', () => {
     expect(screen.getByText('Moved to Spend')).toBeOnTheScreen();
     expect(screen.getByText('€2.60')).toBeOnTheScreen();
     expect(list).toHaveBeenLastCalledWith(BOARD_ID, { day: '2026-11-11' }, expect.objectContaining({ query: expect.objectContaining({ enabled: true }) }));
+  });
+
+  it('says why everything that happened could not be read', async () => {
+    list.mockReturnValue({ ...failed(new ApiError(0, 'unreachable', "We couldn't reach Homeport. Check your connection and try again.")), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+    await render(inApp(<Board />));
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'More' }));
+    await user.press(screen.getByRole('button', { name: 'Everything that happened' }));
+    expect(screen.getByText("We couldn't reach Homeport. Check your connection and try again.")).toBeOnTheScreen();
   });
 
   it('shows everything to someone who does not run the bank, and lets them change nothing', async () => {

@@ -167,22 +167,22 @@ function Slip({ idea, jar, onPress }: { idea: Idea; jar: SaturdayJarResponse; on
     // The slip lies a little askew. The turn is the box's own; the press shrinks what is inside it.
     <View style={{ marginTop: 14, marginHorizontal: 24, transform: [{ rotate: '-1.5deg' }] }}>
       <Tap accessibilityRole="button" accessibilityLabel={words.common.spoken([idea.text, under, ...tags])} scaleTo={0.98} onPress={onPress} style={{ alignItems: 'center', gap: 6, paddingTop: 22, paddingHorizontal: 18, paddingBottom: 18, borderRadius: radius.cardLarge, backgroundColor: colors.surface, boxShadow: shadow.md }}>
-      <Emoji char={idea.emoji ?? BASKET} size={62} />
-      <Txt variant="title" accessibilityRole="header" center>
-        {idea.text}
-      </Txt>
-      <Txt variant="caption" weight={500} color="muted" center>
-        {under}
-      </Txt>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-        {tags.map((tag) => (
-          <View key={tag} style={{ paddingVertical: 6, paddingHorizontal: 11, borderRadius: radius.photo, backgroundColor: colors.fill }}>
-            <Txt variant="footnote" weight={700}>
-              {tag}
-            </Txt>
-          </View>
-        ))}
-      </View>
+        <Emoji char={idea.emoji ?? BASKET} size={62} />
+        <Txt variant="title" accessibilityRole="header" center>
+          {idea.text}
+        </Txt>
+        <Txt variant="caption" weight={500} color="muted" center>
+          {under}
+        </Txt>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+          {tags.map((tag) => (
+            <View key={tag} style={{ paddingVertical: 6, paddingHorizontal: 11, borderRadius: radius.photo, backgroundColor: colors.fill }}>
+              <Txt variant="footnote" weight={700}>
+                {tag}
+              </Txt>
+            </View>
+          ))}
+        </View>
       </Tap>
     </View>
   );

@@ -362,11 +362,13 @@ exports.run = async function run(ctx) {
     const mine = async () => (await asNora('GET', `/v1/boards/${missionsId}`)).view.yours.find((mission) => mission.yours);
     const first = await mine();
     await R('heading', { name: first.text }).waitFor();
-    // Nora's own card stands first; under it may be those of the children she reads theirs to.
-    const done = () => page.getByRole('button', { name: 'Done', exact: true }).first();
+    // Nora's own card is the one that says only she can see it; under it may be those of the children she reads
+    // theirs to. (Found by its own line: Today stays in the page under a board, with buttons of its own.)
+    const card = page.getByText(/· only you can see this$/).last().locator('xpath=..');
+    const done = () => card.getByRole('button', { name: 'Done', exact: true });
 
     // A different one, for the same person.
-    await page.getByRole('button', { name: 'A different one' }).first().click();
+    await card.getByRole('button', { name: 'A different one' }).click();
     await R('heading', { name: first.text }).waitFor({ state: 'detached', timeout: 20000 });
     const second = await mine();
     if (second.text === first.text || second.target.memberId !== first.target.memberId) throw new Error('"A different one" did not deal a different mission for the same person');
@@ -381,8 +383,8 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'Done', exact: true }).click();
     await T('Done. Everyone reads about it on Sunday.').waitFor({ timeout: 20000 });
     await shot('missions-done');
-    await R('button', { name: 'Not done after all' }).click();
-    await T('Done. Everyone reads about it on Sunday.').waitFor({ state: 'detached', timeout: 20000 });
+    await card.getByRole('button', { name: 'Not done after all' }).click();
+    await done().waitFor({ timeout: 20000 });
     await done().click();
     await R('heading', { name: 'What did you do?' }).waitFor();
     await R('button', { name: 'Done', exact: true }).click();
@@ -397,7 +399,7 @@ exports.run = async function run(ctx) {
     if (theirs.view.yours.some((mission) => mission.doer.name === 'Nora') || JSON.stringify(theirs).includes(tag)) throw new Error("the API hands Nora's secret mission to Sam");
     if (theirs.view.revealed.length) throw new Error('a mission was revealed before Sunday');
     if (await sam.page.getByText(second.text).count()) throw new Error("Sam sees Nora's mission");
-    if (await sam.page.getByText(tag, { exact: false }).count()) throw new Error('Sam sees what Nora did before Sunday');
+    if (await sam.page.getByText(did, { exact: false }).count()) throw new Error('Sam sees what Nora did before Sunday');
     await sam.T('What gets done this week shows up here on Sunday, for everyone to read.').waitFor();
     await sam.shot('missions-other-person');
   });
@@ -422,7 +424,7 @@ exports.run = async function run(ctx) {
     const pulled = sample.view.pulled;
     await R('heading', { name: pulled.text }).waitFor();
     await T(new RegExp(`^${pulled.by.name} put this one in`)).waitFor();
-    if (pulled.text.startsWith('A picnic')) for (const fact of ['Free', '2 hours', 'Outdoors']) await T(fact, { exact: true }).first().waitFor();
+    if (pulled.text.startsWith('A picnic')) await R('button', { name: /^A picnic by the pond in Tivoli\. Mia put this one in, back in \w+( \d{4})?\. Free\. 2 hours\. Outdoors$/ }).waitFor();
     await R('button', { name: 'Shake again' }).waitFor();
     await R('button', { name: "Let's do it" }).waitFor();
     // What is in the jar, narrowed by the API's own four filters.
@@ -484,8 +486,7 @@ exports.run = async function run(ctx) {
     await shot('saturday-jar-ask');
     await R('button', { name: 'Shake the jar' }).click();
     await R('heading', { name: fort }).waitFor({ timeout: 20000 });
-    await T('Nora put this one in this month').waitFor();
-    for (const fact of ['Free', '30 minutes', 'At home']) await T(fact, { exact: true }).first().waitFor();
+    await R('button', { name: `${fort}. Nora put this one in this month. Free. 30 minutes. At home` }).waitFor();
     await shot('saturday-jar-new');
     // Asked for anything, and shaken again: the other slip comes out, since there is another.
     await more().click();
@@ -494,7 +495,7 @@ exports.run = async function run(ctx) {
     await R('radio', { name: 'Any' }).click();
     await R('button', { name: 'Shake the jar' }).click();
     await R('heading', { name: 'The roller rink' }).waitFor({ timeout: 20000 });
-    await T('About €32', { exact: true }).waitFor();
+    await R('button', { name: 'The roller rink. Leo put this one in this month. About €32. 2 hours. Indoors' }).waitFor();
     await R('button', { name: 'Shake again' }).click();
     await R('heading', { name: fort }).waitFor({ timeout: 20000 });
 
@@ -604,9 +605,9 @@ exports.run = async function run(ctx) {
     await T('Things put away').waitFor();
     for (const item of sample.view.items) await R('button', { name: new RegExp(`^${escaped(item.name)}\\. `) }).waitFor();
     await R('button', { name: /^Leo's swimming bag\. Last seen on the hall hook · Mia, / }).waitFor();
-    // Who each thing is kept to: the key and the passports to Alex and Nora, the rest to the family.
-    if ((await page.getByLabel('Seen by: Alex and you').count()) !== 2) throw new Error('the things kept to Alex and Nora are not marked');
-    if ((await page.getByLabel('Seen by: The Linds').count()) !== 3) throw new Error('the things for everyone are not marked');
+    // Who each thing is kept to, on its own row: the key and the passports to Alex and Nora, the rest to the family.
+    for (const item of sample.view.items) await R('button', { name: new RegExp(`^${escaped(item.name)}\\. `) }).getByLabel(item.only.length ? 'Seen by: Alex and you' : 'Seen by: The Linds').waitFor();
+    if (sample.view.items.filter((item) => item.only.length).length !== 2) throw new Error('the sample list has not two things kept to Alex and Nora');
     await shot('where-rest');
 
     // The question, asked: the box is the bar now, and the answer stands on top.
@@ -674,9 +675,8 @@ exports.run = async function run(ctx) {
     await R('checkbox', { name: 'Everyone who sees the list', checked: true }).waitFor();
     await R('checkbox', { name: 'Alex', exact: true }).click();
     await R('button', { name: 'Put it on the list' }).click();
-    await R('button', { name: `${present}. Top of the wardrobe` }).waitFor({ timeout: 20000 });
-    await L('Seen by: Alex and you').waitFor();
-    await L('Seen by: The Linds').waitFor();
+    await R('button', { name: `${present}. Top of the wardrobe` }).getByLabel('Seen by: Alex and you').waitFor({ timeout: 20000 });
+    await R('button', { name: `${sledge}. Cellar, behind the bikes` }).getByLabel('Seen by: The Linds').waitFor();
     await shot('where-new');
 
     // Sam sees the sledge and not the present: not in the list, not by asking, not from the API.
@@ -685,7 +685,7 @@ exports.run = async function run(ctx) {
     await sam.R('button', { name: `${sledge}. Cellar, behind the bikes` }).waitFor();
     const theirs = await ctx.api(sam.token, 'GET', `/v1/boards/${listId}?show=${encodeURIComponent('where is the birthday present')}`);
     if (theirs.view.count !== 1 || theirs.view.found || JSON.stringify(theirs).includes('wardrobe')) throw new Error('the API hands Sam a thing that is kept to Alex and Nora');
-    if (await sam.page.getByText('Birthday present', { exact: false }).count()) throw new Error('Sam sees the present that is kept to Alex and Nora');
+    if (await sam.page.getByText(present, { exact: false }).count()) throw new Error('Sam sees the present that is kept to Alex and Nora');
     await sam.L("Where's the…?").fill('birthday present');
     await sam.T('Nothing put away answers “birthday present”').waitFor({ timeout: 20000 });
     await sam.shot('where-other-person');
@@ -757,11 +757,16 @@ exports.run = async function run(ctx) {
     await R('heading', { name: 'Phones off the table at dinner' }).waitFor({ state: 'detached' });
     await more().click();
     await R('button', { name: 'Last week' }).click();
-    await T(/^\d+( \w+)? to \d+ \w+$/).waitFor({ timeout: 20000 });
+    const monday = new Date(sample.view.weekStart + 'T12:00:00');
+    const dayOf = (shift) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + shift);
+    const [from, to] = [dayOf(-7), dayOf(-1)];
+    const monthOf = (date) => date.toLocaleDateString('en-GB', { month: 'long' });
+    const lastWeek = from.getMonth() === to.getMonth() ? `${from.getDate()} to ${to.getDate()} ${monthOf(to)}` : `${from.getDate()} ${monthOf(from)} to ${to.getDate()} ${monthOf(to)}`;
+    await T(lastWeek, { exact: true }).waitFor({ timeout: 20000 });
     await shot('habits-last-week');
     await more().click();
     await R('button', { name: 'Back to this week' }).click();
-    await T(/^\d+( \w+)? to \d+ \w+$/).waitFor({ state: 'detached', timeout: 20000 });
+    await T(lastWeek, { exact: true }).waitFor({ state: 'detached', timeout: 20000 });
   });
 
   await step('habits-new', async () => {

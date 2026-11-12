@@ -5,7 +5,7 @@ import { actOnBoard, addBoardEntry, removeBoardEntry, useGetBoard, useGetBoardEn
 import Board from '@/app/(app)/board/[id]';
 import { BOARD_ID, mockBoardCache, mockBoardRouterState } from '@/test/boards';
 import { inApp } from '@/test/phone';
-import { linds, loaded, pending } from '@/test/samples';
+import { failed, linds, loaded, pending } from '@/test/samples';
 import { idea, jarIdeas, jarView, saturdayBoard } from '@/test/samples/perks';
 
 jest.mock('expo-router', () => jest.requireActual('@/test/boards').mockBoardRouter());
@@ -76,6 +76,27 @@ describe('16.4 The Saturday jar', () => {
     asked.mockReturnValue(loaded(saturdayBoard(jarView({ count: 0, done: 31 }))));
     await rerender(inApp(<Board />));
     expect(screen.getByText('Nothing is left in the jar. Drop a new idea in.')).toBeOnTheScreen();
+  });
+
+  it('keeps the slip on the page while the list is on its way, and says why when the list could not be read', async () => {
+    const paging = { hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() };
+    list.mockReturnValue({ ...pending(), ...paging });
+    const { rerender } = await render(inApp(<Board />));
+    expect(screen.getByRole('header', { name: 'A picnic by the pond in Tivoli' })).toBeOnTheScreen();
+    expect(screen.getByText('In the jar · 31 ideas')).toBeOnTheScreen();
+    expect(screen.queryByText('Nothing in the jar fits that.')).toBeNull();
+    list.mockReturnValue({ ...failed(new ApiError(500, 'unexpected', 'Something went wrong on our side. Please try again.')), ...paging });
+    await rerender(inApp(<Board />));
+    expect(screen.getByText('Something went wrong on our side. Please try again.')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Shake again' })).toBeOnTheScreen();
+  });
+
+  it('brings more of a long jar with one button', async () => {
+    const fetchNextPage = jest.fn();
+    list.mockReturnValue({ ...loaded({ pages: [{ items: jarIdeas, nextCursor: 'next' }], pageParams: [undefined] }), hasNextPage: true, isFetchingNextPage: false, fetchNextPage });
+    await render(inApp(<Board />));
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Show more' }));
+    expect(fetchNextPage).toHaveBeenCalled();
   });
 
   it('shakes again with what the jar was asked today', async () => {
