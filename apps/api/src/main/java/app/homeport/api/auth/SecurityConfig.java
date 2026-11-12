@@ -54,6 +54,8 @@ class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/g/**", "/share/**")
                         .permitAll() // a guest pass's web page (it asks for its own code), and the pages' stylesheet
+                        .requestMatchers("/s/**")
+                        .permitAll() // the page where someone outside answers one question of "Grandma's stories"
                         .requestMatchers("/.well-known/**")
                         .permitAll() // the files that let links open the app
                         .requestMatchers("/terms", "/privacy", "/contact", "/delete-account")
