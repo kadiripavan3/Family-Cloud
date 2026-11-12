@@ -45,7 +45,7 @@ export function InviteSheet({ circle, visible, onClose, onAdd }: Props) {
       {circle.joinUrl ? (
         <>
           <GroupLabel style={{ marginTop: 14, marginHorizontal: layout.gutter }}>{words.circles.settings.link}</GroupLabel>
-          <LinkBox url={circle.joinUrl} copyLabel={words.setup.people.copyLink} icon={(c) => <Link size={18} color={c} />} style={{ marginHorizontal: layout.barGutter }} />
+          <LinkBox url={circle.joinUrl} icon={(c) => <Link size={18} color={c} />} style={{ marginHorizontal: layout.barGutter }} />
         </>
       ) : null}
     </Sheet>

@@ -16,7 +16,7 @@ export const today = {
       return more > 0 ? `${named} and ${more} more` : named;
     },
     counts: (left: number, done: number) => {
-      if (left === 0 && done === 0) return 'Nothing due today';
+      if (left === 0 && done === 0) return 'Nothing due, nothing to tick';
       const todo = left === 0 ? 'Nothing left today' : left === 1 ? '1 thing left today' : `${left} things left today`;
       return done > 0 ? `${todo} · ${done} done` : todo;
     },

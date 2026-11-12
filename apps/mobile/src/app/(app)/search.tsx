@@ -71,7 +71,7 @@ export default function Search() {
       <AvoidKeyboard style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingHorizontal: layout.barGutter }}>
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 46, paddingLeft: 14, paddingRight: 12, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.text, backgroundColor: colors.bg }}>
-            <SearchIcon size={19} color={colors.muted} />
+            <SearchIcon size={19} color={colors.muted} style={{ flexShrink: 0 }} />
             <TextInput
               accessibilityLabel={words.search.field(circle.name)}
               placeholder={words.search.field(circle.name)}
@@ -84,7 +84,7 @@ export default function Search() {
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
-              style={[webNoOutline, textStyle('headline', 600, { oneLine: true }), { flex: 1, minHeight: 24, padding: 0, color: colors.text }]}
+              style={[webNoOutline, textStyle('headline', 600, { oneLine: true }), { flex: 1, minWidth: 0, minHeight: 24, padding: 0, color: colors.text }]}
             />
             {typed ? (
               <Tap accessibilityRole="button" accessibilityLabel={words.search.clear} hitSlop={11} onPress={() => setTyped('')} scaleTo={0.9} style={{ width: 22, height: 22, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.fill2 }}>

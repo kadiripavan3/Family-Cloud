@@ -97,7 +97,7 @@ export default function CirclePeople() {
         ))}
         <PersonRow add name={words.setup.people.add.label} line={words.setup.people.add.note} onPress={() => setAdding(true)} />
       </View>
-      {circle.joinUrl ? <LinkBox url={circle.joinUrl} copyLabel={words.setup.people.copyLink} icon={(c) => <Link size={18} color={c} />} style={{ marginTop: 14, marginHorizontal: layout.barGutter }} /> : null}
+      {circle.joinUrl ? <LinkBox url={circle.joinUrl} icon={(c) => <Link size={18} color={c} />} style={{ marginTop: 14, marginHorizontal: layout.barGutter }} /> : null}
       <AddSomeoneSheet circle={circle} visible={adding} onClose={() => setAdding(false)} />
       {choosing ? <RoleSheet member={choosing} visible onClose={() => setRoleOf(null)} /> : null}
     </SetupFrame>

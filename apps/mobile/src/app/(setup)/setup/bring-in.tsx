@@ -39,7 +39,16 @@ export default function BringThingsIn() {
   };
   const some = choice.photos || choice.journey || choice.calendars;
 
-  const toggle = (what: keyof BringIn, label: string) => <Toggle label={label} value={choice[what]} onChange={(on) => setChoice({ ...choice, [what]: on })} />;
+  const toggle = (what: keyof BringIn, label: string) => (
+    <Toggle
+      label={label}
+      value={choice[what]}
+      onChange={(on) => {
+        setChoice({ ...choice, [what]: on });
+        setLater(says.laterNote);
+      }}
+    />
+  );
   const arrow = <ChevronRight size={18} color={colors.muted} />;
 
   return (

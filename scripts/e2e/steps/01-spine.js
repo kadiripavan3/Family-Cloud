@@ -145,7 +145,7 @@ async function newFamily(ctx) {
     await R('button', { name: 'Alex: Adult. Change role' }).waitFor();
     // The link that lets someone join, with Copy.
     await T(/\/join\//).waitFor();
-    await R('button', { name: 'Copy the link to join' }).click();
+    await R('button', { name: 'Copy', exact: true }).click();
     await R('button', { name: 'Copied' }).waitFor();
     await shot('circle-people');
     await R('button', { name: 'Continue', exact: true }).click();
@@ -156,6 +156,7 @@ async function newFamily(ctx) {
     await T('Bring your things in').waitFor();
     await R('switch', { name: 'Photos on this phone', checked: false }).click();
     await R('switch', { name: 'Photos on this phone', checked: true }).waitFor();
+    await T(/^Your choices are remembered\./).waitFor();
     await R('button', { name: /^Passwords/ }).click();
     await T(/^Bringing passwords in arrives with the Vault/).waitFor();
     await T('It all starts as “Only you”').waitFor();
@@ -753,13 +754,18 @@ async function sampleCircles(ctx) {
     await T(/things? only you can see$/).waitFor();
     await shot('circle-switch');
     // Another circle is another Home. While its Today is on its way, grey shapes in the layout that is coming.
-    await page.route('**/today**', (route) => setTimeout(() => route.continue(), 2500));
+    let slow = true;
+    await page.route('**/today**', async (route) => {
+      if (slow) await new Promise((later) => setTimeout(later, 2500));
+      await route.continue().catch(() => undefined);
+    });
     await R('button', { name: 'Lisbon crew. Friends · 5 people' }).click();
     await R('button', { name: 'Lisbon crew. Change circle' }).waitFor();
     await L('Loading').waitFor();
     await shot('loading');
-    await page.unroute('**/today**');
+    slow = false;
     await L('Loading').waitFor({ state: 'detached' });
+    await page.unroute('**/today**', { behavior: 'ignoreErrors' });
     // It stays the current one on every tab.
     await R('tab', { name: 'People' }).click();
     await T('Friends · since February 2025', { exact: false }).waitFor();

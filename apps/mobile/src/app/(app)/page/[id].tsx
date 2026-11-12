@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { Ellipsis, EyeOff, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCache } from '@/api/cache';
@@ -16,18 +16,18 @@ import { ThingRow } from '@/features/things/ThingRow';
 import { formatDayLong, timeAgo } from '@/lib/dates';
 import { loadState } from '@/lib/loading';
 import { firstName } from '@/lib/names';
-import { layout, textStyle, useTheme } from '@/theme';
+import { layout, useTheme } from '@/theme';
 import { AppBar, BarLink } from '@/ui/AppBar';
 import { AvoidKeyboard } from '@/ui/AvoidKeyboard';
 import { ConfirmSheet } from '@/ui/ConfirmSheet';
 import { GroupLabel } from '@/ui/Heading';
+import { GrowingInput } from '@/ui/GrowingInput';
 import { NoteBox } from '@/ui/NoteBox';
 import { RoundButton } from '@/ui/RoundButton';
 import { RowGroup } from '@/ui/Rows';
 import { Sheet, SheetRow } from '@/ui/Sheet';
 import { Sk } from '@/ui/Skeleton';
-import { MAX_TEXT_SCALE, Txt } from '@/ui/Txt';
-import { webNoOutline } from '@/ui/web';
+import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
 /**
@@ -69,7 +69,6 @@ export default function Page() {
 }
 
 function Loaded({ page }: { page: PageResponse }) {
-  const { colors } = useTheme();
   const cache = useCache();
   const leave = useLeave();
   const [draft, setDraft] = useState<{ title: string; body: string } | null>(null);
@@ -105,7 +104,6 @@ function Loaded({ page }: { page: PageResponse }) {
   });
 
   const write = (change: Partial<{ title: string; body: string }>) => setDraft({ title, body, ...change });
-  const typing = [webNoOutline, { padding: 0, color: colors.text }] as const;
 
   return (
     <AvoidKeyboard style={{ flex: 1 }}>
@@ -120,19 +118,7 @@ function Loaded({ page }: { page: PageResponse }) {
       <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
         <View style={{ paddingTop: 4, paddingHorizontal: layout.rowGutter }}>
           {page.canEdit ? (
-            <TextInput
-              accessibilityLabel={words.things.page.title}
-              placeholder={words.things.page.titlePlaceholder}
-              placeholderTextColor={colors.muted}
-              selectionColor={colors.accent}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              value={title}
-              onChangeText={(next) => write({ title: next })}
-              maxLength={200}
-              multiline
-              scrollEnabled={false}
-              style={[...typing, textStyle('heading'), { marginTop: 10 }]}
-            />
+            <GrowingInput label={words.things.page.title} variant="heading" placeholder={words.things.page.titlePlaceholder} value={title} onChangeText={(next) => write({ title: next })} maxLength={200} style={{ marginTop: 10 }} />
           ) : (
             <Txt variant="heading" accessibilityRole="header" style={{ marginTop: 10 }}>
               {page.title.trim() || words.things.untitled}
@@ -151,20 +137,7 @@ function Loaded({ page }: { page: PageResponse }) {
 
         <View style={{ paddingHorizontal: layout.rowGutter }}>
           {page.canEdit ? (
-            <TextInput
-              accessibilityLabel={words.things.page.body}
-              placeholder={words.things.page.bodyPlaceholder}
-              placeholderTextColor={colors.muted}
-              selectionColor={colors.accent}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              value={body}
-              onChangeText={(next) => write({ body: next })}
-              maxLength={100000}
-              multiline
-              scrollEnabled={false}
-              textAlignVertical="top"
-              style={[...typing, textStyle('body'), { minHeight: 160 }]}
-            />
+            <GrowingInput label={words.things.page.body} variant="body" placeholder={words.things.page.bodyPlaceholder} value={body} onChangeText={(next) => write({ body: next })} maxLength={100000} minHeight={160} />
           ) : (
             <>
               <Txt selectable>{page.body}</Txt>

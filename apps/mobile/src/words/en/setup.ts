@@ -78,7 +78,6 @@ export const setup = {
     noPhone: 'No phone needed',
     noPhoneChild: 'No phone needed · you look after their things',
     add: { label: 'Add someone', note: 'A person, a child or a pet', person: 'Add someone', notePerson: 'By email. They get an invitation' },
-    copyLink: 'Copy the link to join',
     linkNote: 'Anyone with this link can join. You can make a new one in the circle’s settings.',
     role: (name: string, role: string) => `${name}: ${role}. Change role`,
     roles: { owner: 'Owner', adult: 'Adult', teen: 'Teen', child: 'Child', guest: 'Guest' },
@@ -112,11 +111,13 @@ export const setup = {
   bringIn: {
     title: 'Bring your things in',
     lead: 'Pick what to start with. You can add the rest any time.',
-    photos: { label: 'Photos on this phone', note: 'On Wi‑Fi. Starts when the Library is built, in a build on your phone' },
-    journey: { label: JOURNEY, note: `The photos and clips you posted there. Starts when the link with ${JOURNEY} is built` },
-    calendars: { label: 'Calendars', note: 'Apple and Google. Starts when Plan is built, in a build on your phone' },
+    photos: { label: 'Photos on this phone', note: 'On Wi‑Fi · starts with the Library, on your phone' },
+    journey: { label: JOURNEY, note: 'What you posted there · starts with the link' },
+    calendars: { label: 'Calendars', note: 'Apple and Google · starts with Plan, on your phone' },
     notes: { label: 'Notes', note: 'Apple Notes, Notion or Evernote', later: 'Bringing notes in arrives with Notes: you pick the files those apps export.' },
     passwords: { label: 'Passwords', note: 'iCloud Keychain, 1Password or a file', later: 'Bringing passwords in arrives with the Vault: you pick the file your password app exports.' },
+    /** Under the rows, once a switch was pressed: what switching it on does today. */
+    laterNote: `Your choices are remembered. Each one starts by itself when its part of ${APP} is built; photos and calendars also need ${APP} on your phone.`,
     startsAs: { title: 'It all starts as “Only you”', body: 'Nothing you bring in is shared until you share it.' },
     go: 'Bring them in',
     /** With nothing switched on. */

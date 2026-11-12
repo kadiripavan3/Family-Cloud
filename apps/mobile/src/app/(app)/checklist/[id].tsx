@@ -166,7 +166,7 @@ function Loaded({ list }: { list: ChecklistResponse }) {
       {list.canEdit ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: layout.barGutter, borderTopWidth: 1, borderTopColor: colors.line }}>
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 46, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.fill }}>
-            <Plus size={19} color={colors.muted} />
+            <Plus size={19} color={colors.muted} style={{ flexShrink: 0 }} />
             <TextInput
               accessibilityLabel={words.things.list.add}
               placeholder={words.things.list.add}
@@ -179,7 +179,7 @@ function Loaded({ list }: { list: ChecklistResponse }) {
               returnKeyType="done"
               submitBehavior="submit"
               onSubmitEditing={() => (canAdd ? add.mutate(typed.trim()) : undefined)}
-              style={[webNoOutline, textStyle('item', 600, { oneLine: true }), { flex: 1, minHeight: 24, padding: 0, color: colors.text }]}
+              style={[webNoOutline, textStyle('item', 600, { oneLine: true }), { flex: 1, minWidth: 0, minHeight: 24, padding: 0, color: colors.text }]}
             />
           </View>
           <Button label={words.things.list.addButton} variant="soft" inline disabled={!canAdd} loading={add.isPending} onPress={() => add.mutate(typed.trim())} />
@@ -255,7 +255,7 @@ function Line({ item, canEdit, onTick, onMore }: { item: ItemResponse; canEdit: 
         hitSlop={10}
         onPress={onTick}
         scaleTo={0.88}
-        style={{ width: 24, height: 24, borderRadius: radius.chip, alignItems: 'center', justifyContent: 'center', borderWidth: item.done ? 0 : 2, borderColor: colors.lineStrong, backgroundColor: item.done ? colors.accent : 'transparent' }}>
+        style={{ width: 24, height: 24, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', borderWidth: item.done ? 0 : 2, borderColor: colors.lineStrong, backgroundColor: item.done ? colors.accent : 'transparent' }}>
         {item.done ? <Check size={14} color={colors.onAccent} strokeWidth={3} /> : null}
       </Tap>
       {canEdit ? (
