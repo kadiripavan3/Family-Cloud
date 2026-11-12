@@ -137,6 +137,8 @@ export function Heard({ board }: BoardScreenProps<HeardViewResponse, HeardSettin
           </Txt>
         ) : (
           <List
+            // Another person's lines, or what a search found, are another list: it starts at its top, not where the last one was scrolled to.
+            key={`${shownMember ?? 'all'} ${q ?? ''}`}
             data={quotes ?? []}
             keyOf={(quote) => quote.id}
             row={(quote) => <QuoteCard quote={quote} onPress={() => setOpenId(quote.id)} />}

@@ -10,7 +10,7 @@ import { AddBar } from '@/features/templates/parts/Bars';
 import { Notice } from '@/features/templates/parts/Notice';
 import type { Board, BoardScreenProps } from '@/features/templates/types';
 import { useBoardChanges } from '@/features/templates/useBoard';
-import { addDays, formatDayFull, formatRange, formatWeekday, today } from '@/lib/dates';
+import { addDays, formatRange, formatWeekday, formatWeekdayDay, today } from '@/lib/dates';
 import { newClientId } from '@/lib/ids';
 import { layout, useTheme } from '@/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -166,14 +166,14 @@ function NoticeCard({ notice, me, busy, onOpen, onFine, onAnswer }: CardProps) {
           <Txt variant="item" weight={800}>
             {notice.text}
           </Txt>
-          <Txt variant="footnote" color="muted">
+          <Txt variant="footnote" color="muted" style={{ marginTop: 2, marginBottom: 1 }}>
             {under(notice, me)}
           </Txt>
         </View>
       </Tap>
       {withWords.map((reply) => (
         <Own key={reply.who?.memberId ?? reply.text} yours={reply.yours && mayChange} spoken={say.withWords(called(reply.who, me), reply.text ?? '')} onPress={() => onAnswer('fine')}>
-          <Check size={20} color={colors.muted} />
+          <Check size={22} color={colors.muted} />
           <Txt variant="footnote" weight={700} color="muted" style={{ flex: 1 }}>
             {say.withWords(called(reply.who, me), reply.text ?? '')}
           </Txt>
@@ -181,7 +181,7 @@ function NoticeCard({ notice, me, busy, onOpen, onFine, onAnswer }: CardProps) {
       ))}
       {talk.map((reply) => (
         <Own key={reply.who?.memberId ?? reply.says} yours={reply.yours && mayChange} spoken={say.wantsToTalk(reply.yours ? null : (reply.who?.name ?? ''), reply.text)} onPress={() => onAnswer('talk')}>
-          <MessageCircle size={20} color={colors.accentText} />
+          <MessageCircle size={22} color={colors.accentText} />
           <Txt variant="footnote" weight={700} style={{ flex: 1, color: colors.accentText }}>
             {say.wantsToTalk(reply.yours ? null : (reply.who?.name ?? ''), reply.text)}
           </Txt>
@@ -310,8 +310,8 @@ function WriteSheet({ board, visible, onClose }: { board: Notices; visible: bool
         {withDays ? (
           <View style={{ gap: 8, paddingHorizontal: layout.rowGutter }}>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <FieldButton label={what === 'away' ? say.write.leave : say.write.from} value={from ? formatDayFull(from) : say.write.noDay} onPress={() => setPicking('from')} />
-              <FieldButton label={what === 'away' ? say.write.back : say.write.until} value={until ? formatDayFull(until) : say.write.noDay} onPress={() => setPicking('until')} />
+              <FieldButton label={what === 'away' ? say.write.leave : say.write.from} value={from ? formatWeekdayDay(from) : say.write.noDay} onPress={() => setPicking('from')} />
+              <FieldButton label={what === 'away' ? say.write.back : say.write.until} value={until ? formatWeekdayDay(until) : say.write.noDay} onPress={() => setPicking('until')} />
             </View>
             {what === 'away' ? (
               <Txt variant="footnote" color="muted">

@@ -9,7 +9,7 @@ import { BoardFrame } from '@/features/templates/BoardFrame';
 import { PersonChips } from '@/features/templates/parts/People';
 import type { Board, BoardScreenProps } from '@/features/templates/types';
 import { useBoardChanges } from '@/features/templates/useBoard';
-import { addDays, addMonths, formatDayFull, formatDayOfYear, formatRange, monthOf, today } from '@/lib/dates';
+import { addDays, addMonths, formatDayFull, formatDayOfYear, formatRange, formatWeekdayDay, monthOf, today } from '@/lib/dates';
 import { newClientId } from '@/lib/ids';
 import { formatMoney } from '@/lib/money';
 import { firstName } from '@/lib/names';
@@ -418,8 +418,8 @@ function AddSheet({ board, circle, group, visible, onClose, onAdded }: AddProps)
           {way === 'nights' ? (
             <>
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <FieldButton label={say.add.from} value={formatDayFull(from)} onPress={() => setPicking('from')} />
-                <FieldButton label={say.add.to} value={formatDayFull(to)} onPress={() => setPicking('to')} />
+                <FieldButton label={say.add.from} value={formatWeekdayDay(from)} onPress={() => setPicking('from')} />
+                <FieldButton label={say.add.to} value={formatWeekdayDay(to)} onPress={() => setPicking('to')} />
               </View>
               <Txt variant="footnote" color="muted">
                 {say.add.nightsNote}

@@ -44,7 +44,12 @@ export function ShareSlider({ place, onMove, onGrab, onDrop, onNudge, label, val
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={{ text: valueText }}
+      // Said this way, a browser hears where it stands as well: the web takes neither `accessibilityValue` nor `accessibilityState`.
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(at * 100)}
+      aria-valuetext={valueText}
+      aria-disabled={!!locked}
       accessibilityState={{ disabled: !!locked }}
       accessibilityActions={locked ? [] : [{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(event) => (event.nativeEvent.actionName === 'increment' ? onNudge(1) : event.nativeEvent.actionName === 'decrement' ? onNudge(-1) : undefined)}

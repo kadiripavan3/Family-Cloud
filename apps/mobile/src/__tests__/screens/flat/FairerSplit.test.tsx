@@ -250,8 +250,8 @@ describe('18.4 A fairer split', () => {
     await user.type(screen.getByLabelText('How much is there to split?'), '48,20');
     expect(screen.getByRole('button', { name: 'By nights at home' })).toBeSelected();
     // Last month, to begin with: the bill that usually just arrived.
-    expect(screen.getByRole('button', { name: 'The first day: 1 October 2026. Change' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'The last day: 31 October 2026. Change' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'The first day: Thu 1 Oct. Change' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'The last day: Sat 31 Oct. Change' })).toBeOnTheScreen();
     expect(screen.getByText(/^The nights each of you was away come from Heads-up/)).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Lea' }));
     await user.press(screen.getByRole('button', { name: 'Propose it' }));

@@ -19,7 +19,7 @@ import { Field } from '@/ui/Field';
 import { GroupLabel } from '@/ui/Heading';
 import { Tap } from '@/ui/Motion';
 import { RoundButton } from '@/ui/RoundButton';
-import { Row, RowGroup } from '@/ui/Rows';
+import { RowGroup } from '@/ui/Rows';
 import { Sheet } from '@/ui/Sheet';
 import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
@@ -57,9 +57,15 @@ export function LivedHere({ board }: BoardScreenProps<LivedHereViewResponse, Liv
       ))}
       <View style={{ height: 16 }} />
       <RowGroup>
-        <Row first icon={(color) => <KeyRound size={18} color={color} />} label={say.movesOut.title} note={say.movesOut.line} onPress={() => setSheet('movesOut')} />
-        <Row icon={(color) => <Book size={18} color={color} />} label={say.handedOn.title} note={view.handedOn.length ? words.flat.commas(view.handedOn.map((one) => one.thing.title ?? '')) : say.handedOn.none} onPress={() => setSheet('handedOn')} />
-        <Row icon={(color) => <Euro size={18} color={color} />} label={say.settling.title} note={say.settling.line} onPress={() => setSheet('settling')} />
+        <BoardRow first leading={<Tile icon={(color) => <KeyRound size={18} color={color} />} />} title={say.movesOut.title} line={say.movesOut.line} trailing={<Arrow />} onPress={() => setSheet('movesOut')} />
+        <BoardRow
+          leading={<Tile icon={(color) => <Book size={18} color={color} />} />}
+          title={say.handedOn.title}
+          line={view.handedOn.length ? words.flat.commas(view.handedOn.map((one) => one.thing.title ?? '')) : say.handedOn.none}
+          trailing={<Arrow />}
+          onPress={() => setSheet('handedOn')}
+        />
+        <BoardRow leading={<Tile icon={(color) => <Euro size={18} color={color} />} />} title={say.settling.title} line={say.settling.line} trailing={<Arrow />} onPress={() => setSheet('settling')} />
       </RowGroup>
 
       <MovesOutSheet visible={sheet === 'movesOut'} onClose={() => setSheet(null)} />

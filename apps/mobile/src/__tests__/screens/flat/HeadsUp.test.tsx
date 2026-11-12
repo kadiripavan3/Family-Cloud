@@ -113,7 +113,8 @@ describe('18.5 Heads-up', () => {
     await user.press(screen.getByRole('button', { name: '20 November 2026' }));
     await user.press(screen.getByRole('button', { name: "The day you're back: No day. Change" }));
     await user.press(screen.getByRole('button', { name: '27 November 2026' }));
-    expect(screen.getByRole('button', { name: 'The day you leave: 20 November 2026. Change' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'The day you leave: Fri 20 Nov. Change' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: "The day you're back: Fri 27 Nov. Change" })).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Tell the flat' }));
     await waitFor(() => expect(addBoardEntry).toHaveBeenCalledWith(BOARD_ID, { clientId: 'client-1', kind: 'notice', fields: { text: 'Skiing for a week', detail: 'back on Sunday night', what: 'away', from: '2026-11-20', until: '2026-11-27' } }, DAY));
     await waitFor(() => expect(screen.queryByRole('header', { name: 'Tell the flat' })).toBeNull());

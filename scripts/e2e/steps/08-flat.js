@@ -7,6 +7,7 @@
 // It can be run again and again on the same data: what an earlier run left is taken back through the API
 // first, and every step takes back what it changed in the sample boards or works on a board it started itself.
 const path = require('path');
+const { randomUUID } = require('crypto');
 const { VIEWPORT } = require('../lib');
 
 exports.run = async function run(ctx) {
@@ -39,9 +40,18 @@ exports.run = async function run(ctx) {
     if (!sample) throw new Error(`the flat has no sample board for ${template}`);
     return sample;
   };
+  /**
+   * A flat's gallery opens on its own fifteen, the three keepsakes among them. The kitty, a fairer split and
+   * Heads-up stand on the "Fair and fun" shelf.
+   */
+  const onShelf = async (card) => {
+    await R('heading', { name: 'Templates' }).waitFor({ timeout: 20000 });
+    if (/kitty|fairer split|Heads-up/.test(String(card))) await R('button', { name: 'Fair and fun', exact: true }).click();
+  };
   /** From the gallery: a template's card, and the board of it the flat has already. */
   const openFromGallery = async (card, row) => {
     await page.goto(WEB_URL + '/templates');
+    await onShelf(card);
     await R('button', { name: card }).click();
     await T('In Trubarjeva 9 already').waitFor();
     await R('button', { name: row }).click();
@@ -49,6 +59,7 @@ exports.run = async function run(ctx) {
   /** From the gallery: a template's card, and another board of it, started now. Answers the new board's id. */
   const startAnother = async (card, heading) => {
     await page.goto(WEB_URL + '/templates');
+    await onShelf(card);
     await R('button', { name: card }).click();
     await T('In Trubarjeva 9 already').waitFor();
     await R('button', { name: 'Start another' }).click();
@@ -91,6 +102,19 @@ exports.run = async function run(ctx) {
     };
     phone.close = () => context.close();
     return phone;
+  };
+  /**
+   * Types into the box at the end of a page. A sheet that has just slid away hands the keyboard back a moment
+   * later, and what is typed in that moment goes nowhere: so what was typed is checked, and typed again if it
+   * didn't arrive.
+   */
+  const typeInto = async (label, text) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await L(label).fill(text);
+      await page.waitForTimeout(250);
+      if ((await L(label).inputValue()) === text) return;
+    }
+    throw new Error(`what was typed into "${label}" did not arrive`);
   };
   /** The share each slider stands at, in whole cents, read from what a screen reader is told. */
   const shares = async (phone, names) => Promise.all(names.map(async (name) => Math.round(Number((await phone.R('slider', { name }).getAttribute('aria-valuetext')).replace(/[^0-9.]/g, '')) * 100)));
@@ -162,11 +186,11 @@ exports.run = async function run(ctx) {
   await step('kitty-lines', async () => {
     // A purchase opens with its receipt; someone else's can't be taken out.
     await R('button', { name: /^Loo roll, bin bags\./ }).click();
-    await L('The receipt').waitFor();
+    await R('img', { name: 'The receipt' }).waitFor();
     if (await page.getByRole('button', { name: 'Take it out', exact: true }).count()) throw new Error("Kai could take Lea's purchase out of the kitty");
     await shot('kitty-receipt');
     await closeSheet(ctx);
-    await L('The receipt').waitFor({ state: 'detached' });
+    await R('img', { name: 'The receipt' }).waitFor({ state: 'detached' });
     // The months before this one are read from the list.
     await R('button', { name: /^Left over from \w+\./ }).click();
     await R('heading', { name: 'In and out, all of it' }).waitFor();
@@ -439,12 +463,14 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'You want to talk: Can we keep it to ten?. Change your answer' }).click();
     await R('button', { name: 'Take my answer back' }).click();
     await R('button', { name: 'Fine by me' }).waitFor({ timeout: 20000 });
+    // (A sheet that is sliding away still holds the keyboard: the next step types once it is gone.)
+    await R('button', { name: 'Take my answer back' }).waitFor({ state: 'detached' });
   });
 
   await step('heads-up-tell', async () => {
     // One line from the box at the end. Each of the others answers it for themselves.
     const line = `Walk-through: the plumber comes on Thursday (${tag})`;
-    await L('Tell the flat something').fill(line);
+    await typeInto('Tell the flat something', line);
     await R('button', { name: 'Add', exact: true }).click();
     await R('button', { name: new RegExp(`^Walk-through: the plumber comes on Thursday \\(${tag}\\)\\. You · just now$`) }).waitFor({ timeout: 20000 });
     const told = async (token) => (await whole(headsUp.id, token)).view.notices.find((notice) => notice.text === line);
@@ -484,10 +510,10 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'The day you leave: No day. Change' }).click();
     await R('button', { name: 'Next month' }).click();
     await R('button', { name: /^10 / }).click();
-    await R('button', { name: /^The day you leave: 10 / }).waitFor();
+    await R('button', { name: /^The day you leave: \w+ 10 / }).waitFor();
     await R('button', { name: "The day you're back: No day. Change" }).click();
     await R('button', { name: /^15 / }).click();
-    await R('button', { name: /^The day you're back: 15 / }).waitFor();
+    await R('button', { name: /^The day you're back: \w+ 15 / }).waitFor();
     await shot('heads-up-write');
     await R('button', { name: 'Tell the flat', exact: true }).click();
     await R('button', { name: new RegExp(`^Walk-through: skiing \\(${tag}\\)\\. You · 5 nights off your bills$`) }).waitFor({ timeout: 20000 });
@@ -548,12 +574,13 @@ exports.run = async function run(ctx) {
     await R('button', { name: /^Who can see this/ }).click();
     await T('Who can see this?').waitFor();
     await R('button', { name: 'Done' }).click();
+    await T('Who can see this?').waitFor({ state: 'detached' });
   });
 
   await step('heard-add', async () => {
     const line = `The walk-through is the fourth flatmate (${tag}).`;
     // With everyone showing, the box asks who said it.
-    await L('Who said what?').fill(line);
+    await typeInto('Who said what?', line);
     await R('button', { name: 'Add', exact: true }).click();
     await R('heading', { name: 'Who said it?' }).waitFor();
     await shot('heard-who');
@@ -576,10 +603,11 @@ exports.run = async function run(ctx) {
     await R('button', { name: /^“The walk-through is the fourth flatmate/ }).click();
     await R('button', { name: 'Take it out', exact: true }).click();
     await R('button', { name: 'All, 112' }).waitFor({ timeout: 20000 });
+    await R('button', { name: 'Take it out', exact: true }).waitFor({ state: 'detached' });
     // With one person's chip showing, a line is theirs without asking.
     await R('button', { name: 'Lea', exact: true }).click();
     await T("“I'm not hungover. I'm buffering.”").waitFor({ timeout: 20000 });
-    await L('Who said what?').fill(`Walk-through: straight to Lea (${tag}).`);
+    await typeInto('Who said what?', `Walk-through: straight to Lea (${tag}).`);
     await R('button', { name: 'Add', exact: true }).click();
     await R('button', { name: new RegExp(`^“Walk-through: straight to Lea \\(${tag}\\)\\.”\\. Lea · today`) }).waitFor({ timeout: 20000 });
     await R('button', { name: /^“Walk-through: straight to Lea/ }).click();
@@ -594,7 +622,7 @@ exports.run = async function run(ctx) {
     // A new board: nothing written down, and the first line from someone who doesn't live here.
     const id = await startAnother(/^Heard in the kitchen\. Does work/, 'Heard in the kitchen');
     await T('Nothing written down yet').waitFor();
-    await L('Who said what?').fill('Nice flat. Shame about the stairs.');
+    await typeInto('Who said what?', 'Nice flat. Shame about the stairs.');
     await R('button', { name: 'Add', exact: true }).click();
     await L("Someone who doesn't live here").fill('The plumber');
     await R('button', { name: 'Write it down for them' }).click();
@@ -616,7 +644,7 @@ exports.run = async function run(ctx) {
     await R('button', { name: /^“Came for a weekend, stayed for the pancakes\.”\. Tom, from Leeds · 3 nights/ }).waitFor();
     await R('button', { name: /^“Best sofa in Ljubljana\. Sorry about the glass\.”\. Maja, Lena's sister · 2 nights/ }).waitFor();
     await R('button', { name: '“Thank you for New Year. I remember most of it.”. Ana · who used to live here' }).waitFor();
-    await L("Tom's photo").waitFor();
+    await R('img', { name: "Tom's photo" }).waitFor();
     await shot('guest-book');
     // "Print" shows the code, drawn from the door's own link, with the link to copy.
     await R('button', { name: 'Print', exact: true }).click();
@@ -671,7 +699,7 @@ exports.run = async function run(ctx) {
     await T('Waiting at the door').waitFor({ timeout: 20000 });
     await T(`“${line}”`).waitFor();
     await T(new RegExp(`^${guest}, from the test run · 2 nights in \\w+$`)).waitFor();
-    await L(`${guest}'s photo`).waitFor();
+    await R('img', { name: `${guest}'s photo` }).waitFor();
     await T(/^23 guests and 61 nights/).waitFor();
     await shot('guest-book-waiting');
     await lea.page.goto(`${WEB_URL}/board/${book.id}`);
@@ -756,6 +784,10 @@ exports.run = async function run(ctx) {
     for (const row of roll.view.before) if (row.name.startsWith('Walk-through')) await asKai('DELETE', `/v1/board-entries/${row.entryId}`);
     const leaRow = roll.view.hereNow.find((row) => row.name === 'Lea');
     if (leaRow.note) await asKai('PATCH', `/v1/board-entries/${leaRow.entryId}`, { fields: { note: '' } });
+    if (!roll.view.handedOn.some((one) => one.thing.title === 'Who to call')) {
+      const found = (await asKai('GET', `/v1/circles/${flat.id}/search?q=${encodeURIComponent('Who to call')}`)).hits.find((hit) => hit.thing.title === 'Who to call');
+      if (found) await asKai('POST', `/v1/boards/${roll.id}/entries`, { clientId: randomUUID(), kind: 'handed_on', fields: { thingId: found.thing.id } });
+    }
     await openFromGallery(/^Everyone who's lived here\. Does work/, /^Trubarjeva 9, flat 3\. 3 here now/);
     await R('heading', { name: 'Trubarjeva 9, flat 3' }).waitFor({ timeout: 20000 });
     const year = new Date().getFullYear();
@@ -775,6 +807,16 @@ exports.run = async function run(ctx) {
     await shot('lived-here');
   });
 
+  /**
+   * Back on the roll, by its own address. (A screen underneath the one on top stays in the page on the web,
+   * so the roll is opened afresh instead of trusting the browser's Back and whatever lies under it.)
+   */
+  const backToTheRoll = async () => {
+    await page.goto(`${WEB_URL}/board/${roll.id}`);
+    await R('heading', { name: 'Trubarjeva 9, flat 3' }).waitFor({ timeout: 20000 });
+    await T('Here now').waitFor();
+  };
+
   await step('lived-here-rows', async () => {
     // What happens when someone moves out, in plain sentences, and where it is done.
     await R('button', { name: /^When someone moves out\./ }).click();
@@ -782,8 +824,8 @@ exports.run = async function run(ctx) {
     await shot('lived-here-moves-out');
     await R('button', { name: 'Open People' }).click();
     await page.waitForURL(/\/people$/, { timeout: 20000 });
-    await page.goBack();
-    await R('heading', { name: 'Trubarjeva 9, flat 3' }).waitFor({ timeout: 20000 });
+    await T('In this circle').first().waitFor({ timeout: 20000 });
+    await backToTheRoll();
     // What is handed on: things of the flat. One comes off the list, and is found by its name and put back.
     await R('button', { name: /^Handed on to the next person\./ }).click();
     await R('button', { name: /^House rules/ }).waitFor();
@@ -796,8 +838,7 @@ exports.run = async function run(ctx) {
     // Each opens with a tap.
     await R('button', { name: /^Bin days/ }).click();
     await page.waitForURL(/\/page\/[0-9a-f-]{36}/, { timeout: 20000 });
-    await page.goBack();
-    await R('heading', { name: 'Trubarjeva 9, flat 3' }).waitFor({ timeout: 20000 });
+    await backToTheRoll();
     await R('button', { name: /^Handed on to the next person\. House rules, Bin days, Who to call$/ }).waitFor();
     // A last settling-up leads to the flat's own boards that do the sums.
     await R('button', { name: /^A last settling-up\./ }).click();
@@ -805,8 +846,7 @@ exports.run = async function run(ctx) {
     await shot('lived-here-settling');
     await R('button', { name: /^The kitty\. €6\.40 left/ }).click();
     await R('heading', { name: 'The kitty holds €6.40' }).waitFor({ timeout: 20000 });
-    await page.goBack();
-    await R('heading', { name: 'Trubarjeva 9, flat 3' }).waitFor({ timeout: 20000 });
+    await backToTheRoll();
   });
 
   await step('lived-here-write', async () => {
@@ -869,7 +909,8 @@ exports.run = async function run(ctx) {
       await R('button', { name: 'Running low. Open the kitty' }).click();
       await R('heading', { name: 'The kitty holds €6.40' }).waitFor({ timeout: 20000 });
       await R('checkbox', { name: 'Coffee', checked: false }).waitFor();
-      await page.goBack();
+      await page.goto(WEB_URL + '/');
+      await R('button', { name: 'Trubarjeva 9. Change circle' }).waitFor({ timeout: 20000 });
     } else {
       console.log('note', 'Today does not mount "Running low" in this build: it is checked in its own test (RunningLow.test.tsx)');
     }
