@@ -1,5 +1,5 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import type { ReactElement, Ref } from 'react';
+import { type ReactElement, type Ref, useImperativeHandle, useRef } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
 
 import { useTheme } from '@/theme';
@@ -35,6 +35,11 @@ type Props<T> = {
   top?: number;
   /** Open the list at this row instead of at its top. Read once, when the list first appears. */
   startAt?: number;
+  /**
+   * Another row has become the first one on screen: for a label that follows the list as it scrolls, such
+   * as the month a wall of photos is showing. It is told as the list scrolls, not when it first appears.
+   */
+  onTop?: (item: T) => void;
   listRef?: Ref<FlashListRef<T>>;
 };
 
@@ -42,12 +47,24 @@ type Props<T> = {
  * Every list that can grow long is drawn with this: only the rows on screen exist, however many there are,
  * and the next page is fetched as the end comes near.
  */
-export function List<T>({ data, row, keyOf, typeOf, sticky, header, footer, empty, onEnd, onStart, loadingMore, refreshing, onRefresh, columns, bottom = 40, top = 0, startAt, listRef }: Props<T>) {
+export function List<T>({ data, row, keyOf, typeOf, sticky, header, footer, empty, onEnd, onStart, loadingMore, refreshing, onRefresh, columns, bottom = 40, top = 0, startAt, onTop, listRef }: Props<T>) {
   const { colors } = useTheme();
   const stuck = sticky ? data.flatMap((item, index) => (sticky(item) ? [index] : [])) : undefined;
+  // For `onTop`: the list itself is asked which row is first on screen, each time it has scrolled a little.
+  const list = useRef<FlashListRef<T> | null>(null);
+  const lastTop = useRef(-1);
+  const followTop = () => {
+    const first = list.current?.getFirstVisibleIndex() ?? -1;
+    const item = data[first];
+    if (first === lastTop.current || item === undefined) return;
+    lastTop.current = first;
+    onTop?.(item);
+  };
+  // Whoever asked for the list by `listRef` gets the same one.
+  useImperativeHandle(listRef, () => list.current as FlashListRef<T>, []);
   return (
     <FlashList
-      ref={listRef}
+      ref={list}
       data={data}
       stickyHeaderIndices={stuck}
       renderItem={({ item, index }) => row(item, index)}
@@ -55,6 +72,8 @@ export function List<T>({ data, row, keyOf, typeOf, sticky, header, footer, empt
       getItemType={typeOf}
       numColumns={columns}
       initialScrollIndex={startAt}
+      onScroll={onTop ? followTop : undefined}
+      scrollEventThrottle={onTop ? 64 : undefined}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={

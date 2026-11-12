@@ -15,7 +15,7 @@ import { AudienceChip } from '@/features/sharing/AudienceChip';
 import { AudienceSheet } from '@/features/sharing/AudienceSheet';
 import { PageProblem } from '@/features/states/PageProblem';
 import { useOpenThing } from '@/features/things/open';
-import { daysBetween, formatDay, formatMonthShort, formatWeekday, toISODate, today } from '@/lib/dates';
+import { daysBetween, formatDay, formatMonthAbbr, formatWeekday, toISODate, today } from '@/lib/dates';
 import { loadState } from '@/lib/loading';
 import { formatMoneyExact, formatMoneyRound, toWhole } from '@/lib/money';
 import { firstName } from '@/lib/names';
@@ -251,7 +251,7 @@ function History({ bill }: { bill: BillResponse }) {
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 16 }}>
         {bill.history.map((past) => (
-          <View key={past.dueOn} accessible accessibilityLabel={words.money.bill.bar(formatMonthShort(past.dueOn), formatMoneyExact(past.amountCents, bill.currency))} style={{ flex: 1, alignItems: 'stretch' }}>
+          <View key={past.dueOn} accessible accessibilityLabel={words.money.bill.bar(formatMonthAbbr(past.dueOn), formatMoneyExact(past.amountCents, bill.currency))} style={{ flex: 1, alignItems: 'stretch' }}>
             <Txt variant="tiny" weight={800} center style={[FIGURES, { marginBottom: 3 }]}>
               {words.common.number(toWhole(past.amountCents))}
             </Txt>
@@ -262,7 +262,7 @@ function History({ bill }: { bill: BillResponse }) {
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 5 }}>
         {bill.history.map((past) => (
           <Txt key={past.dueOn} variant="tiny" color="muted" center accessible={false} style={{ flex: 1 }}>
-            {formatMonthShort(past.dueOn)}
+            {formatMonthAbbr(past.dueOn)}
           </Txt>
         ))}
       </View>

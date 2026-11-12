@@ -14,6 +14,8 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchPar
 jest.mock('@/api/cache', () => ({ useCache: () => ({ guestPassChanged: mockChanged }) }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds, useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// The Vault's part of a pass (a sealed door code, the key at the end of the link) has its own test.
+jest.mock('@/features/vault/PassCards', () => ({ PassCards: () => null, usePassLink: (pass: { url: string }) => ({ url: pass.url, sealed: false, whole: true }), useKeyForMaker: () => () => undefined }));
 jest.mock('@/api/generated/homeport', () => ({ useGetGuestPass: jest.fn(), useGetGuestPasses: jest.fn(), useGetMe: jest.fn(() => mockMe), endGuestPass: jest.fn() }));
 jest.mock('@/lib/share', () => ({ copyText: jest.fn(() => Promise.resolve(true)), shareText: jest.fn(), shortLink: (url: string) => url.replace('https://', '') }));
 

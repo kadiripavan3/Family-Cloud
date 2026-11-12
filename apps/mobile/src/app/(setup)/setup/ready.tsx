@@ -7,7 +7,6 @@ import { useCircles } from '@/features/circles/current';
 import { membersOf } from '@/features/circles/members';
 import { SetupFrame } from '@/features/circles/SetupFrame';
 import { useFinishSetup } from '@/features/circles/useFinishSetup';
-import { placeHref } from '@/features/home/places';
 import { NotFound } from '@/features/states/NotFound';
 import { firstName } from '@/lib/names';
 import { useKept } from '@/lib/useKept';
@@ -55,7 +54,7 @@ export default function Ready() {
         <Lead center>{says.lead(invited, bringing.photos || bringing.journey || bringing.calendars)}</Lead>
       </View>
       <MoreRow emoji="📅" title={says.week[circle.kind].label} rest={says.week[circle.kind].rest} onPress={() => go('/new/event')} />
-      <MoreRow emoji="📓" title={says.template.label} rest={says.template.rest[circle.kind]} onPress={() => go(placeHref('notes'))} />
+      <MoreRow emoji="📓" title={says.template.label} rest={says.template.rest[circle.kind]} onPress={() => go('/templates')} />
       <MoreRow emoji="🔑" title={says.password.label} rest={says.password.rest} onPress={() => go('/new/password')} />
     </SetupFrame>
   );

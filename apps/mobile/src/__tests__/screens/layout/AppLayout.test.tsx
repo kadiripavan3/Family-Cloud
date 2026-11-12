@@ -23,6 +23,8 @@ jest.mock('expo-router', () => {
 jest.mock('@/features/circles/current', () => ({ useCircles: jest.fn() }));
 jest.mock('@/features/notifications/usePushNotifications', () => ({ usePushNotifications: jest.fn() }));
 jest.mock('@/features/navigation/OfflineStrip', () => ({ OfflineStrip: ({ children }: { children: React.ReactNode }) => children }));
+// The queue of changes that waits for a connection wraps the screens; what it does has its own tests.
+jest.mock('@/features/notes/changes/outbox', () => ({ ChangesProvider: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('@/lib/links', () => ({ takeLink: jest.fn(() => null) }));
 
 describe('the signed-in app', () => {

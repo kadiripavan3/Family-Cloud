@@ -1,9 +1,12 @@
 {
   "name": "homeport-mobile",
   "version": "0.1.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
+    "@noble/ciphers": "2.4.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
     "@sentry/react-native": "~8.28.0",
     "@shopify/flash-list": "2.3.2",
     "@supabase/auth-js": "2.119.0",
@@ -30,6 +33,7 @@
     "expo-sqlite": "~58.0.15",
     "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.7",
+    "expo-task-manager": "~58.0.13",
     "lucide-react-native": "^1.70.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -70,6 +74,9 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "testTimeout": 15000,
+    "maxWorkers": "50%",
+    "workerIdleMemoryLimit": "800MB",
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
@@ -78,6 +85,11 @@
       "<rootDir>/jest.setup.ts"
     ],
     "resolver": "react-native-reanimated/jest/resolver",
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|@noble))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ],
     "moduleNameMapper": {
       "^@/assets/(.*)$": "<rootDir>/assets/$1",
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"

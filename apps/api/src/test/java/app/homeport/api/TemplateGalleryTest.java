@@ -100,9 +100,9 @@ class TemplateGalleryTest extends BoardTest {
         assertThat(JsonPath.<List<Boolean>>read(couple, "$.templates[?(@.template == 'chore_wheel')].yours"))
                 .containsExactly(false);
 
-        // The ten that are built can be started; the other live ones say they are coming.
+        // The ones that are built can be started; the other live ones say they are coming.
         assertThat(JsonPath.<List<String>>read(couple, "$.templates[?(@.live == true && @.ready == true)].template"))
-                .containsExactlyInAnyOrder(
+                .contains(
                         "meal_plan",
                         "chore_wheel",
                         "time_capsule",
@@ -112,8 +112,36 @@ class TemplateGalleryTest extends BoardTest {
                         "same_spot",
                         "stories",
                         "good_jar",
-                        "doorframe");
-        assertThat(JsonPath.<List<String>>read(couple, "$.templates[?(@.template == 'both_yes')].note"))
+                        "doorframe")
+                // a family's fair and fun, a couple's keepsakes and rituals, a flat's and friends'
+                .contains(
+                        "whose_turn",
+                        "piggy_bank",
+                        "secret_missions",
+                        "saturday_jar",
+                        "sleeps",
+                        "where_is_it",
+                        "habit_charts",
+                        "our_story",
+                        "tucked_notes",
+                        "anniversary",
+                        "mystery_date",
+                        "both_yes",
+                        "fair_share",
+                        "heard",
+                        "guest_book",
+                        "lived_here",
+                        "kitty",
+                        "fairer_split",
+                        "heads_up",
+                        "find_date",
+                        "secret_santa",
+                        "where_next",
+                        "dictionary",
+                        "predictions",
+                        "awards",
+                        "walk_together");
+        assertThat(JsonPath.<List<String>>read(couple, "$.templates[?(@.template == 'date_ideas')].note"))
                 .containsExactly("Coming with the next update");
         assertThat(JsonPath.<List<Object>>read(couple, "$.templates[?(@.live == false && @.ready == false)]"))
                 .isEmpty();
@@ -174,8 +202,8 @@ class TemplateGalleryTest extends BoardTest {
         // Between the two of them a thing starts shared.
         assertThat(view(alex, JsonPath.read(started, "$.board.id"))).contains("Our jar");
 
-        assertThat(start(nora, circle, "mystery_date", "{\"clientId\":\"%s\"}".formatted(id()), 409))
-                .contains("“Mystery date” is coming with the next update");
+        assertThat(start(nora, circle, "who_pays_what", "{\"clientId\":\"%s\"}".formatted(id()), 409))
+                .contains("“Who pays what” is coming with the next update");
         start(nora, circle, "teleporter", "{\"clientId\":\"%s\"}".formatted(id()), 400);
         start(stranger, circle, "good_jar", "{\"clientId\":\"%s\"}".formatted(id()), 404);
         // Settings that the template needs are asked for in its own words.

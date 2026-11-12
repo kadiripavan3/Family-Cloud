@@ -1,4 +1,4 @@
-import { formatMonthName, formatMonthShort } from '@/lib/dates';
+import { formatMonthName, formatMonthAbbr } from '@/lib/dates';
 import { formatAmount, formatMoneyAbout, formatMoneyExact, formatMoneyRound, moneyToType, parseMoney, toWhole } from '@/lib/money';
 
 describe('money, the ways the drawings write it', () => {
@@ -67,6 +67,6 @@ describe('money, the ways the drawings write it', () => {
 describe('a month by its name', () => {
   it('is written whole, and short under a bar', () => {
     expect(formatMonthName('2026-11-01')).toBe('November');
-    expect(formatMonthShort('2026-06-13')).toBe('Jun');
+    expect(formatMonthAbbr('2026-06-13')).toBe('Jun');
   });
 });

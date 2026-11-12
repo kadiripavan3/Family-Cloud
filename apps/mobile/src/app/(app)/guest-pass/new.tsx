@@ -10,6 +10,7 @@ import { type ChecklistRow, createGuestPass, type PageRow, type ThingBrief, useG
 import { paged, rows } from '@/api/pages';
 import { useCircle } from '@/features/circles/current';
 import { ThingRow } from '@/features/things/ThingRow';
+import { useKeyForMaker } from '@/features/vault/PassCards';
 import { addDays, atTime, formatComingDay, formatTime, today } from '@/lib/dates';
 import { newClientId } from '@/lib/ids';
 import { firstName } from '@/lib/names';
@@ -58,6 +59,8 @@ export default function NewGuestPass() {
   const [pickingDay, setPickingDay] = useState(false);
   const [chosen, setChosen] = useState<string[]>([]);
   const clientId = useRef(newClientId());
+  // The key door codes and the Wi‑Fi are sealed with, kept for its maker's own Vault. The API never sees it.
+  const keyForMaker = useKeyForMaker();
 
   const pages = useGetPagesInfinite(circle.id, undefined, { query: paged });
   const lists = useGetChecklistsInfinite(circle.id, undefined, { query: paged });
@@ -71,7 +74,7 @@ export default function NewGuestPass() {
     mutationFn: () => {
       const now = new Date();
       // A pass that starts "now" (or a little before, by the time it is sent) starts when the API gets it.
-      return createGuestPass(circle.id, { clientId: clientId.current, guestName: guest.trim(), startsAt: starts && starts > now ? starts.toISOString() : undefined, endsAt: ends!.toISOString(), thingIds: chosen });
+      return createGuestPass(circle.id, { clientId: clientId.current, guestName: guest.trim(), startsAt: starts && starts > now ? starts.toISOString() : undefined, endsAt: ends!.toISOString(), thingIds: chosen, keyForMaker: keyForMaker() });
     },
     onSuccess: (pass) => {
       void cache.guestPassChanged(circle.id);

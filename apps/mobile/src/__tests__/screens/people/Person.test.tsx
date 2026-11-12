@@ -10,7 +10,7 @@ import { toISODate } from '@/lib/dates';
 import { inApp } from '@/test/phone';
 import { alex, biscuit, circle, crewCircle, failed, linds, loaded, me, mia, notMia, pending, thing } from '@/test/samples';
 
-const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
+const mockRouter = { push: jest.fn(), navigate: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
 const mockCache = { memberSaved: jest.fn(() => Promise.resolve()), memberRemoved: jest.fn(() => Promise.resolve()) };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ id: 'm-mia' }) }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
@@ -18,9 +18,15 @@ jest.mock('@/api/upload', () => ({ uploadPhoto: jest.fn() }));
 jest.mock('@/features/media/pick', () => ({ pickSquarePhoto: jest.fn() }));
 jest.mock('@/features/circles/current', () => ({ useCircles: jest.fn(), useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// What is coming up for them is Plan's own piece, with its own test: here only that it stands under its label.
+jest.mock('@/features/plan/ComingUp', () => ({ ComingUp: ({ member }: { member: { name: string } }) => mockComingUp(member.name) }));
 jest.mock('@/api/generated/homeport', () => ({ useGetPerson: jest.fn(), useGetMe: jest.fn(() => mockMe), changeMember: jest.fn(), removeMember: jest.fn() }));
 
 const mockLinds = linds;
+function mockComingUp(name: string) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>the calendar for {name}</Text>;
+}
 const mockMe = loaded(me());
 const asked = jest.mocked(useGetPerson) as unknown as jest.Mock;
 /** Mia, turning ten in 23 days, whenever the test runs. */
@@ -59,12 +65,29 @@ describe("4.2 A person's page", () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'page', id: plan.id } });
   });
 
-  it('says quietly that what is coming up arrives with Plan, and when nothing is kept', async () => {
+  it('shows what is coming up for them from the calendar, and says so when nothing is kept', async () => {
     asked.mockReturnValue(loaded({ member: mia, kept: [] }));
     await render(inApp(<Person />));
     expect(screen.getByText('Coming up')).toBeOnTheScreen();
-    expect(screen.getByText('Nothing yet. Events and reminders about them show here once Plan is built.')).toBeOnTheScreen();
+    expect(screen.getByText('the calendar for Mia')).toBeOnTheScreen();
     expect(screen.getByText('Nothing yet. Whatever is kept about Mia and shared with you shows here.')).toBeOnTheScreen();
+  });
+
+  it("leaves what the calendar shows out of what is kept, and puts their photos in one row that leads to the Library", async () => {
+    const dentist = thing({ id: '44444444-4444-4444-8444-444444444444', kind: 'event', place: 'plan', title: 'Dentist · Mia', glance: 'Today 15:30' });
+    const fund = thing({ id: '66666666-6666-4666-8666-666666666666', kind: 'goal', place: 'plan', title: "Mia's skates fund" });
+    const photos = [1, 2, 3].map((n) => thing({ id: `5555555${n}-5555-4555-8555-555555555555`, kind: 'photo', place: 'library', title: '', glance: 'Sat 7 Nov · Lake Bled' }));
+    asked.mockReturnValue(loaded({ member: miaSoon, kept: [dentist, fund, plan, ...photos] }));
+    await render(inApp(<Person />));
+    const rows = screen.getAllByRole('button').map((one) => one.props.accessibilityLabel as string);
+    // The event is the calendar's to show; a goal is kept; the three photos are one row.
+    expect(rows.filter((row) => /^Dentist/.test(row))).toEqual([]);
+    expect(rows.filter((row) => /^Mia's skates fund/.test(row))).toHaveLength(1);
+    expect(rows.indexOf("Mia's 10th birthday. Page")).toBeGreaterThan(-1);
+    expect(rows.filter((row) => /Photo/.test(row))).toEqual([]);
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: '3 photos of Mia. Album. In the Library' }));
+    expect(mockRouter.navigate).toHaveBeenCalledWith({ pathname: '/', params: { place: 'library' } });
   });
 
   it('changes the facts: take one away, add one, save', async () => {

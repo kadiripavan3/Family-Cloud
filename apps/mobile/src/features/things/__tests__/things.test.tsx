@@ -2,6 +2,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { File, FileText, SquareCheck } from 'lucide-react-native';
 import { Text } from 'react-native';
 
+import { ThingKind } from '@/api/generated/homeport';
 import { onPhone } from '@/test/phone';
 import { everyone, linds, loaded, me, thing, withAlex } from '@/test/samples';
 
@@ -13,7 +14,7 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock('@/features/circles/current', () => ({ useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
-jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(() => mockMe) }));
+jest.mock('@/api/generated/homeport', () => ({ ...jest.requireActual<typeof import('@/api/generated/homeport')>('@/api/generated/homeport'), useGetMe: jest.fn(() => mockMe) }));
 
 const mockLinds = linds;
 const mockMe = loaded(me());
@@ -48,12 +49,19 @@ describe('opening a thing of any kind', () => {
     expect(kindOf('page')).toEqual({ icon: FileText, name: 'Page', a: 'a page' });
     expect(kindOf('checklist')).toEqual({ icon: SquareCheck, name: 'List', a: 'a list' });
     expect(kindOf('wish_list')).toEqual({ icon: File, name: 'Thing', a: 'a thing' });
+    // Every kind the API has today has its own word.
+    for (const kind of Object.values(ThingKind)) expect(kindOf(kind).name).not.toBe('Thing');
     expect(kindOf(undefined).name).toBe('Thing');
   });
 });
 
 describe('a thing as a row', () => {
   beforeEach(() => jest.clearAllMocks());
+
+  it('calls a photo or a video that has no title by what it is', async () => {
+    await render(onPhone(<ThingRow look="grouped" thing={thing({ kind: 'photo', title: '', glance: 'Sat 7 Nov · Lake Bled' })} />));
+    expect(screen.getByRole('button', { name: 'Photo. Photo. Sat 7 Nov · Lake Bled' })).toBeOnTheScreen();
+  });
 
   it('shows its title, where it stands and who sees it, and opens it', async () => {
     await render(onPhone(<ThingRow thing={thing({ kind: 'checklist', title: 'Party prep', glance: '4 of 9 done', chip: everyone })} />));

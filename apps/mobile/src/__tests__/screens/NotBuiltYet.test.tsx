@@ -1,16 +1,6 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
 
 import Activity from '@/app/(app)/(tabs)/activity';
-import NewEvent from '@/app/(app)/new/event';
-import NewGoal from '@/app/(app)/new/goal';
-import NewPassword from '@/app/(app)/new/password';
-import NewPhotos from '@/app/(app)/new/photos';
-import NewReminder from '@/app/(app)/new/reminder';
-import NewScan from '@/app/(app)/new/scan';
-import { LibraryHome } from '@/features/library/LibraryHome';
-import { NotesHome } from '@/features/notes/NotesHome';
-import { PlanHome } from '@/features/plan/PlanHome';
-import { VaultHome } from '@/features/vault/VaultHome';
 import { onPhone } from '@/test/phone';
 
 const mockRouter = { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) };
@@ -25,31 +15,5 @@ describe('the screens that are still to be built', () => {
     await render(onPhone(<Activity />));
     expect(screen.getByRole('header', { name: 'Activity' })).toBeOnTheScreen();
     expect(screen.getByText(NOT_BUILT)).toBeOnTheScreen();
-  });
-
-  it.each([
-    ['Plan', <PlanHome key="plan" />],
-    ['Notes', <NotesHome key="notes" />],
-    ['Library', <LibraryHome key="library" />],
-    ['Vault', <VaultHome key="vault" />],
-  ])("%s, one of Home's places, says which place it is and that it is on its way", async (name, place) => {
-    await render(onPhone(place));
-    expect(screen.getByRole('header', { name })).toBeOnTheScreen();
-    expect(screen.getByText(NOT_BUILT)).toBeOnTheScreen();
-  });
-
-  it.each([
-    ['Photos', <NewPhotos key="photos" />],
-    ['Scan', <NewScan key="scan" />],
-    ['Event', <NewEvent key="event" />],
-    ['Reminder', <NewReminder key="reminder" />],
-    ['Password', <NewPassword key="password" />],
-    ['Goal', <NewGoal key="goal" />],
-  ])('%s, one of the things the + sheet opens, says what it is and closes', async (name, page) => {
-    await render(onPhone(page));
-    expect(screen.getByRole('header', { name })).toBeOnTheScreen();
-    expect(screen.getByText(NOT_BUILT)).toBeOnTheScreen();
-    await userEvent.setup().press(screen.getByRole('button', { name: 'Close' }));
-    expect(mockRouter.back).toHaveBeenCalledTimes(1);
   });
 });
