@@ -118,13 +118,14 @@ describe('5.3 a page', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('opens what a live block shows, and says that copying a password arrives with the Vault', async () => {
+  it('opens what a live block shows; Copy on a password opens it in the Vault, where it is unlocked and copied', async () => {
     await render(onPhone());
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: /^Linds-Home-5G\./ }));
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'vault-item', id: 'v-wifi' } });
+    mockRouter.push.mockClear();
     await user.press(screen.getByRole('button', { name: 'Copy' }));
-    expect(screen.getByText('Copying a password without showing it arrives with the Vault.')).toBeOnTheScreen();
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'vault-item', id: 'v-wifi' } });
   });
 
   it('draws a quiet placeholder where a block shows something the reader cannot see', async () => {

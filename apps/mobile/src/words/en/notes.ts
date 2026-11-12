@@ -156,7 +156,6 @@ export const notes = {
     // Live blocks
     unseen: { title: "Something you can't see", body: 'It is shared with other people, not with you.' },
     copy: 'Copy',
-    copyLater: 'Copying a password without showing it arrives with the Vault.',
 
     // Mentions
     mention: { title: 'Mention someone', note: 'Their name goes into the text you are typing, or into a new line.' },

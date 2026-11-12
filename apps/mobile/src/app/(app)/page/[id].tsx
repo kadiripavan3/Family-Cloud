@@ -207,7 +207,7 @@ function Loaded({ loaded }: { loaded: PageResponse }) {
     if (block.kind === 'photo') return <PhotoBlock block={block} waiting={waits(block)} onMore={more(block)} />;
     if (block.kind === 'file') return <FileBlock block={block} waiting={waits(block)} onMore={more(block)} />;
     if (block.kind === 'place') return <PlaceBlock block={block} waiting={waits(block)} onMore={more(block)} />;
-    if (block.thing) return <LiveBlock block={block} thing={block.thing} waiting={waits(block)} onMore={more(block)} onCopy={() => setSaid(words.notes.page.copyLater)} />;
+    if (block.thing) return <LiveBlock block={block} thing={block.thing} waiting={waits(block)} onMore={more(block)} />;
     return <UnseenBlock />;
   };
 

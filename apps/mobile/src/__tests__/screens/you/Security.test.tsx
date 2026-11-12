@@ -49,7 +49,7 @@ describe('12.3 Privacy and security', () => {
     expect(screen.getByRole('button', { name: 'Lock the Vault after. 2 minutes' })).toBeOnTheScreen();
     expect(screen.getByRole('switch', { name: 'Hide details in notifications' })).toBeChecked();
     expect(screen.getByText('“A bill is due”, not which or how much')).toBeOnTheScreen();
-    expect(screen.getByText(/^These are remembered on this phone\. Face ID and locking the Vault need a build of Homeport on your phone/)).toBeOnTheScreen();
+    expect(screen.getByText(/^These are remembered on this phone\. The Vault locks itself after the time you choose here\./)).toBeOnTheScreen();
   });
 
   it('remembers each choice on the phone, for this account', async () => {

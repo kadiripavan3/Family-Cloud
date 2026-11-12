@@ -278,10 +278,10 @@ export function UnseenBlock() {
 
 /**
  * A live block by itself: another thing as it stands today, with its title, a line on where it stands and
- * who sees it. Pressing it opens the thing. A password shows "Copy" instead; copying one without showing it
- * arrives with the Vault, and until then the button says so.
+ * who sees it. Pressing it opens the thing. A password shows "Copy" instead of who sees it: that opens it in
+ * the Vault, which asks to be unlocked and copies there. Nothing of a password is ever on a page.
  */
-export function LiveBlock({ block, thing, onMore, waiting, onCopy }: BlockProps & { thing: ThingBrief; onCopy: () => void }) {
+export function LiveBlock({ block, thing, onMore, waiting }: BlockProps & { thing: ThingBrief }) {
   const { colors } = useTheme();
   const open = useOpenThing();
   const kind = kindOf(thing.kind);
@@ -298,7 +298,7 @@ export function LiveBlock({ block, thing, onMore, waiting, onCopy }: BlockProps 
       onPress={() => open(thing)}
       onMore={onMore}
       waiting={waiting}
-      trailing={secret ? <Button size="sm" variant="soft" inline label={words.notes.page.copy} icon={(c) => <Copy size={15} color={c} />} onPress={onCopy} /> : <AudienceChip thing={thing} quiet />}
+      trailing={secret ? <Button size="sm" variant="soft" inline label={words.notes.page.copy} icon={(c) => <Copy size={15} color={c} />} onPress={() => open(thing)} /> : <AudienceChip thing={thing} quiet />}
     />
   );
 }

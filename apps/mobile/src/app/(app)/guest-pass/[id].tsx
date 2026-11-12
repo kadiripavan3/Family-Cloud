@@ -11,6 +11,7 @@ import { endGuestPass, type GuestPassResponse, useGetGuestPass } from '@/api/gen
 import { useCircles } from '@/features/circles/current';
 import { PageProblem } from '@/features/states/PageProblem';
 import { ThingRow } from '@/features/things/ThingRow';
+import { PassCards, usePassLink } from '@/features/vault/PassCards';
 import { formatSpan, formatTime } from '@/lib/dates';
 import { loadState } from '@/lib/loading';
 import { firstName } from '@/lib/names';
@@ -58,6 +59,8 @@ function Loaded({ pass }: { pass: GuestPassResponse }) {
   const [ending, setEnding] = useState(false);
   const [sent, setSent] = useState(false);
   const over = !pass.running && new Date(pass.startsAt) <= new Date();
+  // With a sealed code on the pass, the link to send ends in the key that opens it (9 The Vault).
+  const link = usePassLink(pass);
 
   const end = useMutation({
     mutationFn: () => endGuestPass(pass.id),
@@ -67,7 +70,7 @@ function Loaded({ pass }: { pass: GuestPassResponse }) {
     },
   });
   const send = async () => {
-    const how = await shareText(says.message(name, circle?.name ?? '', pass.url));
+    const how = await shareText(says.message(name, circle?.name ?? '', link.url));
     setSent(how === 'copied');
   };
 
@@ -96,6 +99,8 @@ function Loaded({ pass }: { pass: GuestPassResponse }) {
           ))}
         </RowGroup>
 
+        {over ? null : <PassCards pass={pass} />}
+
         {over ? (
           <NoteBox icon={(c) => <Clock size={20} color={c} />} style={{ marginTop: 22, marginHorizontal: layout.barGutter }}>
             {says.ended}
@@ -103,7 +108,12 @@ function Loaded({ pass }: { pass: GuestPassResponse }) {
         ) : (
           <>
             <GroupLabel style={{ marginHorizontal: layout.gutter }}>{says.how(name)}</GroupLabel>
-            <LinkBox url={pass.url} icon={(c) => <Link size={18} color={c} />} style={{ marginHorizontal: layout.barGutter }} />
+            <LinkBox url={link.url} icon={(c) => <Link size={18} color={c} />} style={{ marginHorizontal: layout.barGutter }} />
+            {link.sealed ? (
+              <Txt variant="footnote" color="muted" style={{ marginTop: 8, marginHorizontal: layout.gutter }}>
+                {link.whole ? words.vault.pass.linkNote : words.vault.pass.linkLocked}
+              </Txt>
+            ) : null}
             <NoteBox icon={(c) => <ShieldCheck size={20} color={c} />} style={{ marginTop: 14, marginHorizontal: layout.barGutter }}>
               {rich(says.note(pass.code, formatTime(pass.endsAt)), {
                 bold: (text) => (
