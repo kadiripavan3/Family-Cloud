@@ -100,7 +100,7 @@ class TemplateGalleryTest extends BoardTest {
         assertThat(JsonPath.<List<Boolean>>read(couple, "$.templates[?(@.template == 'chore_wheel')].yours"))
                 .containsExactly(false);
 
-        // The ten that are built can be started; the other live ones say they are coming.
+        // The ones that are built can be started; the other live ones say they are coming.
         assertThat(JsonPath.<List<String>>read(couple, "$.templates[?(@.live == true && @.ready == true)].template"))
                 .containsExactlyInAnyOrder(
                         "meal_plan",
@@ -112,7 +112,22 @@ class TemplateGalleryTest extends BoardTest {
                         "same_spot",
                         "stories",
                         "good_jar",
-                        "doorframe");
+                        "doorframe",
+                        // a flat's
+                        "heard",
+                        "guest_book",
+                        "lived_here",
+                        "kitty",
+                        "fairer_split",
+                        "heads_up",
+                        // friends'
+                        "find_date",
+                        "secret_santa",
+                        "where_next",
+                        "dictionary",
+                        "predictions",
+                        "awards",
+                        "walk_together");
         assertThat(JsonPath.<List<String>>read(couple, "$.templates[?(@.template == 'both_yes')].note"))
                 .containsExactly("Coming with the next update");
         assertThat(JsonPath.<List<Object>>read(couple, "$.templates[?(@.live == false && @.ready == false)]"))
