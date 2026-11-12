@@ -18,7 +18,8 @@ public enum ThingKind {
     DOCUMENT(Place.LIBRARY),
     ALBUM(Place.LIBRARY),
     /** A space or a folder in Notes: a space is a folder at the top. */
-    FOLDER(Place.NOTES);
+    FOLDER(Place.NOTES),
+    BOARD(Place.NOTES);
 
     private final Place place;
 

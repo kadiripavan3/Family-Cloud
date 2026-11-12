@@ -34,8 +34,14 @@
     "name" : "home",
     "description" : "What Home shows across every place"
   }, {
+    "name" : "templates",
+    "description" : "The gallery of templates, and starting one"
+  }, {
     "name" : "media",
     "description" : "Uploading photos, videos, documents and recordings"
+  }, {
+    "name" : "boards",
+    "description" : "Templates that do work: a meal plan, a chore wheel, a time capsule. The same routes for every template; what each one takes and gives is listed under x-board-templates."
   }, {
     "name" : "files",
     "description" : "Scans and documents, and what was read inside them"
@@ -1164,6 +1170,60 @@
         }
       }
     },
+    "/v1/circles/{id}/templates/{template}/start" : {
+      "post" : {
+        "tags" : [ "templates" ],
+        "summary" : "Start a template in a circle: its pages and checklists, or its board",
+        "operationId" : "startTemplate",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "template",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Template"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartTemplateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StartedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/members" : {
       "post" : {
         "tags" : [ "circles" ],
@@ -1367,6 +1427,222 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/LineAnswers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/boards" : {
+      "post" : {
+        "tags" : [ "boards" ],
+        "summary" : "Start a board from a template that does work",
+        "operationId" : "createBoard",
+        "parameters" : [ {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewBoardRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/boards/{id}/entries" : {
+      "get" : {
+        "tags" : [ "boards" ],
+        "summary" : "A board's entries a page at a time, newest first, each as this person may see it",
+        "operationId" : "getBoardEntries",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "kind",
+          "in" : "query",
+          "description" : "Only entries of this kind",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "member",
+          "in" : "query",
+          "description" : "Only entries for this member",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "filter",
+          "in" : "query",
+          "description" : "One of the template's own filters, such as voice",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "q",
+          "in" : "query",
+          "description" : "Only entries with these words, in what this person may read",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardEntriesResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "boards" ],
+        "summary" : "Add one entry to a board",
+        "operationId" : "addBoardEntry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EntryAddedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/boards/{id}/act" : {
+      "post" : {
+        "tags" : [ "boards" ],
+        "summary" : "Do one of the template's own verbs (seal, open, tick) and get the board back",
+        "operationId" : "actOnBoard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ActRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponse"
                 }
               }
             }
@@ -2167,6 +2443,162 @@
         }
       }
     },
+    "/v1/boards/{id}" : {
+      "get" : {
+        "tags" : [ "boards" ],
+        "summary" : "A board: its settings, and what this person sees on it today. The template decides what that is.",
+        "operationId" : "getBoard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "show",
+          "in" : "query",
+          "description" : "Which part, for templates with more than one: a week, a year. See x-board-templates.",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "boards" ],
+        "summary" : "Rename a board or change its settings",
+        "operationId" : "changeBoard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BoardChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/board-entries/{entryId}" : {
+      "delete" : {
+        "tags" : [ "boards" ],
+        "summary" : "Remove one entry of a board. Removing one that is gone is fine.",
+        "operationId" : "removeBoardEntry",
+        "parameters" : [ {
+          "name" : "entryId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "boards" ],
+        "summary" : "Change one entry of a board",
+        "operationId" : "changeBoardEntry",
+        "parameters" : [ {
+          "name" : "entryId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EntryChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/albums/{id}" : {
       "get" : {
         "tags" : [ "albums" ],
@@ -2505,6 +2937,34 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/TodayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/templates" : {
+      "get" : {
+        "tags" : [ "templates" ],
+        "summary" : "The gallery for a circle: its own kind's templates first, then the rest. 67 cards, always all of them.",
+        "operationId" : "getTemplates",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TemplateGalleryResponse"
                 }
               }
             }
@@ -3166,6 +3626,56 @@
         }
       }
     },
+    "/v1/circles/{id}/boards" : {
+      "get" : {
+        "tags" : [ "boards" ],
+        "summary" : "The boards in a circle you can see, last changed first. With a template, only its boards.",
+        "operationId" : "getBoards",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "template",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/Template"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageBoardCard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/albums" : {
       "get" : {
         "tags" : [ "albums" ],
@@ -3504,7 +4014,7 @@
       },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page", "checklist", "photo", "video", "document", "album", "folder" ]
+        "enum" : [ "page", "checklist", "photo", "video", "document", "album", "folder", "board" ]
       },
       "AboutRequest" : {
         "type" : "object",
@@ -5155,6 +5665,146 @@
         },
         "required" : [ "clientId", "kind", "name" ]
       },
+      "Template" : {
+        "type" : "string",
+        "enum" : [ "meal_plan", "chore_wheel", "packing_list", "house_manual", "babysitter_notes", "birthday_planner", "time_capsule", "school_year", "recipe_book", "pet_care", "home_inventory", "emergency_plan", "moving_house", "open_when", "birthday_interview", "said", "same_spot", "stories", "good_jar", "doorframe", "whose_turn", "piggy_bank", "secret_missions", "saturday_jar", "sleeps", "where_is_it", "habit_charts", "date_ideas", "who_pays_what", "moving_in", "wedding", "they_mentioned_it", "names", "weekend_away", "someday", "our_story", "tucked_notes", "anniversary", "mystery_date", "both_yes", "fair_share", "cleaning_rota", "bills_by_nights", "move_in_photos", "repair_log", "house_rules", "sofa_free", "house_party", "moving_out", "heard", "guest_book", "lived_here", "kitty", "fairer_split", "heads_up", "find_date", "secret_santa", "where_next", "who_brings_what", "split_costs", "present_from_all", "games_night", "book_club", "dictionary", "predictions", "awards", "walk_together" ]
+      },
+      "StartTemplateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Left out: the template's own name",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "settings" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "For a template that does work: what it needs to begin. See x-board-templates."
+          }
+        },
+        "required" : [ "clientId" ]
+      },
+      "BoardResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "template" : {
+            "$ref" : "#/components/schemas/Template"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day the view was made for: the phone's day, as far as it can be true"
+          },
+          "settings" : {
+            "description" : "The board's settings. Which shape follows from `template`: see x-board-templates.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MealPlanSettings"
+            }, {
+              "$ref" : "#/components/schemas/ChoreWheelSettings"
+            }, {
+              "$ref" : "#/components/schemas/TimeCapsuleSettings"
+            }, {
+              "$ref" : "#/components/schemas/OpenWhenSettings"
+            }, {
+              "$ref" : "#/components/schemas/BirthdayInterviewSettings"
+            }, {
+              "$ref" : "#/components/schemas/SaidSettings"
+            }, {
+              "$ref" : "#/components/schemas/SameSpotSettings"
+            }, {
+              "$ref" : "#/components/schemas/StoriesSettings"
+            }, {
+              "$ref" : "#/components/schemas/GoodJarSettings"
+            }, {
+              "$ref" : "#/components/schemas/DoorframeSettings"
+            } ]
+          },
+          "view" : {
+            "description" : "What this person sees on the board. Which shape follows from `template`: see x-board-templates.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MealPlanView"
+            }, {
+              "$ref" : "#/components/schemas/ChoreWheelView"
+            }, {
+              "$ref" : "#/components/schemas/TimeCapsuleView"
+            }, {
+              "$ref" : "#/components/schemas/OpenWhenView"
+            }, {
+              "$ref" : "#/components/schemas/BirthdayInterviewView"
+            }, {
+              "$ref" : "#/components/schemas/SaidView"
+            }, {
+              "$ref" : "#/components/schemas/SameSpotView"
+            }, {
+              "$ref" : "#/components/schemas/StoriesView"
+            }, {
+              "$ref" : "#/components/schemas/GoodJarView"
+            }, {
+              "$ref" : "#/components/schemas/DoorframeView"
+            } ]
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "day", "emoji", "id", "mine", "settings", "template", "title", "updatedAt", "view" ]
+      },
+      "StartedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "template" : {
+            "$ref" : "#/components/schemas/Template"
+          },
+          "made" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }
+          },
+          "board" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "board", "made", "template" ]
+      },
       "NewMemberRequest" : {
         "type" : "object",
         "properties" : {
@@ -5533,6 +6183,89 @@
             "description" : "The list as it stands now"
           }
         }
+      },
+      "NewBoardRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "template" : {
+            "$ref" : "#/components/schemas/Template"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Left out: the template's own name",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "settings" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What the template needs to begin: names, dates, numbers. See x-board-templates."
+          }
+        },
+        "required" : [ "circleId", "clientId", "template" ]
+      },
+      "NewEntryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string",
+            "description" : "The template's word for what is added: meal, letter, mark",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "fields" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What the template takes for this kind. See x-board-templates."
+          }
+        },
+        "required" : [ "clientId", "kind" ]
+      },
+      "EntryAddedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "entryId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "board" : {
+            "$ref" : "#/components/schemas/BoardResponse"
+          }
+        },
+        "required" : [ "board", "entryId" ]
+      },
+      "ActRequest" : {
+        "type" : "object",
+        "properties" : {
+          "verb" : {
+            "type" : "string",
+            "description" : "The template's own verb: seal, open, tick",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "body" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What the verb needs. See x-board-templates."
+          }
+        },
+        "required" : [ "verb" ]
       },
       "NewAlbum" : {
         "type" : "object",
@@ -6155,6 +6888,32 @@
           }
         }
       },
+      "BoardChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "settings" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "The settings to change. A name that is left out keeps its value."
+          }
+        }
+      },
+      "EntryChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fields" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "The fields to change. A name that is left out keeps its value; a name sent as null is taken away."
+          }
+        },
+        "required" : [ "fields" ]
+      },
       "AlbumChange" : {
         "type" : "object",
         "properties" : {
@@ -6560,6 +7319,118 @@
           }
         },
         "required" : [ "day", "done", "fresh", "items", "left", "onlyYou" ]
+      },
+      "GroupCount" : {
+        "type" : "object",
+        "properties" : {
+          "group" : {
+            "$ref" : "#/components/schemas/TemplateGroup"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "yours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them are offered to this kind of circle first"
+          }
+        }
+      },
+      "TemplateCard" : {
+        "type" : "object",
+        "properties" : {
+          "template" : {
+            "$ref" : "#/components/schemas/Template"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The line under its name"
+          },
+          "group" : {
+            "$ref" : "#/components/schemas/TemplateGroup"
+          },
+          "topic" : {
+            "$ref" : "#/components/schemas/TemplateTopic"
+          },
+          "live" : {
+            "type" : "boolean",
+            "description" : "True for a template that does work (the LIVE tag); false for a plain starter"
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when it is offered to this kind of circle first"
+          },
+          "ready" : {
+            "type" : "boolean",
+            "description" : "True when it can be started now"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "For one that can't be started yet: Coming with the next update"
+          },
+          "makes" : {
+            "type" : "array",
+            "description" : "What starting it makes: Page · House manual, Checklist · When we go away",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "TemplateGalleryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Templates and keepsakes together: what “All 53” and “53 ready to use” count"
+          },
+          "yours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of those are offered to this kind of circle first: “For two · 16”"
+          },
+          "groups" : {
+            "type" : "array",
+            "description" : "The three shelves with their counts. Fair and fun is counted on its own.",
+            "items" : {
+              "$ref" : "#/components/schemas/GroupCount"
+            }
+          },
+          "topics" : {
+            "type" : "array",
+            "description" : "The chips this kind of circle gets next to All",
+            "items" : {
+              "$ref" : "#/components/schemas/TemplateTopic"
+            }
+          },
+          "templates" : {
+            "type" : "array",
+            "description" : "Every template: this kind's own first, then the rest. 67 in all.",
+            "items" : {
+              "$ref" : "#/components/schemas/TemplateCard"
+            }
+          }
+        },
+        "required" : [ "groups", "kind", "templates", "topics", "total", "yours" ]
+      },
+      "TemplateGroup" : {
+        "type" : "string",
+        "enum" : [ "templates", "keepsakes", "fair_and_fun" ]
+      },
+      "TemplateTopic" : {
+        "type" : "string",
+        "enum" : [ "home", "kids", "food", "money", "trips", "landlord", "together", "memories" ]
       },
       "PersonBytes" : {
         "type" : "object",
@@ -7084,6 +7955,60 @@
           }
         }
       },
+      "BoardCard" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "template" : {
+            "$ref" : "#/components/schemas/Template"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 3 letters · opens 4 Dec 2034"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      },
+      "PageBoardCard" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BoardCard"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        }
+      },
       "AlbumTab" : {
         "type" : "string",
         "enum" : [ "shared", "mine", "journey" ]
@@ -7103,6 +8028,1417 @@
           }
         },
         "required" : [ "items", "nextCursor" ]
+      },
+      "BoardEntriesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "description" : "An entry as the board's template shapes it for this person",
+              "oneOf" : [ {
+                "$ref" : "#/components/schemas/SaidQuote"
+              }, {
+                "$ref" : "#/components/schemas/StoriesQuestion"
+              }, {
+                "$ref" : "#/components/schemas/GoodJarSlip"
+              } ]
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "AlbumBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "title" ]
+      },
+      "MealPlanSettings" : {
+        "type" : "object",
+        "properties" : {
+          "cookingFor" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people the meals are for"
+          },
+          "toGroceries" : {
+            "type" : "boolean",
+            "description" : "True while ingredients go to the shopping list"
+          },
+          "groceriesListId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The checklist the plan writes to"
+          }
+        },
+        "required" : [ "cookingFor", "groceriesListId", "toGroceries" ]
+      },
+      "Neighbours" : {
+        "type" : "object",
+        "properties" : {
+          "newer" : {
+            "type" : "array",
+            "description" : "Taken after it, the nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "older" : {
+            "type" : "array",
+            "description" : "Taken before it, the nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "position" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Its place counted from the newest, starting at 1. Only inside a moment or an album."
+          },
+          "total" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many there are. Only inside a moment or an album."
+          }
+        },
+        "required" : [ "newer", "older", "position", "total" ]
+      },
+      "MealPlanDay" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "today" : {
+            "type" : "boolean"
+          },
+          "meals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MealPlanMeal"
+            }
+          }
+        },
+        "required" : [ "day", "meals", "today" ]
+      },
+      "MealPlanGroceries" : {
+        "type" : "object",
+        "properties" : {
+          "listId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The checklist the plan writes to, once there is one"
+          },
+          "on" : {
+            "type" : "boolean",
+            "description" : "True while ingredients go to the shopping list"
+          },
+          "going" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of the week's ingredients are needed: what goes to the list while it is on"
+          },
+          "atHome" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many were ticked as at home"
+          }
+        },
+        "required" : [ "atHome", "going", "listId", "on" ]
+      },
+      "MealPlanIngredient" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "atHome" : {
+            "type" : "boolean"
+          },
+          "onList" : {
+            "type" : "boolean",
+            "description" : "True while it has a line on the shopping list"
+          }
+        },
+        "required" : [ "atHome", "id", "name", "onList" ]
+      },
+      "MealPlanMeal" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Null for a dinner that comes from the calendar"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "minutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "cook" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "tonight" : {
+            "type" : "boolean",
+            "description" : "True for a meal on the viewer's today"
+          },
+          "fromCalendar" : {
+            "type" : "boolean",
+            "description" : "True for a dinner that comes from the calendar, not from the plan"
+          },
+          "ingredients" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MealPlanIngredient"
+            }
+          }
+        },
+        "required" : [ "cook", "emoji", "fromCalendar", "id", "ingredients", "minutes", "name", "note", "tonight" ]
+      },
+      "MealPlanRecipe" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "minutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "ingredients" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "emoji", "id", "ingredients", "minutes", "name", "note" ]
+      },
+      "MealPlanView" : {
+        "type" : "object",
+        "properties" : {
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Monday of the week shown"
+          },
+          "weekEnd" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "Seven days, Monday first",
+            "items" : {
+              "$ref" : "#/components/schemas/MealPlanDay"
+            }
+          },
+          "recipes" : {
+            "type" : "array",
+            "description" : "Recipes kept on the plan, to drop onto a day. Fifty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/MealPlanRecipe"
+            }
+          },
+          "groceries" : {
+            "$ref" : "#/components/schemas/MealPlanGroceries"
+          },
+          "cookingFor" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "cookingFor", "days", "groceries", "recipes", "weekEnd", "weekStart" ]
+      },
+      "ChoreWheelSettings" : {
+        "type" : "object",
+        "properties" : {
+          "people" : {
+            "type" : "array",
+            "description" : "The members on the wheel, in its order",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "startsOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Monday of the week the wheel was started: where the turning is counted from"
+          },
+          "stars" : {
+            "description" : "What stars turn into, when the family set that",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChoreWheelStars"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "people", "stars", "startsOn" ]
+      },
+      "ChoreWheelStars" : {
+        "type" : "object",
+        "properties" : {
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "into" : {
+            "type" : [ "string", "null" ],
+            "description" : "What they pay into, in the family's words"
+          }
+        },
+        "required" : [ "cents", "currency", "into", "stars" ]
+      },
+      "ChoreWheelJob" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "when" : {
+            "type" : [ "string", "null" ],
+            "description" : "When it is done, in the family's words: Tuesday and Friday evening"
+          },
+          "timesAWeek" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many times a week it is meant to be done"
+          },
+          "who" : {
+            "description" : "Whose job it is in the week shown",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "next" : {
+            "description" : "Whose it will be the week after",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "doneThisWeek" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many times it was ticked in the week shown"
+          },
+          "doneOn" : {
+            "type" : "array",
+            "description" : "The days of the week shown on which it was ticked",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
+            }
+          },
+          "doneToday" : {
+            "type" : "boolean",
+            "description" : "True when it was ticked on the viewer's today"
+          },
+          "complete" : {
+            "type" : "boolean",
+            "description" : "True when it was ticked as often as it is meant to be"
+          },
+          "lastDoneAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it was last ticked in the week shown"
+          }
+        },
+        "required" : [ "complete", "doneOn", "doneThisWeek", "doneToday", "emoji", "id", "lastDoneAt", "name", "next", "timesAWeek", "when", "who" ]
+      },
+      "ChoreWheelPerson" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MemberKind"
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Every star they ever earned on this wheel"
+          }
+        },
+        "required" : [ "kind", "person", "stars" ]
+      },
+      "ChoreWheelView" : {
+        "type" : "object",
+        "properties" : {
+          "week" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The number of the week shown, as calendars count it"
+          },
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "weekEnd" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "The people on the wheel, in its order, with their stars",
+            "items" : {
+              "$ref" : "#/components/schemas/ChoreWheelPerson"
+            }
+          },
+          "jobs" : {
+            "type" : "array",
+            "description" : "The jobs, in the wheel's order, with whose they are in the week shown",
+            "items" : {
+              "$ref" : "#/components/schemas/ChoreWheelJob"
+            }
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many jobs are done for the week shown"
+          },
+          "stars" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChoreWheelStars"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "done", "jobs", "people", "stars", "week", "weekEnd", "weekStart" ]
+      },
+      "TimeCapsuleSettings" : {
+        "type" : "object",
+        "properties" : {
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it opens"
+          },
+          "countFrom" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day the wait is counted from, for the bar: the day it was made, or a birthday"
+          },
+          "forMemberIds" : {
+            "type" : "array",
+            "description" : "The members it is for. Empty: everyone who can see it.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "hideFromThem" : {
+            "type" : "boolean",
+            "description" : "True when it was made as a surprise: hidden from the people it is for until the day"
+          }
+        },
+        "required" : [ "countFrom", "forMemberIds", "hideFromThem", "opensOn" ]
+      },
+      "BoardMedia" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MediaKind"
+          },
+          "url" : {
+            "type" : "string",
+            "description" : "The photo, or the recording itself"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The photo, small. Null for a recording."
+          },
+          "seconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How long a recording is, in whole seconds"
+          }
+        },
+        "required" : [ "id", "kind", "seconds", "thumbUrl", "url" ]
+      },
+      "TimeCapsuleItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string",
+            "description" : "letter, voice, photo or photos"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "What is written on the outside: A letter from Nora"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "A line on the outside: In her handwriting, with a photo"
+          },
+          "from" : {
+            "description" : "The member it is from. Null when it is from someone outside.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "fromName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Who it is from, when that is someone outside the circle"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "draft" : {
+            "type" : "boolean",
+            "description" : "True for the viewer's own, not sealed yet"
+          },
+          "sealed" : {
+            "type" : "boolean",
+            "description" : "True while this person may not read what is inside"
+          },
+          "sealedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "pages" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "A letter's length in pages"
+          },
+          "seconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "A recording's length in seconds"
+          },
+          "photos" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many photos a bundle holds"
+          },
+          "text" : {
+            "type" : [ "string", "null" ],
+            "description" : "The letter's words. Null while it is sealed for this person."
+          },
+          "media" : {
+            "description" : "The recording or the photo. Null while it is sealed for this person.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pictures" : {
+            "type" : "array",
+            "description" : "A bundle's photos. Empty while it is sealed for this person.",
+            "items" : {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }
+          }
+        },
+        "required" : [ "draft", "from", "fromName", "id", "kind", "media", "mine", "note", "pages", "photos", "pictures", "sealed", "sealedAt", "seconds", "text", "title" ]
+      },
+      "TimeCapsuleView" : {
+        "type" : "object",
+        "properties" : {
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "open" : {
+            "type" : "boolean",
+            "description" : "True from the day it opens"
+          },
+          "openForYou" : {
+            "type" : "boolean",
+            "description" : "True when it has opened and this person may read what is inside"
+          },
+          "daysToGo" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Days until it opens; 0 from the day it does"
+          },
+          "progress" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How much of the wait is over, 0 to 100"
+          },
+          "forPeople" : {
+            "type" : "array",
+            "description" : "Who it is for. Empty: everyone who can see it.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "sealedInside" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things are sealed inside"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TimeCapsuleItem"
+            }
+          }
+        },
+        "required" : [ "daysToGo", "forPeople", "items", "open", "openForYou", "opensOn", "progress", "sealedInside" ]
+      },
+      "OpenWhenSettings" : {
+        "type" : "object",
+        "properties" : {
+          "forMemberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The member the letters are for"
+          }
+        },
+        "required" : [ "forMemberId" ]
+      },
+      "OpenWhenLetter" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "when" : {
+            "type" : "string",
+            "description" : "What the envelope says after “Open when…”: you can't sleep"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "from" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "opened" : {
+            "type" : "boolean"
+          },
+          "openedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "openedBy" : {
+            "description" : "Who pressed open: the reader, or an adult with them",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "hasVoice" : {
+            "type" : "boolean"
+          },
+          "forwardOn" : {
+            "type" : [ "string", "null" ],
+            "description" : "journey: it comes forward when the reader is on a journey"
+          },
+          "canOpen" : {
+            "type" : "boolean",
+            "description" : "True when this person may open it now"
+          },
+          "text" : {
+            "type" : [ "string", "null" ],
+            "description" : "The letter. Null for everyone who may not read it."
+          },
+          "voice" : {
+            "description" : "The voice message. Null for everyone who may not hear it.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "canOpen", "emoji", "forwardOn", "from", "hasVoice", "id", "mine", "opened", "openedAt", "openedBy", "text", "voice", "when" ]
+      },
+      "OpenWhenView" : {
+        "type" : "object",
+        "properties" : {
+          "forPerson" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "youAreTheReader" : {
+            "type" : "boolean",
+            "description" : "True when the letters are for the person looking"
+          },
+          "youOpenForThem" : {
+            "type" : "boolean",
+            "description" : "True when this person opens letters with the reader, who has no sign-in of their own"
+          },
+          "sealed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "opened" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "letters" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OpenWhenLetter"
+            }
+          }
+        },
+        "required" : [ "forPerson", "letters", "opened", "sealed", "youAreTheReader", "youOpenForThem" ]
+      },
+      "BirthdayInterviewSettings" : {
+        "type" : "object",
+        "properties" : {
+          "forMemberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The member who is interviewed"
+          }
+        },
+        "required" : [ "forMemberId" ]
+      },
+      "BirthdayInterviewAnswer" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "age" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "voice" : {
+            "description" : "The answer in their own voice",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "latest" : {
+            "type" : "boolean",
+            "description" : "True for the latest round there is"
+          }
+        },
+        "required" : [ "age", "id", "latest", "text", "voice" ]
+      },
+      "BirthdayInterviewNext" : {
+        "type" : "object",
+        "properties" : {
+          "age" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The age they turn"
+          },
+          "on" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "inDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "Mia's 10th is in 23 days"
+          }
+        },
+        "required" : [ "age", "inDays", "line", "on" ]
+      },
+      "BirthdayInterviewQuestion" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "answers" : {
+            "type" : "array",
+            "description" : "One answer per age, youngest first",
+            "items" : {
+              "$ref" : "#/components/schemas/BirthdayInterviewAnswer"
+            }
+          }
+        },
+        "required" : [ "answers", "id", "text" ]
+      },
+      "BirthdayInterviewView" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "birthday" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "ages" : {
+            "type" : "array",
+            "description" : "The ages there are answers for, youngest first",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "next" : {
+            "description" : "The next birthday. Null when no birthday is known.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BirthdayInterviewNext"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BirthdayInterviewQuestion"
+            }
+          }
+        },
+        "required" : [ "ages", "birthday", "next", "person", "questions" ]
+      },
+      "SaidSettings" : {
+        "type" : "object"
+      },
+      "SaidPerson" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "count", "person" ]
+      },
+      "SaidQuote" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "who" : {
+            "description" : "The member who said it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "whoName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Who said it, when that is someone outside the circle"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it was said"
+          },
+          "ageYears" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How old they were: whole years"
+          },
+          "ageMonths" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "…and the months on top"
+          },
+          "age" : {
+            "type" : [ "string", "null" ],
+            "description" : "The age in words: 6 years and 2 months"
+          },
+          "voice" : {
+            "description" : "A recording of it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "writtenBy" : {
+            "description" : "Who wrote it down",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "age", "ageMonths", "ageYears", "day", "id", "mine", "text", "voice", "who", "whoName", "writtenBy" ]
+      },
+      "SaidView" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "withVoice" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who said them, with how many each: the chips. Thirty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/SaidPerson"
+            }
+          },
+          "latest" : {
+            "type" : "array",
+            "description" : "The newest thirty. The rest is read a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/SaidQuote"
+            }
+          }
+        },
+        "required" : [ "latest", "people", "total", "withVoice" ]
+      },
+      "SameSpotSettings" : {
+        "type" : "object",
+        "properties" : {
+          "around" : {
+            "type" : [ "string", "null" ],
+            "description" : "The day of the year it is usually taken, as MM-dd: 09-01"
+          }
+        },
+        "required" : [ "around" ]
+      },
+      "SameSpotShot" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "photo" : {
+            "$ref" : "#/components/schemas/BoardMedia"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "day", "id", "note", "photo", "year" ]
+      },
+      "SameSpotView" : {
+        "type" : "object",
+        "properties" : {
+          "thisYear" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "takenThisYear" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "description" : "The newest photo from before this year: the one to lay over the camera",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SameSpotShot"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "years" : {
+            "type" : "array",
+            "description" : "Every year there is a photo for, oldest first. One a year, so a few dozen at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/SameSpotShot"
+            }
+          },
+          "around" : {
+            "type" : [ "string", "null" ],
+            "description" : "The day of the year it is usually taken, as MM-dd"
+          }
+        },
+        "required" : [ "around", "last", "takenThisYear", "thisYear", "years" ]
+      },
+      "StoriesSettings" : {
+        "type" : "object",
+        "properties" : {
+          "tellerName" : {
+            "type" : "string",
+            "description" : "Who tells the stories: Astrid Lind"
+          },
+          "sendsOn" : {
+            "type" : "string",
+            "description" : "The weekday a question goes out, in lower case: sunday"
+          }
+        },
+        "required" : [ "sendsOn", "tellerName" ]
+      },
+      "StoriesQuestion" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "askedBy" : {
+            "description" : "Whose question it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "goesOut" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it goes out, or went out"
+          },
+          "out" : {
+            "type" : "boolean",
+            "description" : "True once it has gone out"
+          },
+          "answered" : {
+            "type" : "boolean"
+          },
+          "answeredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "recording" : {
+            "description" : "Their answer, in their voice",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "transcript" : {
+            "type" : "string",
+            "description" : "The answer typed out. Empty until a speech service is connected or someone types it."
+          },
+          "photos" : {
+            "type" : "array",
+            "description" : "Photos the family added to the story",
+            "items" : {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }
+          },
+          "link" : {
+            "type" : [ "string", "null" ],
+            "description" : "The link to send them, while it is unanswered. Only for people who may change the board."
+          }
+        },
+        "required" : [ "answered", "answeredAt", "askedBy", "goesOut", "id", "link", "out", "photos", "recording", "text", "transcript" ]
+      },
+      "StoriesView" : {
+        "type" : "object",
+        "properties" : {
+          "tellerName" : {
+            "type" : "string"
+          },
+          "initials" : {
+            "type" : "string",
+            "description" : "Their initials, for the round picture: AL"
+          },
+          "sendsOn" : {
+            "type" : "string"
+          },
+          "told" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many questions have been answered"
+          },
+          "thisWeek" : {
+            "description" : "The newest question that has gone out",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/StoriesQuestion"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "toldBefore" : {
+            "type" : "array",
+            "description" : "Answered before this week's, newest first. The first twenty; the rest a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/StoriesQuestion"
+            }
+          },
+          "waiting" : {
+            "type" : "array",
+            "description" : "Not sent yet, in the order they go out",
+            "items" : {
+              "$ref" : "#/components/schemas/StoriesQuestion"
+            }
+          },
+          "unanswered" : {
+            "type" : "array",
+            "description" : "Sent earlier and never answered. Their links still work.",
+            "items" : {
+              "$ref" : "#/components/schemas/StoriesQuestion"
+            }
+          }
+        },
+        "required" : [ "initials", "sendsOn", "tellerName", "thisWeek", "told", "toldBefore", "unanswered", "waiting" ]
+      },
+      "GoodJarSettings" : {
+        "type" : "object"
+      },
+      "GoodJarSlip" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "who" : {
+            "description" : "Whose good thing it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "what" : {
+            "type" : "string",
+            "description" : "note, photo or drawing"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "place" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it is from: Reine"
+          },
+          "fromJourney" : {
+            "type" : "boolean"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "sealed" : {
+            "type" : "boolean",
+            "description" : "True while this person may not read it"
+          },
+          "text" : {
+            "type" : [ "string", "null" ],
+            "description" : "What it says. Null while it is sealed for this person."
+          },
+          "picture" : {
+            "description" : "Its photo or drawing. Null while it is sealed for this person.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "day", "fromJourney", "id", "mine", "picture", "place", "sealed", "text", "what", "who" ]
+      },
+      "GoodJarView" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The year the jar is being filled for"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many good things are in this year's jar"
+          },
+          "opensOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day this year's jar opens: 31 December"
+          },
+          "open" : {
+            "type" : "boolean",
+            "description" : "True on the day it opens"
+          },
+          "daysToGo" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "latest" : {
+            "type" : "array",
+            "description" : "The five newest slips of this year, as this person may see them",
+            "items" : {
+              "$ref" : "#/components/schemas/GoodJarSlip"
+            }
+          },
+          "years" : {
+            "type" : "array",
+            "description" : "Earlier years, newest first: each one is open and can be read back",
+            "items" : {
+              "$ref" : "#/components/schemas/GoodJarYear"
+            }
+          }
+        },
+        "required" : [ "count", "daysToGo", "latest", "open", "opensOn", "year", "years" ]
+      },
+      "GoodJarYear" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "count", "year" ]
+      },
+      "DoorframeSettings" : {
+        "type" : "object"
+      },
+      "DoorframeChild" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "heightMm" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "measuredOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "sinceLastMm" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Growth since the mark before, and that mark's day"
+          },
+          "lastMarkOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "sinceBirthdayMm" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Growth since the last birthday, when there is a mark near it"
+          },
+          "thisYearMm" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Growth in this calendar year"
+          },
+          "mostYet" : {
+            "type" : "boolean",
+            "description" : "True when this year's growth is their most in any year"
+          },
+          "landmark" : {
+            "type" : [ "string", "null" ],
+            "description" : "The tallest landmark reached: Up to Grandma Astrid's shoulder"
+          },
+          "lines" : {
+            "type" : "array",
+            "description" : "The same as ready sentences: 6 cm since the last birthday",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "heightMm", "landmark", "lastMarkOn", "lines", "measuredOn", "mostYet", "person", "sinceBirthdayMm", "sinceLastMm", "thisYearMm" ]
+      },
+      "DoorframeLandmark" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "heightMm" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "heightMm", "id", "text" ]
+      },
+      "DoorframeMark" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "person" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "heightMm" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "photo" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BoardMedia"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "grewMm" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How much they grew since their mark before this one"
+          },
+          "latest" : {
+            "type" : "boolean",
+            "description" : "True for a person's newest mark"
+          }
+        },
+        "required" : [ "day", "grewMm", "heightMm", "id", "latest", "note", "person", "photo" ]
+      },
+      "DoorframeView" : {
+        "type" : "object",
+        "properties" : {
+          "marks" : {
+            "type" : "array",
+            "description" : "Every mark, tallest first: the ruler. A few hundred at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/DoorframeMark"
+            }
+          },
+          "children" : {
+            "type" : "array",
+            "description" : "One card per person who has a mark, tallest first",
+            "items" : {
+              "$ref" : "#/components/schemas/DoorframeChild"
+            }
+          },
+          "comparisons" : {
+            "type" : "array",
+            "description" : "Ready sentences: Mia was Leo's height in the spring of 2023.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "landmarks" : {
+            "type" : "array",
+            "description" : "The family's own lines to measure against, tallest first",
+            "items" : {
+              "$ref" : "#/components/schemas/DoorframeLandmark"
+            }
+          }
+        },
+        "required" : [ "children", "comparisons", "landmarks", "marks" ]
       }
     },
     "securitySchemes" : {
@@ -7111,6 +9447,71 @@
         "scheme" : "bearer",
         "bearerFormat" : "JWT"
       }
+    }
+  },
+  "x-board-templates" : {
+    "meal_plan" : {
+      "name" : "Weekly meal plan",
+      "settings" : "MealPlanSettings",
+      "view" : "MealPlanView",
+      "guide" : [ "settings: cookingFor (1 to 30), toGroceries (true or false), groceriesListId (a checklist you may change)", "entry meal: day (date), name, emoji, minutes, note, cookMemberId, ingredients (a list of names, when adding), recipeId (when adding: copies a kept recipe onto the day)", "entry ingredient: mealId (when adding), name, atHome (true or false)", "entry recipe: name, emoji, minutes, note, ingredients (a list of names)", "show: any day of the week to show, as a date. Left out: this week." ]
+    },
+    "chore_wheel" : {
+      "name" : "Chore wheel",
+      "settings" : "ChoreWheelSettings",
+      "view" : "ChoreWheelView",
+      "guide" : [ "settings: people (member ids in the wheel's order; left out: everyone in the circle), stars ({stars, cents, currency, into} or null)", "entry job: name, emoji, when (words), timesAWeek (1 to 7)", "verb tick: jobId, done (true or false; left out: true), day (a date; left out: today)", "show: any day of the week to show, as a date. Left out: this week." ]
+    },
+    "time_capsule" : {
+      "name" : "Time capsule",
+      "settings" : "TimeCapsuleSettings",
+      "view" : "TimeCapsuleView",
+      "guide" : [ "settings: opensOn (a date after today), forMemberIds (member ids; left out: everyone who sees it), countFrom (a date; left out: today), hideFromThem (when making it: true hides it from the people it is for until the day, with the shared hidden-from)", "entry letter: text, title, note, fromName, seal (left out: true; false keeps it a draft only you see)", "entry voice: mediaId (an audio upload), title, note, fromName, seal", "entry photo: mediaId (a photo upload), title, note, fromName, seal; or parentId (a photos bundle)", "entry photos: title, note (a bundle; add its photos as entries of kind photo with parentId)", "verb seal: entryId (your own draft)" ]
+    },
+    "open_when" : {
+      "name" : "Open when…",
+      "settings" : "OpenWhenSettings",
+      "view" : "OpenWhenView",
+      "guide" : [ "settings: forMemberId (who the letters are for)", "entry letter: when (what the envelope says), emoji, text, mediaId (an audio upload), forwardOn (journey, or null)", "verb open: entryId. The reader opens it, once; someone who may only look at the board may too." ]
+    },
+    "birthday_interview" : {
+      "name" : "The birthday interview",
+      "settings" : "BirthdayInterviewSettings",
+      "view" : "BirthdayInterviewView",
+      "guide" : [ "settings: forMemberId (who is interviewed; their page has to have a birthday)", "entry question: text", "entry answer: questionId, text, mediaId (an audio upload), age (left out: the age of this round)" ]
+    },
+    "said" : {
+      "name" : "Things they said",
+      "settings" : "SaidSettings",
+      "view" : "SaidView",
+      "entry" : "SaidQuote",
+      "guide" : [ "settings: none", "entry quote: text, saidByMemberId (or saidByName for someone outside the circle), day (left out: today), mediaId (an audio upload)", "entries list: member (who said it), filter voice (only those with a recording), q (words)" ]
+    },
+    "same_spot" : {
+      "name" : "Same spot, every year",
+      "settings" : "SameSpotSettings",
+      "view" : "SameSpotView",
+      "guide" : [ "settings: around (the day of the year it is usually taken, as MM-dd, or null)", "entry photo: mediaId (a photo upload), year (left out: this year), day (left out: today), note" ]
+    },
+    "stories" : {
+      "name" : "Grandma's stories",
+      "settings" : "StoriesSettings",
+      "view" : "StoriesView",
+      "entry" : "StoriesQuestion",
+      "guide" : [ "settings: tellerName (who tells the stories), sendsOn (a weekday in lower case; left out: sunday)", "entry question: text, askedByMemberId (left out: you). When changing: text, transcript", "entry photo: questionId, mediaId (a photo upload): a photo for a story", "verb send_now: entryId (a waiting question goes out today)", "entries list: kind question, filter told (only answered ones)" ]
+    },
+    "good_jar" : {
+      "name" : "The good things jar",
+      "settings" : "GoodJarSettings",
+      "view" : "GoodJarView",
+      "entry" : "GoodJarSlip",
+      "guide" : [ "settings: none", "entry slip: text, mediaId (a photo upload), what (note, photo or drawing; left out: by what was sent), fromMemberId (whose good thing it is; left out: yours), place, fromJourney", "show: a year, to see that year's jar. Left out: this year.", "entries list: filter with a year (2025) for that year's slips" ]
+    },
+    "doorframe" : {
+      "name" : "The doorframe",
+      "settings" : "DoorframeSettings",
+      "view" : "DoorframeView",
+      "guide" : [ "settings: none", "entry mark: memberId, heightMm (300 to 2500), day (left out: today), note, mediaId (a photo upload)", "entry landmark: text (Up to Grandma Astrid's shoulder), heightMm" ]
     }
   }
 }

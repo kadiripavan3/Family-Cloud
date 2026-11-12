@@ -135,9 +135,20 @@ class ApiDescriptionTest extends ApiTest {
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = new ArrayList<>(List.of(circle, child, page, pass, album, list, folder));
+        // A board only Nora can see, with a sealed letter in it.
+        String board = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/boards",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"template\":\"time_capsule\",\"audience\":\"me\",\"settings\":{\"opensOn\":\"%s\"}}"
+                                .formatted(
+                                        id(), circle, java.time.LocalDate.now().plusYears(1)),
+                        201),
+                "$.id");
+        List<String> forStranger = new ArrayList<>(List.of(circle, child, page, pass, album, list, folder, board));
         forStranger.addAll(library);
-        List<String> forAlex = new ArrayList<>(List.of(page, album, list, folder));
+        List<String> forAlex = new ArrayList<>(List.of(page, album, list, folder, board));
         forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
@@ -147,7 +158,7 @@ class ApiDescriptionTest extends ApiTest {
             String path = name.substring(4);
             for (String id : forStranger) {
                 if (answers(path.replace("{id}", id), stranger)) {
-                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass));
+                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass, board));
                 }
             }
             for (String id : forAlex) {
@@ -164,7 +175,7 @@ class ApiDescriptionTest extends ApiTest {
         assertThat(fetch("/v1/join/" + code, stranger)).contains("The Linds").doesNotContain("Mia");
     }
 
-    private static String label(String id, String circle, String child, String page, String pass) {
+    private static String label(String id, String circle, String child, String page, String pass, String board) {
         return id.equals(circle)
                 ? "a circle's id"
                 : id.equals(child)

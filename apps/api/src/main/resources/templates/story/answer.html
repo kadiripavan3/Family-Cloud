@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('A question for you')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+
+    <th:block th:if="${state == 'gone'}">
+      <h1>This link doesn't work any more</h1>
+      <p class="lede">The question may have been taken back. Ask the person who sent it for a new link.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'thanks'}">
+      <h1>Thank you</h1>
+      <p class="lede">Your answer to “<span th:text="${question}">the question</span>” is with the family. There will be another question next week.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'ask'}">
+      <p class="eyebrow" th:text="${asker + ' would like to know'}">Your family would like to know</p>
+      <h1 th:text="${question}">What was your very first job?</h1>
+      <p class="lede">Just talk. There is nothing to type and no account to make. Take as long as you like.</p>
+
+      <div id="story" th:attr="data-token=${token}">
+        <button class="btn big" type="button" id="record" hidden>Start talking</button>
+        <button class="btn big danger" type="button" id="stop" hidden>I've finished</button>
+        <p class="note" id="clock" hidden>0:00</p>
+        <label for="file" id="filelabel">Or pick a recording you made on this phone</label>
+        <input id="file" type="file" accept="audio/*" capture>
+        <p class="problem" role="alert" id="problem" hidden></p>
+        <p class="note" id="sending" hidden>Sending your answer…</p>
+      </div>
+      <p class="note">Only the family who sent you this link will hear it.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'ask'}">
+      <script th:inline="none">
+        (function () {
+          var box = document.getElementById('story');
+          var token = box.getAttribute('data-token');
+          var record = document.getElementById('record');
+          var stop = document.getElementById('stop');
+          var clock = document.getElementById('clock');
+          var file = document.getElementById('file');
+          var problem = document.getElementById('problem');
+          var sending = document.getElementById('sending');
+          var recorder = null, chunks = [], started = 0, timer = null;
+
+          function fail(words) {
+            sending.hidden = true;
+            problem.textContent = words || "That didn't work. Please try again.";
+            problem.hidden = false;
+          }
+
+          function send(blob, seconds) {
+            problem.hidden = true;
+            sending.hidden = false;
+            var type = (blob.type || 'audio/webm').split(';')[0];
+            fetch('/s/' + token + '/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contentType: type, seconds: seconds })
+            }).then(function (answer) {
+              if (!answer.ok) { throw new Error('upload'); }
+              return answer.json();
+            }).then(function (target) {
+              var headers = target.headers || {};
+              if (!headers['Content-Type']) { headers['Content-Type'] = type; }
+              return fetch(target.uploadUrl, { method: target.method, headers: headers, body: blob })
+                .then(function (sent) {
+                  if (!sent.ok) { throw new Error('send'); }
+                  return fetch('/s/' + token + '/done', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mediaId: target.mediaId })
+                  });
+                });
+            }).then(function (done) {
+              if (!done.ok) { throw new Error('done'); }
+              window.location.reload();
+            }).catch(function () {
+              fail("Your answer didn't arrive. Check the connection and try again.");
+            });
+          }
+
+          if (navigator.mediaDevices && window.MediaRecorder) {
+            record.hidden = false;
+            record.addEventListener('click', function () {
+              navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+                chunks = [];
+                recorder = new MediaRecorder(stream);
+                recorder.addEventListener('dataavailable', function (e) { chunks.push(e.data); });
+                recorder.addEventListener('stop', function () {
+                  stream.getTracks().forEach(function (t) { t.stop(); });
+                  clearInterval(timer);
+                  send(new Blob(chunks, { type: recorder.mimeType }), Math.round((Date.now() - started) / 1000));
+                });
+                recorder.start();
+                started = Date.now();
+                record.hidden = true;
+                stop.hidden = false;
+                clock.hidden = false;
+                timer = setInterval(function () {
+                  var s = Math.round((Date.now() - started) / 1000);
+                  clock.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+                }, 1000);
+              }).catch(function () {
+                fail("The microphone couldn't be used. Allow it, or pick a recording below.");
+              });
+            });
+            stop.addEventListener('click', function () {
+              stop.hidden = true;
+              if (recorder) { recorder.stop(); }
+            });
+          }
+
+          file.addEventListener('change', function () {
+            if (file.files && file.files[0]) { send(file.files[0], null); }
+          });
+        })();
+      </script>
+    </th:block>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>

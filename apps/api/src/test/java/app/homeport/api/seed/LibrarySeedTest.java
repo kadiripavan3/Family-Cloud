@@ -80,11 +80,14 @@ class LibrarySeedTest extends ApiTest {
 
         // Today: 19 new at the lake, Grandma's recipe, and Biscuit's album.
         String home = fetch("/v1/circles/" + circle + "/today", nora);
-        assertThat(JsonPath.<List<String>>read(home, "$.fresh[?(@.kind != 'page')].title"))
+        assertThat(JsonPath.<List<String>>read(
+                        home, "$.fresh[?(@.kind in ['photo', 'video', 'document', 'album'])].title"))
                 .startsWith("Saturday at Lake Bled", "Grandma's cookies", "Biscuit");
-        assertThat(JsonPath.<List<String>>read(home, "$.fresh[?(@.kind != 'page')].pill"))
+        assertThat(JsonPath.<List<String>>read(
+                        home, "$.fresh[?(@.kind in ['photo', 'video', 'document', 'album'])].pill"))
                 .startsWith("19 new", "Recipe");
-        assertThat(JsonPath.<List<String>>read(home, "$.fresh[?(@.kind != 'page')].note"))
+        assertThat(JsonPath.<List<String>>read(
+                        home, "$.fresh[?(@.kind in ['photo', 'video', 'document', 'album'])].note"))
                 .startsWith("Alex, Mia and you", "Alex added a scan", "6 new this week");
 
         // The photo itself: two loves, three comments, and Mia in it.
