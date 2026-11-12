@@ -1834,7 +1834,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AskRequest"
+                "$ref" : "#/components/schemas/AskToSeeRequest"
               }
             }
           },
@@ -11271,7 +11271,7 @@
         },
         "required" : [ "askedAt", "id", "items", "note", "openedAt", "opensAt", "owner", "refusedAt", "state", "waitHours" ]
       },
-      "AskRequest" : {
+      "AskToSeeRequest" : {
         "type" : "object",
         "properties" : {
           "clientId" : {
@@ -12118,6 +12118,22 @@
           }
         },
         "required" : [ "clientId", "name" ]
+      },
+      "AskRequest" : {
+        "type" : "object",
+        "properties" : {
+          "question" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for TODAY()"
+          }
+        },
+        "required" : [ "question" ]
       },
       "NewPaperRequest" : {
         "type" : "object",

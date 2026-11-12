@@ -98,7 +98,7 @@ class ActivityController {
 
     // ---------- asking to see something ----------
 
-    record AskRequest(
+    record AskToSeeRequest(
             @NotNull(message = "A request needs a clientId.")
             UUID clientId,
 
@@ -125,7 +125,7 @@ class ActivityController {
             summary = "Ask a thing's owner to open it to you",
             description = "They see the question in Activity and are told on their phone, without the thing being"
                     + " named. Asking again while a question is open keeps the one there is.")
-    AskResponse ask(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody AskRequest request) {
+    AskResponse ask(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody AskToSeeRequest request) {
         return asks.ask(id, me, request.until(), Boolean.TRUE.equals(request.once()), request.clientId());
     }
 
