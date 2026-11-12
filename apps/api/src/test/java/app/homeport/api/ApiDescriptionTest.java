@@ -101,11 +101,38 @@ class ApiDescriptionTest extends ApiTest {
                 "$.id");
         String code = JsonPath.<String>read(fetch("/v1/circles/" + circle, nora), "$.joinUrl")
                 .replaceFirst(".*/", "");
+        // Money: a bill, a sheet and a split that are Nora's alone.
+        String bill = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/bills",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Electricity\",\"amountCents\":8420,\"dueOn\":\"2026-11-12\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String sheet = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/sheets",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"template\":\"trip_budget\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String split = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/splits",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Between us\"}".formatted(id(), circle),
+                        201),
+                "$.id");
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = List.of(circle, child, page, pass);
-        List<String> forAlex = List.of(page);
+        List<String> forStranger = List.of(circle, child, page, pass, bill, sheet, split);
+        List<String> forAlex = List.of(page, bill, sheet, split);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {
@@ -114,7 +141,14 @@ class ApiDescriptionTest extends ApiTest {
             String path = name.substring(4);
             for (String id : forStranger) {
                 if (answers(path.replace("{id}", id), stranger)) {
-                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass));
+                    gaveAway.add("a stranger: " + path + " with "
+                            + label(
+                                    id,
+                                    circle,
+                                    child,
+                                    page,
+                                    pass,
+                                    Map.of(bill, "a bill's id", sheet, "a sheet's id", split, "a split's id")));
                 }
             }
             for (String id : forAlex) {
@@ -131,7 +165,11 @@ class ApiDescriptionTest extends ApiTest {
         assertThat(fetch("/v1/join/" + code, stranger)).contains("The Linds").doesNotContain("Mia");
     }
 
-    private static String label(String id, String circle, String child, String page, String pass) {
+    private static String label(
+            String id, String circle, String child, String page, String pass, Map<String, String> others) {
+        if (others.containsKey(id)) {
+            return others.get(id);
+        }
         return id.equals(circle)
                 ? "a circle's id"
                 : id.equals(child) ? "a member's id" : id.equals(page) ? "a page's id" : "a guest pass's id";

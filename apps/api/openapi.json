@@ -19,20 +19,32 @@
     "name" : "checklists",
     "description" : "Lists you tick, changed one line at a time"
   }, {
-    "name" : "me",
-    "description" : "The signed-in person and their profile"
-  }, {
-    "name" : "local-auth",
-    "description" : "Test sign-in. Exists only in local mode."
-  }, {
     "name" : "things",
     "description" : "What every kind of thing shares: who can see it"
   }, {
     "name" : "home",
     "description" : "What Home shows across every place"
   }, {
+    "name" : "sheets",
+    "description" : "Sheets: typed columns, rows that open as cards, formulas you can read"
+  }, {
     "name" : "media",
     "description" : "Uploading photos, videos, documents and recordings"
+  }, {
+    "name" : "bills",
+    "description" : "Bills and subscriptions: what is due, who pays, what it usually costs"
+  }, {
+    "name" : "me",
+    "description" : "The signed-in person and their profile"
+  }, {
+    "name" : "local-auth",
+    "description" : "Test sign-in. Exists only in local mode."
+  }, {
+    "name" : "money",
+    "description" : "Money's first page, and the planners that need nothing saved"
+  }, {
+    "name" : "splits",
+    "description" : "Splitting costs: who paid what, who owes who, the fewest payments to settle up"
   }, {
     "name" : "pages",
     "description" : "Pages of words"
@@ -188,6 +200,42 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/splits/{id}/reminders/{memberId}" : {
+      "put" : {
+        "tags" : [ "splits" ],
+        "summary" : "Remind someone of what they owe you in a split. Keeps the time; the notification itself is sent by whoever sends notifications.",
+        "operationId" : "remindSplitMember",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "memberId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SplitResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -430,6 +478,530 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bills/{id}/paid" : {
+      "put" : {
+        "tags" : [ "bills" ],
+        "summary" : "Mark a share of a bill as paid, or take that back. A repeating bill is due again once every share is paid.",
+        "operationId" : "markBillPaid",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaidRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/splits" : {
+      "post" : {
+        "tags" : [ "splits" ],
+        "summary" : "Start keeping count of a group's shared costs",
+        "operationId" : "createSplit",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewSplitRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SplitResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/splits/{id}/payments" : {
+      "post" : {
+        "tags" : [ "splits" ],
+        "summary" : "Mark a payment as made: one person paid another to settle up. The app pays nothing itself.",
+        "operationId" : "addSplitPayment",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for an expense with no day of its own. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewPaymentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/splits/{id}/expenses" : {
+      "get" : {
+        "tags" : [ "splits" ],
+        "summary" : "The expenses of a split, the latest first",
+        "operationId" : "getSplitExpenses",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageExpenseResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "splits" ],
+        "summary" : "Add what someone paid, and who shares it",
+        "operationId" : "addSplitExpense",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for an expense with no day of its own. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewExpenseRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheets" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Start a sheet: blank, from a template, or from a loan plan",
+        "operationId" : "createSheet",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewSheetRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheets/{id}/tabs" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Add a tab to a sheet. A sheet holds 24.",
+        "operationId" : "addSheetTab",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewTabRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tabs/{tabId}/tiles" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Add a tile on top of a tab: a named total. A tab holds 12.",
+        "operationId" : "addSheetTile",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewTileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tabs/{tabId}/rows" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Add a row to a tab. A tab holds 2,000.",
+        "operationId" : "addSheetRow",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewRowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowChangedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tabs/{tabId}/formula" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Read a formula without keeping it: as chips, as a sentence, and with its answer. Also lists the columns and functions to build one from.",
+        "operationId" : "readFormula",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FormulaRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FormulaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tabs/{tabId}/columns" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Add a column to the end of a tab. A tab holds 40.",
+        "operationId" : "addSheetColumn",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewColumnRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ColumnResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tabs/{tabId}/ask" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Ask in words: one of a set of known questions is answered with a formula, by rule. Anything else is told how to write one.",
+        "operationId" : "askFormula",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FormulaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-rows/{rowId}/papers" : {
+      "post" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Keep a receipt or a paper with a row. A row keeps 20.",
+        "operationId" : "addSheetRowPaper",
+        "parameters" : [ {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewPaperRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowCardResponse"
                 }
               }
             }
@@ -737,6 +1309,64 @@
         }
       }
     },
+    "/v1/bills" : {
+      "post" : {
+        "tags" : [ "bills" ],
+        "summary" : "Add a bill or a subscription",
+        "operationId" : "createBill",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewBillRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bills/read" : {
+      "post" : {
+        "tags" : [ "bills" ],
+        "summary" : "Read a bill from the text of a photo or a PDF: who to pay, how much, by when. It suggests; nothing is saved.",
+        "operationId" : "readBill",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReadRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BillReadingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/local-auth/token" : {
       "post" : {
         "tags" : [ "local-auth" ],
@@ -788,6 +1418,508 @@
           }
         },
         "security" : [ ]
+      }
+    },
+    "/v1/splits/{id}" : {
+      "get" : {
+        "tags" : [ "splits" ],
+        "summary" : "A split: where everyone stands, the fewest payments that settle it, and the latest expenses",
+        "operationId" : "getSplit",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SplitResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "splits" ],
+        "summary" : "Rename a split",
+        "operationId" : "renameSplit",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RenameRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SplitResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/split-expenses/{expenseId}" : {
+      "delete" : {
+        "tags" : [ "splits" ],
+        "summary" : "Remove an expense. Removing one that is gone is fine.",
+        "operationId" : "removeSplitExpense",
+        "parameters" : [ {
+          "name" : "expenseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "splits" ],
+        "summary" : "Change an expense: what it was, how much, who paid, who shares it",
+        "operationId" : "changeSplitExpense",
+        "parameters" : [ {
+          "name" : "expenseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExpenseChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheets/{id}" : {
+      "get" : {
+        "tags" : [ "sheets" ],
+        "summary" : "A sheet: its tabs, and one tab with its columns, tiles, totals and first rows, all worked out",
+        "operationId" : "getSheet",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "tab",
+          "in" : "query",
+          "description" : "Which tab. Left out: the first.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "description" : "How many rows to send with it. Left out: 100.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Rename a sheet, or change the currency it counts in",
+        "operationId" : "changeSheet",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SheetChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tiles/{tileId}" : {
+      "delete" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Remove a tile. Removing one that is gone is fine.",
+        "operationId" : "removeSheetTile",
+        "parameters" : [ {
+          "name" : "tileId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Change a tile: its name, its formula, what it is shown against, its place",
+        "operationId" : "changeSheetTile",
+        "parameters" : [ {
+          "name" : "tileId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TileChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-tabs/{tabId}" : {
+      "delete" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Remove a tab with everything in it. A sheet keeps its last tab. Removing one that is gone is fine.",
+        "operationId" : "removeSheetTab",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Rename a tab or move it",
+        "operationId" : "changeSheetTab",
+        "parameters" : [ {
+          "name" : "tabId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TabChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SheetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-rows/{rowId}" : {
+      "get" : {
+        "tags" : [ "sheets" ],
+        "summary" : "A row opened as a card: every column's value, its note, its papers, and the rows before and after",
+        "operationId" : "getSheetRow",
+        "parameters" : [ {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowCardResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Remove a row. Removing one that is gone is fine.",
+        "operationId" : "removeSheetRow",
+        "parameters" : [ {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Change some cells of a row, its note or its place. Cells that aren't sent stay as they are.",
+        "operationId" : "changeSheetRow",
+        "parameters" : [ {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RowChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowChangedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-columns/{columnId}" : {
+      "delete" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Remove a column and what it held. One that a formula uses stays until the formula changes. Removing one that is gone is fine.",
+        "operationId" : "removeSheetColumn",
+        "parameters" : [ {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Change one column: its name, its formula, its choices, its total, its place",
+        "operationId" : "changeSheetColumn",
+        "parameters" : [ {
+          "name" : "columnId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ColumnChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ColumnResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/pages/{id}" : {
@@ -1122,6 +2254,70 @@
         }
       }
     },
+    "/v1/bills/{id}" : {
+      "get" : {
+        "tags" : [ "bills" ],
+        "summary" : "A bill: what is due, who pays, the last six, its login and invoice",
+        "operationId" : "getBill",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "bills" ],
+        "summary" : "Change a bill: this time's amount and day, how it comes round, who pays",
+        "operationId" : "changeBill",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BillChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/things/{id}" : {
       "get" : {
         "tags" : [ "things" ],
@@ -1193,6 +2389,199 @@
                   "items" : {
                     "$ref" : "#/components/schemas/ThingBrief"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheets/{id}/rows" : {
+      "get" : {
+        "tags" : [ "sheets" ],
+        "summary" : "The rows of a tab, in their order, a page at a time",
+        "operationId" : "getSheetRows",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "tab",
+          "in" : "query",
+          "description" : "Which tab. Left out: the first.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for TODAY() in a formula. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sheet-templates" : {
+      "get" : {
+        "tags" : [ "sheets" ],
+        "summary" : "The templates a sheet can start from. Seven of them.",
+        "operationId" : "getSheetTemplates",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TemplateResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/money/savings-plan" : {
+      "get" : {
+        "tags" : [ "money" ],
+        "summary" : "How long until a savings goal, for sliders: the months, what was put in, what interest added. Nothing is saved.",
+        "operationId" : "getSavingsPlan",
+        "parameters" : [ {
+          "name" : "goalCents",
+          "in" : "query",
+          "description" : "The goal, in cents",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "monthlyCents",
+          "in" : "query",
+          "description" : "Put aside each month, in cents",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "savedCents",
+          "in" : "query",
+          "description" : "Saved already, in cents. Left out: nothing.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "ratePercent",
+          "in" : "query",
+          "description" : "Interest a year, in percent. Left out: none.",
+          "required" : false,
+          "schema" : {
+            "type" : "number"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SavingsPlanResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/money/loan-plan" : {
+      "get" : {
+        "tags" : [ "money" ],
+        "summary" : "The sums of a loan, for sliders: the monthly payment, the interest, the schedule by year, and what paying extra changes. Nothing is saved.",
+        "operationId" : "getLoanPlan",
+        "parameters" : [ {
+          "name" : "principalCents",
+          "in" : "query",
+          "description" : "What is borrowed, in cents",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "ratePercent",
+          "in" : "query",
+          "description" : "Interest a year, in percent: 3.4",
+          "required" : true,
+          "schema" : {
+            "type" : "number"
+          }
+        }, {
+          "name" : "years",
+          "in" : "query",
+          "description" : "Over how many years, 1 to 50",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "extraCents",
+          "in" : "query",
+          "description" : "Paid on top each month, in cents. Left out: nothing.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LoanPlanResponse"
                 }
               }
             }
@@ -1313,6 +2702,92 @@
         }
       }
     },
+    "/v1/circles/{id}/splits" : {
+      "get" : {
+        "tags" : [ "splits" ],
+        "summary" : "The splits in a circle you can see, last changed first",
+        "operationId" : "getSplits",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageSplitBriefResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/sheets" : {
+      "get" : {
+        "tags" : [ "sheets" ],
+        "summary" : "The sheets in a circle you can see, last changed first",
+        "operationId" : "getSheets",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageSheetBriefResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/search" : {
       "get" : {
         "tags" : [ "home" ],
@@ -1399,6 +2874,43 @@
         }
       }
     },
+    "/v1/circles/{id}/money" : {
+      "get" : {
+        "tags" : [ "money" ],
+        "summary" : "Money's first page: the month's bills, what is due soon, subscriptions, who owes whom, and the sheets",
+        "operationId" : "getMoney",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MoneyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/checklists" : {
       "get" : {
         "tags" : [ "checklists" ],
@@ -1438,6 +2950,107 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/bills" : {
+      "get" : {
+        "tags" : [ "bills" ],
+        "summary" : "The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions",
+        "operationId" : "getBills",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "show",
+          "in" : "query",
+          "description" : "due, paid or subscriptions. Left out: due.",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/BillShow"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageBillRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/split-payments/{paymentId}" : {
+      "delete" : {
+        "tags" : [ "splits" ],
+        "summary" : "Take back a payment that was marked as made. One that is gone is fine.",
+        "operationId" : "removeSplitPayment",
+        "parameters" : [ {
+          "name" : "paymentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/sheet-rows/{rowId}/papers/{mediaId}" : {
+      "delete" : {
+        "tags" : [ "sheets" ],
+        "summary" : "Take a paper off a row. Its file is removed with it.",
+        "operationId" : "removeSheetRowPaper",
+        "parameters" : [ {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "mediaId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1628,7 +3241,7 @@
       },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page", "checklist" ]
+        "enum" : [ "page", "checklist", "bill", "sheet", "split" ]
       },
       "AboutRequest" : {
         "type" : "object",
@@ -1642,6 +3255,288 @@
           }
         },
         "required" : [ "memberIds" ]
+      },
+      "AudienceChip" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "For some people: who, besides its owner",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "description" : "The first names of people it is hidden from today",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ExpenseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "splitId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "paidBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "paidByYou" : {
+            "type" : "boolean"
+          },
+          "mode" : {
+            "$ref" : "#/components/schemas/ShareMode"
+          },
+          "spentOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "shares" : {
+            "type" : "array",
+            "description" : "Who shares it, and what each one's part comes to",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpenseShareResponse"
+            }
+          },
+          "addedBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "addedBy", "amountCents", "createdAt", "emoji", "id", "mode", "paidBy", "paidByYou", "shares", "spentOn", "splitId", "title" ]
+      },
+      "ExpenseShareResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "weight" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Their weight: 1 for an equal split, their shares, or their exact cents"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What that comes to, in cents. The shares of an expense add up to it."
+          },
+          "you" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "cents", "person", "weight", "you" ]
+      },
+      "PaymentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "from" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "to" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "paidOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "amountCents", "createdAt", "from", "id", "paidOn", "to" ]
+      },
+      "PersonBrief" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ShareMode" : {
+        "type" : "string",
+        "enum" : [ "equal", "shares", "exact" ]
+      },
+      "SplitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "expenses" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many expenses were added"
+          },
+          "totalCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What they come to in all, in cents"
+          },
+          "myBalanceCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Above zero: you are owed this. Below zero: you owe it. Zero: you are even."
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Everyone in the circle who can share a cost, and where each stands",
+            "items" : {
+              "$ref" : "#/components/schemas/StandingResponse"
+            }
+          },
+          "settle" : {
+            "type" : "array",
+            "description" : "The fewest payments that settle everything: yours first, then the largest",
+            "items" : {
+              "$ref" : "#/components/schemas/ToPayResponse"
+            }
+          },
+          "latest" : {
+            "type" : "array",
+            "description" : "The twenty latest expenses. The rest come from the expenses route.",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpenseResponse"
+            }
+          },
+          "paid" : {
+            "type" : "array",
+            "description" : "The twenty latest payments that were made",
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentResponse"
+            }
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "currency", "expenses", "id", "latest", "mine", "myBalanceCents", "paid", "people", "settle", "title", "totalCents", "updatedAt" ]
+      },
+      "StandingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "paidCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What they paid for, in cents"
+          },
+          "shareCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Their share of everything, in cents"
+          },
+          "balanceCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Above zero: they are owed this. Below zero: they owe it. In cents, with the payments already made counted in."
+          },
+          "you" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "balanceCents", "paidCents", "person", "shareCents", "you" ]
+      },
+      "ToPayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "to" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "youPay" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person is the one to pay"
+          },
+          "paysYou" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person is the one paid: they can remind the other"
+          },
+          "remindedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When the one who pays was last reminded"
+          }
+        },
+        "required" : [ "cents", "from", "paysYou", "remindedAt", "to", "youPay" ]
       },
       "CircleResponse" : {
         "type" : "object",
@@ -1877,6 +3772,1282 @@
         },
         "required" : [ "authorizationCode" ]
       },
+      "PaidRequest" : {
+        "type" : "object",
+        "properties" : {
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Which time it was due: the bill's dueOn as the app shows it. A second send of the same tap then changes nothing."
+          },
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Whose share. Left out: your own, or the whole bill when you pay no share of it."
+          },
+          "everyone" : {
+            "type" : "boolean",
+            "description" : "True to mark every share at once"
+          },
+          "paid" : {
+            "type" : "boolean",
+            "description" : "False to take it back. Left out: true."
+          }
+        },
+        "required" : [ "dueOn" ]
+      },
+      "BillResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "payee" : {
+            "type" : "string",
+            "description" : "Who it is paid to: Elektro Ljubljana"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What is due now, or what was paid last for a bill that is done, in cents"
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "paid" : {
+            "type" : "boolean",
+            "description" : "True when nothing is due: a bill that came once and is paid"
+          },
+          "paidAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "paidBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Repeat"
+          },
+          "everyMonths" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "For every few months: how many"
+          },
+          "dueDay" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The day of the month it comes round on"
+          },
+          "subscription" : {
+            "type" : "boolean"
+          },
+          "yearCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What it costs in a year, in cents. Null for a bill that comes once."
+          },
+          "pays" : {
+            "$ref" : "#/components/schemas/PaidHow"
+          },
+          "remindDays" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Remind this many days before it is due. Null for no reminder."
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "payUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The payee's own page for paying, which Pay opens"
+          },
+          "iban" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "shares" : {
+            "type" : "array",
+            "description" : "Who pays, and whether each has. One person is someone paying all of it.",
+            "items" : {
+              "$ref" : "#/components/schemas/ShareResponse"
+            }
+          },
+          "myShare" : {
+            "description" : "The signed-in person's own share, when they pay one",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ShareResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "history" : {
+            "type" : "array",
+            "description" : "The last six times it was due, the oldest first, the one shown now included",
+            "items" : {
+              "$ref" : "#/components/schemas/PastDueResponse"
+            }
+          },
+          "usualCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What it usually comes to: the average of those, in cents. Null with fewer than two."
+          },
+          "changeCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How much more (or, below zero, less) than the time before, in cents"
+          },
+          "links" : {
+            "type" : "array",
+            "description" : "What it is linked to: its login in the Vault, its invoice in the Library",
+            "items" : {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }
+          },
+          "login" : {
+            "description" : "The first linked thing in the Vault: its login",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "invoice" : {
+            "description" : "The first linked thing in the Library: its invoice",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "amountCents", "canEdit", "changeCents", "chip", "circleId", "currency", "dueDay", "dueOn", "emoji", "everyMonths", "history", "iban", "id", "invoice", "links", "login", "mine", "myShare", "note", "paid", "paidAt", "paidBy", "payUrl", "payee", "pays", "reference", "remindDays", "repeat", "shares", "subscription", "title", "updatedAt", "usualCents", "yearCents" ]
+      },
+      "PaidHow" : {
+        "type" : "string",
+        "enum" : [ "by_hand", "standing_order", "direct_debit" ]
+      },
+      "PastDueResponse" : {
+        "type" : "object",
+        "properties" : {
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "paid" : {
+            "type" : "boolean"
+          },
+          "current" : {
+            "type" : "boolean",
+            "description" : "True for the one the bill shows now"
+          }
+        },
+        "required" : [ "amountCents", "current", "dueOn", "paid" ]
+      },
+      "Repeat" : {
+        "type" : "string",
+        "enum" : [ "once", "monthly", "months", "yearly" ]
+      },
+      "ShareResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "parts" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Their part of the whole: 1 and 1 is half each"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What that comes to for the amount due now, in cents. The shares add up to the amount."
+          },
+          "paid" : {
+            "type" : "boolean"
+          },
+          "paidAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "paidBy" : {
+            "description" : "Who marked it paid: usually themselves",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True for the signed-in person's own share"
+          }
+        },
+        "required" : [ "cents", "paid", "paidAt", "paidBy", "parts", "person", "you" ]
+      },
+      "ThingBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done"
+          }
+        }
+      },
+      "NewSplitRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "Three letters. Left out: EUR.",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          }
+        },
+        "required" : [ "circleId", "clientId", "title" ]
+      },
+      "NewPaymentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          },
+          "paidOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it was paid. Left out: today."
+          }
+        },
+        "required" : [ "amountCents", "clientId", "from", "to" ]
+      },
+      "NewExpenseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 16,
+            "minLength" : 0
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          },
+          "paidBy" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Who paid. Left out: you."
+          },
+          "mode" : {
+            "$ref" : "#/components/schemas/ShareMode",
+            "description" : "Left out: equally"
+          },
+          "shares" : {
+            "type" : "array",
+            "description" : "Who shares it. Left out, for an equal split: everyone in the circle.",
+            "items" : {
+              "$ref" : "#/components/schemas/ShareRequest"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "spentOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it was spent. Left out: today."
+          }
+        },
+        "required" : [ "amountCents", "clientId", "title" ]
+      },
+      "ShareRequest" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "weight" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "For a split by shares: how many shares are theirs, 1 to 1,000",
+            "maximum" : 1000,
+            "minimum" : 1
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "For exact amounts: theirs, in cents. They must add up to what it cost.",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          }
+        },
+        "required" : [ "memberId" ]
+      },
+      "LoanRequest" : {
+        "type" : "object",
+        "properties" : {
+          "principalCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          },
+          "ratePercent" : {
+            "type" : "number",
+            "maximum" : 100,
+            "minimum" : 0
+          },
+          "years" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 50,
+            "minimum" : 1
+          },
+          "extraCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 0
+          }
+        },
+        "required" : [ "principalCents", "ratePercent", "years" ]
+      },
+      "NewSheetRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Left out with a template: the template's own name",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "Three letters. Left out: EUR.",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "template" : {
+            "$ref" : "#/components/schemas/SheetTemplate",
+            "description" : "Start from a template, with its columns, formulas and sample rows. Left out: a blank sheet."
+          },
+          "loan" : {
+            "$ref" : "#/components/schemas/LoanRequest",
+            "description" : "Keep a loan plan as a sheet: a row for each year, with these numbers"
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for the dates in a template's sample rows"
+          }
+        },
+        "required" : [ "circleId", "clientId" ]
+      },
+      "SheetTemplate" : {
+        "type" : "string",
+        "enum" : [ "monthly_budget", "trip_budget", "party_budget", "loan", "savings", "tax_checklist", "car_costs" ]
+      },
+      "CellKind" : {
+        "type" : "string",
+        "enum" : [ "empty", "text", "number", "money", "date", "tick", "person", "problem" ]
+      },
+      "CellResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/CellKind"
+          },
+          "text" : {
+            "type" : [ "string", "null" ]
+          },
+          "number" : {
+            "type" : [ "number", "null" ]
+          },
+          "cents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Money, in cents of the sheet's currency"
+          },
+          "date" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "ticked" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "people" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "problem" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why it can't be worked out, in plain words: Price is empty"
+          }
+        },
+        "required" : [ "cents", "date", "kind", "number", "people", "problem", "text", "ticked" ]
+      },
+      "ColumnKind" : {
+        "type" : "string",
+        "enum" : [ "text", "number", "money", "date", "tick", "choice", "person", "formula" ]
+      },
+      "ColumnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ColumnKind"
+          },
+          "options" : {
+            "type" : "array",
+            "description" : "For a choice: what can be chosen",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "formula" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a formula column: the formula, written with column names"
+          },
+          "parts" : {
+            "type" : "array",
+            "description" : "For a formula column: the formula as chips to draw",
+            "items" : {
+              "$ref" : "#/components/schemas/PartResponse"
+            }
+          },
+          "says" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a formula column: the formula as a sentence"
+          },
+          "problem" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a formula column whose formula can't be used: why"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/Summary"
+          },
+          "total" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TotalResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "formula", "id", "kind", "name", "options", "parts", "problem", "says", "summary", "total" ]
+      },
+      "PartKind" : {
+        "type" : "string",
+        "enum" : [ "function", "column", "sign", "number", "text", "words", "bracket" ]
+      },
+      "PartResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/PartKind"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "columnId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For a column chip: which column"
+          }
+        },
+        "required" : [ "columnId", "kind", "text" ]
+      },
+      "RowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Its place in the tab, counting from 1"
+          },
+          "cells" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/CellResponse"
+            },
+            "description" : "What each column holds in this row, by column id. Formula columns are worked out."
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "papers" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many receipts and papers are kept with it"
+          }
+        },
+        "required" : [ "cells", "id", "note", "number", "papers" ]
+      },
+      "SheetResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "template" : {
+            "description" : "The template it started from",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SheetTemplate"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "tag" : {
+            "type" : "string",
+            "description" : "One word for the kind of sheet it is: Trip, Monthly. Empty for a sheet that started blank."
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "editedBy" : {
+            "description" : "Who changed it last",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "here" : {
+            "type" : "array",
+            "description" : "Who else has it open right now",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "tabs" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TabBriefResponse"
+            }
+          },
+          "tab" : {
+            "$ref" : "#/components/schemas/TabResponse",
+            "description" : "The tab that was asked for, or the first"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "currency", "editedBy", "here", "id", "mine", "tab", "tabs", "tag", "template", "title", "updatedAt" ]
+      },
+      "Summary" : {
+        "type" : "string",
+        "enum" : [ "none", "sum", "avg", "count", "min", "max", "ticked" ]
+      },
+      "TabBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "rows" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "id", "name", "rows" ]
+      },
+      "TabResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ColumnResponse"
+            }
+          },
+          "tiles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TileResponse"
+            }
+          },
+          "rowCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "rows" : {
+            "type" : "array",
+            "description" : "The first rows. The rest come from the rows route, a page at a time.",
+            "items" : {
+              "$ref" : "#/components/schemas/RowResponse"
+            }
+          },
+          "nextRows" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this as `cursor` to the rows route for the rows that follow. Null when these are all."
+          }
+        },
+        "required" : [ "columns", "id", "name", "nextRows", "rowCount", "rows", "tiles" ]
+      },
+      "TileResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "formula" : {
+            "type" : "string"
+          },
+          "parts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PartResponse"
+            }
+          },
+          "says" : {
+            "type" : "string"
+          },
+          "cell" : {
+            "$ref" : "#/components/schemas/CellResponse"
+          },
+          "leftOut" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "leftOutSays" : {
+            "type" : [ "string", "null" ]
+          },
+          "ofTileId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The tile it is shown against: Paid, of Planned"
+          },
+          "ofName" : {
+            "type" : [ "string", "null" ]
+          },
+          "ofCell" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CellResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "cell", "formula", "id", "leftOut", "leftOutSays", "name", "ofCell", "ofName", "ofTileId", "parts", "says" ]
+      },
+      "TotalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cell" : {
+            "$ref" : "#/components/schemas/CellResponse"
+          },
+          "of" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a count of ticks: out of how many rows. 2 of 6."
+          },
+          "parts" : {
+            "type" : "array",
+            "description" : "The same as chips: SUM, Cost",
+            "items" : {
+              "$ref" : "#/components/schemas/PartResponse"
+            }
+          },
+          "says" : {
+            "type" : "string",
+            "description" : "What it does, as a sentence: Adds up every row in Cost."
+          },
+          "leftOut" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many rows were left out because they couldn't be worked out"
+          },
+          "leftOutSays" : {
+            "type" : [ "string", "null" ],
+            "description" : "Said when rows were left out: 1 row left out: Price is empty"
+          }
+        },
+        "required" : [ "cell", "leftOut", "leftOutSays", "of", "parts", "says" ]
+      },
+      "NewTabRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "copyColumnsOf" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Give it the columns and tiles of this tab of the same sheet, without its rows: next month's budget"
+          }
+        },
+        "required" : [ "clientId", "name" ]
+      },
+      "NewTileRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "formula" : {
+            "type" : "string",
+            "description" : "A formula that gives one number for the tab: SUM([Cost]) - SUMIF([Paid], [Cost])",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "ofTileId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Show it against this other tile of the tab: Paid, of Planned"
+          }
+        },
+        "required" : [ "clientId", "formula", "name" ]
+      },
+      "NewRowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cells" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What to put in which column, by column id. Text and a choice: a string. A number: a number or a string like \"12.5\". Money: whole cents. A date: \"2027-01-15\". A tick: true or false. A person: a member id, or a list of them."
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Put it just before this row. Left out: at the end."
+          }
+        },
+        "required" : [ "clientId" ]
+      },
+      "RowChangedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "row" : {
+            "$ref" : "#/components/schemas/RowResponse"
+          },
+          "rowCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "tiles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TileResponse"
+            }
+          },
+          "totals" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/TotalResponse"
+            },
+            "description" : "The row of totals, by column id"
+          }
+        },
+        "required" : [ "row", "rowCount", "tiles", "totals" ]
+      },
+      "FormulaRequest" : {
+        "type" : "object",
+        "properties" : {
+          "formula" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "columnId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The formula column being changed, when it is one"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for TODAY()"
+          }
+        },
+        "required" : [ "formula" ]
+      },
+      "ColumnBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ColumnKind"
+          }
+        },
+        "required" : [ "id", "kind", "name" ]
+      },
+      "FormulaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "understood" : {
+            "type" : "boolean",
+            "description" : "False when the formula couldn't be read or the question wasn't understood"
+          },
+          "formula" : {
+            "type" : [ "string", "null" ],
+            "description" : "The formula, written with column names, to save as it is"
+          },
+          "oneAnswer" : {
+            "type" : "boolean",
+            "description" : "True when it gives one number for the whole tab (a tile); false when it is worked out for each row (a column)"
+          },
+          "parts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PartResponse"
+            }
+          },
+          "says" : {
+            "type" : [ "string", "null" ]
+          },
+          "answer" : {
+            "description" : "The answer: the number for a tile, the first row's for a column",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CellResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "leftOut" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "leftOutSays" : {
+            "type" : [ "string", "null" ]
+          },
+          "problem" : {
+            "type" : [ "string", "null" ],
+            "description" : "What is wrong with it, or how to ask instead, in a sentence"
+          },
+          "examples" : {
+            "type" : "array",
+            "description" : "Questions this tab can answer, shown when one wasn't understood",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ColumnBriefResponse"
+            }
+          },
+          "functions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FunctionResponse"
+            }
+          }
+        },
+        "required" : [ "answer", "columns", "examples", "formula", "functions", "leftOut", "leftOutSays", "oneAnswer", "parts", "problem", "says", "understood" ]
+      },
+      "FunctionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "How it is typed: SUMIF"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "What its chip says: SUM IF"
+          },
+          "says" : {
+            "type" : "string"
+          },
+          "example" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "example", "label", "name", "says" ]
+      },
+      "NewColumnRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ColumnKind",
+            "description" : "Left out: text"
+          },
+          "options" : {
+            "type" : "array",
+            "description" : "For a choice: what can be chosen",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 40,
+              "minLength" : 0
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "formula" : {
+            "type" : "string",
+            "description" : "For a formula column: the formula, written with column names: [Price] * [Qty]",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/Summary",
+            "description" : "What stands under it in the row of totals. Left out: nothing."
+          }
+        },
+        "required" : [ "clientId", "name" ]
+      },
+      "AskRequest" : {
+        "type" : "object",
+        "properties" : {
+          "question" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for TODAY()"
+          }
+        },
+        "required" : [ "question" ]
+      },
+      "NewPaperRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "mediaId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A photo or a document you uploaded"
+          }
+        },
+        "required" : [ "clientId", "mediaId" ]
+      },
+      "MediaKind" : {
+        "type" : "string",
+        "enum" : [ "photo", "video", "file", "audio" ]
+      },
+      "MediaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MediaKind"
+          },
+          "url" : {
+            "type" : "string",
+            "description" : "A picture: the photo itself, or null for a file with no picture"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The same picture, small, for lists and grids"
+          },
+          "fileUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a video, a document or a recording: the file itself"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "width" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "height" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "durationSeconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "bytes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "bytes", "contentType", "durationSeconds", "fileName", "fileUrl", "height", "id", "kind", "thumbUrl", "url", "width" ]
+      },
+      "RowCardResponse" : {
+        "type" : "object",
+        "properties" : {
+          "sheetId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sheetTitle" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "tabId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "tabName" : {
+            "type" : "string"
+          },
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ColumnResponse"
+            }
+          },
+          "row" : {
+            "$ref" : "#/components/schemas/RowResponse"
+          },
+          "papers" : {
+            "type" : "array",
+            "description" : "Receipts and papers kept with the row. Twenty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/MediaResponse"
+            }
+          },
+          "of" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many rows the tab has: Row 3 of 6"
+          },
+          "previous" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RowLinkResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "next" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RowLinkResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "canEdit", "columns", "currency", "next", "of", "papers", "previous", "row", "sheetId", "sheetTitle", "tabId", "tabName" ]
+      },
+      "RowLinkResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "label" ]
+      },
       "NewPageRequest" : {
         "type" : "object",
         "properties" : {
@@ -1904,28 +5075,6 @@
           }
         },
         "required" : [ "circleId", "clientId" ]
-      },
-      "AudienceChip" : {
-        "type" : "object",
-        "properties" : {
-          "audience" : {
-            "$ref" : "#/components/schemas/Audience"
-          },
-          "people" : {
-            "type" : "array",
-            "description" : "For some people: who, besides its owner",
-            "items" : {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }
-          },
-          "hiddenFrom" : {
-            "type" : "array",
-            "description" : "The first names of people it is hidden from today",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }
       },
       "PageResponse" : {
         "type" : "object",
@@ -1959,25 +5108,6 @@
           }
         },
         "required" : [ "body", "canEdit", "chip", "circleId", "id", "mine", "title", "updatedAt" ]
-      },
-      "PersonBrief" : {
-        "type" : "object",
-        "properties" : {
-          "memberId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "avatarUrl" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "MediaKind" : {
-        "type" : "string",
-        "enum" : [ "photo", "video", "file", "audio" ]
       },
       "StartUploadRequest" : {
         "type" : "object",
@@ -2350,6 +5480,265 @@
         },
         "required" : [ "clientId", "text" ]
       },
+      "NewBillRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "What to call it: Electricity. Left out: who it is paid to.",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "payee" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 16,
+            "minLength" : 0
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "Three letters. Left out: EUR.",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Repeat",
+            "description" : "Left out: once"
+          },
+          "everyMonths" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "For every few months: how many, 2 to 24",
+            "maximum" : 24,
+            "minimum" : 2
+          },
+          "subscription" : {
+            "type" : "boolean"
+          },
+          "pays" : {
+            "$ref" : "#/components/schemas/PaidHow",
+            "description" : "Left out: by hand"
+          },
+          "remindDays" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Remind this many days before it is due. Left out: no reminder.",
+            "maximum" : 30,
+            "minimum" : 0
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "payUrl" : {
+            "type" : "string",
+            "description" : "The payee's own page for paying",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "iban" : {
+            "type" : "string",
+            "maxLength" : 42,
+            "minLength" : 0
+          },
+          "reference" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "shares" : {
+            "type" : "array",
+            "description" : "Who pays. Left out: you pay all of it.",
+            "items" : {
+              "$ref" : "#/components/schemas/ShareRequest"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "amountCents", "circleId", "clientId", "dueOn" ]
+      },
+      "ReadRequest" : {
+        "type" : "object",
+        "properties" : {
+          "lines" : {
+            "type" : "array",
+            "description" : "The lines of text the phone read off the photo or the PDF, top to bottom",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 500,
+              "minLength" : 0
+            },
+            "maxItems" : 400,
+            "minItems" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for a due date written without its year. The API's own day when left out."
+          }
+        },
+        "required" : [ "lines" ]
+      },
+      "BillReadingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "payee" : {
+            "description" : "Who to pay",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReadTextResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "amountCents" : {
+            "description" : "The amount to pay",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReadAmountResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The currency found next to an amount, or EUR when none was"
+          },
+          "dueOn" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReadDayResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "iban" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReadTextResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "reference" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReadTextResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "repeat" : {
+            "description" : "Set when the text says, or the kind of bill suggests, how it comes round",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ReadRepeatResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "A name for the bill: Electricity, Netflix, or who to pay"
+          },
+          "emoji" : {
+            "type" : "string",
+            "description" : "An emoji for it"
+          }
+        },
+        "required" : [ "amountCents", "currency", "dueOn", "emoji", "iban", "payee", "reference", "repeat", "title" ]
+      },
+      "ReadAmountResponse" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The amount, in cents"
+          },
+          "line" : {
+            "type" : "string"
+          },
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "line", "lineNumber", "value" ]
+      },
+      "ReadDayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "line" : {
+            "type" : "string"
+          },
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "line", "lineNumber", "value" ]
+      },
+      "ReadRepeatResponse" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "$ref" : "#/components/schemas/Repeat"
+          },
+          "line" : {
+            "type" : "string"
+          },
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "line", "lineNumber", "value" ]
+      },
+      "ReadTextResponse" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The line it was read from, as it was sent"
+          },
+          "lineNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Which of the lines sent that was, counting from 0"
+          }
+        },
+        "required" : [ "line", "lineNumber", "value" ]
+      },
       "TokenRequest" : {
         "type" : "object",
         "properties" : {
@@ -2397,6 +5786,189 @@
           }
         },
         "required" : [ "email" ]
+      },
+      "RenameRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "title" ]
+      },
+      "ExpenseChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 1
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 16,
+            "minLength" : 0
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          },
+          "paidBy" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "mode" : {
+            "$ref" : "#/components/schemas/ShareMode"
+          },
+          "shares" : {
+            "type" : "array",
+            "description" : "Who shares it, all of them: this replaces who shared it before",
+            "items" : {
+              "$ref" : "#/components/schemas/ShareRequest"
+            },
+            "maxItems" : 30,
+            "minItems" : 1
+          },
+          "spentOn" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "SheetChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "currency" : {
+            "type" : "string",
+            "maxLength" : 3,
+            "minLength" : 0
+          }
+        }
+      },
+      "TileChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 1
+          },
+          "formula" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 1
+          },
+          "ofTileId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "removeOf" : {
+            "type" : "boolean",
+            "description" : "True to show it on its own again"
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Move it to just before this tile"
+          },
+          "toEnd" : {
+            "type" : "boolean",
+            "description" : "Move it to the end"
+          }
+        }
+      },
+      "TabChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 1
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Move it to just before this tab"
+          },
+          "toEnd" : {
+            "type" : "boolean",
+            "description" : "Move it to the end"
+          }
+        }
+      },
+      "RowChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cells" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "Only the cells that change, by column id; the others stay as they are. Null empties a cell."
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Move it to just before this row"
+          },
+          "toEnd" : {
+            "type" : "boolean",
+            "description" : "Move it to the end"
+          }
+        }
+      },
+      "ColumnChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 1
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ColumnKind",
+            "description" : "A column that holds values keeps its kind, except between text and a choice"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 40,
+              "minLength" : 0
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "formula" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/Summary"
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Move it to just before this column"
+          },
+          "toEnd" : {
+            "type" : "boolean",
+            "description" : "Move it to the end"
+          }
+        }
       },
       "PageChangeRequest" : {
         "type" : "object",
@@ -2485,17 +6057,6 @@
           }
         }
       },
-      "RenameRequest" : {
-        "type" : "object",
-        "properties" : {
-          "title" : {
-            "type" : "string",
-            "maxLength" : 200,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "title" ]
-      },
       "ItemChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -2545,44 +6106,341 @@
           }
         }
       },
-      "ThingBrief" : {
+      "BillChangeRequest" : {
         "type" : "object",
         "properties" : {
-          "id" : {
+          "title" : {
             "type" : "string",
-            "format" : "uuid"
+            "maxLength" : 200,
+            "minLength" : 1
           },
-          "circleId" : {
+          "payee" : {
             "type" : "string",
-            "format" : "uuid"
+            "maxLength" : 120,
+            "minLength" : 0
           },
-          "kind" : {
-            "$ref" : "#/components/schemas/ThingKind"
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 16,
+            "minLength" : 0
           },
-          "place" : {
-            "$ref" : "#/components/schemas/Place"
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What is due now, in cents",
+            "maximum" : 100000000000,
+            "minimum" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "When it is due now. It comes round on this day of the month from then on."
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Repeat"
+          },
+          "everyMonths" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 24,
+            "minimum" : 2
+          },
+          "subscription" : {
+            "type" : "boolean"
+          },
+          "pays" : {
+            "$ref" : "#/components/schemas/PaidHow"
+          },
+          "remindDays" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 30,
+            "minimum" : 0
+          },
+          "removeReminder" : {
+            "type" : "boolean"
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "payUrl" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "removePayUrl" : {
+            "type" : "boolean"
+          },
+          "iban" : {
+            "type" : "string",
+            "maxLength" : 42,
+            "minLength" : 0
+          },
+          "reference" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "shares" : {
+            "type" : "array",
+            "description" : "Who pays, all of them: this replaces the shares there were",
+            "items" : {
+              "$ref" : "#/components/schemas/ShareRequest"
+            },
+            "maxItems" : 30,
+            "minItems" : 1
+          }
+        }
+      },
+      "PageExpenseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExpenseResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "PageRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RowResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "TemplateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "$ref" : "#/components/schemas/SheetTemplate"
           },
           "title" : {
             "type" : "string"
           },
-          "updatedAt" : {
-            "type" : "string",
-            "format" : "date-time"
+          "emoji" : {
+            "type" : "string"
           },
-          "mine" : {
-            "type" : "boolean"
+          "says" : {
+            "type" : "string"
           },
-          "canEdit" : {
-            "type" : "boolean"
-          },
-          "chip" : {
-            "$ref" : "#/components/schemas/AudienceChip"
-          },
-          "glance" : {
-            "type" : [ "string", "null" ],
-            "description" : "Where it stands, in a few words: 4 of 9 done"
+          "live" : {
+            "type" : "boolean",
+            "description" : "True for the ones with sliders to try before keeping them: the loan and the savings plan"
           }
-        }
+        },
+        "required" : [ "code", "emoji", "live", "says", "title" ]
+      },
+      "SavingsPlanResponse" : {
+        "type" : "object",
+        "properties" : {
+          "goalCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "savedCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "monthlyCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ratePercent" : {
+            "type" : "number"
+          },
+          "reached" : {
+            "type" : "boolean",
+            "description" : "False when the goal isn't reached in a hundred years at this pace"
+          },
+          "months" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many months until the goal is reached. Zero when it isn't."
+          },
+          "putInCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What was put aside by then, the start included, in cents"
+          },
+          "interestCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What the interest added, in cents"
+          },
+          "chart" : {
+            "type" : "array",
+            "description" : "What is saved at the end of each year",
+            "items" : {
+              "$ref" : "#/components/schemas/SavingsYearResponse"
+            }
+          }
+        },
+        "required" : [ "chart", "goalCents", "interestCents", "monthlyCents", "months", "putInCents", "ratePercent", "reached", "savedCents" ]
+      },
+      "SavingsYearResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "savedCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "savedCents", "year" ]
+      },
+      "LoanFiguresResponse" : {
+        "type" : "object",
+        "properties" : {
+          "paymentCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What is paid each month, in cents"
+          },
+          "payments" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many payments it takes, the last one included"
+          },
+          "lastPaymentCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The last payment, which settles what is left; often smaller than the others"
+          },
+          "interestCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "All the interest paid, in cents"
+          },
+          "totalCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Everything paid: what was borrowed and the interest, in cents"
+          }
+        },
+        "required" : [ "interestCents", "lastPaymentCents", "paymentCents", "payments", "totalCents" ]
+      },
+      "LoanPlanResponse" : {
+        "type" : "object",
+        "properties" : {
+          "principalCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ratePercent" : {
+            "type" : "number"
+          },
+          "years" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "extraCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "plan" : {
+            "$ref" : "#/components/schemas/LoanFiguresResponse"
+          },
+          "withExtra" : {
+            "description" : "The same loan with the extra paid each month. Null when no extra was asked about.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LoanFiguresResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "monthsSooner" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How much sooner it is paid off with the extra, to the nearest month. A small last payment counts as the part of a month it is of a full one: 265 payments and a last one of a tenth of the size is 265.1 months, 35 sooner than 300."
+          },
+          "interestSavedCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How much less interest is paid with the extra, in cents"
+          },
+          "chart" : {
+            "type" : "array",
+            "description" : "What is still owed at the end of each year, with and without the extra: the chart",
+            "items" : {
+              "$ref" : "#/components/schemas/LoanPointResponse"
+            }
+          },
+          "schedule" : {
+            "type" : "array",
+            "description" : "The schedule year by year, with the extra when one was asked about. Fifty lines at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/LoanYearResponse"
+            }
+          }
+        },
+        "required" : [ "chart", "extraCents", "interestSavedCents", "monthsSooner", "plan", "principalCents", "ratePercent", "schedule", "withExtra", "years" ]
+      },
+      "LoanPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "owedCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "owedWithExtraCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The same with the extra paid each month. Null when no extra was asked about."
+          }
+        },
+        "required" : [ "owedCents", "owedWithExtraCents", "year" ]
+      },
+      "LoanYearResponse" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "paidCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "interestCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "owedCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "interestCents", "owedCents", "paidCents", "year" ]
       },
       "PersonPageResponse" : {
         "type" : "object",
@@ -2744,6 +6602,141 @@
         },
         "required" : [ "day", "done", "fresh", "items", "left", "onlyYou" ]
       },
+      "PageSplitBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SplitBriefResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "SplitBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "myBalanceCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "currency", "id", "mine", "myBalanceCents", "title", "updatedAt" ]
+      },
+      "PageSheetBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SheetBriefResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "SheetBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "template" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SheetTemplate"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "tag" : {
+            "type" : "string"
+          },
+          "tabs" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "editedBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "headlineName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Its first tile's name: Planned"
+          },
+          "headline" : {
+            "description" : "Its first tile's number: €7,640",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CellResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "currency", "editedBy", "headline", "headlineName", "id", "mine", "tabs", "tag", "template", "title", "updatedAt" ]
+      },
       "SearchHit" : {
         "type" : "object",
         "properties" : {
@@ -2816,6 +6809,190 @@
           }
         }
       },
+      "BillRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "payee" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "paid" : {
+            "type" : "boolean"
+          },
+          "paidAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Repeat"
+          },
+          "subscription" : {
+            "type" : "boolean"
+          },
+          "yearCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "pays" : {
+            "$ref" : "#/components/schemas/PaidHow"
+          },
+          "splitWith" : {
+            "type" : "array",
+            "description" : "The others who pay a share of it: split with Alex",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "myShareCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The signed-in person's own share in cents, when they pay one"
+          },
+          "mySharePaid" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person's own share is paid"
+          },
+          "hasLogin" : {
+            "type" : "boolean",
+            "description" : "True when it is linked to something in the Vault you may see: its login"
+          },
+          "hasInvoice" : {
+            "type" : "boolean",
+            "description" : "True when it is linked to something in the Library you may see: its invoice"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "amountCents", "canEdit", "chip", "circleId", "currency", "dueOn", "emoji", "hasInvoice", "hasLogin", "id", "mine", "myShareCents", "mySharePaid", "paid", "paidAt", "payee", "pays", "repeat", "splitWith", "subscription", "title", "updatedAt", "yearCents" ]
+      },
+      "MoneyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The currency the sums are in: the one most of the circle's bills are kept in"
+          },
+          "otherCurrencies" : {
+            "type" : "array",
+            "description" : "Other currencies there are bills in. Those bills are in the lists, not in the sums.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "monthStart" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The first day of the month the card is about"
+          },
+          "monthTotalCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Everything due in that month, paid or not, in cents"
+          },
+          "monthPaidCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How much of it is paid, in cents"
+          },
+          "dueThisWeekCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Still to pay and due by the end of this week (Sunday), overdue ones included, in cents"
+          },
+          "subscriptionsMonthCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What the subscriptions come to in a month, in cents"
+          },
+          "subscriptionsYearCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What the subscriptions come to in a year, in cents"
+          },
+          "subscriptions" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many subscriptions there are"
+          },
+          "owing" : {
+            "type" : "array",
+            "description" : "Who owes you (above zero) and whom you owe (below zero), from the circle's splits. The five largest.",
+            "items" : {
+              "$ref" : "#/components/schemas/OwingResponse"
+            }
+          },
+          "dueSoon" : {
+            "type" : "array",
+            "description" : "The five bills due soonest that aren't paid",
+            "items" : {
+              "$ref" : "#/components/schemas/BillRowResponse"
+            }
+          },
+          "sheets" : {
+            "type" : "array",
+            "description" : "The six sheets changed last",
+            "items" : {
+              "$ref" : "#/components/schemas/SheetBriefResponse"
+            }
+          }
+        },
+        "required" : [ "currency", "day", "dueSoon", "dueThisWeekCents", "monthPaidCents", "monthStart", "monthTotalCents", "otherCurrencies", "owing", "sheets", "subscriptions", "subscriptionsMonthCents", "subscriptionsYearCents" ]
+      },
+      "OwingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currency" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "cents", "currency", "person" ]
+      },
       "ChecklistRow" : {
         "type" : "object",
         "properties" : {
@@ -2864,6 +7041,26 @@
             "description" : "Send this back as `cursor` to get the next page. Null on the last page."
           }
         }
+      },
+      "BillShow" : {
+        "type" : "string",
+        "enum" : [ "due", "paid", "subscriptions" ]
+      },
+      "PageBillRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BillRowResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
       }
     },
     "securitySchemes" : {
