@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('Terms')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+    <p th:replace="~{legal/parts :: draft}"></p>
+    <h1>Terms</h1>
+    <p class="lede">The short version: what you keep in Homeport is yours, you decide who sees it, and you are responsible for what you put in and who you share it with.</p>
+
+    <h2>Who can use it</h2>
+    <p>You need to be 13 or older to have an account. Children can be in a family's circle without an account: an adult adds them and looks after what is kept for them.</p>
+
+    <h2>Your things</h2>
+    <p>Notes, photos, files, plans, bills and passwords you keep here stay yours. We store them so that you and the people you choose can see them, and for nothing else. We don't sell them and we don't show adverts.</p>
+
+    <h2>Sharing</h2>
+    <p>Everything starts as yours alone, or as the circle you made says. Sharing a thing lets the people you chose see it and, if you say so, change it. Only share what you have the right to share.</p>
+
+    <h2>Circles</h2>
+    <p>A circle belongs to the people in it. Its owner, and in a family its adults, can add and remove people. When you leave a circle, what was only yours leaves with you.</p>
+
+    <h2>The Vault</h2>
+    <p>What you keep in the Vault is locked on your device with a key only you and the people you share it with hold. We can't read it and can't recover it for you if every key is lost.</p>
+
+    <h2>Ending it</h2>
+    <p>You can delete your account at any time, in the app or <a th:href="@{/delete-account}">here</a>. We may close an account that is used to harm others or to break the law.</p>
+
+    <h2>Questions</h2>
+    <p>You can <span th:replace="~{legal/parts :: reach}"></span>.</p>
+    <nav th:replace="~{legal/parts :: links}"></nav>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>

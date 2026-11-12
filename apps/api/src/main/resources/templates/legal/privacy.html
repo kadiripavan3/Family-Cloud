@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('Privacy')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+    <p th:replace="~{legal/parts :: draft}"></p>
+    <h1>Privacy</h1>
+    <p class="lede">Homeport is private by design: each thing is seen by you and by the people you chose, and by nobody else.</p>
+
+    <h2>What we keep</h2>
+    <ul>
+      <li>Your account: the email address or the Apple or Google sign-in you use, shared with Journey if you use both.</li>
+      <li>Your profile: your name and, if you add one, your picture.</li>
+      <li>What you keep: notes, photos, videos, files, plans, bills, sheets and what is in your Vault.</li>
+      <li>The circles you are in, and who each thing is shared with.</li>
+      <li>If you allow notifications: an address for your phone, so it can be sent to.</li>
+    </ul>
+
+    <h2>What we can and can't read</h2>
+    <p>What is in the Vault is locked on your device before it reaches us. We can't read it. Everything else is private to the people you chose, and is stored so that the service can show it to them, search it for you and remind you of it. The people who run Homeport don't look at it.</p>
+
+    <h2>Children</h2>
+    <p>Accounts are for people aged 13 and over. A younger child can be in a family's circle as a name and a picture that an adult adds; the child has no account, and the adults see and decide what is kept.</p>
+
+    <h2>Who else sees it</h2>
+    <p>Nobody, unless you share it: with people in your circle, with a guest for a set time, or by a link you make. We use other companies to store files and to send notifications and email; they handle the data only to do that.</p>
+
+    <h2>Taking it with you, and deleting it</h2>
+    <p>You can export what you keep, and you can delete your account in the app or <a th:href="@{/delete-account}">here</a>. Deleting removes your profile and what was yours; files follow within minutes.</p>
+
+    <h2>Questions</h2>
+    <p>You can <span th:replace="~{legal/parts :: reach}"></span>.</p>
+    <nav th:replace="~{legal/parts :: links}"></nav>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>

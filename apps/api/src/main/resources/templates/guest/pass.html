@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('Guest pass')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+
+    <th:block th:if="${state == 'gone'}">
+      <h1>This pass isn't there</h1>
+      <p class="lede">The link may have been mistyped, or the pass was taken back. Ask the person who sent it for a new one.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'early'}">
+      <h1 th:text="${'Hello, ' + guest}">Hello</h1>
+      <p class="lede">This pass from <b th:text="${circle}">a circle</b> hasn't started yet. Come back a little later.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'ended'}">
+      <h1>This pass has ended</h1>
+      <p class="lede">It was for a set time, and that time is over. Nothing is kept on this phone.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'elsewhere'}">
+      <h1>This pass is open on another phone</h1>
+      <p class="lede">A pass works on one phone. Ask the person who sent it for a new one if you changed phones.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'locked'}">
+      <h1>Too many wrong codes</h1>
+      <p class="lede">This pass is locked. Ask the person who sent it for a new one.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'code'}">
+      <h1 th:text="${'Hello, ' + guest}">Hello</h1>
+      <p class="lede"><b th:text="${circle}">A circle</b> shared a few things with you. Type the code they gave you.</p>
+      <form method="post" th:action="@{'/g/' + ${token}}">
+        <label for="code">The four-digit code</label>
+        <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="4" required>
+        <p class="problem" role="alert" th:if="${wrong}">That isn't the code. Try again.</p>
+        <button class="btn big" type="submit">Open</button>
+      </form>
+      <p class="note">No account needed. The pass works on this phone only, and stops by itself.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'open'}">
+      <h1 th:text="${'Hello, ' + guest}">Hello</h1>
+      <p class="lede">From <b th:text="${circle}">a circle</b>. <span th:text="${until}">It stops tonight.</span></p>
+      <article th:each="card : ${cards}">
+        <p class="eyebrow" th:text="${card.label}">Page</p>
+        <h2 th:text="${card.title}">Title</h2>
+        <p class="body" th:if="${card.text != null}" th:text="${card.text}" style="white-space: pre-wrap">Words</p>
+      </article>
+      <p class="empty" th:if="${cards.isEmpty()}">Nothing is on this pass any more.</p>
+    </th:block>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>

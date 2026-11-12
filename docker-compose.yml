@@ -1,0 +1,21 @@
+# The local database for Homeport. scripts/dev.sh starts it for you; by hand: docker compose up -d
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: homeport
+      POSTGRES_PASSWORD: homeport
+      POSTGRES_DB: homeport
+    ports:
+      - "5432:5432"
+    volumes:
+      - homeport-db:/var/lib/postgresql/data
+      - ./scripts/db-init.sql:/docker-entrypoint-initdb.d/10-homeport-test.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homeport -d homeport"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  homeport-db:

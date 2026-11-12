@@ -1,0 +1,2201 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Journey API",
+    "description" : "Backend of the Journey app.",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "security" : [ {
+    "bearer" : [ ]
+  } ],
+  "tags" : [ {
+    "name" : "guest passes",
+    "description" : "Chosen things for someone outside the circle, for a set time"
+  }, {
+    "name" : "me",
+    "description" : "The signed-in person and their profile"
+  }, {
+    "name" : "local-auth",
+    "description" : "Test sign-in. Exists only in local mode."
+  }, {
+    "name" : "things",
+    "description" : "What every kind of thing shares: who can see it"
+  }, {
+    "name" : "home",
+    "description" : "What Home shows across every place"
+  }, {
+    "name" : "media",
+    "description" : "Uploading photos, videos, documents and recordings"
+  }, {
+    "name" : "pages",
+    "description" : "Pages of words"
+  }, {
+    "name" : "circles",
+    "description" : "Circles and the people in them"
+  } ],
+  "paths" : {
+    "/v1/things/{id}/audience" : {
+      "get" : {
+        "tags" : [ "things" ],
+        "summary" : "Who can see a thing: what the audience sheet shows",
+        "operationId" : "getAudience",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AudienceResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "things" ],
+        "summary" : "Change who can see a thing. Only its owner can.",
+        "operationId" : "saveAudience",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AudienceChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AudienceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/members/{id}/owner" : {
+      "put" : {
+        "tags" : [ "circles" ],
+        "summary" : "The owner hands the circle to another adult",
+        "operationId" : "handOverCircle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/settings" : {
+      "get" : {
+        "tags" : [ "Account and safety" ],
+        "summary" : "Your notification choices",
+        "operationId" : "getSettings",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Account and safety" ],
+        "summary" : "Change your settings. Send the ones that change; the rest stay as they are.",
+        "operationId" : "saveSettings",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SettingsChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/profile" : {
+      "put" : {
+        "tags" : [ "me" ],
+        "summary" : "Create the profile, or change it",
+        "operationId" : "saveProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SaveProfileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/devices" : {
+      "put" : {
+        "tags" : [ "Push notifications" ],
+        "summary" : "This device may get pushes for the signed-in person. Sending it again just refreshes it.",
+        "operationId" : "registerDevice",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "Push notifications" ],
+        "summary" : "Stop pushing to this device, for example when signing out",
+        "operationId" : "forgetDevice",
+        "parameters" : [ {
+          "name" : "token",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/me/apple-sign-in" : {
+      "put" : {
+        "tags" : [ "Account and safety" ],
+        "summary" : "After \"Continue with Apple\": hand over Apple's one-time code, so deleting the account can tell Apple too",
+        "operationId" : "rememberAppleSignIn",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AppleSignInRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/join/{code}" : {
+      "get" : {
+        "tags" : [ "circles" ],
+        "summary" : "What a join link is for, before joining",
+        "operationId" : "previewJoin",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JoinPreview"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "circles" ],
+        "summary" : "Join the circle a link is for. Joining twice is fine.",
+        "operationId" : "joinCircle",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/join-link" : {
+      "put" : {
+        "tags" : [ "circles" ],
+        "summary" : "Make a new link for joining. The old one stops working.",
+        "operationId" : "renewJoinLink",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pages" : {
+      "post" : {
+        "tags" : [ "pages" ],
+        "summary" : "Write a new page",
+        "operationId" : "createPage",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewPageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/media/uploads" : {
+      "post" : {
+        "tags" : [ "media" ],
+        "summary" : "Get a place to upload one file",
+        "operationId" : "startUpload",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartUploadRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/media/uploads/{id}/complete" : {
+      "post" : {
+        "tags" : [ "media" ],
+        "summary" : "Say that the file has been sent. The API checks it and makes it ready to use.",
+        "operationId" : "completeUpload",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/circles" : {
+      "get" : {
+        "tags" : [ "circles" ],
+        "summary" : "The circles you are in, with their people. Twenty at most.",
+        "operationId" : "getCircles",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CircleResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "circles" ],
+        "summary" : "Start a circle. You become its owner.",
+        "operationId" : "createCircle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewCircleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/members" : {
+      "post" : {
+        "tags" : [ "circles" ],
+        "summary" : "Add someone: invite a person, or add a child or a pet without a phone",
+        "operationId" : "addMember",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewMemberRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/guest-passes" : {
+      "get" : {
+        "tags" : [ "guest passes" ],
+        "summary" : "A circle's guest passes, the latest first. Fifty at most.",
+        "operationId" : "getGuestPasses",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GuestPassResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "guest passes" ],
+        "summary" : "Give a guest pass: a link and a code for chosen things",
+        "operationId" : "createGuestPass",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewGuestPassRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuestPassResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-auth/token" : {
+      "post" : {
+        "tags" : [ "local-auth" ],
+        "summary" : "Swap an email and the test code for a sign-in token",
+        "operationId" : "createLocalToken",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TokenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ ]
+      }
+    },
+    "/local-auth/code" : {
+      "post" : {
+        "tags" : [ "local-auth" ],
+        "summary" : "Ask for a sign-in code (it is written to the API's log)",
+        "operationId" : "requestLocalCode",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CodeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "security" : [ ]
+      }
+    },
+    "/v1/pages/{id}" : {
+      "get" : {
+        "tags" : [ "pages" ],
+        "summary" : "One page",
+        "operationId" : "getPage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "pages" ],
+        "summary" : "Change a page's title or its words",
+        "operationId" : "changePage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PageChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/members/{id}" : {
+      "get" : {
+        "tags" : [ "home" ],
+        "summary" : "A person's page: who they are and what the circle keeps for them",
+        "operationId" : "getPerson",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonPageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "circles" ],
+        "summary" : "Take someone out of a circle, or leave it yourself",
+        "operationId" : "removeMember",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "circles" ],
+        "summary" : "Change what a circle keeps about one of its people",
+        "operationId" : "changeMember",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MemberChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}" : {
+      "get" : {
+        "tags" : [ "circles" ],
+        "summary" : "One circle and its people",
+        "operationId" : "getCircle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "circles" ],
+        "summary" : "Rename a circle, change its kind or its picture",
+        "operationId" : "changeCircle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CircleChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/things/{id}" : {
+      "get" : {
+        "tags" : [ "things" ],
+        "summary" : "A thing of any kind, as far as its title and who sees it",
+        "operationId" : "getThing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ThingBrief"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "things" ],
+        "summary" : "Delete a thing for good. Only its owner can.",
+        "operationId" : "deleteThing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/me" : {
+      "get" : {
+        "tags" : [ "me" ],
+        "summary" : "Who is signed in, with their profile if they have one",
+        "operationId" : "getMe",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "Account and safety" ],
+        "summary" : "Delete your account and everything in it, for good",
+        "operationId" : "deleteAccount",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/guest-passes/{id}" : {
+      "get" : {
+        "tags" : [ "guest passes" ],
+        "summary" : "One guest pass",
+        "operationId" : "getGuestPass",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuestPassResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "guest passes" ],
+        "summary" : "End a guest pass now",
+        "operationId" : "endGuestPass",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/today" : {
+      "get" : {
+        "tags" : [ "home" ],
+        "summary" : "What is on, what is due and what is new in a circle",
+        "operationId" : "getToday",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TodayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/search" : {
+      "get" : {
+        "tags" : [ "home" ],
+        "summary" : "Find anything in a circle, across every place",
+        "operationId" : "searchCircle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "q",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          }
+        }, {
+          "name" : "place",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/Place"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/pages" : {
+      "get" : {
+        "tags" : [ "pages" ],
+        "summary" : "The pages in a circle you can see, last changed first",
+        "operationId" : "getPages",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagePageRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Access" : {
+        "type" : "string",
+        "enum" : [ "edit", "view", "none" ]
+      },
+      "Audience" : {
+        "type" : "string",
+        "enum" : [ "me", "some", "circle" ]
+      },
+      "AudienceChange" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "everyoneEdits" : {
+            "type" : "boolean"
+          },
+          "people" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonAccess"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Hidden"
+            }
+          }
+        }
+      },
+      "Hidden" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "through" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "PersonAccess" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "access" : {
+            "$ref" : "#/components/schemas/Access"
+          }
+        }
+      },
+      "AudiencePerson" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MemberKind"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "access" : {
+            "$ref" : "#/components/schemas/Access",
+            "description" : "With some people: what this person may do. With everyone: edit or view for all."
+          },
+          "hidden" : {
+            "type" : "boolean",
+            "description" : "True when it is hidden from this person today"
+          },
+          "hiddenThrough" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The last day it is hidden from them. Null with hidden: for good."
+          }
+        }
+      },
+      "AudienceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleName" : {
+            "type" : "string"
+          },
+          "circleKind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "everyoneEdits" : {
+            "type" : "boolean",
+            "description" : "With everyone: whether everyone may change it, or only look"
+          },
+          "mine" : {
+            "type" : "boolean",
+            "description" : "Only its owner may change who sees a thing"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Everyone in the circle who can be shared with, except its owner",
+            "items" : {
+              "$ref" : "#/components/schemas/AudiencePerson"
+            }
+          }
+        },
+        "required" : [ "audience", "circleId", "circleKind", "circleName", "everyoneEdits", "kind", "mine", "people", "place", "thingId", "title" ]
+      },
+      "CircleKind" : {
+        "type" : "string",
+        "enum" : [ "family", "couple", "flat", "crew", "solo" ]
+      },
+      "MemberKind" : {
+        "type" : "string",
+        "enum" : [ "person", "child", "pet" ]
+      },
+      "Place" : {
+        "type" : "string",
+        "enum" : [ "plan", "notes", "library", "money", "vault" ]
+      },
+      "Role" : {
+        "type" : "string",
+        "enum" : [ "owner", "adult", "teen", "child", "guest" ]
+      },
+      "ThingKind" : {
+        "type" : "string",
+        "enum" : [ "page" ]
+      },
+      "CircleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "startsAs" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "What a new thing starts as in this circle"
+          },
+          "hasRoles" : {
+            "type" : "boolean",
+            "description" : "Only a family has roles"
+          },
+          "myMemberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "myRole" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "iRunIt" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person may add and remove people and change the circle"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "joinUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The link that lets someone join. Only shown to people who run the circle."
+          },
+          "members" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MemberResponse"
+            }
+          },
+          "shared" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "description" : "How many things of each kind are shared with you here, by kind of thing"
+          }
+        },
+        "required" : [ "coverUrl", "createdAt", "hasRoles", "iRunIt", "id", "joinUrl", "kind", "members", "myMemberId", "myRole", "name", "shared", "startsAs" ]
+      },
+      "MemberResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MemberKind"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/MemberStatus"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "birthday" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "about" : {
+            "type" : "string",
+            "description" : "A few words under the name of someone without a phone, such as Dog"
+          },
+          "facts" : {
+            "type" : "array",
+            "description" : "Short facts kept about them: Shoes 33, Class 4B",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "tint" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Which of the five tints tells them apart in a calendar or a chart, 1 to 5"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True for the signed-in person's own place in the circle"
+          },
+          "seesLibrary" : {
+            "type" : "boolean"
+          },
+          "seesPlan" : {
+            "type" : "boolean"
+          },
+          "seesPages" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "about", "avatarUrl", "birthday", "circleId", "facts", "id", "kind", "name", "role", "seesLibrary", "seesPages", "seesPlan", "status", "tint", "you" ]
+      },
+      "MemberStatus" : {
+        "type" : "string",
+        "enum" : [ "joined", "invited", "no_phone", "left" ]
+      },
+      "SettingsChange" : {
+        "type" : "object",
+        "properties" : {
+          "notifyActivity" : {
+            "type" : "boolean"
+          },
+          "weeklySummary" : {
+            "type" : "boolean"
+          },
+          "summaryEmail" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "SettingsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "notifyActivity" : {
+            "type" : "boolean",
+            "description" : "A push when something is shared with you or changes in a circle"
+          },
+          "weeklySummary" : {
+            "type" : "boolean",
+            "description" : "The Sunday summary, as a push"
+          },
+          "summaryEmail" : {
+            "type" : "boolean",
+            "description" : "Also send the Sunday summary by email"
+          }
+        },
+        "required" : [ "notifyActivity", "summaryEmail", "weeklySummary" ]
+      },
+      "SaveProfileRequest" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "avatarMediaId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A photo uploaded through /v1/media/uploads"
+          },
+          "removeAvatar" : {
+            "type" : "boolean",
+            "description" : "True to go back to no picture"
+          },
+          "ageConfirmed" : {
+            "type" : "boolean",
+            "description" : "The person confirms they are 13 or older. Needed, and must be true, when the profile is first created."
+          }
+        },
+        "required" : [ "displayName" ]
+      },
+      "ProfileResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "avatarUrl", "displayName", "id" ]
+      },
+      "DevicePlatform" : {
+        "type" : "string",
+        "enum" : [ "ios", "android", "web" ]
+      },
+      "RegisterDeviceRequest" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "description" : "The device's address at the push service, as Expo gives it",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "platform" : {
+            "$ref" : "#/components/schemas/DevicePlatform"
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "Where the device is, such as Europe/Berlin, so reminders arrive at the right hour. UTC when left out or unknown.",
+            "maxLength" : 64,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "platform", "token" ]
+      },
+      "AppleSignInRequest" : {
+        "type" : "object",
+        "properties" : {
+          "authorizationCode" : {
+            "type" : "string",
+            "description" : "The one-time authorization code Apple gives the app at sign-in",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "authorizationCode" ]
+      },
+      "NewPageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "body" : {
+            "type" : "string",
+            "maxLength" : 100000,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          }
+        },
+        "required" : [ "circleId", "clientId" ]
+      },
+      "AudienceChip" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "For some people: who, besides its owner",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "description" : "The first names of people it is hidden from today",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "PageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "body", "canEdit", "chip", "circleId", "id", "mine", "title", "updatedAt" ]
+      },
+      "PersonBrief" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "MediaKind" : {
+        "type" : "string",
+        "enum" : [ "photo", "video", "file", "audio" ]
+      },
+      "StartUploadRequest" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/MediaKind"
+          },
+          "contentType" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "fileName" : {
+            "type" : "string",
+            "description" : "What the file is called on the phone, for documents",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "durationSeconds" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "For a video or a recording: how long it is, in whole seconds"
+          }
+        },
+        "required" : [ "contentType", "kind" ]
+      },
+      "UploadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "mediaId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Use this id when saving what the file belongs to"
+          },
+          "uploadUrl" : {
+            "type" : "string",
+            "description" : "Send the file's bytes here"
+          },
+          "method" : {
+            "type" : "string"
+          },
+          "headers" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "headers", "mediaId", "method", "uploadUrl" ]
+      },
+      "NewCircleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "clientId", "kind", "name" ]
+      },
+      "NewMemberRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MemberKind",
+            "description" : "A person, a child or a pet. A person when left out."
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "email" : {
+            "type" : "string",
+            "description" : "With an email address the person is invited; without one they are in the circle without a phone",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "birthday" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "about" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "avatarMediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "clientId", "name" ]
+      },
+      "NewGuestPassRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "guestName" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "startsAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it starts. Now, when left out."
+          },
+          "endsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "thingIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        },
+        "required" : [ "clientId", "endsAt", "guestName", "thingIds" ]
+      },
+      "GuestPassResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "guestName" : {
+            "type" : "string"
+          },
+          "startsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "url" : {
+            "type" : "string",
+            "description" : "The link to send to the guest"
+          },
+          "code" : {
+            "type" : "string",
+            "description" : "The four digits the guest types. Tell them another way than the link."
+          },
+          "running" : {
+            "type" : "boolean",
+            "description" : "True between its start and its end, unless it was ended early"
+          },
+          "opened" : {
+            "type" : "boolean",
+            "description" : "True once a phone has opened it"
+          },
+          "things" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PassThingResponse"
+            }
+          }
+        },
+        "required" : [ "circleId", "code", "endsAt", "guestName", "id", "opened", "running", "startsAt", "things", "url" ]
+      },
+      "PassThingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "kind", "title" ]
+      },
+      "TokenRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0
+          },
+          "code" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "code", "email" ]
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accessToken", "email", "expiresAt", "userId" ]
+      },
+      "CodeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "email" ]
+      },
+      "PageChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "body" : {
+            "type" : "string",
+            "maxLength" : 100000,
+            "minLength" : 0
+          }
+        }
+      },
+      "MemberChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 1
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "birthday" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "removeBirthday" : {
+            "type" : "boolean"
+          },
+          "about" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "facts" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 40,
+              "minLength" : 0
+            },
+            "maxItems" : 12,
+            "minItems" : 0
+          },
+          "avatarMediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "removeAvatar" : {
+            "type" : "boolean"
+          },
+          "seesLibrary" : {
+            "type" : "boolean"
+          },
+          "seesPlan" : {
+            "type" : "boolean"
+          },
+          "seesPages" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "CircleChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 1
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "coverMediaId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A photo uploaded through /v1/media/uploads"
+          },
+          "removeCover" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ThingBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      },
+      "PersonPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "member" : {
+            "$ref" : "#/components/schemas/MemberResponse"
+          },
+          "kept" : {
+            "type" : "array",
+            "description" : "What is kept for them that you may see",
+            "items" : {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }
+          }
+        },
+        "required" : [ "kept", "member" ]
+      },
+      "MeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "profile" : {
+            "description" : "Null until the person has created their profile",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProfileResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "email", "id", "profile" ]
+      },
+      "JoinPreview" : {
+        "type" : "object",
+        "properties" : {
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "people" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "alreadyIn" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "FreshCard" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "pill" : {
+            "type" : [ "string", "null" ],
+            "description" : "A small label on the picture: 19 new"
+          }
+        }
+      },
+      "TodayItem" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "The small line under the title: Alex is taking her"
+          },
+          "lead" : {
+            "type" : [ "string", "null" ],
+            "description" : "What stands in front: 15:30, or €84. Null for a job with a tick."
+          },
+          "done" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "For something that can be ticked: whether it is done. Null otherwise."
+          },
+          "minute" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sorts the day: minutes since midnight, or 1440 for something with no time"
+          },
+          "avatarUrls" : {
+            "type" : "array",
+            "description" : "Pictures of the people it concerns, two at most",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "TodayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of today's things are still to do"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of today's things are done"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TodayItem"
+            }
+          },
+          "fresh" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FreshCard"
+            }
+          },
+          "onlyYou" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things in all your circles only you can see"
+          }
+        },
+        "required" : [ "day", "done", "fresh", "items", "left", "onlyYou" ]
+      },
+      "SearchHit" : {
+        "type" : "object",
+        "properties" : {
+          "thing" : {
+            "$ref" : "#/components/schemas/ThingBrief"
+          },
+          "snippet" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where the words were found inside it"
+          }
+        }
+      },
+      "SearchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "words" : {
+            "type" : "string"
+          },
+          "hits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SearchHit"
+            }
+          }
+        },
+        "required" : [ "hits", "words" ]
+      },
+      "PagePageRow" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PageRow"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        }
+      },
+      "PageRow" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "start" : {
+            "type" : "string",
+            "description" : "The first words of the page"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "bearer" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}

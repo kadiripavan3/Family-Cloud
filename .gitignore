@@ -3,3 +3,5 @@ node_modules/
 design/hub/index.html
 .DS_Store
 .preview.html
+# Logs and local files from running the API and the app
+.dev/

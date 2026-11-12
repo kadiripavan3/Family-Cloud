@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('Contact')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+    <p th:replace="~{legal/parts :: draft}"></p>
+    <h1>Contact</h1>
+    <p class="lede">A question, a problem, or something we should know about.</p>
+
+    <h2>Write to us</h2>
+    <p th:if="${contactEmail != ''}"><a th:href="${'mailto:' + contactEmail}" th:text="${contactEmail}">address</a></p>
+    <p th:if="${contactEmail == ''}">The address is added here before launch.</p>
+
+    <h2>Delete your account</h2>
+    <p>In the app: You, then Delete account. Without the app: <a th:href="@{/delete-account}">see here</a>.</p>
+    <nav th:replace="~{legal/parts :: links}"></nav>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>

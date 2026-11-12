@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title + ' · Homeport'}">Homeport</title>
+  <link rel="stylesheet" th:href="@{/share/tokens.css}">
+  <link rel="stylesheet" th:href="@{/share/page.css}">
+  <link rel="stylesheet" th:href="@{/share/pages.css}">
+</head>
+<body>
+  <p class="draft" th:fragment="draft">This is a draft. It describes what Homeport does today and has not yet been checked by a lawyer. It will be replaced before the app is in the stores.</p>
+
+  <nav class="pagelinks" th:fragment="links" aria-label="More about Homeport">
+    <a th:href="@{/terms}">Terms</a>
+    <a th:href="@{/privacy}">Privacy</a>
+    <a th:href="@{/contact}">Contact</a>
+    <a th:href="@{/delete-account}">Delete your account</a>
+  </nav>
+
+  <!-- On one line: a line break here would put a space before the full stop that follows it. -->
+  <span th:fragment="reach"><span th:if="${contactEmail != ''}">write to <a th:href="${'mailto:' + contactEmail}" th:text="${contactEmail}">us</a></span><span th:if="${contactEmail == ''}">write to us (the address is added here before launch)</span></span>
+</body>
+</html>

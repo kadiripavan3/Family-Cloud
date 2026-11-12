@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('Delete your account')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+    <p th:replace="~{legal/parts :: draft}"></p>
+    <h1>Delete your account</h1>
+    <p class="lede">The quickest way is in the app: You, then Delete account. Your profile and what was yours are gone at once; the files follow within minutes.</p>
+
+    <h2>What is deleted</h2>
+    <p>Your profile, the things only you could see, and the things you made in your circles. A circle other people are still in stays, without what was yours. For good: it can't be undone.</p>
+
+    <h2>Your Journey account</h2>
+    <p>Homeport and Journey share one sign-in. Deleting your Homeport account leaves Journey as it is.</p>
+
+    <h2>If you can't open the app</h2>
+    <p>You can <span th:replace="~{legal/parts :: reach}"></span> from the address you signed up with. We answer to that address to make sure the request comes from you, and delete the account once you reply.</p>
+    <nav th:replace="~{legal/parts :: links}"></nav>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>

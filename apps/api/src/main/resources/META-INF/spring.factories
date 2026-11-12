@@ -1,0 +1,2 @@
+# Runs before anything else starts: the local stand-ins need the local profile. See LocalModeGuard.
+org.springframework.context.ApplicationListener=app.homeport.api.auth.LocalModeGuard
