@@ -3429,6 +3429,224 @@ export interface GoodJarSettings { [key: string]: unknown }
 
 export interface DoorframeSettings { [key: string]: unknown }
 
+export interface WhoseTurnSettings { [key: string]: unknown }
+
+export interface PiggyBankFund {
+  name: string;
+  stars: number;
+}
+
+export interface PiggyBankSettings {
+  /** The child whose piggy bank it is */
+  forMemberId: string;
+  /** The currency of every amount, as three letters: EUR */
+  currency: string;
+  /** What the bank pays on Save, in whole percent a month. 0: no interest. */
+  interestPercent: number;
+  /** Every first of the month up to this day is settled: interest is due from the next */
+  paidThrough: string;
+  /**
+     * What one star is worth, in cents, when stars turn into money
+     * @nullable
+     */
+  starCents: number | null;
+  /** What Save is for, counted in stars: Skates fund, 50 stars */
+  fund: PiggyBankFund | null;
+  /**
+     * How full Spend is drawn against, in cents
+     * @nullable
+     */
+  spendGoalCents: number | null;
+  /**
+     * How full Save is drawn against when there is no fund, in cents
+     * @nullable
+     */
+  saveGoalCents: number | null;
+  /**
+     * How full Give is drawn against, in cents
+     * @nullable
+     */
+  giveGoalCents: number | null;
+}
+
+export interface SecretMissionsSettings { [key: string]: unknown }
+
+export interface SaturdayJarSettings {
+  /**
+     * What the sky is doing today. A weather source would write it here; none is connected, so it is always null and the jar asks “indoors or outdoors?” instead.
+     * @nullable
+     */
+  weather: string | null;
+}
+
+export interface SleepsSettings { [key: string]: unknown }
+
+export interface WhereIsItSettings { [key: string]: unknown }
+
+export interface HabitChartsSettings { [key: string]: unknown }
+
+export interface OurStorySettings {
+  /**
+     * The day the count starts from. Null: the day of the first moment.
+     * @nullable
+     */
+  since: string | null;
+  /**
+     * What it began with, to say after “Since”: a wedding in Piran
+     * @nullable
+     */
+  sinceWords: string | null;
+}
+
+export interface TuckedNotesSettings { [key: string]: unknown }
+
+export interface AnniversarySettings {
+  /** The day it all began: the anniversary is this day of every year */
+  since: string;
+  /** The members who answer */
+  people: string[];
+  /** The first year this board asks about */
+  firstYear: number;
+}
+
+export interface MysteryDateSettings { [key: string]: unknown }
+
+export interface BothYesSettings {
+  /** The members who answer. An idea is a match when all of them said yes. */
+  people: string[];
+}
+
+export interface FairShareSettings {
+  /** The members whose share it is about */
+  people: string[];
+}
+
+export interface HeardSettings { [key: string]: unknown }
+
+export interface GuestBookSettings { [key: string]: unknown }
+
+export interface LivedHereSettings { [key: string]: unknown }
+
+export interface KittySettings {
+  /** What each person pays in every month, in whole cents */
+  eachCents: number;
+  currency: string;
+  /** The day of the month it is paid in on: 1 */
+  payInDay: number;
+}
+
+export interface FairerSplitSettings { [key: string]: unknown }
+
+export interface HeadsUpSettings {
+  /**
+     * A line that always stands under the notices: Quiet after 23:00
+     * @nullable
+     */
+  standing: string | null;
+  /**
+     * A line under it: From the House rules, agreed by all three.
+     * @nullable
+     */
+  standingNote: string | null;
+}
+
+export interface FindDateSettings {
+  /** The first day offered */
+  from: string;
+  /** The last day offered */
+  to: string;
+  /**
+     * The day it was set for, once someone set it
+     * @nullable
+     */
+  setFor: string | null;
+  /**
+     * The event in the calendar it became
+     * @nullable
+     */
+  eventId: string | null;
+}
+
+export interface SecretSantaSettings {
+  /** The most a present should cost, in whole cents. 0 for no limit. */
+  budgetCents: number;
+  currency: string;
+  /**
+     * The day the presents are swapped
+     * @nullable
+     */
+  swapOn: string | null;
+  /**
+     * Where or when, in the crew's words: the reunion dinner
+     * @nullable
+     */
+  swapAt: string | null;
+  /**
+     * Something of the circle the swap belongs to: the dinner's own board
+     * @nullable
+     */
+  swapThingId: string | null;
+  /**
+     * The day the names were drawn
+     * @nullable
+     */
+  drawnOn: string | null;
+}
+
+export interface WhereNextSettings {
+  /**
+     * When the trip would be, in the crew's words: Spring 2027
+     * @nullable
+     */
+  when: string | null;
+  /**
+     * The last day to vote, when one was set
+     * @nullable
+     */
+  closesOn: string | null;
+  /**
+     * The moment the vote closed
+     * @nullable
+     */
+  closedAt: string | null;
+  /**
+     * The folder the winner was given in Notes
+     * @nullable
+     */
+  tripFolderId: string | null;
+}
+
+export interface DictionarySettings { [key: string]: unknown }
+
+export interface PredictionsSettings {
+  /** The day they open */
+  opensOn: string;
+  /**
+     * What the day is, in the crew's words: the reunion
+     * @nullable
+     */
+  occasion: string | null;
+}
+
+export interface AwardsSettings { [key: string]: unknown }
+
+export interface WalkTogetherSettings {
+  /**
+     * Where the walk starts: Ljubljana
+     * @nullable
+     */
+  from: string | null;
+  /**
+     * Where it ends: Lisbon
+     * @nullable
+     */
+  to: string | null;
+  /** How far it is: metres on a board in km, steps on a board in steps */
+  goal: number;
+  /** km or steps */
+  unit: string;
+}
+
 export interface MealPlanIngredient {
   id: string;
   name: string;
@@ -3942,6 +4160,1626 @@ export interface DoorframeView {
   landmarks: DoorframeLandmark[];
 }
 
+export interface WhoseTurnTurnResponse {
+  id: string;
+  thingId: string;
+  thing: string;
+  who: PersonBrief | null;
+  /** True when it was the turn of the person looking */
+  you: boolean;
+  day: string;
+  /**
+     * A few words someone added: Frozen, again
+     * @nullable
+     */
+  note: string | null;
+}
+
+export interface WhoseTurnThingResponse {
+  id: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /**
+     * What the one whose turn it is does: chooses the film
+     * @nullable
+     */
+  does: string | null;
+  /**
+     * When it comes round, in the family's words: Every evening
+     * @nullable
+     */
+  when: string | null;
+  /**
+     * The day it is next on, when someone set one
+     * @nullable
+     */
+  onDay: string | null;
+  /** True when it is on today: Tonight is film night */
+  tonight: boolean;
+  /** Whose turn it is */
+  next: PersonBrief | null;
+  /** True when it is the turn of the person looking, or of a child they look after */
+  yourTurn: boolean;
+  /** The people who take turns at it, in their order */
+  people: PersonBrief[];
+  /** The last turn that was taken */
+  last: WhoseTurnTurnResponse | null;
+  /**
+     * The small line under it: Mia chose last Friday. Frozen, again. Null when there is nothing to say yet.
+     * @nullable
+     */
+  line: string | null;
+}
+
+export interface WhoseTurnResponse {
+  /** What people take turns at, in the list's order. Forty at most. */
+  things: WhoseTurnThingResponse[];
+  /** How many turns were kept, ever */
+  turns: number;
+  /** The day the list was started: turns are kept since then */
+  since: string;
+  /** True when this person may write down what happened: in a family, the grown-ups */
+  canChange: boolean;
+  /** The first day of the stretch whose turns are in `history` */
+  historyFrom: string;
+  historyTo: string;
+  /** The turns of that stretch, newest first, each with its date */
+  history: WhoseTurnTurnResponse[];
+}
+
+export interface PiggyBankJarResponse {
+  /** spend, save or give */
+  jar: string;
+  cents: number;
+  /**
+     * What it is drawn against, in cents
+     * @nullable
+     */
+  goalCents: number | null;
+  /**
+     * How full to draw it, 0 to 100. Null when it has nothing to be full of.
+     * @nullable
+     */
+  fill: number | null;
+}
+
+export interface PiggyBankInterestResponse {
+  day: string;
+  cents: number;
+}
+
+export interface PiggyBankFundResponse {
+  name: string;
+  /** How many stars it takes */
+  stars: number;
+  /** How many stars were paid in so far */
+  starsIn: number;
+  /** 0 to 100 */
+  percent: number;
+  starsToGo: number;
+}
+
+export interface PiggyBankMoneyResponse {
+  /**
+     * Null for interest that is due and not written down yet
+     * @nullable
+     */
+  id: string | null;
+  /** in, out, move or interest */
+  kind: string;
+  /** The jar it went into or came out of: spend, save or give */
+  jar: string;
+  /**
+     * For money moved between jars: where it went
+     * @nullable
+     */
+  toJar: string | null;
+  /** In cents: above zero for money in, below zero for money out */
+  cents: number;
+  title: string;
+  /** @nullable */
+  note: string | null;
+  /**
+     * Who it came from, when that is someone outside the circle
+     * @nullable
+     */
+  fromName: string | null;
+  /**
+     * How many stars it stands for
+     * @nullable
+     */
+  stars: number | null;
+  day: string;
+  /** Who wrote it down. Null for the bank's interest. */
+  by: PersonBrief | null;
+}
+
+export interface PiggyBankResponse {
+  child: PersonBrief | null;
+  currency: string;
+  /** Everything in the three jars, in cents */
+  totalCents: number;
+  /** Spend, Save and Give, in that order */
+  jars: PiggyBankJarResponse[];
+  interestPercent: number;
+  /** The last interest the bank paid: €0.60 arrived on 1 November */
+  lastInterest: PiggyBankInterestResponse | null;
+  /**
+     * The day the next interest arrives. Null while the rate is 0.
+     * @nullable
+     */
+  nextInterestOn: string | null;
+  fund: PiggyBankFundResponse | null;
+  /**
+     * What one star is worth, in cents
+     * @nullable
+     */
+  starCents: number | null;
+  /** The last three things that happened, newest first. The interest is not among them. */
+  lately: PiggyBankMoneyResponse[];
+  /** True when this person runs the bank: in a family, the grown-ups */
+  canChange: boolean;
+}
+
+export interface SecretMissionsMissionResponse {
+  /**
+     * Null until something happened to it: it is then named by its person
+     * @nullable
+     */
+  id: string | null;
+  weekStart: string;
+  /** Whose mission it is */
+  doer: PersonBrief | null;
+  /** True when it is the mission of the person looking */
+  yours: boolean;
+  /** Who it is for */
+  target: PersonBrief | null;
+  /** True when it was for the person looking */
+  forYou: boolean;
+  text: string;
+  /**
+     * What they did, in their own words
+     * @nullable
+     */
+  did: string | null;
+  done: boolean;
+  /** @nullable */
+  doneAt: string | null;
+  /** True once everyone may read it */
+  revealed: boolean;
+  /**
+     * A line added after it was revealed: You guessed by Wednesday
+     * @nullable
+     */
+  reply: string | null;
+  /** True when the one it was for gave it a heart */
+  liked: boolean;
+  photo: BoardMedia | null;
+}
+
+export interface SecretMissionsResponse {
+  /** The number of this week, as calendars count it */
+  week: number;
+  weekStart: string;
+  /** The Sunday this week's missions are revealed on */
+  revealsOn: string;
+  /** How many people have a mission this week */
+  people: number;
+  /** This week's missions that are this person's to do: their own first, then those of the children they read them to. Nobody else's is ever in here. */
+  yours: SecretMissionsMissionResponse[];
+  /**
+     * The Monday of the week whose missions are in `revealed`
+     * @nullable
+     */
+  revealedWeekStart: string | null;
+  /** What was done in that week, for everyone to read */
+  revealed: SecretMissionsMissionResponse[];
+}
+
+export interface SaturdayJarAskedResponse {
+  /**
+     * The time there is, in minutes
+     * @nullable
+     */
+  minutes: number | null;
+  /**
+     * What it may cost, in cents
+     * @nullable
+     */
+  cents: number | null;
+  /**
+     * True for outdoors, false for indoors
+     * @nullable
+     */
+  outdoors: boolean | null;
+}
+
+export interface SaturdayJarIdeaResponse {
+  id: string;
+  text: string;
+  /** @nullable */
+  emoji: string | null;
+  /** Who put it in */
+  by: PersonBrief | null;
+  mine: boolean;
+  /**
+     * home, indoors or outdoors. Null for anywhere.
+     * @nullable
+     */
+  place: string | null;
+  /**
+     * How long it takes, in minutes
+     * @nullable
+     */
+  minutes: number | null;
+  /**
+     * About what it costs, in cents. Null or 0: free.
+     * @nullable
+     */
+  cents: number | null;
+  /** The day it was put in */
+  addedOn: string;
+  /** True once someone said yes to it: it has left the jar */
+  done: boolean;
+  /**
+     * The day it is done on
+     * @nullable
+     */
+  doneOn: string | null;
+  /**
+     * The event it became in the calendar
+     * @nullable
+     */
+  eventId: string | null;
+  /**
+     * The album waiting for its photos
+     * @nullable
+     */
+  albumId: string | null;
+}
+
+export interface SaturdayJarResponse {
+  /** How many ideas are in the jar */
+  count: number;
+  /** How many were done so far */
+  done: number;
+  /** What the jar was asked today. Null when it wasn't shaken today. */
+  asked: SaturdayJarAskedResponse | null;
+  /** The slip pulled today */
+  pulled: SaturdayJarIdeaResponse | null;
+  /**
+     * Always null for now: see the settings
+     * @nullable
+     */
+  weather: string | null;
+  /**
+     * True when nobody has anything on today, by the calendar. Null while the calendar doesn't say.
+     * @nullable
+     */
+  everyoneFree: boolean | null;
+  /** How many people that is about */
+  people: number;
+  /** What someone said yes to, for today or later. Ten at most. */
+  comingUp: SaturdayJarIdeaResponse[];
+}
+
+export interface SleepsCountResponse {
+  id: string;
+  /** What comes after “sleeps until”: Grandma Astrid comes */
+  title: string;
+  /** @nullable */
+  emoji: string | null;
+  /**
+     * A few words under it: from the trip
+     * @nullable
+     */
+  note: string | null;
+  /** The day it counts to. For one that comes every year, its next time round. */
+  day: string;
+  yearly: boolean;
+  /** How many sleeps are left: the nights from today to the day. 0 on the day. */
+  sleeps: number;
+  /** How many links the chain has: the sleeps there were when it was started, 60 at most */
+  links: number;
+  /** How many of them are gone, tonight's included once it was torn off */
+  off: number;
+  /** True when tonight's link was torn off already */
+  tornTonight: boolean;
+  /** True while there is a link to tear off tonight */
+  canTear: boolean;
+  /** Who tears the links off */
+  tearer: PersonBrief | null;
+}
+
+export interface SleepsResponse {
+  /** The nearest day there is to count down to: the one with the chain */
+  first: SleepsCountResponse | null;
+  /** The others that are still to come, nearest first */
+  others: SleepsCountResponse[];
+  /** The last few whose day has been, newest first */
+  passed: SleepsCountResponse[];
+}
+
+export interface WhereIsItItemResponse {
+  id: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /** Where it is: Attic, blue crate 3 */
+  place: string;
+  /**
+     * What else to know: Tent, pegs and both mats.
+     * @nullable
+     */
+  note: string | null;
+  photo: BoardMedia | null;
+  /** Who put it there */
+  putBy: PersonBrief | null;
+  /** @nullable */
+  putOn: string | null;
+  /**
+     * Where it was last seen since: on the hall hook
+     * @nullable
+     */
+  seen: string | null;
+  seenBy: PersonBrief | null;
+  /** @nullable */
+  seenAt: string | null;
+  /** The people it is kept to. Empty: everyone who sees the list. */
+  only: PersonBrief[];
+  mine: boolean;
+}
+
+export interface WhereIsItResponse {
+  /**
+     * The question that was asked with `show`
+     * @nullable
+     */
+  asked: string | null;
+  /** What answers it. Null when nothing was asked, or nothing fits. */
+  found: WhereIsItItemResponse | null;
+  /** Everything else put away that this person may see, newest first. 200 at most. */
+  items: WhereIsItItemResponse[];
+  /** How many things are put away, of those this person may see */
+  count: number;
+}
+
+export interface HabitChartsCellResponse {
+  day: string;
+  /** True when the chart is on that day */
+  due: boolean;
+  done: boolean;
+  today: boolean;
+}
+
+export interface HabitChartsRowResponse {
+  /** Which row, counted from 0 */
+  row: number;
+  /** @nullable */
+  label: string | null;
+  /**
+     * A word the app has a picture for: sun, moon, book
+     * @nullable
+     */
+  icon: string | null;
+  /** Seven days, Monday first */
+  cells: HabitChartsCellResponse[];
+}
+
+export interface HabitChartsChartResponse {
+  id: string;
+  title: string;
+  /** @nullable */
+  emoji: string | null;
+  /** Who it is for. Empty: everyone. */
+  people: PersonBrief[];
+  /** Who it is for, in words: Leo, Everyone, You and Alex */
+  who: string;
+  /** True on a chart whose ticks are stars */
+  earnsStars: boolean;
+  /**
+     * Every star its person ever earned on these charts
+     * @nullable
+     */
+  stars: number | null;
+  /** The days of the week it is on, as mon to sun. Empty: every day. */
+  days: string[];
+  /** Its rows, each with the seven days of the week shown */
+  rows: HabitChartsRowResponse[];
+  /** Ticks given in the week shown */
+  doneThisWeek: number;
+  /** Ticks there could have been in the week shown, up to today */
+  possibleSoFar: number;
+  /** How many days in a row were kept, up to today (100 at most) */
+  streak: number;
+  /** True when it is on today */
+  dueToday: boolean;
+  /** True when every row is ticked for today */
+  doneToday: boolean;
+  /** The small line under its name: 5 of 6 so far this week, 9 days in a row, Thursdays */
+  line: string;
+}
+
+export interface HabitChartsResponse {
+  /** The Monday of the week shown */
+  weekStart: string;
+  weekEnd: string;
+  /** The charts, in their order. Thirty at most. */
+  charts: HabitChartsChartResponse[];
+}
+
+export interface OurStoryMomentResponse {
+  id: string;
+  day: string;
+  /** day, month or year: how much of the date to show */
+  precision: string;
+  /**
+     * The word next to its date: Piran, First trip
+     * @nullable
+     */
+  label: string | null;
+  title: string;
+  /** @nullable */
+  text: string | null;
+  /** True for a moment marked with a star */
+  star: boolean;
+  /**
+     * journey: it came from a journey that was kept
+     * @nullable
+     */
+  from: string | null;
+  /** Its photos, the first one first */
+  photos: BoardMedia[];
+  addedBy: PersonBrief | null;
+  mine: boolean;
+}
+
+export interface OurStoryResponse {
+  /**
+     * The day the count starts from. Null while there is no moment.
+     * @nullable
+     */
+  since: string | null;
+  /**
+     * The days from then to today: 4,503 days so far
+     * @nullable
+     */
+  days: number | null;
+  /**
+     * What it began with: a wedding in Piran
+     * @nullable
+     */
+  sinceWords: string | null;
+  /** How many moments there are */
+  count: number;
+  /** The moments, oldest first. 300 at most; the list of entries has them all. */
+  moments: OurStoryMomentResponse[];
+}
+
+export interface TuckedNotesNoteResponse {
+  id: string;
+  text: string;
+  from: PersonBrief | null;
+  forPerson: PersonBrief | null;
+  mine: boolean;
+  /** this_week, at, lands or rains */
+  turnsUp: string;
+  /**
+     * The time its writer set. Null for every other way.
+     * @nullable
+     */
+  at: string | null;
+  /**
+     * For this_week, to its writer: the day it will have turned up by. The moment itself is told to nobody.
+     * @nullable
+     */
+  before: string | null;
+  /** True for a note that waits for a signal nothing sends yet */
+  waiting: boolean;
+  found: boolean;
+  /** @nullable */
+  foundAt: string | null;
+}
+
+export interface TuckedNotesWayResponse {
+  /** this_week, at, lands or rains */
+  way: string;
+  /** False for a way that waits for a signal nothing sends yet */
+  works: boolean;
+  /**
+     * For a way that doesn't work yet: what it is waiting for
+     * @nullable
+     */
+  waitsFor: string | null;
+}
+
+export interface TuckedNotesResponse {
+  /** The notes this person tucked away that haven't been found yet, newest first */
+  tucked: TuckedNotesNoteResponse[];
+  /** Notes for this person that have turned up and wait to be read */
+  turnedUp: TuckedNotesNoteResponse[];
+  /** How many were found so far, of those this person wrote or was given */
+  found: number;
+  /** The last five that were found, newest first. The list of entries has them all. */
+  foundLately: TuckedNotesNoteResponse[];
+  /** Who a note can be tucked away for */
+  readers: PersonBrief[];
+  /** The ways a note can turn up, and which of them work today */
+  ways: TuckedNotesWayResponse[];
+}
+
+export interface AnniversaryAnswerResponse {
+  person: PersonBrief | null;
+  yours: boolean;
+  text: string;
+}
+
+export interface AnniversaryQuestionResponse {
+  id: string;
+  text: string;
+  /** Everyone's answer, side by side, in the order of the people */
+  answers: AnniversaryAnswerResponse[];
+  /**
+     * A word all the answers share: You both said Bled
+     * @nullable
+     */
+  same: string | null;
+}
+
+export interface AnniversaryYearResponse {
+  /** Which anniversary: 12 for year twelve */
+  year: number;
+  day: string;
+  questions: AnniversaryQuestionResponse[];
+}
+
+export interface AnniversaryMineResponse {
+  questionId: string;
+  question: string;
+  /**
+     * The entry of this person's answer, to change it
+     * @nullable
+     */
+  answerId: string | null;
+  /** @nullable */
+  answer: string | null;
+}
+
+export interface AnniversaryOtherResponse {
+  person: PersonBrief;
+  /** True when they have answered every question: theirs are sealed */
+  done: boolean;
+}
+
+export interface AnniversaryNextResponse {
+  year: number;
+  /** The day it opens, when everyone has answered by then */
+  opensOn: string;
+  /** Days until that day; 0 from the day on */
+  daysToGo: number;
+  /** True from that day on: it now opens as soon as everyone has answered */
+  dayHasCome: boolean;
+  /** The questions of this year, each with this person's own answer so far */
+  yours: AnniversaryMineResponse[];
+  /** How many of them this person has answered */
+  answered: number;
+  /** True when this person has answered them all: theirs are sealed */
+  youAreDone: boolean;
+  /** The others who answer, and whether each has finished. Never what they wrote. */
+  others: AnniversaryOtherResponse[];
+}
+
+export interface AnniversaryResponse {
+  since: string;
+  people: PersonBrief[];
+  /** True when the person looking is one of those who answer */
+  youAnswer: boolean;
+  /** The years that have opened, newest first */
+  years: number[];
+  /** The opened year that is shown: the newest, or the one asked for */
+  shown: AnniversaryYearResponse | null;
+  /** The year that is being written */
+  next: AnniversaryNextResponse;
+}
+
+export interface MysteryDateLineResponse {
+  id: string;
+  /**
+     * A word the app has a picture for: pin, euro, users
+     * @nullable
+     */
+  icon: string | null;
+  title: string;
+  /** @nullable */
+  note: string | null;
+  /** True for a line that is sorted: the tick */
+  ready: boolean;
+  /**
+     * What it costs, in cents
+     * @nullable
+     */
+  cents: number | null;
+}
+
+export interface MysteryDateClueResponse {
+  id: string;
+  text: string;
+  /**
+     * The moment it opens. Null: it was open from the start.
+     * @nullable
+     */
+  opensAt: string | null;
+  open: boolean;
+}
+
+export interface MysteryDateDateResponse {
+  id: string;
+  day: string;
+  /**
+     * The time, as the planner's clock says it: 20:00
+     * @nullable
+     */
+  time: string | null;
+  /**
+     * The moment it starts, and is revealed
+     * @nullable
+     */
+  at: string | null;
+  planner: PersonBrief | null;
+  /** True when the person looking plans it */
+  yours: boolean;
+  /**
+     * All the other one gets besides the time: Wear something warm.
+     * @nullable
+     */
+  hint: string | null;
+  revealed: boolean;
+  /**
+     * What it is. Null for everyone but the planner until it is revealed.
+     * @nullable
+     */
+  title: string | null;
+  /** The plan. Empty for everyone but the planner until it is revealed. */
+  plan: MysteryDateLineResponse[];
+  /** The clues. For everyone but the planner: only those whose moment has come. */
+  clues: MysteryDateClueResponse[];
+  /** How many clues are still to open */
+  cluesToCome: number;
+  /**
+     * For the planner: the idea the jar gave last
+     * @nullable
+     */
+  suggestion: string | null;
+}
+
+export interface MysteryDatePastResponse {
+  id: string;
+  /** @nullable */
+  title: string | null;
+  planner: PersonBrief | null;
+  /** True when the person looking planned it */
+  yours: boolean;
+  day: string;
+}
+
+export interface MysteryDateResponse {
+  /** The date that is coming. Null when none is planned. */
+  next: MysteryDateDateResponse | null;
+  /** Whose turn it is to plan the one after */
+  turn: PersonBrief | null;
+  yourTurn: boolean;
+  /** How many dates there are in this calendar year, the coming one included */
+  thisYear: number;
+  /** The last five dates there have been, newest first. The list of entries has them all. */
+  past: MysteryDatePastResponse[];
+  /** How many ideas are in this board's jar */
+  ideas: number;
+}
+
+export interface BothYesDeckResponse {
+  id: string;
+  name: string;
+  /** A short word for a tab: Dinner */
+  label: string;
+  /** @nullable */
+  emoji: string | null;
+  /** True for a deck the app keeps behind the phone's lock. The API hands it out all the same. */
+  locked: boolean;
+  /**
+     * The day it is for, when it has one
+     * @nullable
+     */
+  day: string | null;
+  picture: BoardMedia | null;
+  /** How many ideas it holds */
+  ideas: number;
+  /** How many of them this person has answered */
+  seen: number;
+  /** True when this person has answered them all */
+  youFinished: boolean;
+  /** The others who have answered them all. Never what they answered. */
+  finished: PersonBrief[];
+  /** How many ideas everyone said yes to */
+  matches: number;
+}
+
+export interface BothYesIdeaResponse {
+  id: string;
+  deckId: string;
+  text: string;
+  /** @nullable */
+  emoji: string | null;
+  /**
+     * This person's own answer. Null: not answered yet.
+     * @nullable
+     */
+  yours: boolean | null;
+  /** True when everyone said yes */
+  match: boolean;
+}
+
+export interface BothYesOpenDeckResponse {
+  id: string;
+  /** The next idea this person hasn't answered. Null when they are through. */
+  card: BothYesIdeaResponse | null;
+  /** Which one that is: 6, of 8 */
+  number: number;
+  of: number;
+  /** What everyone said yes to, in the deck's order */
+  matches: BothYesIdeaResponse[];
+}
+
+export interface BothYesResponse {
+  /** The people who answer */
+  people: PersonBrief[];
+  /** True when the person looking is one of them */
+  youAnswer: boolean;
+  /** The decks, in their order. Thirty at most. */
+  decks: BothYesDeckResponse[];
+  /** The deck that is open: the one asked for, or the first with something left */
+  deck: BothYesOpenDeckResponse | null;
+}
+
+export interface FairShareHoursResponse {
+  jobId: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  hours: number;
+}
+
+export interface FairSharePersonResponse {
+  person: PersonBrief;
+  you: boolean;
+  hours: number;
+  /** Their share of all the hours, 0 to 100. Everyone's add up to 100. */
+  percent: number;
+  /** The jobs they ticked, the biggest first */
+  jobs: FairShareHoursResponse[];
+}
+
+export interface FairShareSwapResponse {
+  from: PersonBrief;
+  gives: FairShareHoursResponse;
+  to: PersonBrief;
+  takes: FairShareHoursResponse;
+  /** The gap in hours there would be afterwards */
+  gapAfter: number;
+  /** In words, for the person looking: Alex takes the school things; you take the car. */
+  line: string;
+}
+
+export interface FairShareOfferResponse {
+  id: string;
+  by: PersonBrief | null;
+  /** True when the person looking suggested it */
+  yours: boolean;
+  at: string;
+  line: string;
+  /**
+     * What the other one said: true, false, or null for nothing yet
+     * @nullable
+     */
+  accepted: boolean | null;
+}
+
+export interface FairShareJobResponse {
+  id: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /**
+     * This person's hours for it in the month shown. Null: not theirs.
+     * @nullable
+     */
+  yourHours: number | null;
+}
+
+export interface FairShareResponse {
+  /** The month shown, as 2026-10 */
+  month: string;
+  /** Its name: October */
+  monthName: string;
+  /** The months there is something for, newest first, as 2026-10 */
+  months: string[];
+  /** The hours of everyone together */
+  totalHours: number;
+  /** Each person's side of it, in the order of the people */
+  people: FairSharePersonResponse[];
+  /** How many hours the heaviest share is above the lightest */
+  gapHours: number;
+  /** True when the shares are within 53 to 47 of each other, or nobody ticked anything */
+  close: boolean;
+  /** One swap that would bring it close. Null when it is close, or none would. */
+  swap: FairShareSwapResponse | null;
+  /** A swap one of them suggested for this month */
+  offered: FairShareOfferResponse | null;
+  /** Every job on the list, with this person's own hours in the month shown */
+  jobs: FairShareJobResponse[];
+  /** True when the month shown can still be ticked: this month and the one before */
+  canTick: boolean;
+}
+
+export interface HeardPersonResponse {
+  person: PersonBrief;
+  you: boolean;
+  count: number;
+}
+
+export interface HeardQuoteResponse {
+  id: string;
+  text: string;
+  /** The flatmate who said it, also after they moved out */
+  who: PersonBrief | null;
+  /**
+     * Who said it, when that is someone outside the flat
+     * @nullable
+     */
+  whoName: string | null;
+  /** True when the viewer said it */
+  you: boolean;
+  /**
+     * A few words on when or what about: the first cold night
+     * @nullable
+     */
+  about: string | null;
+  /** The day it was said */
+  day: string;
+  /** When it was written down */
+  writtenAt: string;
+  /** Who wrote it down */
+  writtenBy: PersonBrief | null;
+  mine: boolean;
+}
+
+export interface HeardViewResponse {
+  total: number;
+  /** Who said them, with how many each: the chips. Thirty at most. */
+  people: HeardPersonResponse[];
+  /** The newest thirty. The rest is read a page at a time. */
+  latest: HeardQuoteResponse[];
+}
+
+export interface GuestBookLineResponse {
+  id: string;
+  text: string;
+  name: string;
+  /**
+     * Who they are, in a few words: from Leeds
+     * @nullable
+     */
+  about: string | null;
+  /** @nullable */
+  nights: number | null;
+  day: string;
+  photo: BoardMedia | null;
+  /** True while it waits for a flatmate's yes */
+  waiting: boolean;
+  /** True when it came through the code by the door */
+  fromTheDoor: boolean;
+  /** The flatmate who let it in, or wrote it down */
+  letInBy: PersonBrief | null;
+}
+
+export interface GuestBookViewResponse {
+  /** How many guests are in the book */
+  guests: number;
+  /** The nights they stayed, added up */
+  nights: number;
+  /**
+     * The year of the first line
+     * @nullable
+     */
+  since: number | null;
+  /**
+     * The link behind the code by the door, for the people who live here. The app draws it as a code to print.
+     * @nullable
+     */
+  link: string | null;
+  /** True when this person is one of the people who live here and decides what is let in */
+  decides: boolean;
+  /** Lines from the door that wait for a yes. Empty for everyone who doesn't decide. */
+  waiting: GuestBookLineResponse[];
+  /** The newest thirty lines in the book. The rest is read a page at a time. */
+  latest: GuestBookLineResponse[];
+}
+
+export interface LivedHereRowResponse {
+  /**
+     * The entry behind what the flat wrote by hand, to change or remove it
+     * @nullable
+     */
+  entryId: string | null;
+  /** The member, for someone who is or was in the circle */
+  person: PersonBrief | null;
+  name: string;
+  /** How many people the row stands for: 1, or 2 for “two people before you” */
+  count: number;
+  you: boolean;
+  fromYear: number;
+  /**
+     * The year they left. Null while they live here.
+     * @nullable
+     */
+  untilYear: number | null;
+  /** @nullable */
+  note: string | null;
+  /** True when the years were typed by the flat, not taken from the circle */
+  byHand: boolean;
+}
+
+export interface LivedHereHandedOnResponse {
+  entryId: string;
+  thing: ThingBrief;
+}
+
+export interface LivedHereViewResponse {
+  /** The people who live here now, the newest first */
+  hereNow: LivedHereRowResponse[];
+  /** The people who lived here before, the last to leave first */
+  before: LivedHereRowResponse[];
+  /** What is handed on to the next person, as far as this person may see it */
+  handedOn: LivedHereHandedOnResponse[];
+}
+
+export interface KittyItemResponse {
+  id: string;
+  name: string;
+  /** True while it is marked as running low */
+  low: boolean;
+  /** Who marked it */
+  tappedBy: PersonBrief | null;
+}
+
+export interface KittyLineResponse {
+  id: string;
+  /** in for money paid in, out for something bought */
+  kind: string;
+  /** What was bought, or: Paid in for November */
+  title: string;
+  /** Who paid in, or who shopped */
+  who: PersonBrief | null;
+  day: string;
+  /** Whole cents: above zero for money in, below for money out */
+  cents: number;
+  /** The receipt, when one was kept */
+  receipt: BoardMedia | null;
+  mine: boolean;
+}
+
+export interface KittyViewResponse {
+  /** What the pot holds now, in whole cents. Below zero when it is short. */
+  balanceCents: number;
+  currency: string;
+  /** True when it holds less than one person pays in */
+  low: boolean;
+  eachCents: number;
+  payInDay: number;
+  /** The first day of the month shown */
+  month: string;
+  /** That month's name: November */
+  monthName: string;
+  /** Who has paid in this month */
+  paidIn: PersonBrief[];
+  /** Who hasn't yet */
+  notPaidIn: PersonBrief[];
+  /** What was paid in this month, in whole cents */
+  paidInCents: number;
+  youPaidIn: boolean;
+  /**
+     * The viewer's own paying-in of this month, to take it back
+     * @nullable
+     */
+  yourPayInId: string | null;
+  /** The flat's usual things, with which are running low */
+  items: KittyItemResponse[];
+  /** Whose turn it is to shop */
+  shopper: PersonBrief | null;
+  yourTurn: boolean;
+  /** What the pot held when the month began */
+  leftOverCents: number;
+  /** The month before: October */
+  leftOverFrom: string;
+  /** This month's lines, newest first. Earlier months are read a page at a time. */
+  lines: KittyLineResponse[];
+}
+
+export interface FairerSplitShareResponse {
+  person: PersonBrief | null;
+  you: boolean;
+  /** This person's share, in whole cents */
+  cents: number;
+  /** What the rule alone gives, before anyone changed the numbers by hand */
+  byRuleCents: number;
+  /**
+     * What the rule goes by: square metres, nights at home, or units used
+     * @nullable
+     */
+  measure: number | null;
+  /**
+     * A few words: the big room
+     * @nullable
+     */
+  note: string | null;
+  /** The share as a part of the total, 0 to 100 */
+  percent: number;
+  /** For a bill paid once: true when this share is paid */
+  paid: boolean;
+}
+
+export interface FairerSplitVersionResponse {
+  id: string;
+  /** equal, room, nights, use or own */
+  way: string;
+  totalCents: number;
+  /**
+     * By room size: the shared space, in square metres
+     * @nullable
+     */
+  shared: number | null;
+  shares: FairerSplitShareResponse[];
+  proposedBy: PersonBrief | null;
+  proposedAt: string;
+  /**
+     * The day the last housemate said yes
+     * @nullable
+     */
+  agreedOn: string | null;
+  agreedBy: PersonBrief[];
+  waitingFor: PersonBrief[];
+  youAgreed: boolean;
+  /** True when it waits for this person's yes */
+  needsYou: boolean;
+  /** True when this person proposed it and can take it back */
+  yours: boolean;
+}
+
+export interface FairerSplitSplitResponse {
+  id: string;
+  /** What is split: Rent, Electricity */
+  name: string;
+  /** As a heading: October's electricity */
+  title: string;
+  /** rent, bills, kitty or other: the tab it stands under */
+  group: string;
+  /** True for something split the same way every month; false for a bill paid once */
+  repeats: boolean;
+  /**
+     * The first day a bill is for
+     * @nullable
+     */
+  from: string | null;
+  /**
+     * The last day a bill is for
+     * @nullable
+     */
+  to: string | null;
+  /** Who paid the bill, and is paid back */
+  payer: PersonBrief | null;
+  currency: string;
+  /** The split that counts: the last one everyone agreed to */
+  agreed: FairerSplitVersionResponse | null;
+  /** A split that was proposed and still waits for someone's yes */
+  proposed: FairerSplitVersionResponse | null;
+  /** True for a bill whose every share is paid */
+  settled: boolean;
+}
+
+export interface FairerSplitViewResponse {
+  /** Everything the flat splits, in the order it was added */
+  splits: FairerSplitSplitResponse[];
+  /** How many proposals wait for this person's yes */
+  waitingForYou: number;
+}
+
+export interface HeadsUpReplyResponse {
+  who: PersonBrief | null;
+  /** fine or talk */
+  says: string;
+  /**
+     * A few words with it: will water the plants
+     * @nullable
+     */
+  text: string | null;
+  yours: boolean;
+}
+
+export interface HeadsUpNoticeResponse {
+  id: string;
+  text: string;
+  /**
+     * A few words more: on the sofa
+     * @nullable
+     */
+  detail: string | null;
+  /** away, guests or note */
+  what: string;
+  from: PersonBrief | null;
+  mine: boolean;
+  writtenAt: string;
+  /**
+     * The day it starts
+     * @nullable
+     */
+  fromDay: string | null;
+  /**
+     * The day it ends
+     * @nullable
+     */
+  untilDay: string | null;
+  /**
+     * For time away: the nights that come off the bills
+     * @nullable
+     */
+  nightsAway: number | null;
+  /** Everyone who answered, in the order they did */
+  replies: HeadsUpReplyResponse[];
+  /** Who hasn't answered yet */
+  waitingFor: PersonBrief[];
+  /** True when everyone else said it's fine */
+  everyoneFine: boolean;
+  /**
+     * The viewer's own answer: fine or talk
+     * @nullable
+     */
+  yourAnswer: string | null;
+  /** True when it is someone else's, isn't over, and this person hasn't answered */
+  needsYou: boolean;
+  /** True once it is over */
+  over: boolean;
+}
+
+export interface HeadsUpViewResponse {
+  /** The notices that aren't over, newest first */
+  notices: HeadsUpNoticeResponse[];
+  /** How many older ones there are, read a page at a time */
+  earlier: number;
+  /** How many wait for this person's answer */
+  needYou: number;
+  /** @nullable */
+  standing: string | null;
+  /** @nullable */
+  standingNote: string | null;
+}
+
+export interface FindDateDayResponse {
+  day: string;
+  /** How many can do it */
+  free: number;
+  /** True when this person can */
+  you: boolean;
+  /** True for the best day */
+  best: boolean;
+  /** True for a day that has passed */
+  past: boolean;
+  /** The people of the circle who can */
+  who: PersonBrief[];
+  /** The names of those who can and answered by link */
+  byLink: string[];
+}
+
+export interface FindDateBestResponse {
+  day: string;
+  free: number;
+  /** True when everyone who answered can do it */
+  allWhoAnswered: boolean;
+  /** True when everyone who is asked can do it */
+  everyone: boolean;
+  /** Who can: first names, with “you” for this person */
+  names: string[];
+}
+
+export interface FindDateWaitingResponse {
+  person: PersonBrief;
+  you: boolean;
+  /** True when they have opened it */
+  opened: boolean;
+  /**
+     * When they were last nudged
+     * @nullable
+     */
+  nudgedAt: string | null;
+}
+
+export interface FindDateOutsiderResponse {
+  id: string;
+  name: string;
+  /** How many days they can do */
+  days: number;
+}
+
+export interface FindDateViewResponse {
+  from: string;
+  to: string;
+  /** Every day offered, with how many can do it */
+  days: FindDateDayResponse[];
+  /** How many people are asked: everyone in the circle, and whoever answered by link */
+  asked: number;
+  /** How many of them have answered */
+  answered: number;
+  /** The best day so far. Null while nobody can do any. */
+  best: FindDateBestResponse | null;
+  /** The people of the circle who haven't answered */
+  waitingFor: FindDateWaitingResponse[];
+  /** People who answered by link */
+  byLink: FindDateOutsiderResponse[];
+  youAnswered: boolean;
+  /** True when this person said none of the days work */
+  youCant: boolean;
+  /**
+     * The link for people without the app, for those who may change the board
+     * @nullable
+     */
+  link: string | null;
+  /** When it was sent round */
+  askedAt: string;
+  /**
+     * The day it was set for
+     * @nullable
+     */
+  setFor: string | null;
+  /**
+     * The event in the calendar it became, while that is still there
+     * @nullable
+     */
+  eventId: string | null;
+}
+
+export interface SecretSantaNameResponse {
+  id: string;
+  person: PersonBrief;
+  you: boolean;
+}
+
+export interface SecretSantaApartResponse {
+  id: string;
+  a: PersonBrief;
+  b: PersonBrief;
+  /**
+     * Why, in the crew's words: they're a couple
+     * @nullable
+     */
+  why: string | null;
+}
+
+export interface SecretSantaSwapResponse {
+  id: string;
+  kind: ThingKind;
+  title: string;
+}
+
+export interface SecretSantaYoursResponse {
+  person: PersonBrief;
+  /** What they would like, in their own words */
+  wishes: string[];
+  /** True once this person ticked that they have the present */
+  gotIt: boolean;
+}
+
+export interface SecretSantaWishResponse {
+  id: string;
+  text: string;
+}
+
+export interface SecretSantaViewResponse {
+  drawn: boolean;
+  /** @nullable */
+  drawnOn: string | null;
+  /** Who is in the hat */
+  names: SecretSantaNameResponse[];
+  /** True when this person is in the hat */
+  inTheHat: boolean;
+  /** The pairs who can't draw each other */
+  apart: SecretSantaApartResponse[];
+  budgetCents: number;
+  currency: string;
+  /** @nullable */
+  swapOn: string | null;
+  /** @nullable */
+  swapAt: string | null;
+  /** What the swap belongs to, when this person can see it */
+  swapThing: SecretSantaSwapResponse | null;
+  /** The one name this person drew, with that person's wish list. Null before the draw. */
+  yours: SecretSantaYoursResponse | null;
+  /** This person's own wish list */
+  myWishes: SecretSantaWishResponse[];
+}
+
+export interface WhereNextIdeaResponse {
+  id: string;
+  name: string;
+  /** @nullable */
+  days: number | null;
+  /**
+     * Roughly what it costs each person, in whole cents
+     * @nullable
+     */
+  costCents: number | null;
+  currency: string;
+  /** @nullable */
+  note: string | null;
+  photo: BoardMedia | null;
+  addedBy: PersonBrief | null;
+  mine: boolean;
+  /** True for the idea this person voted for */
+  yours: boolean;
+  /**
+     * Its votes. Null until the vote is closed.
+     * @nullable
+     */
+  votes: number | null;
+  /**
+     * Its votes as a part of all votes, 0 to 100. Null until the vote is closed.
+     * @nullable
+     */
+  percent: number | null;
+  /** Who voted for it. Empty until the vote is closed. */
+  voters: PersonBrief[];
+  winner: boolean;
+}
+
+export interface WhereNextViewResponse {
+  /** @nullable */
+  when: string | null;
+  /** @nullable */
+  closesOn: string | null;
+  closed: boolean;
+  /** How many people are asked to vote */
+  asked: number;
+  /** How many of them have */
+  voted: number;
+  /** Who hasn't voted yet */
+  waitingFor: PersonBrief[];
+  youVoted: boolean;
+  /** The ideas: in the order they were added while the vote is open, the winner first after */
+  ideas: WhereNextIdeaResponse[];
+  /**
+     * The winning idea. Null until the vote is closed.
+     * @nullable
+     */
+  winnerId: string | null;
+  /** True when the winner had as many votes as another idea, and won by being added first */
+  tied: boolean;
+  /**
+     * The folder in Notes the winner was given, once it was made a trip
+     * @nullable
+     */
+  tripFolderId: string | null;
+}
+
+export interface DictionaryWordResponse {
+  id: string;
+  word: string;
+  /**
+     * What kind of word: verb, noun
+     * @nullable
+     */
+  part: string | null;
+  meaning: string;
+  /** Who coined it, also after they left the circle */
+  coinedBy: PersonBrief | null;
+  /**
+     * Who coined it, when that is someone outside the circle
+     * @nullable
+     */
+  coinedByName: string | null;
+  /** True when the viewer coined it */
+  you: boolean;
+  /**
+     * Where it came from: Lisbon airport
+     * @nullable
+     */
+  origin: string | null;
+  /**
+     * The day it was first recorded
+     * @nullable
+     */
+  firstRecorded: string | null;
+  /**
+     * Another word to look up: just one more plate
+     * @nullable
+     */
+  seeAlso: string | null;
+  photo: BoardMedia | null;
+  addedAt: string;
+  mine: boolean;
+}
+
+export interface DictionaryViewResponse {
+  total: number;
+  /** The newest fifty words. The rest is read a page at a time. */
+  words: DictionaryWordResponse[];
+}
+
+export interface PredictionsWriterResponse {
+  person: PersonBrief;
+  you: boolean;
+  /** How many they have written. For others: only the sealed ones. */
+  written: number;
+  /** How many there are to write: one about each of the others */
+  of: number;
+  /** For the viewer: how many of theirs aren't sealed yet. 0 for everyone else. */
+  drafts: number;
+  /** For the viewer: who they haven't written about yet. Empty for everyone else. */
+  stillAbout: PersonBrief[];
+}
+
+export interface PredictionsItemResponse {
+  id: string;
+  by: PersonBrief | null;
+  about: PersonBrief | null;
+  mine: boolean;
+  /** True for the viewer's own, not sealed yet */
+  draft: boolean;
+  /** True while this person may not read it */
+  sealed: boolean;
+  /** @nullable */
+  sealedAt: string | null;
+  /**
+     * The words. Null while it is sealed for this person.
+     * @nullable
+     */
+  text: string | null;
+  /** How many said it came true. 0 until they open. */
+  right: number;
+  /** How many said it didn't. 0 until they open. */
+  wrong: number;
+  /**
+     * right or wrong, once more people said one than the other
+     * @nullable
+     */
+  verdict: string | null;
+  /**
+     * What this person said: true for right, false for wrong
+     * @nullable
+     */
+  yourMark: boolean | null;
+}
+
+export interface PredictionsViewResponse {
+  opensOn: string;
+  /** @nullable */
+  occasion: string | null;
+  /** True from the day they open */
+  open: boolean;
+  daysToGo: number;
+  /** Everyone who writes, with how far each has got */
+  writers: PredictionsWriterResponse[];
+  /** Every prediction this person may know of: sealed ones as envelopes, their own drafts, and from the day on all of them in full */
+  items: PredictionsItemResponse[];
+}
+
+export interface AwardsNomineeResponse {
+  id: string;
+  person: PersonBrief | null;
+  /**
+     * What for: the tiled bar in Alfama
+     * @nullable
+     */
+  what: string | null;
+  photo: BoardMedia | null;
+  /** Who named them */
+  namedBy: PersonBrief | null;
+  mine: boolean;
+  /**
+     * Their votes. Null until the award is decided.
+     * @nullable
+     */
+  votes: number | null;
+  /** True for a winner. False until the award is decided. */
+  winner: boolean;
+  /** True for a winner whose own vote was among theirs. False until the award is decided. */
+  ownVoteIncluded: boolean;
+}
+
+export interface AwardsAwardResponse {
+  id: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /** True once its vote is closed and the result is shown */
+  decided: boolean;
+  /** How many people have voted for it */
+  voted: number;
+  /** How many people are asked to */
+  asked: number;
+  youVoted: boolean;
+  /**
+     * The nominee this person voted for
+     * @nullable
+     */
+  yourNomineeId: string | null;
+  /**
+     * All votes it had. Null until it is decided.
+     * @nullable
+     */
+  totalVotes: number | null;
+  /** The nominees: in the order they were named while it is open, the winner first after */
+  nominees: AwardsNomineeResponse[];
+  mine: boolean;
+}
+
+export interface AwardsViewResponse {
+  /** The year shown */
+  year: number;
+  /** The day whatever is still open is decided: 31 December */
+  opensOn: string;
+  /** True from that day on */
+  open: boolean;
+  daysToGo: number;
+  awards: AwardsAwardResponse[];
+  /** The other years that have awards, newest first */
+  years: number[];
+}
+
+export interface WalkTogetherPersonResponse {
+  person: PersonBrief;
+  you: boolean;
+  thisWeek: number;
+  total: number;
+}
+
+export interface WalkTogetherStopResponse {
+  id: string;
+  name: string;
+  /** How far along the way it lies */
+  at: number;
+  /** True once the crew has walked that far */
+  reached: boolean;
+}
+
+export interface WalkTogetherWalkResponse {
+  id: string;
+  day: string;
+  amount: number;
+}
+
+export interface WalkTogetherViewResponse {
+  /** @nullable */
+  from: string | null;
+  /** @nullable */
+  to: string | null;
+  /** km or steps. On a board in km every amount is in metres. */
+  unit: string;
+  goal: number;
+  /** What everyone has walked, added up */
+  total: number;
+  /** How much of the way that is, 0 to 100 */
+  percent: number;
+  reached: boolean;
+  /** The Monday of this week */
+  weekStart: string;
+  /** What everyone walked this week, added up */
+  thisWeek: number;
+  /** Each person, the one who walked most this week first */
+  people: WalkTogetherPersonResponse[];
+  /** Places along the way, in their order */
+  stops: WalkTogetherStopResponse[];
+  /** The viewer's own walks of the last 31 days, newest first, to put a number right */
+  yours: WalkTogetherWalkResponse[];
+}
+
 export interface BoardResponse {
   id: string;
   circleId: string;
@@ -3955,9 +5793,9 @@ export interface BoardResponse {
   /** The day the view was made for: the phone's day, as far as it can be true */
   day: string;
   /** The board's settings. Which shape follows from `template`: see x-board-templates. */
-  settings: MealPlanSettings | ChoreWheelSettings | TimeCapsuleSettings | OpenWhenSettings | BirthdayInterviewSettings | SaidSettings | SameSpotSettings | StoriesSettings | GoodJarSettings | DoorframeSettings;
+  settings: MealPlanSettings | ChoreWheelSettings | TimeCapsuleSettings | OpenWhenSettings | BirthdayInterviewSettings | SaidSettings | SameSpotSettings | StoriesSettings | GoodJarSettings | DoorframeSettings | WhoseTurnSettings | PiggyBankSettings | SecretMissionsSettings | SaturdayJarSettings | SleepsSettings | WhereIsItSettings | HabitChartsSettings | OurStorySettings | TuckedNotesSettings | AnniversarySettings | MysteryDateSettings | BothYesSettings | FairShareSettings | HeardSettings | GuestBookSettings | LivedHereSettings | KittySettings | FairerSplitSettings | HeadsUpSettings | FindDateSettings | SecretSantaSettings | WhereNextSettings | DictionarySettings | PredictionsSettings | AwardsSettings | WalkTogetherSettings;
   /** What this person sees on the board. Which shape follows from `template`: see x-board-templates. */
-  view: MealPlanView | ChoreWheelView | TimeCapsuleView | OpenWhenView | BirthdayInterviewView | SaidView | SameSpotView | StoriesView | GoodJarView | DoorframeView;
+  view: MealPlanView | ChoreWheelView | TimeCapsuleView | OpenWhenView | BirthdayInterviewView | SaidView | SameSpotView | StoriesView | GoodJarView | DoorframeView | WhoseTurnResponse | PiggyBankResponse | SecretMissionsResponse | SaturdayJarResponse | SleepsResponse | WhereIsItResponse | HabitChartsResponse | OurStoryResponse | TuckedNotesResponse | AnniversaryResponse | MysteryDateResponse | BothYesResponse | FairShareResponse | HeardViewResponse | GuestBookViewResponse | LivedHereViewResponse | KittyViewResponse | FairerSplitViewResponse | HeadsUpViewResponse | FindDateViewResponse | SecretSantaViewResponse | WhereNextViewResponse | DictionaryViewResponse | PredictionsViewResponse | AwardsViewResponse | WalkTogetherViewResponse;
 }
 
 export interface StartedResponse {
@@ -6410,7 +8248,7 @@ export interface PageAlbumResponse {
 }
 
 export interface BoardEntriesResponse {
-  items: (SaidQuote | StoriesQuestion | GoodJarSlip)[];
+  items: (SaidQuote | StoriesQuestion | GoodJarSlip | WhoseTurnThingResponse | PiggyBankMoneyResponse | SecretMissionsMissionResponse | SaturdayJarIdeaResponse | SleepsCountResponse | WhereIsItItemResponse | HabitChartsChartResponse | OurStoryMomentResponse | TuckedNotesNoteResponse | MysteryDatePastResponse | BothYesIdeaResponse | HeardQuoteResponse | GuestBookLineResponse | KittyLineResponse | HeadsUpNoticeResponse | DictionaryWordResponse)[];
   /**
      * Send this back as `cursor` to get the next page. Null on the last page.
      * @nullable

@@ -40,7 +40,7 @@ The spine: the pieces every place builds on. Their names and signatures are fixe
 - **A screen that can lose what was typed** guards itself with `const unsaved = useUnsaved(changed)` (`src/features/navigation/useUnsaved.ts`) and a `ConfirmSheet` while `unsaved.asking`; call `unsaved.release()` after saving, before going on to another screen.
 - **A choice that is remembered on the phone** (a switch that has no place in the API) is `const [value, set] = useKept(key, initial)` (`src/lib/useKept.ts`). Every screen that uses the same key sees the same value at once.
 - **A person in a list** is `PersonRow` (`src/features/people`), and the line under their name is `memberLine(member, circle)`. `AddSomeoneSheet` adds someone to a circle; `RoleSheet` changes a role.
-- **Days, times and money**: besides `formatDay` and `timeAgo`, `lib/dates` has `formatComingDay` ("Today", "Tomorrow", "Fri 4 Dec"), `formatTime` ("18:00"), `formatSpan` ("Today, 18:00 to 23:30"), `atTime(day, '18:00')`, `ageOn` and `nextBirthday`; `lib/money` has `formatMoney(cents)` ("€45", "€45.50").
+- **Days, times and money**: besides `formatDay` and `timeAgo`, `lib/dates` has `formatComingDay` ("Today", "Tomorrow", "Fri 4 Dec"), `formatTime` ("18:00"), `formatSpan` ("Today, 18:00 to 23:30"), `atTime(day, '18:00')`, `ageOn` and `nextBirthday`; for a calendar it has `formatWeekdayDay` ("Sat 14 Nov", with the year when it isn't this one), `nearName` ("Today", "Tomorrow" or null), `formatTimeOfDay` and `formatClocks` for a time of day as the API sends it ("07:30" is "7:30"; "10:00 to 10:30"), `addMinutes`, `monthOf`, `addMonths`, `formatMonth` and `phoneTimeZone()`; `lib/money` has `formatMoney(cents)` ("€45", "€45.50"). `useDebounced(value)` (`lib/useDebounced`) is a value once it has stopped changing.
 - **In `src/ui`** since the foundation: `Segmented` (a few choices in one grey bar), `MoreRow` (a soft row with an emoji, a bold line and an arrow), `Blob` (a big emoji on a soft round ground), `SelectPill` (a small pill that holds a choice and opens the others), `GrowingInput` (a box typed straight into the page, as tall as what is in it); `EmojiTabs` takes `six`, `NoteBox` takes `soft` and `trailing`, `DayPicker` takes `byYear` (for a birthday), and `ThingRow` takes `picked` for a list to tick things in.
 
 ## Adding a template
@@ -93,9 +93,9 @@ Milestone 1, the spine: circles, people and sharing.
 | 3.1 Today, 13.1 Loading, 13.3 A brand-new circle | `/` | Draws whatever the API's Today holds, from every place: the day's list, the cards of a circle's own templates, what is new. |
 | 3.2 Your circles | (a sheet on Home) | |
 | 3.3 Find anything | `/search`, `/search?place=notes` | |
-| 3.4 The + button | (a sheet on the tab bar) | "Type it" is drawn and says it arrives with Plan. |
+| 3.4 The + button | (a sheet on the tab bar) | "Type it" opens Plan's `/plan/quick-add`. |
 | 4.1 People | `/people` | |
-| 4.2 A person's page | `/person/<id>` | "Coming up" is what Plan keeps about them; their photos are one row that leads to the Library. |
+| 4.2 A person's page | `/person/<id>` | "Coming up" is Plan's `ComingUp`: the calendar for that one person. Their photos are one row that leads to the Library. |
 | 4.3 Who can see this? | (the sheet behind every audience chip) | |
 | 4.4 Keep it a surprise | `/page/<id>` | Any page that is hidden from someone says so, and until when. A page made of parts is read part by part, each thing it holds as a row. |
 | 4.5 Guest pass | `/guest-pass/new`, `/guest-pass/<id>`, `/guest-passes` | The guest's side is a web page the API serves. |
@@ -123,9 +123,25 @@ Milestone 2, the Library: photos, videos and documents (`src/features/library`).
 - A photo opens with `viewerHref(item, narrow)` (`features/library/narrow.ts`): the address `thingHref` makes, with the narrowing after it.
 - The answer of `GET /v1/library/{id}` is typed by hand (`features/library/types.ts`, read with `useLibraryItem`) until the API's description stops giving it the name of a checklist's line.
 - `List` takes `onTop` (the first row on screen changed). In a screen's test the list is stood in for, since the tests can't load the real one: `jest.mock('@/ui/List', () => jest.requireActual('@/test/samples/library').listForTests)` draws every row and lets a test press "the end of the list".
-- `lib/dates` also has `formatMonth` ("November 2026"), `formatMonthName`, `formatMonthShort` ("Nov 2028"), `formatWeekdayPast` ("Sat 7 Nov", with the year when it isn't this one) and `formatClock` ("11:42" from a time without a zone).
+- `lib/dates` also has `formatMonth` ("November 2026"), `formatMonthName`, `formatMonthShort` ("Nov 2028"), `formatWeekdayPast` ("Sat 7 Nov", with the year when it isn't this one) and `formatClock` ("11:42" from the moment a photo was taken, written without a zone).
 
-Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: four of Home's six places (Plan, Notes, Money, the Vault), Activity, six of the ten things the + sheet opens, and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
+Milestone 3, Plan: the calendar, events, reminders, goals. Its pieces are in `src/features/plan`.
+
+| Screen (design) | Address | |
+|---|---|---|
+| 7.1 Plan | `/?place=plan` | The week strip and the list by day (`getPlan`). Three chips lead to the month, the reminders and the goals; they are not in the drawing, which has no way to them. |
+| 7.2 Month | `/plan/month`, `/plan/month?day=2026-11-14` | A dot per person, the chosen day's list, one person's days. The arrows by the month's name are not in the drawing. The + makes an event on the chosen day. |
+| 7.3 An event | `/event/<id>` | Answers, who is coming, what it gathers (a to-do list, a budget from the party template, an album), change, a picture, delete. |
+| 7.4 Type it | `/plan/quick-add` | The line is read a moment after the last key (`readLine`); each piece can be corrected. An uncorrected line is filed by `jot`, a corrected part by `createEvent` or `createReminder`. |
+| 7.5 Reminders | `/plan/reminders` | Yours, what you asked of others (with Nudge), the ones that wait for a place, and what was ticked. |
+| A reminder | `/reminder/<id>` | Not drawn. |
+| 7.6 Goals | `/plan/goals` | |
+| 7.7 A goal | `/goal/<id>` | "Add money", "Add one" or the list of steps; a line that was put in can be taken back. |
+| A new event, reminder, goal | `/new/event` (`?day=`), `/new/reminder`, `/new/goal` | Not drawn. The first two have a line on top that leads to Type it. |
+
+Plan's pieces that other screens use: `useTick()` and `Tick` (ticking a reminder from any list, for the due day the line is for; `TodayTick` is the tick on Today, where a line has no due day and the reminder itself is asked first), `ComingUp` (a person's page), `PlanEntry` and `DayHeader` (one line of a day), `WhenSheet`, `RepeatSheet`, `RemindSheet` and `PeopleSheet` (picking a day and time, how often, how long ahead, and people of the circle), `readTime` and `readCents` (`features/plan/times`: a time and an amount the way people type them), and `useNotice()` (a sentence that answers a press and goes by itself).
+
+Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: three of Home's six places (Notes, Money, the Vault), Activity, three of the ten things the + sheet opens (a bill, a sheet, a password), and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 
 ## The API's description
 

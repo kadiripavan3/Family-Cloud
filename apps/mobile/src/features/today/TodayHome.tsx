@@ -7,6 +7,7 @@ import { type CircleResponse, type FreshCard, type TodayItem, type TodayResponse
 import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
+import { TodayTick } from '@/features/plan/TodayTick';
 import { kindOf } from '@/features/things/kinds';
 import { useOpenThing } from '@/features/things/open';
 import { today } from '@/lib/dates';
@@ -131,6 +132,9 @@ function DayRow({ item, first }: { item: TodayItem; first: boolean }) {
           <Txt variant="note" weight={800} numberOfLines={1}>
             {item.lead}
           </Txt>
+        ) : item.kind === 'reminder' ? (
+          // A reminder is ticked right here: Plan's own tick, which tells the API and every list.
+          <TodayTick item={item} />
         ) : (
           <View style={{ width: 24, height: 24, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', borderWidth: ticked ? 0 : 2, borderColor: colors.lineStrong, backgroundColor: ticked ? colors.accent : 'transparent' }}>
             {ticked ? <Check size={14} color={colors.onAccent} strokeWidth={3} /> : null}

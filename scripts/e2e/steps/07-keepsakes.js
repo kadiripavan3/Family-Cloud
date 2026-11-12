@@ -285,9 +285,11 @@ exports.run = async function run(ctx) {
     // those still waiting for an answer, which opens to the same link.
     const sendIt = R('button', { name: 'Send it to Astrid' });
     const sent = R('button', { name: new RegExp(`^What was your first bicycle like\\? \\(${tag}\\)\\. Sent on `) });
+    await R('button', { name: new RegExp(`^What was your first bicycle like\\? \\(${tag}\\)\\. Nora's question · goes out on `) }).waitFor({ state: 'detached', timeout: 20000 });
     await sendIt.or(sent).first().waitFor({ timeout: 20000 });
-    const thisWeeks = await sendIt.isVisible().catch(() => false);
-    if (!thisWeeks) await sent.click();
+    // (Asked by its own row, not by the button: this week's question at the top of the page has that button
+    // too, whichever question it is.)
+    if (await sent.isVisible().catch(() => false)) await sent.click();
     await sendIt.waitFor();
     await T(/\/s\//).waitFor();
     await shot('stories-waiting');

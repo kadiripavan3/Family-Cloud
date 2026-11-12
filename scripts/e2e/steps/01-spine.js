@@ -210,9 +210,12 @@ async function newFamily(ctx) {
     for (const thing of ['Note', 'Checklist', 'Photos', 'Scan', 'Event', 'Reminder', 'Bill', 'Sheet', 'Password', 'Goal']) await R('button', { name: thing, exact: true }).waitFor();
     await T('Goes into').waitFor();
     await R('button', { name: 'Seen by Only you. Change' }).waitFor();
-    await R('button', { name: 'Type what to add' }).click();
-    await T(/^Typing a sentence that files itself arrives with Plan/).waitFor();
     await shot('plus');
+    // The line on top opens Plan's "Type it" (03-plan.js types into it), and closes back to where it was pressed.
+    await R('button', { name: 'Type what to add' }).click();
+    await L('What to add').waitFor();
+    await R('button', { name: 'Close' }).click();
+    await R('button', { name: 'Add something' }).click();
     // A thing that isn't built yet has its own place and says so.
     await R('button', { name: 'Bill', exact: true }).click();
     await R('heading', { name: 'Bill' }).waitFor();

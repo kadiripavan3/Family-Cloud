@@ -25,6 +25,10 @@ export const dates = {
   monthShort: (month: number, year: number) => `${MONTHS[month]!.slice(0, 3)} ${year}`,
   /** "Tue 24 Sep 2019": a day that was written without its year, with it. */
   withYear: (day: string, year: number) => `${day} ${year}`,
+  /** "Sat 14 Nov", "Sat 2 Jan 2027": a day on a calendar with its weekday. `weekday` is numbered from 0 (Sunday); `day` is already written out. */
+  weekdayDay: (weekday: number, day: string) => `${WEEKDAYS[weekday]} ${day}`,
+  /** "3 Apr to 20 Apr", "10:00 to 10:30". Both ends are already written out. */
+  fromTo: (from: string, to: string) => `${from} to ${to}`,
 
   // The day picker
   /** One letter for each day of the week, Monday first. */

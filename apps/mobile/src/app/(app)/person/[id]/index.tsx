@@ -14,6 +14,7 @@ import { pickSquarePhoto } from '@/features/media/pick';
 import { placeHref } from '@/features/home/places';
 import { useLeave } from '@/features/navigation/useLeave';
 import { FactsSheet } from '@/features/people/FactsSheet';
+import { ComingUp } from '@/features/plan/ComingUp';
 import { PageProblem } from '@/features/states/PageProblem';
 import { ThingRow } from '@/features/things/ThingRow';
 import { ageOn, formatDayLong, formatWeekday, nextBirthday, today } from '@/lib/dates';
@@ -123,10 +124,9 @@ function Loaded({ data }: { data: PersonPageResponse }) {
     },
   });
 
-  // What Plan keeps about them is what is coming up; their photos and videos are one row; the rest is kept for them.
-  const coming = kept.filter((thing) => thing.place === 'plan');
+  // What is coming up is Plan's own piece, from the calendar; their photos and videos are one row; the rest is kept for them.
   const photos = kept.filter((thing) => thing.kind === 'photo' || thing.kind === 'video');
-  const rest = kept.filter((thing) => thing.place !== 'plan' && thing.kind !== 'photo' && thing.kind !== 'video');
+  const rest = kept.filter((thing) => thing.kind !== 'photo' && thing.kind !== 'video' && thing.kind !== 'event' && thing.kind !== 'reminder');
   const birthday = member.birthday ? nextBirthday(member.birthday) : null;
   // A plan that is hidden from them today is theirs to be surprised by.
   const hiddenPlan = kept.some((thing) => thing.chip?.hiddenFrom?.includes(name));
@@ -178,17 +178,7 @@ function Loaded({ data }: { data: PersonPageResponse }) {
         </View>
 
         <GroupLabel style={{ marginHorizontal: layout.gutter }}>{says.comingUp}</GroupLabel>
-        {coming.length ? (
-          <RowGroup>
-            {coming.map((thing, index) => (
-              <ThingRow key={thing.id} look="grouped" first={index === 0} thing={thing} />
-            ))}
-          </RowGroup>
-        ) : (
-          <Txt variant="callout" color="muted" style={{ marginHorizontal: layout.gutter }}>
-            {says.comingUpEmpty(name)}
-          </Txt>
-        )}
+        <ComingUp member={member} />
 
         <GroupLabel style={{ marginHorizontal: layout.gutter }}>{member.you ? says.keptYou : says.kept(name)}</GroupLabel>
         {rest.length || photos.length ? (

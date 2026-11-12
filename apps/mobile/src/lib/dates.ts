@@ -190,3 +190,63 @@ export function formatMonthAndYear(day: string): string {
 export function mondayOf(day: string): string {
   return addDays(day, -((fromISODate(day).getDay() + 6) % 7));
 }
+
+/** The day after today. */
+export function tomorrow(): string {
+  return addDays(today(), 1);
+}
+
+/** Which day of the week a day is, Monday first: 0 for a Monday, 6 for a Sunday. */
+export function weekdayOf(day: string): number {
+  return (fromISODate(day).getDay() + 6) % 7;
+}
+
+/** "Sat 14 Nov", or "Sat 2 Jan 2027" when it isn't this year: a day on a calendar, with its day of the week. */
+export function formatWeekdayDay(day: string): string {
+  return words.dates.weekdayDay(fromISODate(day).getDay(), formatDay(day));
+}
+
+/** "Today" or "Tomorrow" for those two days; null for any other, which is called by its date. */
+export function nearName(day: string): string | null {
+  const away = daysBetween(today(), day);
+  return away === 0 ? words.dates.today : away === 1 ? words.dates.tomorrow : null;
+}
+
+/** A time of day as the API sends it ("07:30") the way a calendar writes it: "7:30". */
+export function formatTimeOfDay(time: string): string {
+  const [hours, minutes] = time.split(':');
+  return `${Number(hours)}:${(minutes ?? '00').padStart(2, '0')}`;
+}
+
+/** "10:00", or "10:00 to 10:30" for something with an end. */
+export function formatClocks(time: string, endTime?: string | null): string {
+  return endTime ? words.dates.fromTo(formatTimeOfDay(time), formatTimeOfDay(endTime)) : formatTimeOfDay(time);
+}
+
+/** A time of day so many minutes later, on the same day: "10:00" and 30 give "10:30". It stops at the end of the day. */
+export function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = Math.min(Math.max((h ?? 0) * 60 + (m ?? 0) + minutes, 0), 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** The month a day is in, as the API names months: "2026-11". */
+export function monthOf(day: string): string {
+  return day.slice(0, 7);
+}
+
+/** The month so many months later (or earlier): "2026-12" and 1 give "2027-01". */
+export function addMonths(month: string, count: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const date = new Date(y!, (m ?? 1) - 1 + count, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** The time zone the phone is in, as the API takes it: "Europe/Ljubljana". UTC when the phone won't say. */
+export function phoneTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}

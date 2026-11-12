@@ -79,7 +79,6 @@ export const people = {
     },
     facts: { edit: 'Edit', add: 'Add a fact', title: (name: string) => `About ${name}`, hint: 'Short facts worth having to hand: a shoe size, a class, an allergy.', field: 'A fact', placeholder: 'Shoes 33', addButton: 'Add', remove: (fact: string) => `Remove ${fact}`, save: 'Save' },
     comingUp: 'Coming up',
-    comingUpEmpty: (name: string) => `Nothing coming up for ${name}. Events and reminders about them show here.`,
     /** Their photos and videos, as one row: "8 photos of Mia". */
     photos: (count: number, name: string) => (count === 1 ? `1 photo of ${name}` : `${number(count)} photos of ${name}`),
     photosNote: 'In the Library',
