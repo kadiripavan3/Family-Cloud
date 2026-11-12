@@ -29,7 +29,7 @@ class OpenApiConfig {
     @Bean
     OpenAPI journeyOpenApi() {
         return new OpenAPI()
-                .info(new Info().title("Journey API").version("v1").description("Backend of the Journey app."))
+                .info(new Info().title("Homeport API").version("v1").description("Backend of the Homeport app."))
                 .components(new Components()
                         .addSecuritySchemes(
                                 "bearer",

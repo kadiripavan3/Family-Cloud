@@ -1,8 +1,8 @@
 {
   "openapi" : "3.1.0",
   "info" : {
-    "title" : "Journey API",
-    "description" : "Backend of the Journey app.",
+    "title" : "Homeport API",
+    "description" : "Backend of the Homeport app.",
     "version" : "v1"
   },
   "servers" : [ {
