@@ -400,6 +400,10 @@ async function newFamily(ctx) {
     await T('1 left of 3').waitFor();
     await shot('checklist');
     await R('button', { name: 'Back', exact: true }).click();
+    // Sam's phone goes back to Home: an open list keeps asking for news, and Sam is taken out of the circle
+    // further on, when that list is no longer theirs to ask for.
+    await sam.page.goto(`${WEB_URL}/`);
+    await sam.R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });
   });
 
   await step('people', async () => {
@@ -877,14 +881,12 @@ async function sampleCircles(ctx) {
     await T('The party', { exact: true }).waitFor();
     await R('button', { name: 'Party budget. Sheet. €180 of €250' }).waitFor();
     await R('button', { name: /^Party prep\. List\. \d of 9 done/ }).waitFor();
-    await shot('surprise');
-    // One of them is a list: it opens as one, with its amounts at the right.
-    await R('button', { name: /^Gift ideas\. List/ }).click();
+    // One of them is a list, drawn in the page itself with its ticks and its amounts at the right (Notes'
+    // own steps tick it and open it).
     await R('checkbox', { name: 'Roller skates, size 33', checked: true }).waitFor();
     await T('€45', { exact: true }).waitFor();
     await T('Alex bought them').waitFor();
-    await shot('checklist-gifts');
-    await R('button', { name: 'Back', exact: true }).click();
+    await shot('surprise');
     await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: 'Back', exact: true }).click();
   });

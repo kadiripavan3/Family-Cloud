@@ -66,15 +66,19 @@ exports.run = async function run(ctx) {
   });
 
   await step('templates-not-ready', async () => {
-    // One whose rules aren't in the API yet says so, in the API's words, and can't be started.
-    await R('button', { name: 'Fair and fun', exact: true }).click();
-    await R('button', { name: /^Whose turn\?\./ }).click();
+    // One whose rules aren't in the API yet says so, in the API's words, and can't be started. (A flat's
+    // cleaning rota is one of six that are marked LIVE and have no drawing of their own yet.)
+    await R('button', { name: 'Search templates' }).click();
+    await L('Search templates').fill('Cleaning rota');
+    await R('button', { name: /^Cleaning rota\./ }).click();
     await T('Coming with the next update').waitFor();
     await T("It can't be started yet. Every template without this note can.").waitFor();
     if (await R('button', { name: 'Start', exact: true }).isVisible().catch(() => false)) throw new Error('a template that is not ready offers Start');
     await shot('templates-not-ready');
     await closeSheet(ctx);
     await T('Coming with the next update').waitFor({ state: 'detached' });
+    await R('button', { name: 'Close search' }).click();
+    await R('button', { name: 'All 53', exact: true }).waitFor();
   });
 
   await step('templates-start-plain', async () => {

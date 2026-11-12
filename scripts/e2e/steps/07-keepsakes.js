@@ -289,7 +289,8 @@ exports.run = async function run(ctx) {
     await sendIt.or(sent).first().waitFor({ timeout: 20000 });
     // (Asked by its own row, not by the button: this week's question at the top of the page has that button
     // too, whichever question it is.)
-    if (await sent.isVisible().catch(() => false)) await sent.click();
+    const thisWeeks = !(await sent.isVisible().catch(() => false));
+    if (!thisWeeks) await sent.click();
     await sendIt.waitFor();
     await T(/\/s\//).waitFor();
     await shot('stories-waiting');
