@@ -12,7 +12,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ThingKind {
     PAGE(Place.NOTES),
-    CHECKLIST(Place.NOTES);
+    CHECKLIST(Place.NOTES),
+    PHOTO(Place.LIBRARY),
+    VIDEO(Place.LIBRARY),
+    DOCUMENT(Place.LIBRARY),
+    ALBUM(Place.LIBRARY);
 
     private final Place place;
 

@@ -114,7 +114,12 @@ public class CircleStore {
                 .update();
     }
 
+    /**
+     * Removes a circle and everything in it. With a Library that can be tens of thousands of photos, each with
+     * files to queue for removal, so it is given room to take longer than a statement usually may.
+     */
     public void delete(UUID id) {
+        jdbc.sql(Sql.ROOM_FOR_A_JOB).update();
         jdbc.sql("delete from circles where id = :id").param("id", id).update();
     }
 

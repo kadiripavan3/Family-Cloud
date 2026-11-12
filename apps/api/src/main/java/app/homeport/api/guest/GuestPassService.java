@@ -74,7 +74,7 @@ public class GuestPassService {
         OPEN
     }
 
-    public record GuestCard(String label, String title, String text) {}
+    public record GuestCard(String label, String title, String text, List<String> images) {}
 
     public record Visit(Door door, PassRow pass, List<GuestCard> cards, String device, boolean wrongCode) {}
 
@@ -257,7 +257,7 @@ public class GuestPassService {
                 .filter(t -> views.containsKey(t.kind()))
                 .map(t -> {
                     GuestView.Card card = views.get(t.kind()).show(t.thingId());
-                    return new GuestCard(card.label(), t.title(), card.text());
+                    return new GuestCard(card.label(), t.title(), card.text(), card.imageUrls());
                 })
                 .toList();
     }
