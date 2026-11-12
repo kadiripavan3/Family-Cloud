@@ -1,5 +1,8 @@
 package app.homeport.api.board;
 
+import app.homeport.api.activity.ActivityKind;
+import app.homeport.api.activity.ActivityLog;
+import app.homeport.api.activity.ActivityLog.Happened;
 import app.homeport.api.board.BoardStore.BoardRow;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.common.Keyset;
@@ -86,12 +89,14 @@ public class BoardService {
     private final ThingStore thingStore;
     private final BoardStore store;
     private final Boards boards;
+    private final ActivityLog activity;
 
-    BoardService(ThingService things, ThingStore thingStore, BoardStore store, Boards boards) {
+    BoardService(ThingService things, ThingStore thingStore, BoardStore store, Boards boards, ActivityLog activity) {
         this.things = things;
         this.thingStore = thingStore;
         this.store = store;
         this.boards = boards;
+        this.activity = activity;
     }
 
     // ---------- a board ----------
@@ -200,8 +205,11 @@ public class BoardService {
         if (!rulesOf(scene).viewersMayWrite(what)) {
             scene.requireEdit();
         }
-        UUID entryId = store.sentBefore(boardId, clientId)
-                .orElseGet(() -> rulesOf(scene).add(scene, what, Fields.of(fields), clientId));
+        UUID sentBefore = store.sentBefore(boardId, clientId).orElse(null);
+        UUID entryId = sentBefore != null ? sentBefore : rulesOf(scene).add(scene, what, Fields.of(fields), clientId);
+        if (sentBefore == null) {
+            tell(scene, true);
+        }
         return new EntryAddedResponse(entryId, get(boardId, me, day, null));
     }
 
@@ -256,7 +264,27 @@ public class BoardService {
         }
         rulesOf(scene).act(scene, what, Fields.of(body));
         thingStore.touch(boardId);
+        tell(scene, false);
         return get(boardId, me, day, null);
+    }
+
+    /**
+     * Passes on to Activity what the template said happened ({@link Scene#tell}). A template that said
+     * nothing about a new entry gets the usual line, "added to" and the board's name; a verb is only news
+     * when its template says so.
+     */
+    private void tell(Scene scene, boolean added) {
+        for (Scene.Told told : scene.told()) {
+            activity.record(Happened.to(scene.circleId(), ActivityKind.BOARD, scene.boardId())
+                    .by(told.who())
+                    .saying(told.words(), false)
+                    .count("times"));
+        }
+        if (added && scene.told().isEmpty() && !scene.quiet() && scene.myId() != null) {
+            activity.record(Happened.to(scene.circleId(), ActivityKind.BOARD, scene.boardId())
+                    .by(scene.myId())
+                    .count("times"));
+        }
     }
 
     /**

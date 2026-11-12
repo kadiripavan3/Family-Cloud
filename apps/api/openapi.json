@@ -34,6 +34,9 @@
     "name" : "boards",
     "description" : "Templates that do work: a meal plan, a chore wheel, a time capsule. The same routes for every template; what each one takes and gives is listed under x-board-templates."
   }, {
+    "name" : "export",
+    "description" : "Everything, in ordinary files"
+  }, {
     "name" : "goals",
     "description" : "Goals: a target, a ring, and who put in what"
   }, {
@@ -85,8 +88,14 @@
     "name" : "me",
     "description" : "The signed-in person and their profile"
   }, {
+    "name" : "activity",
+    "description" : "What changed, what is due and who is asking"
+  }, {
     "name" : "events",
     "description" : "Events: when, where and who is coming"
+  }, {
+    "name" : "summary",
+    "description" : "The Sunday summary"
   }, {
     "name" : "vault",
     "description" : "A person's Vault: the keys their phone made. The API can open none of it."
@@ -1201,6 +1210,38 @@
         }
       }
     },
+    "/v1/circles/{id}/mute" : {
+      "put" : {
+        "tags" : [ "activity" ],
+        "summary" : "Mute a circle, or let it be heard again",
+        "description" : "Nothing that happens in a muted circle is pushed to you. Activity still shows it all, and news about your own safety (your Vault) is told whatever you muted.",
+        "operationId" : "muteCircle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MuteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/list-in-use" : {
       "put" : {
         "tags" : [ "jot" ],
@@ -1343,6 +1384,27 @@
         }
       }
     },
+    "/v1/circles/{id}/activity/seen" : {
+      "put" : {
+        "tags" : [ "activity" ],
+        "summary" : "You have looked at Activity here: nothing before now is new",
+        "operationId" : "markActivitySeen",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/checklists/{id}/look" : {
       "put" : {
         "tags" : [ "checklists" ],
@@ -1415,6 +1477,64 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/asks/{id}" : {
+      "put" : {
+        "tags" : [ "activity" ],
+        "summary" : "The owner's answer to an ask: allow, or not now",
+        "description" : "Allowing has two steps, because only your phone can open a Vault item to someone: first share the item with them (PUT /v1/vault/items/{id}/sharing, with a key wrapped for them and the until or once they asked for), then say allow here. Until they can really open it, allow is refused with not_opened_yet.",
+        "operationId" : "answerAsk",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AnswerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AskResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "activity" ],
+        "summary" : "Take back something you asked",
+        "operationId" : "withdrawAsk",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1688,6 +1808,45 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/VaultEmergencyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/things/{id}/asks" : {
+      "post" : {
+        "tags" : [ "activity" ],
+        "summary" : "Ask a thing's owner to open it to you",
+        "description" : "They see the question in Activity and are told on their phone, without the thing being named. Asking again while a question is open keeps the one there is.",
+        "operationId" : "askToSee",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AskResponse"
                 }
               }
             }
@@ -3238,6 +3397,74 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GuestPassResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/exports" : {
+      "get" : {
+        "tags" : [ "export" ],
+        "summary" : "Your exports of a circle, newest first. Ten at most: each is kept for seven days.",
+        "operationId" : "getExports",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ExportResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "export" ],
+        "summary" : "Ask for an export of a circle: one zip of ordinary files",
+        "description" : "Pages as text and web pages, lists as text, photos and files full size in dated folders, sheets as CSV with their formulas written out, events and reminders as a calendar file, bills and splits as CSV, and a README. The Vault is not in it: only your phone can open that. It is made in the background and you are told when it is ready.",
+        "operationId" : "askForExport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExportResponse"
                 }
               }
             }
@@ -5812,6 +6039,35 @@
         }
       }
     },
+    "/v1/things/{id}/ask" : {
+      "get" : {
+        "tags" : [ "activity" ],
+        "summary" : "Whether you can ask to see this thing, and what became of the last time you asked",
+        "description" : "You can ask when you may see that it exists and have no way to open it: a Vault item whose key was for one look, has stopped working or hasn't reached you yet.",
+        "operationId" : "getAsk",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AskStanding"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sheets/{id}/rows" : {
       "get" : {
         "tags" : [ "sheets" ],
@@ -6025,11 +6281,28 @@
       },
       "delete" : {
         "tags" : [ "Account and safety" ],
-        "summary" : "Delete your account and everything in it, for good",
+        "summary" : "Delete your account and everything in it, for good. You choose: only Homeport, or Journey too.",
         "operationId" : "deleteAccount",
+        "parameters" : [ {
+          "name" : "journeyToo",
+          "in" : "query",
+          "description" : "False (or left out): only Homeport, the sign-in you share with Journey is never touched. True: the sign-in too, where this API may remove it; otherwise the answer says that Journey's own Delete account does that part.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
         "responses" : {
-          "204" : {
-            "description" : "No Content"
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccountDeletedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6074,6 +6347,25 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MomentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/home/circles" : {
+      "get" : {
+        "tags" : [ "home" ],
+        "summary" : "Your circles, each with one short line for the switcher, and what only you can see",
+        "operationId" : "getCircleSwitcher",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SwitcherResponse"
                 }
               }
             }
@@ -6167,6 +6459,53 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/exports/{id}" : {
+      "get" : {
+        "tags" : [ "export" ],
+        "summary" : "Where an export stands, and its address once it is ready",
+        "operationId" : "getExport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExportResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "export" ],
+        "summary" : "Remove an export before its seven days are over",
+        "operationId" : "removeExport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -6398,6 +6737,44 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/TemplateGalleryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/summary" : {
+      "get" : {
+        "tags" : [ "summary" ],
+        "summary" : "Your week in a circle: the best photo, what got done, what next week holds",
+        "description" : "Made from what you may see, so it can differ from someone else's summary of the same week.",
+        "operationId" : "getSummary",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "week",
+          "in" : "query",
+          "description" : "Any day of the week you want. This week when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SummaryResponse"
                 }
               }
             }
@@ -7215,6 +7592,35 @@
         }
       }
     },
+    "/v1/circles/{id}/leaving" : {
+      "get" : {
+        "tags" : [ "circles" ],
+        "summary" : "What leaving a circle will do, in numbers, before you do it",
+        "description" : "How many things only you can see will be deleted, how many shared things stay for the others, and how many passwords stop working for them. Leaving itself is DELETE /v1/members/{id} with your own member id.",
+        "operationId" : "getLeaving",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LeavingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/goals" : {
       "get" : {
         "tags" : [ "goals" ],
@@ -7548,6 +7954,103 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PageAlbumResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/activity" : {
+      "get" : {
+        "tags" : [ "activity" ],
+        "summary" : "A circle's Activity, newest first: what changed, what is due and who is asking",
+        "description" : "Only what you may see: a line about a thing is there while that thing is shared with you, and never your own changes. Lines about the same thing on the same day are one.",
+        "operationId" : "getActivity",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "filter",
+          "in" : "query",
+          "description" : "Which chip: all, asks, photos, money or plan. All when left out.",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/ActivityFilter"
+          }
+        }, {
+          "name" : "zone",
+          "in" : "query",
+          "description" : "The phone's time zone, such as Europe/Ljubljana: for times inside sentences",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the phone. Today in that time zone when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ActivityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/activity/unread" : {
+      "get" : {
+        "tags" : [ "activity" ],
+        "summary" : "How many lines are new since you last opened Activity here: the dot on the tab",
+        "operationId" : "getUnreadActivity",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnreadResponse"
                 }
               }
             }
@@ -9285,6 +9788,9 @@
           },
           "summaryEmail" : {
             "type" : "boolean"
+          },
+          "hideDetails" : {
+            "type" : "boolean"
           }
         }
       },
@@ -9302,9 +9808,13 @@
           "summaryEmail" : {
             "type" : "boolean",
             "description" : "Also send the Sunday summary by email"
+          },
+          "hideDetails" : {
+            "type" : "boolean",
+            "description" : "Hide details in notifications: a push says that a bill is due, not which or how much. A push about the Vault never names the item, whatever this says."
           }
         },
-        "required" : [ "notifyActivity", "summaryEmail", "weeklySummary" ]
+        "required" : [ "hideDetails", "notifyActivity", "summaryEmail", "weeklySummary" ]
       },
       "SaveProfileRequest" : {
         "type" : "object",
@@ -9717,6 +10227,15 @@
           }
         },
         "required" : [ "id", "title" ]
+      },
+      "MuteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "muted" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "muted" ]
       },
       "CodesGo" : {
         "type" : "string",
@@ -10308,6 +10827,66 @@
         },
         "required" : [ "cents", "paid", "paidAt", "paidBy", "parts", "person", "you" ]
       },
+      "AskResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "askerId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Who asked"
+          },
+          "askerName" : {
+            "type" : "string"
+          },
+          "until" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "They would like it until this moment: for today only"
+          },
+          "once" : {
+            "type" : "boolean",
+            "description" : "They would like it for one look"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/AskState"
+          },
+          "askedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "answeredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person is the one who asked"
+          }
+        },
+        "required" : [ "answeredAt", "askedAt", "askerId", "askerName", "circleId", "id", "kind", "mine", "once", "state", "thingId", "title", "until" ]
+      },
+      "AskState" : {
+        "type" : "string",
+        "enum" : [ "open", "allowed", "declined", "withdrawn" ]
+      },
       "StartRecoveryRequest" : {
         "type" : "object",
         "properties" : {
@@ -10691,6 +11270,25 @@
           }
         },
         "required" : [ "askedAt", "id", "items", "note", "openedAt", "opensAt", "owner", "refusedAt", "state", "waitHours" ]
+      },
+      "AskRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "until" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "You would like it until this moment: for today only"
+          },
+          "once" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "You would like it for one look"
+          }
+        },
+        "required" : [ "clientId" ]
       },
       "NewSplitRequest" : {
         "type" : "object",
@@ -11520,22 +12118,6 @@
           }
         },
         "required" : [ "clientId", "name" ]
-      },
-      "AskRequest" : {
-        "type" : "object",
-        "properties" : {
-          "question" : {
-            "type" : "string",
-            "maxLength" : 300,
-            "minLength" : 0
-          },
-          "day" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "The day on the person's phone, for TODAY()"
-          }
-        },
-        "required" : [ "question" ]
       },
       "NewPaperRequest" : {
         "type" : "object",
@@ -14056,6 +14638,81 @@
           }
         }
       },
+      "ExportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "scope" : {
+            "$ref" : "#/components/schemas/ExportScope",
+            "description" : "mine: what you made here. everything: all you can see here. Mine when left out."
+          }
+        },
+        "required" : [ "clientId" ]
+      },
+      "ExportScope" : {
+        "type" : "string",
+        "enum" : [ "mine", "everything" ]
+      },
+      "ExportResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "scope" : {
+            "$ref" : "#/components/schemas/ExportScope"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/ExportState"
+          },
+          "url" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where the zip is, once it is ready. Nobody can guess the address; whoever has it can fetch the file, so treat it like the file."
+          },
+          "bytes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "files" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many files are in it"
+          },
+          "leftOut" : {
+            "type" : "array",
+            "description" : "What a bound kept out, in sentences to show as they are. Usually empty.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "askedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "readyAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "expiresAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it will be removed: seven days after it was made"
+          }
+        },
+        "required" : [ "askedAt", "bytes", "circleId", "expiresAt", "files", "id", "leftOut", "readyAt", "scope", "state", "url" ]
+      },
+      "ExportState" : {
+        "type" : "string",
+        "enum" : [ "waiting", "working", "ready", "failed" ]
+      },
       "NewChecklistRequest" : {
         "type" : "object",
         "properties" : {
@@ -16003,6 +16660,20 @@
         },
         "required" : [ "emergency", "entrusted", "helpNeeded", "helperAsks", "recovery", "sharesDue", "waitingForKeys" ]
       },
+      "AskStanding" : {
+        "type" : "object",
+        "properties" : {
+          "canAsk" : {
+            "type" : "boolean",
+            "description" : "True when there is something to ask: you see it exists and can't open it"
+          },
+          "ask" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/AskResponse",
+            "description" : "Your last question about it, when there was one"
+          }
+        }
+      },
       "PageExpenseResponse" : {
         "type" : "object",
         "properties" : {
@@ -16430,6 +17101,46 @@
           }
         }
       },
+      "SwitcherCircle" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The line under its name: Friends · 5 people · you're owed €64"
+          }
+        }
+      },
+      "SwitcherResponse" : {
+        "type" : "object",
+        "properties" : {
+          "circles" : {
+            "type" : "array",
+            "description" : "Your circles, in the order you joined them. Twenty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/SwitcherCircle"
+            }
+          },
+          "onlyYou" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things in all your circles only you can see: what Just me counts"
+          }
+        },
+        "required" : [ "circles", "onlyYou" ]
+      },
       "PageEntryResponse" : {
         "type" : "object",
         "properties" : {
@@ -16821,6 +17532,19 @@
           }
         }
       },
+      "TodayAction" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "type" : "string",
+            "description" : "What the button says: Pay"
+          },
+          "act" : {
+            "type" : "string",
+            "description" : "What kind of act it is: pay"
+          }
+        }
+      },
       "TodayCard" : {
         "type" : "object",
         "properties" : {
@@ -16864,6 +17588,21 @@
           }
         }
       },
+      "TodayDue" : {
+        "type" : "object",
+        "properties" : {
+          "on" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "amount" : {
+            "type" : [ "string", "null" ]
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
       "TodayItem" : {
         "type" : "object",
         "properties" : {
@@ -16900,6 +17639,20 @@
             "items" : {
               "type" : "string"
             }
+          },
+          "action" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/TodayAction",
+            "description" : "Its button, when there is something to do right here: Pay"
+          },
+          "repeats" : {
+            "type" : "boolean",
+            "description" : "True for something that comes round again: the repeat mark"
+          },
+          "due" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/TodayDue",
+            "description" : "For a bill or a reminder: when it is due, and how Activity says it"
           }
         }
       },
@@ -17058,6 +17811,155 @@
       "TemplateTopic" : {
         "type" : "string",
         "enum" : [ "home", "kids", "food", "money", "trips", "landlord", "together", "memories" ]
+      },
+      "Hero" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "pill" : {
+            "type" : "string",
+            "description" : "The pill on the picture: Most loved"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "Row" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ]
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : "string"
+          },
+          "day" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day it is on, when it has one: rows are read in this order"
+          }
+        }
+      },
+      "Section" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
+          },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Row"
+            }
+          }
+        }
+      },
+      "Stat" : {
+        "type" : "object",
+        "properties" : {
+          "figure" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "order" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sorts the numbers: lower comes first"
+          }
+        }
+      },
+      "SummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleName" : {
+            "type" : "string"
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Monday the week starts on"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The Sunday it ends on"
+          },
+          "range" : {
+            "type" : "string",
+            "description" : "The week in words: 2 to 8 Nov"
+          },
+          "hero" : {
+            "description" : "The week's most loved photo, when there was one you may see",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Hero"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "stats" : {
+            "type" : "array",
+            "description" : "The numbers across it: photos, events, bills paid, saved. Only the ones above nothing.",
+            "items" : {
+              "$ref" : "#/components/schemas/Stat"
+            }
+          },
+          "nextWeek" : {
+            "type" : "array",
+            "description" : "Next week's first things, in the order they come",
+            "items" : {
+              "$ref" : "#/components/schemas/Row"
+            }
+          },
+          "sections" : {
+            "type" : "array",
+            "description" : "Sections from elsewhere, each with its own title: From Journey. Empty until the link exists.",
+            "items" : {
+              "$ref" : "#/components/schemas/Section"
+            }
+          },
+          "anything" : {
+            "type" : "boolean",
+            "description" : "False for a week with nothing in it: nothing is sent for such a week"
+          },
+          "inShort" : {
+            "type" : "string",
+            "description" : "The week in one line, as the push says it: 86 photos · 5 events · 3 bills paid · €350 saved"
+          }
+        },
+        "required" : [ "anything", "circleId", "circleName", "from", "hero", "inShort", "nextWeek", "range", "sections", "stats", "to" ]
       },
       "PersonBytes" : {
         "type" : "object",
@@ -18136,6 +19038,46 @@
           }
         }
       },
+      "LeavingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleName" : {
+            "type" : "string"
+          },
+          "onlyYours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Things only you can see here: they leave with you, which means they are deleted"
+          },
+          "shared" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Things you shared here: they stay for the others, in your name"
+          },
+          "passwords" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Passwords you shared here: they stop working for the others"
+          },
+          "lastOne" : {
+            "type" : "boolean",
+            "description" : "True when you are the last one here: the circle and everything in it goes with you"
+          },
+          "nextOwner" : {
+            "type" : [ "string", "null" ],
+            "description" : "For the owner: the first name of who becomes the owner when you go"
+          },
+          "ownerNeeded" : {
+            "type" : "boolean",
+            "description" : "True when you can't leave yet: you are the owner and no other adult can take over"
+          }
+        },
+        "required" : [ "circleId", "circleName", "lastOne", "nextOwner", "onlyYours", "ownerNeeded", "passwords", "shared" ]
+      },
       "PageJotResponse" : {
         "type" : "object",
         "properties" : {
@@ -18413,6 +19355,179 @@
         },
         "required" : [ "items", "nextCursor" ]
       },
+      "ActivityFilter" : {
+        "type" : "string",
+        "enum" : [ "all", "asks", "photos", "money", "plan" ]
+      },
+      "ActivityButton" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "act" : {
+            "type" : "string",
+            "description" : "What the button does. pay: mark your share of the bill paid (PUT /v1/bills/{thingId}/paid with dueOn), or open the bill. allow_ask: share the Vault item with memberId from this phone (PUT /v1/vault/items/{thingId}/sharing, with a key wrapped for them and the until or once that was asked for), then PUT /v1/asks/{askId} with allow true. decline_ask: PUT /v1/asks/{askId} with allow false. open_exports: open Export and leaving. Anything else: open the thing."
+          },
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "askId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "memberId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For allow_ask: who asked"
+          },
+          "until" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "For allow_ask: until when they would like it"
+          },
+          "once" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "For allow_ask: true when they would like it for one look"
+          },
+          "dueOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "For pay: which time it is due"
+          }
+        }
+      },
+      "ActivityKind" : {
+        "type" : "string",
+        "enum" : [ "added", "list", "photos", "paid", "board", "guest_pass", "joined", "left", "ask", "ask_answered", "export", "kept", "due" ]
+      },
+      "ActivityLine" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "description" : "Stays the same for this line as the list is read again"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ActivityKind"
+          },
+          "at" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it happened last. Null for something that is due."
+          },
+          "fresh" : {
+            "type" : "boolean",
+            "description" : "True when it is new since you last opened Activity here"
+          },
+          "sentence" : {
+            "type" : "array",
+            "description" : "The sentence, in the order to draw it: names and titles are bold",
+            "items" : {
+              "$ref" : "#/components/schemas/Part"
+            }
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "The small line under it, after the time: 9 things added, 5 ticked"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "The faces in front: who did it, two at most. Empty for a line with no person.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "emoji" : {
+            "type" : [ "string", "null" ],
+            "description" : "A 3D emoji in front, when there is no face: a bill's own"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "A small picture at the end, when the thing has one"
+          },
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "What the line opens"
+          },
+          "thingKind" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "buttons" : {
+            "type" : "array",
+            "description" : "What can be done right here: Allow and Not now, or Pay. Usually none.",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityButton"
+            }
+          }
+        }
+      },
+      "ActivityResponse" : {
+        "type" : "object",
+        "properties" : {
+          "due" : {
+            "type" : "array",
+            "description" : "What is due today and tomorrow, to lay under Today. Only with the first page, and only where the chip can hold it (All, Money, Plan).",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityLine"
+            }
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityLine"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ]
+          },
+          "asks" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many questions wait for your answer: the number on the Asks chip"
+          },
+          "fresh" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many lines are new since you last opened Activity here"
+          },
+          "muted" : {
+            "type" : "boolean",
+            "description" : "True when you muted this circle: nothing that happens in it is pushed to you"
+          }
+        },
+        "required" : [ "asks", "due", "fresh", "items", "muted", "nextCursor" ]
+      },
+      "Part" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string"
+          },
+          "bold" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "UnreadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "fresh" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many lines are new since you last opened Activity here. It stops at 100."
+          },
+          "asks" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many questions wait for your answer"
+          }
+        },
+        "required" : [ "asks", "fresh" ]
+      },
       "BoardEntriesResponse" : {
         "type" : "object",
         "properties" : {
@@ -18435,6 +19550,23 @@
           }
         },
         "required" : [ "items", "nextCursor" ]
+      },
+      "AccountDeletedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "signIn" : {
+            "$ref" : "#/components/schemas/SignInOutcome"
+          },
+          "message" : {
+            "type" : "string",
+            "description" : "What happened, in a sentence to show as it is"
+          }
+        },
+        "required" : [ "message", "signIn" ]
+      },
+      "SignInOutcome" : {
+        "type" : "string",
+        "enum" : [ "kept", "removed", "left_to_journey" ]
       },
       "AlbumBrief" : {
         "type" : "object",

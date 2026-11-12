@@ -371,6 +371,41 @@ public final class Scene {
         return mediaId;
     }
 
+    // ---------- what Activity hears ----------
+
+    /**
+     * What a template says happened, for Activity: who did it and the sentence after their name.
+     *
+     * @param who the member it is said of, also a child without a phone: "Leo"
+     * @param words what they did: "fed Biscuit and earned a star"
+     */
+    public record Told(UUID who, String words) {}
+
+    private final List<Told> told = new ArrayList<>();
+    private boolean quiet;
+
+    /**
+     * Says in the template's own words what just happened, for the circle's Activity: "Leo fed Biscuit and
+     * earned a star". Without this, adding an entry is told as "added to" and the board's name. Only people
+     * who may see the board ever read it; say nothing here that the board itself wouldn't show them all.
+     */
+    public void tell(UUID who, String words) {
+        told.add(new Told(who, words));
+    }
+
+    /** Keeps what is being done out of Activity: a surprise that a line would give away. */
+    public void tellNothing() {
+        quiet = true;
+    }
+
+    List<Told> told() {
+        return quiet ? List.of() : told;
+    }
+
+    boolean quiet() {
+        return quiet;
+    }
+
     // ---------- writing ----------
 
     /** Adds an entry and returns its id. Sending the same clientId again returns the entry added the first time. */

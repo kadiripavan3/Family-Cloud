@@ -2,6 +2,8 @@ package app.homeport.api.media;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
@@ -30,6 +32,14 @@ public interface MediaStorage {
 
     /** Stores a file the API made itself (a photo in one of its sizes). */
     void put(String storageKey, byte[] bytes, String contentType) throws IOException;
+
+    /**
+     * Stores a file the API made itself that is too big to hold in memory (an export). Unless the storage
+     * knows better, the file is read whole.
+     */
+    default void put(String storageKey, Path file, String contentType) throws IOException {
+        put(storageKey, Files.readAllBytes(file), contentType);
+    }
 
     /**
      * Removes the file for good. Nothing happens if it is already gone. Throws when the file couldn't be

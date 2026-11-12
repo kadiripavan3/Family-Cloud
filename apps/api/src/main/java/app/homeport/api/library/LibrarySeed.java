@@ -432,6 +432,24 @@ class LibrarySeed implements Seeder {
                         "Warranty until November " + (year + 2)),
                 null);
 
+        // The letter the electricity bill came in. Money's bill of that name links to it ("Invoice, November").
+        scan(
+                w,
+                "nora",
+                "Invoice, "
+                        + DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH).format(today),
+                "circle",
+                1,
+                now.minus(9, ChronoUnit.DAYS),
+                List.of(
+                        "Elektro Ljubljana d.d.",
+                        "Invoice for electricity, "
+                                + DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
+                                        .format(today),
+                        "Customer: Nora Lind",
+                        "Amount due €84.20"),
+                null);
+
         UUID manual = pdf(
                 w,
                 "alex",

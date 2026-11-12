@@ -1,5 +1,8 @@
 package app.homeport.api.list;
 
+import app.homeport.api.activity.ActivityKind;
+import app.homeport.api.activity.ActivityLog;
+import app.homeport.api.activity.ActivityLog.Happened;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.circle.MemberKind;
 import app.homeport.api.circle.MemberStore;
@@ -286,6 +289,7 @@ public class ChecklistService {
     private final People people;
     private final FolderService folders;
     private final TransactionTemplate transaction;
+    private final ActivityLog activity;
 
     ChecklistService(
             ThingService things,
@@ -295,7 +299,8 @@ public class ChecklistService {
             MemberStore members,
             People people,
             FolderService folders,
-            TransactionTemplate transaction) {
+            TransactionTemplate transaction,
+            ActivityLog activity) {
         this.things = things;
         this.thingStore = thingStore;
         this.lists = lists;
@@ -304,6 +309,7 @@ public class ChecklistService {
         this.people = people;
         this.folders = folders;
         this.transaction = transaction;
+        this.activity = activity;
     }
 
     @Transactional
@@ -518,7 +524,7 @@ public class ChecklistService {
         }
         UUID mine = circles.me(row.circleId(), me).id();
         ItemRow added = lists.item(put(row, item, mine, clientId)).orElseThrow();
-        changed(listId, mine, Did.ADDED);
+        changed(row, mine, Did.ADDED);
         return view(added, who, hidesOf(added));
     }
 
@@ -607,7 +613,7 @@ public class ChecklistService {
             }
             lists.move(itemId, item.listId(), change.before());
         }
-        changed(item.listId(), mine, Boolean.TRUE.equals(change.done()) ? Did.TICKED : null);
+        changed(row, mine, Boolean.TRUE.equals(change.done()) ? Did.TICKED : null);
         ItemRow now = lists.item(itemId).orElseThrow();
         return view(now, people.of(row.circleId()), hidesOf(now));
     }
@@ -625,25 +631,29 @@ public class ChecklistService {
             throw problem.status() == HttpStatus.NOT_FOUND ? lineGone() : problem;
         }
         lists.delete(itemId);
-        changed(item.listId(), circles.me(row.circleId(), me).id(), null);
+        changed(row, circles.me(row.circleId(), me).id(), null);
     }
 
     @Transactional
     public ChecklistResponse clearDone(UUID listId, UUID me) {
         ThingRow row = things.requireEdit(listId, me, ThingKind.CHECKLIST);
         if (lists.clearDone(listId, me) > 0) {
-            changed(listId, circles.me(row.circleId(), me).id(), null);
+            changed(row, circles.me(row.circleId(), me).id(), null);
             lists.forgetTheRarest(listId);
         }
         return get(listId, me);
     }
 
     /** A list changed: its version goes up, it is the latest thing its editor did, and the others see them in it. */
-    private void changed(UUID listId, UUID by, Did did) {
-        lists.changed(listId, by);
-        thingStore.touch(listId);
+    private void changed(ThingRow list, UUID by, Did did) {
+        lists.changed(list.id(), by);
+        thingStore.touch(list.id());
         if (did != null) {
-            lists.did(listId, by, did);
+            lists.did(list.id(), by, did);
+            // Activity counts them up: "Alex and Mia changed Groceries · 9 things added, 5 ticked".
+            activity.record(Happened.to(list.circleId(), ActivityKind.LIST, list.id())
+                    .by(by)
+                    .count(did == Did.ADDED ? "added" : "ticked"));
         }
     }
 
