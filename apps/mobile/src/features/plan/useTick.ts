@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
-import { type ReminderResponse, tickReminder } from '@/api/generated/homeport';
+import { getReminder, type ReminderResponse, tickReminder } from '@/api/generated/homeport';
 import { today } from '@/lib/dates';
 
 /** One tick: which reminder, ticked or not, and the due day the person was looking at when the line has one. */
@@ -12,10 +12,18 @@ export type TickAsk = { id: string; done: boolean; dueOn?: string | null };
 /** Ticks a reminder, or takes its tick away, for the due day the person was looking at. */
 async function send({ id, done, dueOn }: TickAsk): Promise<ReminderResponse> {
   const day = today();
-  const first = await tickReminder(id, { done, dueOn: dueOn ?? undefined, day });
+  if (!dueOn) {
+    // A list that doesn't say which due day a line is for (Today): the reminder itself says where it stands.
+    // So a press on a list that hasn't caught up changes nothing a second time: a job that repeats would
+    // otherwise be ticked for its next time round as well, and a tick taken away twice would take an older one.
+    const now = await getReminder(id, { day });
+    if (now.done === done) return now;
+    return tickReminder(id, { done, dueOn: (done ? now.dueOn : now.tickedDueOn) ?? undefined, day });
+  }
+  const first = await tickReminder(id, { done, dueOn, day });
   // One without a day shows under the day it was ticked on, which is not a day its tick was for: the API
   // then changes nothing. Its last tick is the only one it has, so that is the one to take away.
-  if (!done && dueOn && first.done && first.tickedDueOn === null) return tickReminder(id, { done: false, day });
+  if (!done && first.done && first.tickedDueOn === null) return tickReminder(id, { done: false, day });
   return first;
 }
 

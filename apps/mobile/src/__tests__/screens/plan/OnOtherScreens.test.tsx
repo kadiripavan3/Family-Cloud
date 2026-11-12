@@ -1,7 +1,7 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import { ApiError } from '@/api/fetcher';
-import { tickReminder, useGetPlan, useGetToday } from '@/api/generated/homeport';
+import { getReminder, tickReminder, useGetPlan, useGetToday } from '@/api/generated/homeport';
 import { ComingUp, upcoming } from '@/features/plan/ComingUp';
 import { TodayHome } from '@/features/today/TodayHome';
 import { inApp } from '@/test/phone';
@@ -14,7 +14,7 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds, useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
-jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn(), useGetPlan: jest.fn(), useGetMe: jest.fn(() => ({ data: undefined })), tickReminder: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn(), useGetPlan: jest.fn(), useGetMe: jest.fn(() => ({ data: undefined })), getReminder: jest.fn(), tickReminder: jest.fn() }));
 
 const mockLinds = linds;
 const today = jest.mocked(useGetToday) as unknown as jest.Mock;
@@ -35,25 +35,39 @@ describe('what Plan puts on other screens', () => {
       ],
     });
 
-    it('ticks it for whatever is due now, shows the tick at once, and does not open the reminder', async () => {
+    it('ticks it for the day it is due, shows the tick at once, and does not open the reminder', async () => {
       today.mockReturnValue(loaded(aDay));
       const ticked = reminder({ done: true });
+      // Today doesn't say which due day a line is for: the reminder itself is asked first.
+      jest.mocked(getReminder).mockResolvedValue(reminder());
       jest.mocked(tickReminder).mockResolvedValue(ticked);
       await render(inApp(<TodayHome />));
       expect(screen.getByRole('button', { name: '15:30. Dentist · Mia. Alex is taking her' })).toBeOnTheScreen();
       await userEvent.setup().press(screen.getByRole('checkbox', { name: 'Take the bins out', checked: false }));
-      // Today doesn't say which due day a line is for: the tick is for what is due now.
-      expect(tickReminder).toHaveBeenCalledWith(ids.bins, { done: true, dueOn: undefined, day: '2026-11-11' });
       await waitFor(() => expect(mockCache.reminderSaved).toHaveBeenCalledWith(ticked));
+      expect(getReminder).toHaveBeenCalledWith(ids.bins, { day: '2026-11-11' });
+      expect(tickReminder).toHaveBeenCalledWith(ids.bins, { done: true, dueOn: '2026-11-11', day: '2026-11-11' });
       expect(mockRouter.push).not.toHaveBeenCalled();
     });
 
-    it('takes the tick away again, and puts it back when that did not arrive', async () => {
+    it('does not tick the next time round when the list had not caught up with a tick given elsewhere', async () => {
+      today.mockReturnValue(loaded(aDay));
+      // It was ticked on Plan a moment ago: it is due on Friday now, and done for today.
+      const already = reminder({ done: true, dueOn: '2026-11-13', tickedDueOn: '2026-11-11' });
+      jest.mocked(getReminder).mockResolvedValue(already);
+      await render(inApp(<TodayHome />));
+      await userEvent.setup().press(screen.getByRole('checkbox', { name: 'Take the bins out', checked: false }));
+      await waitFor(() => expect(mockCache.reminderSaved).toHaveBeenCalledWith(already));
+      expect(tickReminder).not.toHaveBeenCalled();
+    });
+
+    it('takes the tick away for the day it was given for, and puts it back when that did not arrive', async () => {
       today.mockReturnValue(loaded({ ...aDay, items: [{ ...aDay.items[1]!, done: true, note: 'Done at 10:41' }] }));
+      jest.mocked(getReminder).mockResolvedValue(reminder({ done: true, dueOn: '2026-11-13', tickedDueOn: '2026-11-11' }));
       jest.mocked(tickReminder).mockRejectedValue(new ApiError(403, 'view_only', 'You can look at this, but not change it.'));
       await render(inApp(<TodayHome />));
       await userEvent.setup().press(screen.getByRole('checkbox', { name: 'Take the bins out', checked: true }));
-      expect(tickReminder).toHaveBeenCalledWith(ids.bins, { done: false, dueOn: undefined, day: '2026-11-11' });
+      await waitFor(() => expect(tickReminder).toHaveBeenCalledWith(ids.bins, { done: false, dueOn: '2026-11-11', day: '2026-11-11' }));
       await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Take the bins out', checked: true })).toBeOnTheScreen());
     });
   });

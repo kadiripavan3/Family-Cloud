@@ -40,8 +40,6 @@ function repeatLabel(repeat: Repeat): string {
   return `${everyUnit(every, 'week')} on ${formatList(on.map((day) => BRIEF[day]))}`;
 }
 
-const DISCARD = { title: 'Throw this away?', body: "What you've written isn't saved yet.", confirm: 'Throw away', keep: 'Keep writing' };
-
 export const plan = {
   // 7.1 Plan, under Home's row of six: one list for the day
   home: {
@@ -155,7 +153,6 @@ export const plan = {
     newTitle: 'New event',
     changeTitle: 'Change the event',
     add: 'Add',
-    save: 'Save',
     typeIt: 'Or type it: “Haircut for Leo, Saturday 10”',
     title: 'What is it?',
     titlePlaceholder: "Dinner at Grandma Astrid's",
@@ -170,7 +167,6 @@ export const plan = {
     notes: 'Notes',
     notesPlaceholder: 'Bring the cookies',
     needsTitle: 'Give it a name first.',
-    discard: DISCARD,
   },
 
   /** Reminding ahead of time: the choices, and how each is said. */
@@ -209,16 +205,12 @@ export const plan = {
     endsBefore: "It can't end before it starts.",
     endNeedsStart: 'Say when it starts first.',
     removeDay: 'No day',
-    done: 'Done',
   },
 
   /** Picking people of the circle. */
   people: {
     you: 'You',
     nobody: 'Nobody in particular',
-    done: 'Done',
-    /** A person's row, for a screen reader. */
-    row: (name: string, chosen: boolean) => (chosen ? `${name}, chosen` : name),
   },
 
   // 7.4 Type it
@@ -267,7 +259,6 @@ export const plan = {
     letter: 'This is long, so it is kept whole as a page in Notes.',
     /** Something that looks like a secret is never filed by a line. */
     code: { title: 'This looks like a code or a password', body: "It isn't saved from here. Keep it in the Vault, where it is scrambled on your phone." },
-    nothing: "We couldn't read anything to add in that.",
     discard: { title: 'Throw this away?', body: "What you've typed isn't added yet.", confirm: 'Throw away', keep: 'Keep typing' },
   },
 
@@ -276,8 +267,6 @@ export const plan = {
     title: 'Reminders',
     add: 'New reminder',
     tabs: { yours: 'Yours', asked: 'You asked', done: 'Done' },
-    today: 'Today',
-    tomorrow: 'Tomorrow',
     someTime: 'Some time',
     askedSomeone: 'You asked someone',
     atAPlace: 'When someone is there',
@@ -307,9 +296,7 @@ export const plan = {
   // A reminder, opened
   reminder: {
     more: 'More',
-    done: 'Done',
     when: 'When',
-    noDay: 'Some time',
     repeats: 'Repeats',
     who: 'Who has it',
     you: 'You',
@@ -338,7 +325,6 @@ export const plan = {
     newTitle: 'New reminder',
     changeTitle: 'Change the reminder',
     add: 'Add',
-    save: 'Save',
     typeIt: 'Or type it: “Ask Alex to book the car service”',
     title: 'What has to be done?',
     titlePlaceholder: 'Take the bins out',
@@ -356,7 +342,6 @@ export const plan = {
     notes: 'Notes',
     notesPlaceholder: 'Anything that helps',
     needsTitle: 'Say what has to be done first.',
-    discard: DISCARD,
   },
 
   // 7.6 Goals
@@ -390,7 +375,7 @@ export const plan = {
       sheetSoon: 'Sheets arrive with Money. Until then this goal counts what is put in here by hand.',
       journeySoon: 'This goal follows a challenge in the sister app. The link between the two apps arrives later; until then it counts what is put in here by hand.',
     },
-    steps: { line: (done: number, all: number) => `${done} of ${all} steps done`, open: 'Open the steps' },
+    steps: { line: (done: number, all: number) => `${done} of ${all} steps done` },
     /** The button in the bar at the bottom. */
     add: { money: 'Add money', count: 'Add one', steps: 'Open the steps' },
     addSheet: {
@@ -416,7 +401,6 @@ export const plan = {
     newTitle: 'New goal',
     changeTitle: 'Change the goal',
     add: 'Start it',
-    save: 'Save',
     title: 'What are you working towards?',
     titlePlaceholder: 'Norway 2027',
     blurb: 'A few words about it',
@@ -441,6 +425,5 @@ export const plan = {
     needsTitle: 'Give the goal a name first.',
     needsTarget: 'Say how much, or how many.',
     needsSteps: 'Write at least one step.',
-    discard: DISCARD,
   },
 } as const;

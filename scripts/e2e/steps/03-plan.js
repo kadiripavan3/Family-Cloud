@@ -88,7 +88,7 @@ exports.run = async function run(ctx) {
     // Today, as far as Plan fills it: the dentist visit with its time and faces, the bins with a tick.
     await R('tab', { name: 'Today', selected: true }).waitFor();
     await R('button', { name: /^15:30\. Dentist · Mia\./ }).waitFor();
-    await R('checkbox', { name: 'Take the bins out', checked: false }).waitFor();
+    await R('checkbox', { name: 'Take the bins out', exact: true, checked: false }).waitFor();
     await T('Tonight · your turn').waitFor();
     await shot('home');
   });
@@ -114,10 +114,12 @@ exports.run = async function run(ctx) {
     await R('button', { name: /^19:00\. Take the bins out\. Tue and Fri · Alex's turn, then you$/ }).waitFor();
     await shot('plan-ticked');
     // Today has it ticked too. Taking the tick away there puts it back on both.
+    // (Today's tick is named by its title alone; Plan's carries the day, so each is asked for by its whole name.)
     await R('tab', { name: 'Today' }).click();
-    await R('checkbox', { name: 'Take the bins out', checked: true }).waitFor();
-    await R('checkbox', { name: 'Take the bins out' }).click();
-    await R('checkbox', { name: 'Take the bins out', checked: false }).waitFor();
+    await R('tab', { name: 'Today', selected: true }).waitFor();
+    await R('checkbox', { name: 'Take the bins out', exact: true, checked: true }).waitFor();
+    await R('checkbox', { name: 'Take the bins out', exact: true }).click();
+    await R('checkbox', { name: 'Take the bins out', exact: true, checked: false }).waitFor();
     await T('Tonight · your turn').waitFor();
     // (Ticking didn't open the reminder: this is still Today.)
     await R('tab', { name: 'Today', selected: true }).waitFor();

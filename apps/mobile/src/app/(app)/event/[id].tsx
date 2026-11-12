@@ -148,7 +148,8 @@ function Loaded({ event }: { event: EventResponse }) {
             <LinearGradient colors={[withAlpha(colors.black, 0.4), withAlpha(colors.black, 0)]} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: HERO * 0.45 }} />
           </Photo>
         ) : (
-          <View style={{ height: insets.top + BARE + 26, backgroundColor: colors.fill }} />
+          // Without a picture: a quiet band, a shade darker than the round buttons on it.
+          <View style={{ height: insets.top + BARE + 26, backgroundColor: colors.fill2 }} />
         )}
         <View style={{ marginTop: -26, paddingTop: 22, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, backgroundColor: colors.bg }}>
           <View style={{ paddingHorizontal: layout.rowGutter }}>
