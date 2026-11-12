@@ -24,15 +24,22 @@ public class AccountService {
             boolean weeklySummary,
 
             @Schema(description = "Also send the Sunday summary by email")
-            boolean summaryEmail) {}
+            boolean summaryEmail,
+
+            @Schema(
+                    description = "Hide details in notifications: a push says that a bill is due, not which or how"
+                            + " much. A push about the Vault never names the item, whatever this says.")
+            boolean hideDetails) {}
 
     /** A change to the settings. A field that is left out stays as it is, so an older version of the app can't switch off what it doesn't know. */
-    public record SettingsChange(Boolean notifyActivity, Boolean weeklySummary, Boolean summaryEmail) {
+    public record SettingsChange(
+            Boolean notifyActivity, Boolean weeklySummary, Boolean summaryEmail, Boolean hideDetails) {
         SettingsResponse on(SettingsResponse now) {
             return new SettingsResponse(
                     notifyActivity == null ? now.notifyActivity() : notifyActivity,
                     weeklySummary == null ? now.weeklySummary() : weeklySummary,
-                    summaryEmail == null ? now.summaryEmail() : summaryEmail);
+                    summaryEmail == null ? now.summaryEmail() : summaryEmail,
+                    hideDetails == null ? now.hideDetails() : hideDetails);
         }
     }
 
@@ -50,8 +57,8 @@ public class AccountService {
             @Schema(description = "The kinds of phone that are signed in for notifications: ios, android, web")
             List<String> phones) {}
 
-    /** What someone has until they change anything: everything on except email. */
-    public static final SettingsResponse DEFAULTS = new SettingsResponse(true, true, false);
+    /** What someone has until they change anything: everything on except email, and pushes say what they are about. */
+    public static final SettingsResponse DEFAULTS = new SettingsResponse(true, true, false, false);
 
     private static final Logger log = LoggerFactory.getLogger(AccountService.class);
 
@@ -99,26 +106,61 @@ public class AccountService {
         return settings(me);
     }
 
+    /** What became of the sign-in when an account was deleted. */
+    public enum SignInOutcome {
+        /** Only Homeport was deleted: the sign-in, and Journey with it, are untouched. */
+        KEPT,
+        /** The sign-in is gone too, and with it the way into Journey. */
+        REMOVED,
+        /** "Journey too" was asked for, but the sign-in is removed where both apps can be asked: in Journey. */
+        LEFT_TO_JOURNEY;
+
+        @com.fasterxml.jackson.annotation.JsonValue
+        public String code() {
+            return app.homeport.api.common.Codes.of(this);
+        }
+    }
+
+    public record AccountDeletedResponse(
+            SignInOutcome signIn,
+
+            @Schema(description = "What happened, in a sentence to show as it is")
+            String message) {}
+
     /**
      * Deletes the Homeport account for good: the profile, what the person kept, and their uploads (the files
      * follow within a minute). Circles other people are still in stay, without this person's own things.
      *
-     * <p>The sign-in is shared with Journey. It is removed here only when this API is told that it may
-     * ({@code homeport.accounts.remove-sign-in}); with the two apps on one sign-in service, that is decided
-     * where both can be asked. Then, if the sign-in service can't be reached, it is tried again until it is gone.
+     * <p>The sign-in is shared with Journey, so the person chooses. <b>Only Homeport</b> never touches the
+     * sign-in: Journey goes on as it was. <b>Journey too</b> removes the sign-in here only when this API is
+     * told that it may ({@code homeport.accounts.remove-sign-in}); with the two apps on one sign-in service
+     * that is decided where both can be asked, so otherwise the answer says that Journey's own "Delete
+     * account" does that part. When the sign-in is removed and the sign-in service can't be reached, it is
+     * tried again until it is gone.
      */
-    public void delete(UUID me) {
+    public AccountDeletedResponse delete(UUID me, boolean journeyToo) {
         transaction.executeWithoutResult(status -> {
             accounts.roomToDeleteAnAccount();
             media.deleteAllOwnedBy(me);
             accounts.deleteProfile(me);
             accounts.rememberDeleted(me);
         });
-        if (removeSignIn) {
+        if (journeyToo && removeSignIn) {
             removeSignIn(me);
-        } else {
-            accounts.signInRemoved(me);
+            return new AccountDeletedResponse(
+                    SignInOutcome.REMOVED,
+                    "Your account is deleted, with the sign-in you shared with Journey. Nothing of it is left.");
         }
+        // Nothing more to do about the sign-in from here: it stays, and nothing tries to remove it later.
+        accounts.signInRemoved(me);
+        return journeyToo
+                ? new AccountDeletedResponse(
+                        SignInOutcome.LEFT_TO_JOURNEY,
+                        "Your Homeport account is deleted. The sign-in is shared with Journey, so it is still there:"
+                                + " use Delete account in Journey to remove it and your journeys.")
+                : new AccountDeletedResponse(
+                        SignInOutcome.KEPT,
+                        "Your Homeport account is deleted. Your sign-in is untouched, so Journey goes on as it was.");
     }
 
     /** True when the account was deleted a while ago and its sign-in is, or should soon be, gone. */

@@ -1,5 +1,8 @@
 package app.homeport.api.guest;
 
+import app.homeport.api.activity.ActivityKind;
+import app.homeport.api.activity.ActivityLog;
+import app.homeport.api.activity.ActivityLog.Happened;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.circle.CircleStore.CircleRow;
 import app.homeport.api.circle.MemberStore.MemberRow;
@@ -145,14 +148,21 @@ public class GuestPassService {
     private final ThingStore things;
     private final PublicUrls urls;
     private final Map<ThingKind, GuestView> views;
+    private final ActivityLog activity;
 
     GuestPassService(
-            GuestPassStore passes, CircleService circles, ThingStore things, PublicUrls urls, List<GuestView> views) {
+            GuestPassStore passes,
+            CircleService circles,
+            ThingStore things,
+            PublicUrls urls,
+            List<GuestView> views,
+            ActivityLog activity) {
         this.passes = passes;
         this.circles = circles;
         this.things = things;
         this.urls = urls;
         this.views = views.stream().collect(Collectors.toMap(GuestView::kind, Function.identity()));
+        this.activity = activity;
     }
 
     // ---------- for the people in the circle ----------
@@ -389,6 +399,11 @@ public class GuestPassService {
         if (!passes.bind(pass.id(), mine)) {
             return new Visit(Door.ELSEWHERE, pass);
         }
+        // The adults of the circle hear that the pass was opened, and until when it runs.
+        activity.record(Happened.in(pass.circleId(), ActivityKind.GUEST_PASS)
+                .byGuest(pass.guestName())
+                .count("ends", pass.endsAt().getEpochSecond())
+                .forAdults());
         return open(pass, mine);
     }
 

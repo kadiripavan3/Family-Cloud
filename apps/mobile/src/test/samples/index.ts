@@ -10,7 +10,7 @@ export function me(profile: ProfileResponse | null = nora): MeResponse {
 }
 
 export function settings(over: Partial<SettingsResponse> = {}): SettingsResponse {
-  return { notifyActivity: true, weeklySummary: true, summaryEmail: false, ...over };
+  return { notifyActivity: true, weeklySummary: true, summaryEmail: false, hideDetails: false, ...over };
 }
 
 /** What a generated `use…` query hook gives a screen, for a mock: loaded with `data`, or still on its way. */

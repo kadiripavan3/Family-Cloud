@@ -1,5 +1,6 @@
 package app.homeport.api.board.templates;
 
+import app.homeport.api.activity.PastTense;
 import app.homeport.api.board.BoardRules;
 import app.homeport.api.board.BoardStore.Tally;
 import app.homeport.api.board.EntryDraft;
@@ -419,6 +420,8 @@ class ChoreWheel implements BoardRules {
                         .done(scene.now(), scene.myId())
                         .amount(1L),
                 Scene.derivedId(job.id(), "tick " + day));
+        // Whose job it was did it, whoever's phone the tick was made on: "Leo fed Biscuit and earned a star".
+        scene.tell(whose, PastTense.of(job.as(Job.class).name()) + " and earned a star");
     }
 
     // ---------- what it brings to the rest ----------

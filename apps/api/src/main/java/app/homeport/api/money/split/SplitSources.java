@@ -75,7 +75,7 @@ class SplitSources implements TodaySource, SearchSource, GlanceSource {
     }
 
     @Override
-    public List<Found> find(UUID circleId, String words, int limit) {
+    public List<Found> find(UUID circleId, UUID me, String words, int limit) {
         return store.search(circleId, Sql.anywhere(words), limit).stream()
                 .map(found -> new Found(found.getKey(), found.getValue()))
                 .toList();

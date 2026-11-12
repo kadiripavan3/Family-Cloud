@@ -67,6 +67,8 @@ export function Field({ label, error, note, noteTone = 'muted', prefix, accessor
               textStyle('bodyLarge', multiline ? 500 : 600, { oneLine: !multiline }),
               {
                 flex: 1,
+                // In a browser an input is never narrower than about twenty characters unless told so, and pushes what is next to it out of the box.
+                minWidth: 0,
                 minHeight: multiline ? 66 : 24,
                 padding: 0,
                 color: colors.text,

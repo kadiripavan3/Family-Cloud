@@ -40,7 +40,7 @@ The spine: the pieces every place builds on. Their names and signatures are fixe
 - **A screen that can lose what was typed** guards itself with `const unsaved = useUnsaved(changed)` (`src/features/navigation/useUnsaved.ts`) and a `ConfirmSheet` while `unsaved.asking`; call `unsaved.release()` after saving, before going on to another screen.
 - **A choice that is remembered on the phone** (a switch that has no place in the API) is `const [value, set] = useKept(key, initial)` (`src/lib/useKept.ts`). Every screen that uses the same key sees the same value at once.
 - **A person in a list** is `PersonRow` (`src/features/people`), and the line under their name is `memberLine(member, circle)`. `AddSomeoneSheet` adds someone to a circle; `RoleSheet` changes a role.
-- **Days, times and money**: besides `formatDay` and `timeAgo`, `lib/dates` has `formatComingDay` ("Today", "Tomorrow", "Fri 4 Dec"), `formatTime` ("18:00"), `formatSpan` ("Today, 18:00 to 23:30"), `atTime(day, '18:00')`, `ageOn` and `nextBirthday`; for a calendar it has `formatWeekdayDay` ("Sat 14 Nov", with the year when it isn't this one), `nearName` ("Today", "Tomorrow" or null), `formatTimeOfDay` and `formatClocks` for a time of day as the API sends it ("07:30" is "7:30"; "10:00 to 10:30"), `addMinutes`, `monthOf`, `addMonths`, `formatMonth` and `phoneTimeZone()`; `lib/money` has `formatMoney(cents)` ("€45", "€45.50"). `useDebounced(value)` (`lib/useDebounced`) is a value once it has stopped changing.
+- **Days, times and money**: besides `formatDay` and `timeAgo`, `lib/dates` has `formatComingDay` ("Today", "Tomorrow", "Fri 4 Dec"), `formatTime` ("18:00"), `formatSpan` ("Today, 18:00 to 23:30"), `atTime(day, '18:00')`, `ageOn` and `nextBirthday`; for a calendar it has `formatWeekdayDay` ("Sat 14 Nov", with the year when it isn't this one), `nearName` ("Today", "Tomorrow" or null), `formatTimeOfDay` and `formatClocks` for a time of day as the API sends it ("07:30" is "7:30"; "10:00 to 10:30"), `addMinutes`, `monthOf`, `addMonths`, `formatMonth` and `phoneTimeZone()`; `lib/money` has `formatMoney(cents)` ("€45", "€45.50"), `formatMoneyExact` ("€84.20": a bill, a cell), `formatMoneyRound` ("€1,240": a figure on a card), `formatMoneyAbout` ("€15,000" after "about"), `formatAmount` ("1,480.00": a cell under a column that says the currency), and `parseMoney` / `moneyToType` for a box an amount is typed in; `lib/dates` also has `formatMonthName` and `formatMonthShort`. `useDebounced(value)` (`lib/useDebounced`) is a value once it has stopped changing.
 - **In `src/ui`** since the foundation: `Segmented` (a few choices in one grey bar), `MoreRow` (a soft row with an emoji, a bold line and an arrow), `Blob` (a big emoji on a soft round ground), `SelectPill` (a small pill that holds a choice and opens the others), `GrowingInput` (a box typed straight into the page, as tall as what is in it); `EmojiTabs` takes `six`, `NoteBox` takes `soft` and `trailing`, `DayPicker` takes `byYear` (for a birthday), and `ThingRow` takes `picked` for a list to tick things in.
 
 ## Adding a template
@@ -105,6 +105,24 @@ Milestone 1, the spine: circles, people and sharing.
 | 12.3 Privacy and security | `/settings/security` | The three choices under "This phone" are remembered on the phone. |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
+Milestone 5, Money: bills, sheets, the loan planner and splitting costs. Every amount, share, total and formula result comes from the API; the app only writes them (`lib/money`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 8.1 Money | `/?place=money` | The month's card, what is due soonest, the sheets as a rail, and the circle's splits under them. |
+| The lists of bills | `/money/bills`, `/money/bills?show=subscriptions` | To pay, paid, subscriptions. Not drawn. |
+| 8.2 A bill | `/bill/<id>` | "Pay" on Today's line is `PayBillButton` (`features/money/PayBill`). |
+| Adding and changing a bill | `/new/bill`, `/money/bill?id=<id>` | Not drawn. |
+| 8.3 Scan a bill | `/money/scan`, `?bill=<id>`, `?split=<id>` | A picked picture and typed or pasted lines stand in for the camera and its text reading. |
+| 8.4 Sheets | `/money/sheets`, `/new/sheet` | The templates are the API's. |
+| 8.5 A sheet | `/sheet/<id>` | It asks again every few seconds: "Alex is here too". |
+| 8.6 A row, as a card | `/money/row/<id>` | A box is saved when it is left, with only that cell. |
+| 8.7 A formula you can read | `/money/formula?sheet=<id>&tab=<id>` | `&tile=`, `&column=` for one that is there; `&as=tile` or `&as=column` for a new one. |
+| 8.8 Template: loan planner | `/money/loan` | The savings plan has no such screen yet: its template starts as its sheet. |
+| 8.9 Splitting with friends | `/split/<id>`, `/money/splits` | |
+
+A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out). Its lists read their rows through `useWhileInFront`: a list that another screen covers keeps the rows it had until it is looked at again, because in a browser the list trips ("not enough layouts") when a row goes while it is covered, as when a sheet opened from it is deleted.
+
 Milestone 2, the Library: photos, videos and documents (`src/features/library`).
 
 | Screen (design) | Address | |
@@ -141,7 +159,23 @@ Milestone 3, Plan: the calendar, events, reminders, goals. Its pieces are in `sr
 
 Plan's pieces that other screens use: `useTick()` and `Tick` (ticking a reminder from any list, for the due day the line is for; `TodayTick` is the tick on Today, where a line has no due day and the reminder itself is asked first), `ComingUp` (a person's page), `PlanEntry` and `DayHeader` (one line of a day), `WhenSheet`, `RepeatSheet`, `RemindSheet` and `PeopleSheet` (picking a day and time, how often, how long ahead, and people of the circle), `readTime` and `readCents` (`features/plan/times`: a time and an amount the way people type them), and `useNotice()` (a sentence that answers a press and goes by itself).
 
-Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: three of Home's six places (Notes, Money, the Vault), Activity, three of the ten things the + sheet opens (a bill, a sheet, a password), and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
+Milestone 6, the Vault. Its contract is `docs/07-vault-protocol.md`; its cryptography is in `src/features/vault/crypto/` (no React, no API calls, a test file for each) and what the phone does with keys, step by step, in `src/features/vault/actions.ts`.
+
+| Screen (design) | Address | |
+|---|---|---|
+| 9.1 The Vault, locked | `/?place=vault` | Also what any Vault screen shows while locked (`features/vault/Gate`). Face ID on a phone; a passcode where there is none, and in the browser. |
+| 9.2 The Vault | `/?place=vault`, `/vault/drawer/<login, card, …, look, shared>` | |
+| 9.3 A password | `/vault-item/<id>`, `/new/password`, `/vault/edit/<id>` | |
+| 9.4 Share a secret | (a sheet on 9.3) | |
+| 9.5 If something happens | `/vault/emergency`; for the trusted person `/vault/entrusted/<id>` | |
+| 9.6 Your Vault key | `/vault/key`, after `/vault/setup`; for a helper `/vault/helping` | |
+| Getting in | `/vault/unlock` (with the Vault key), `/vault/recover` (with two helpers) | Not drawn. |
+
+- **Nothing a phone has opened goes into the data layer.** A screen that handles keys or what they open runs its work with `useSecretAction()` (`features/vault`), never with `useMutation`, and keeps what it shows in its own state. `NothingSecretIsKept.test.tsx` searches the data layer for it.
+- **A screen of the Vault** is wrapped in `VaultScreen` (`features/vault/Gate`): locked, it shows the locked page; unlocked, any touch on it starts the two minutes again.
+- **Another screen that needs a sealed card for a guest** calls `sealForGuest(text, key?)` (`features/vault/crypto/guest`); the guest pass screens use `features/vault/PassCards`.
+
+Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: Activity, and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 
 ## The API's description
 

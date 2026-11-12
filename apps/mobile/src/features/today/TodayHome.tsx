@@ -9,6 +9,7 @@ import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { RunningLow } from '@/features/flat/RunningLow';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
+import { PayBillButton } from '@/features/money/PayBill';
 import { useNotice } from '@/features/plan/Notice';
 import { TodayTick } from '@/features/plan/TodayTick';
 import { kindOf } from '@/features/things/kinds';
@@ -156,7 +157,8 @@ function Summary({ data, progress, emoji }: { data: TodayResponse; progress: num
 /**
  * One thing of the day: what stands in front (a time, a day or an amount; a tick; or its kind's icon), its
  * title and a line, and whose it is. A line about shared costs has its button at the end instead
- * (`SplitButton`), once the split has said there is something to remind of or to settle.
+ * (`SplitButton`), once the split has said there is something to remind of or to settle; a bill's line ends
+ * in Money's "Pay".
  */
 function DayRow({ item, first, two, say }: { item: TodayItem; first: boolean; two: boolean; say: (text: string) => void }) {
   const { colors } = useTheme();
@@ -185,18 +187,20 @@ function DayRow({ item, first, two, say }: { item: TodayItem; first: boolean; tw
     </View>
   ) : null;
   const split = item.kind === 'split' && item.thingId ? item.thingId : null;
+  const bill = item.kind === 'bill' && item.thingId ? item.thingId : null;
   return (
     <TodayLine
       first={first}
       front={front}
       // (A line with a button beside it has less room: its title may take a second line.)
-      lines={split ? 2 : 1}
+      lines={split || bill ? 2 : 1}
       title={item.title ?? ''}
       note={item.note}
       spoken={words.common.spoken([ticks ? (ticked ? words.today.done : words.today.notDone) : (item.lead ?? ''), item.title, item.note])}
       onPress={() => open({ kind: item.kind, id: item.thingId })}
-      end={split ? undefined : faces}
-      button={split ? <SplitButton splitId={split} title={item.title ?? ''} two={two} say={say} fallback={faces} /> : undefined}
+      end={split || bill ? undefined : faces}
+      // A bill's line ends in "Pay": Money's own button, which marks the person's share as paid or opens the payee's page.
+      button={split ? <SplitButton splitId={split} title={item.title ?? ''} two={two} say={say} fallback={faces} /> : bill ? <PayBillButton billId={bill} title={item.title ?? ''} /> : undefined}
     />
   );
 }

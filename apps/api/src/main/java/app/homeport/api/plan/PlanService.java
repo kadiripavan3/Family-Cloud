@@ -1,6 +1,7 @@
 package app.homeport.api.plan;
 
 import app.homeport.api.circle.MemberKind;
+import app.homeport.api.home.TodaySource.TodayDue;
 import app.homeport.api.home.TodaySource.TodayItem;
 import app.homeport.api.plan.EventStore.Event;
 import app.homeport.api.plan.EventStore.EventRow;
@@ -240,15 +241,18 @@ public class PlanService {
                     || (line.kind() == ThingKind.REMINDER && !listed.add(line.thingId()))) {
                 continue;
             }
+            // A reminder that is the viewer's to tick is due; an event is on. What comes round again says so.
+            boolean due = line.kind() == ThingKind.REMINDER && line.canTick() && !Boolean.TRUE.equals(line.done());
             items.add(new TodayItem(
-                    line.thingId(),
-                    line.kind(),
-                    line.title(),
-                    line.todayNote(),
-                    line.kind() == ThingKind.REMINDER ? null : line.lead(),
-                    line.done(),
-                    line.minute(),
-                    line.avatars().stream().limit(2).toList()));
+                            line.thingId(),
+                            line.kind(),
+                            line.title(),
+                            line.todayNote(),
+                            line.kind() == ThingKind.REMINDER ? null : line.lead(),
+                            line.done(),
+                            line.minute(),
+                            line.avatars().stream().limit(2).toList())
+                    .with(null, line.icon() == NoteIcon.REPEAT, due ? new TodayDue(line.day(), null, null) : null));
         }
         return items;
     }

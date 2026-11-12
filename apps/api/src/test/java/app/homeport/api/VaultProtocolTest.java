@@ -72,7 +72,7 @@ class VaultProtocolTest extends VaultTestBase {
                 "vault_helpers",
                 "vault_recoveries",
                 "vault_recovery_shares",
-                "vault_notices",
+                "pushes",
                 "guest_passes",
                 "guest_pass_cards")) {
             stored.append(jdbc.sql("select coalesce(string_agg(t::text, ' '), '') from " + table + " t")

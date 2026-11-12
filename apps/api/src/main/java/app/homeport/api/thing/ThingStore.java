@@ -213,6 +213,16 @@ public class ThingStore {
                 .list();
     }
 
+    /** Everyone in the thing's circle who may see it now, its owner among them. Their member ids. */
+    public List<UUID> seenBy(UUID id) {
+        return jdbc.sql("""
+            select m.id from things t join members m on m.circle_id = t.circle_id and m.status <> 'left'
+            where t.id = :id and\s""" + Rules.memberSees("t", "m"))
+                .param("id", id)
+                .query(UUID.class)
+                .list();
+    }
+
     // ---------- who it is about ----------
 
     public void setAbout(UUID id, List<UUID> memberIds) {

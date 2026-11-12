@@ -372,36 +372,8 @@ class PlanSeed implements Seeder {
                 .param("id", car)
                 .update();
 
-        UUID biscuit = reminders
-                .create(
-                        nora,
-                        new NewReminder(
-                                linds,
-                                "Feed Biscuit",
-                                null,
-                                today,
-                                LocalTime.of(7, 30),
-                                ZONE,
-                                null,
-                                Recurrence.every(Recurrence.Unit.DAY),
-                                List.of(leo),
-                                false,
-                                null,
-                                1,
-                                null,
-                                Audience.CIRCLE),
-                        UUID.randomUUID())
-                .id();
-        reminders.tick(biscuit, nora, true, today, today);
-        w.jdbc()
-                .sql("update reminder_ticks set done_at = :at where thing_id = :id")
-                .param(
-                        "at",
-                        java.sql.Timestamp.from(
-                                today.atTime(7, 40).atZone(ZoneId.of(ZONE)).toInstant()))
-                .param("id", biscuit)
-                .update();
-
+        // Feeding Biscuit is Leo's job on the chore wheel, where it earns him a star: it is not kept here as
+        // a reminder as well, or the same job would stand on Today twice.
         reminders.create(
                 nora,
                 new NewReminder(

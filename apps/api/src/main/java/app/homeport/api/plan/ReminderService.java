@@ -4,7 +4,10 @@ import app.homeport.api.circle.MemberKind;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.common.Keyset;
 import app.homeport.api.common.Page;
-import app.homeport.api.notify.PushMessage;
+import app.homeport.api.notify.Outbox;
+import app.homeport.api.notify.Push;
+import app.homeport.api.notify.PushDelivery;
+import app.homeport.api.notify.PushKind;
 import app.homeport.api.plan.PlanPeople.Person;
 import app.homeport.api.plan.ReminderStore.Reminder;
 import app.homeport.api.plan.ReminderStore.ReminderRow;
@@ -32,11 +35,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Reminders: something to do. The rules:
@@ -55,7 +57,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReminderService {
 
-    private static final Logger log = LoggerFactory.getLogger(ReminderService.class);
     static final int MAX_PEOPLE = 30;
 
     public record PlaceResponse(
@@ -225,6 +226,9 @@ public class ReminderService {
     private final PlanPeople people;
     private final Giving giving;
     private final PlanPushes pushes;
+    private final Outbox outbox;
+    private final PushDelivery delivery;
+    private final TransactionTemplate transaction;
 
     ReminderService(
             ThingService things,
@@ -232,13 +236,19 @@ public class ReminderService {
             ReminderStore reminders,
             PlanPeople people,
             Giving giving,
-            PlanPushes pushes) {
+            PlanPushes pushes,
+            Outbox outbox,
+            PushDelivery delivery,
+            TransactionTemplate transaction) {
         this.things = things;
         this.thingStore = thingStore;
         this.reminders = reminders;
         this.people = people;
         this.giving = giving;
         this.pushes = pushes;
+        this.outbox = outbox;
+        this.delivery = delivery;
+        this.transaction = transaction;
     }
 
     // ---------- making and changing ----------
@@ -497,8 +507,8 @@ public class ReminderService {
     // ---------- nudging ----------
 
     /**
-     * A gentle push to whoever has a reminder you made, once an hour at most. This method opens no
-     * transaction, so none is open while the push is handed over.
+     * A gentle push to whoever has a reminder you made, once an hour at most. It goes into the outbox in the
+     * same short transaction that notes the nudge; no transaction is open while the push is handed over.
      */
     public void nudge(UUID id, UUID me) {
         ThingRow row = things.requireOwner(id, me);
@@ -514,25 +524,24 @@ public class ReminderService {
         if (r.doneAt() != null || holders.isEmpty()) {
             throw ApiProblem.conflict("nobody_to_nudge", "There is nobody to nudge about this.");
         }
-        if (!reminders.nudge(id)) {
-            throw ApiProblem.conflict("nudged_already", "You nudged a moment ago. Give it an hour.");
-        }
-        List<PushMessage> messages = pushes.messages(
-                pushes.mayHear(id, holders),
-                row.title(),
-                "A gentle nudge from " + circle.get(mine).name() + ".",
-                "/reminder/" + id,
-                "reminder_nudge");
-        try {
-            pushes.send(messages);
-        } catch (RuntimeException unreachable) {
-            log.warn("A nudge about {} couldn't be handed to the push service: {}", id, unreachable.toString());
-            reminders.forgetNudge(id);
-            throw new ApiProblem(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "push_unreachable",
-                    "We couldn't reach their phone just now. Try again in a moment.");
-        }
+        String from = circle.get(mine).name();
+        transaction.executeWithoutResult(status -> {
+            if (!reminders.nudge(id)) {
+                throw ApiProblem.conflict("nudged_already", "You nudged a moment ago. Give it an hour.");
+            }
+            for (UUID user : pushes.mayHear(id, holders)) {
+                outbox.tell(Push.to(
+                                user,
+                                PushKind.REMINDER_NUDGE,
+                                row.title(),
+                                "A gentle nudge from " + from + ".",
+                                "/reminder/" + id)
+                        .about(row.circleId(), id)
+                        .by(mine));
+            }
+        });
+        // A nudge is for now: it is sent straight away, and tried again by the outbox when the push service is away.
+        delivery.deliverDue();
     }
 
     // ---------- reading ----------

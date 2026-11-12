@@ -39,7 +39,7 @@ export default function DeleteAccount() {
               {messageFor(remove.error)}
             </Txt>
           ) : null}
-          <Button label={words.settings.deleteAccount.confirm} variant="danger" size="lg" block loading={remove.isPending} onPress={() => remove.mutate()} />
+          <Button label={words.settings.deleteAccount.confirm} variant="danger" size="lg" block loading={remove.isPending} onPress={() => remove.mutate({ params: { journeyToo: false } })} />
           <Button label={words.settings.deleteAccount.keep} variant="line" size="lg" block onPress={leave} />
         </>
       }>

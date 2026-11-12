@@ -39,7 +39,7 @@ class SheetSources implements SearchSource, GlanceSource {
     }
 
     @Override
-    public List<Found> find(UUID circleId, String words, int limit) {
+    public List<Found> find(UUID circleId, UUID me, String words, int limit) {
         return sheets.search(circleId, Sql.anywhere(words), limit).stream()
                 .map(found -> new Found(found.getKey(), found.getValue()))
                 .toList();

@@ -1,12 +1,10 @@
-import { NotBuiltYet } from '@/features/states/NotBuiltYet';
-import { AppBar } from '@/ui/AppBar';
-import { words } from '@/words';
+import { BillForm } from '@/features/money/BillForm';
 
 /**
- * /new/bill, still to be built with Money: something to pay. One of the ten things the + sheet opens. It goes into
- * the current circle (`useCircle()`); the + sheet hands over who it starts as seen by as `?audience=me` or
- * `?audience=circle` when the person changed it there (send it as the request's `audience`, or leave that out).
+ * /new/bill, one of the ten things the + sheet opens: something to pay, added by hand in the current circle.
+ * It starts as seen by whoever the + sheet said (`?audience=…`), or else by what the circle's kind says.
+ * Scanning a letter instead is one tap away (`/money/scan`).
  */
 export default function NewBill() {
-  return <NotBuiltYet title={words.today.plus.things.bill} header={<AppBar leading="close" />} />;
+  return <BillForm />;
 }

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { useCircles } from '@/features/circles/current';
 import { OfflineStrip } from '@/features/navigation/OfflineStrip';
+import { ChangesProvider } from '@/features/notes/changes/outbox';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 import { takeLink } from '@/lib/links';
 
@@ -41,9 +42,12 @@ function SignedInApp() {
   return (
     // Without a connection a strip across the top says so, and the screens make room for it.
     <OfflineStrip>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-      </Stack>
+      {/* What is changed on a list or a page without a connection waits here, and goes up when it is back. */}
+      <ChangesProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </ChangesProvider>
     </OfflineStrip>
   );
 }
