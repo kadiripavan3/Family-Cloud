@@ -60,8 +60,6 @@ export const library = {
   /** "48 GB": how much room something takes. */
   size: (value: number, unit: string) => `${value} ${unit}`,
   counts,
-  photos,
-  videos,
   /** A photo or a video as a tile, for a screen reader: what it is, who added it, and its caption. */
   tile: (video: boolean, caption: string | null, by: string | null, length: string | null) => {
     const what = video ? (length ? `Video, ${length},` : 'Video') : 'Photo';
@@ -212,7 +210,6 @@ export const library = {
       noAlbums: 'In no album',
     },
     caption: { title: 'Caption', field: 'Caption', save: 'Save' },
-    takenOut: (album: string) => `Taken out of ${album}.`,
     addedTo: (album: string, already: boolean) => (already ? `It was in ${album} already.` : `Added to ${album}.`),
     deleteAsk: {
       title: (video: boolean) => (video ? 'Delete this video?' : 'Delete this photo?'),
@@ -326,7 +323,6 @@ export const library = {
   document: {
     /** What a file without a picture shows on its sheet of paper. */
     paper: (badge: string, pages: number | null) => (pages ? `${badge} · ${plural(pages, 'page')}` : badge),
-    open: 'Open the file',
     /** A travel document and the trip it is linked to. */
     clash: (months: number, trip: string) => (months > 0 ? `Runs out ${plural(months, 'month')} after ${trip}` : `Runs out before ${trip} ends`),
     /** Under the note's bold line: whether a trip needs it to last longer, and where its reminder stands. */
@@ -371,7 +367,6 @@ export const library = {
       some: 'Some people',
       someNote: 'Pick who. They can look, not change.',
       withThem: 'Share with them',
-      pickSomeone: 'Pick at least one person.',
     },
     /** What sharing did. `who` is "only you", "everyone in The Linds" or "Alex and Mia". */
     shared: (applied: number, skipped: number, who: string) => (applied === 0 ? 'None of these are yours to share.' : `${n(applied)} now seen by ${who}.${left(skipped, 'not yours to share')}`),

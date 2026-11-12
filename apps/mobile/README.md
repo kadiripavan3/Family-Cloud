@@ -72,7 +72,27 @@ Milestone 1, the spine: circles, people and sharing.
 | 12.3 Privacy and security | `/settings/security` | The three choices under "This phone" are remembered on the phone. |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
-Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: five of Home's six places (all but Today), Activity, eight of the ten things the + sheet opens, "Storage and backup" (`/settings/storage`), and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
+Milestone 2, the Library: photos, videos and documents (`src/features/library`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 6.1 The wall | `/?place=library` | Days under their own lines, more as it scrolls, the strip of years, the month bubble, the people in photos. `?until=<day>` is where it starts. |
+| 6.2 Pinch out to a year | `/library/years?year=2026` | Reached from the month bubble. Pinching between days, months and years is still to be wired on a phone. |
+| 6.3 A moment | `/library/moment/<id>` | The id of any of its photos. |
+| 6.4 A photo | `/photo/<id>`, `/video/<id>` | One viewer. The narrowing it was opened from travels in the address (`?moment=`, `?album=`, `?place=`, …), so stepping stays inside it. A video is played by opening its file. |
+| 6.5 Albums | `/library/albums`, `/album/<id>` | An album's page is not drawn; it is the wall's rows. A folder of files is an album too. |
+| 6.6 Places | `/library/places` | A list on every device until the app has a map. |
+| 6.7 Files, 6.8 A document | `/library/files`, `/document/<id>` | "Remind me" makes the reminder with Plan's API and links it. |
+| 6.9 Select and share | `/library/select` | Over the same narrowing; `?into=<album>` puts photos into an album. |
+| 12.2 Storage and backup | `/settings/storage` | The rows under "This phone" say what needs a phone. |
+| Adding | `/new/photos`, `/new/scan` | Not drawn. A file chooser in a browser, the photo picker on a phone; a scan's words are typed until a phone reads them. |
+
+- A photo opens with `viewerHref(item, narrow)` (`features/library/narrow.ts`): the address `thingHref` makes, with the narrowing after it.
+- The answer of `GET /v1/library/{id}` is typed by hand (`features/library/types.ts`, read with `useLibraryItem`) until the API's description stops giving it the name of a checklist's line.
+- `List` takes `onTop` (the first row on screen changed). In a screen's test the list is stood in for, since the tests can't load the real one: `jest.mock('@/ui/List', () => jest.requireActual('@/test/samples/library').listForTests)` draws every row and lets a test press "the end of the list".
+- `lib/dates` also has `formatMonth` ("November 2026"), `formatMonthName`, `formatMonthShort` ("Nov 2028"), `formatWeekdayPast` ("Sat 7 Nov", with the year when it isn't this one) and `formatClock` ("11:42" from a time without a zone).
+
+Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: four of Home's six places (Plan, Notes, Money, the Vault), Activity, six of the ten things the + sheet opens, and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 
 ## The API's description
 

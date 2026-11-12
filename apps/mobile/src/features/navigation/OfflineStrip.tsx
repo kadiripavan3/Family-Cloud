@@ -22,9 +22,9 @@ const SAYS_SO_ITSELF: RegExp[] = [];
 
 /**
  * Screens whose top is a photo or the dark stage, with a light status bar. There the strip is dark as well,
- * so the clock and the battery above it stay readable. None is built yet inside the signed-in app.
+ * so the clock and the battery above it stay readable: a photo or a video in the Library's viewer.
  */
-const DARK_ON_TOP: RegExp[] = [];
+const DARK_ON_TOP: RegExp[] = [/^\/(photo|video)\/[^/]+$/];
 
 type Props = {
   children: ReactNode;

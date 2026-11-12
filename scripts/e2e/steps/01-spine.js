@@ -743,8 +743,8 @@ async function sampleCircles(ctx) {
     await ctx.signIn('nora@example.com');
     // Home opens on her first circle, the family, on Today.
     await R('button', { name: 'The Linds. Change circle' }).waitFor();
+    // (Which five things are newest depends on every place's sample data, so none is named here.)
     await T('New in the library').waitFor();
-    await R('button', { name: /^Emergency numbers\./ }).waitFor();
     await shot('home');
   });
 
@@ -787,7 +787,8 @@ async function sampleCircles(ctx) {
     await shot('search');
     // The chips narrow it to one place.
     await R('button', { name: 'Library', exact: true }).click();
-    await T('Nothing found for “alex”').waitFor();
+    await R('button', { name: /^Passport scan, Alex\./ }).waitFor();
+    await R('button', { name: /^Gift list for Alex\. Page/ }).waitFor({ state: 'detached' });
     await R('button', { name: 'Everything' }).click();
     await L('Search The Linds').fill('router');
     await R('button', { name: /^Wi‑Fi and smart home\. Page\. “/ }).click();
