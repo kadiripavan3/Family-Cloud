@@ -12,7 +12,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ThingKind {
     PAGE(Place.NOTES),
-    CHECKLIST(Place.NOTES);
+    CHECKLIST(Place.NOTES),
+    VAULT_ITEM(Place.VAULT);
 
     private final Place place;
 

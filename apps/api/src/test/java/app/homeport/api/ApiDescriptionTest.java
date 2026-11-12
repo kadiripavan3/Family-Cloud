@@ -101,11 +101,28 @@ class ApiDescriptionTest extends ApiTest {
                 "$.id");
         String code = JsonPath.<String>read(fetch("/v1/circles/" + circle, nora), "$.joinUrl")
                 .replaceFirst(".*/", "");
+        // A Vault item only Nora can see. (What is scrambled is made up here: the API never looks inside.)
+        send(
+                HttpMethod.PUT,
+                "/v1/vault",
+                nora,
+                "{\"publicKey\":\"%s\",\"wrappedPrivateKey\":\"AAAA\",\"salt\":\"%s\",\"kdf\":{\"n\":32768,\"r\":8,\"p\":1}}"
+                        .formatted("A".repeat(43), "A".repeat(22)),
+                200);
+        String vaultItem = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/vault/items",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Bank\",\"category\":\"login\",\"ciphertext\":\"AAAA\",\"wrappedKey\":\"AAAA\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = List.of(circle, child, page, pass);
-        List<String> forAlex = List.of(page);
+        List<String> forStranger = List.of(circle, child, page, pass, vaultItem);
+        List<String> forAlex = List.of(page, vaultItem);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {
@@ -114,7 +131,8 @@ class ApiDescriptionTest extends ApiTest {
             String path = name.substring(4);
             for (String id : forStranger) {
                 if (answers(path.replace("{id}", id), stranger)) {
-                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass));
+                    gaveAway.add("a stranger: " + path + " with "
+                            + (id.equals(vaultItem) ? "a Vault item's id" : label(id, circle, child, page, pass)));
                 }
             }
             for (String id : forAlex) {

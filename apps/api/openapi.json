@@ -13,17 +13,14 @@
     "bearer" : [ ]
   } ],
   "tags" : [ {
+    "name" : "vault emergency",
+    "description" : "If something happens: a trusted person can ask, the owner can say no, then it opens"
+  }, {
     "name" : "guest passes",
     "description" : "Chosen things for someone outside the circle, for a set time"
   }, {
     "name" : "checklists",
     "description" : "Lists you tick, changed one line at a time"
-  }, {
-    "name" : "me",
-    "description" : "The signed-in person and their profile"
-  }, {
-    "name" : "local-auth",
-    "description" : "Test sign-in. Exists only in local mode."
   }, {
     "name" : "things",
     "description" : "What every kind of thing shares: who can see it"
@@ -34,6 +31,21 @@
     "name" : "media",
     "description" : "Uploading photos, videos, documents and recordings"
   }, {
+    "name" : "me",
+    "description" : "The signed-in person and their profile"
+  }, {
+    "name" : "local-auth",
+    "description" : "Test sign-in. Exists only in local mode."
+  }, {
+    "name" : "vault",
+    "description" : "A person's Vault: the keys their phone made. The API can open none of it."
+  }, {
+    "name" : "vault helpers",
+    "description" : "Helpers who can together let someone back into their Vault, and the recovery itself"
+  }, {
+    "name" : "vault items",
+    "description" : "Passwords, cards, IDs, Wi‑Fi, door codes and secrets, scrambled on the phone before they arrive"
+  }, {
     "name" : "pages",
     "description" : "Pages of words"
   }, {
@@ -41,6 +53,389 @@
     "description" : "Circles and the people in them"
   } ],
   "paths" : {
+    "/v1/vault" : {
+      "get" : {
+        "tags" : [ "vault" ],
+        "summary" : "Your own Vault record: your public key and your wrapped private key, for a new phone to open with your Vault key",
+        "operationId" : "getVault",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecordResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "vault" ],
+        "summary" : "Set up your Vault with a key pair made on this phone. A second, different one is refused.",
+        "operationId" : "setUpVault",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetUpVaultRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecordResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/key" : {
+      "put" : {
+        "tags" : [ "vault" ],
+        "summary" : "A new Vault key: the same private key wrapped afresh. Your helpers' shares are thrown away and have to be made again.",
+        "operationId" : "replaceVaultKey",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReplaceVaultKeyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecordResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/key-saved" : {
+      "put" : {
+        "tags" : [ "vault" ],
+        "summary" : "Say: I've saved my key",
+        "operationId" : "confirmVaultKeySaved",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecordResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/items/{id}/sharing" : {
+      "get" : {
+        "tags" : [ "vault items" ],
+        "summary" : "What the share sheet shows: everyone in the circle, their public keys, and what each may do. Thirty at most.",
+        "operationId" : "getVaultSharing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultSharingResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Change who an item is shared with, with a wrapped key for each person. Only its owner can.",
+        "operationId" : "saveVaultSharing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VaultShareChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultSharingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/items/{id}/keys" : {
+      "put" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Hand keys to people who were waiting for one. Only its owner can; nobody's key is replaced.",
+        "operationId" : "giveVaultKeys",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VaultKeysRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultSharingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/helping/{id}" : {
+      "put" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Say yes or no to being someone's helper, or step down later",
+        "operationId" : "answerHelperAsk",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HelperAnswerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultHelpingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/helping/{id}/share" : {
+      "get" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Your share of someone's Vault key and the key to seal it to again. Only while they have a recovery open.",
+        "operationId" : "getShareToPassOn",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ShareToPassOnResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Pass your share on, sealed for their new phone",
+        "operationId" : "passShareOn",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PassShareOnRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultHelpingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/helpers/shares" : {
+      "put" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Keep the shares of a new split of your Vault key, one sealed for each helper. Older shares are thrown away.",
+        "operationId" : "saveHelperShares",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HelperSharesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultHelpersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/emergency" : {
+      "get" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Your own emergency access: who can ask, the wait, what opens",
+        "operationId" : "getEmergency",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultEmergencyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Turn emergency access on, or change it. What was kept before is thrown away, and a request that was running ends.",
+        "operationId" : "saveEmergency",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmergencyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultEmergencyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Switch emergency access off. Nothing more opens to anyone.",
+        "operationId" : "switchOffEmergency",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/things/{id}/links/{otherId}" : {
       "put" : {
         "tags" : [ "things" ],
@@ -437,6 +832,282 @@
         }
       }
     },
+    "/v1/vault/recoveries" : {
+      "post" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Start getting back into your Vault on a new phone. You are told on every phone, and so are your helpers.",
+        "operationId" : "startVaultRecovery",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartRecoveryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecoveryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/recoveries/{id}/finish" : {
+      "post" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Close a recovery once the new phone has rebuilt the key",
+        "operationId" : "finishVaultRecovery",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecoveryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/items" : {
+      "get" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Every item you own, in all your circles, last changed first: to choose what opens if something happens",
+        "operationId" : "getMyVaultItems",
+        "parameters" : [ {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageVaultItemRowResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Keep a new item. It starts as yours alone.",
+        "operationId" : "createVaultItem",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewVaultItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/items/{id}/open" : {
+      "post" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Be handed an item's ciphertext and your own wrapped key. It is written down, and a once-only key is gone after this.",
+        "operationId" : "openVaultItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultOpenedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/helpers" : {
+      "get" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "The people you asked to be your helpers. Five at most.",
+        "operationId" : "getVaultHelpers",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultHelpersResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Ask someone to be a helper. They can say yes or no.",
+        "operationId" : "askVaultHelper",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AskHelperRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultHelperResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/entrusted/{id}/items/{itemId}/open" : {
+      "post" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Be handed one item that opened to you: its ciphertext and its key, wrapped for you",
+        "operationId" : "openEntrustedItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "itemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EntrustedOpenedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/entrusted/{id}/ask" : {
+      "post" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Ask for someone's Vault. They are told and can say no; asking again doesn't start the wait again.",
+        "operationId" : "askForVault",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EntrustedVaultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/emergency/refusal" : {
+      "post" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Say no to the request that is running. It ends.",
+        "operationId" : "refuseEmergency",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultEmergencyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/pages" : {
       "post" : {
         "tags" : [ "pages" ],
@@ -512,6 +1183,44 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/guest-passes/{id}/cards" : {
+      "post" : {
+        "tags" : [ "guest passes" ],
+        "summary" : "Add a sealed card to a pass: a door code or a Wi‑Fi password only the guest's page can open",
+        "operationId" : "addGuestPassCard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewGuestPassCardRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuestPassResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -788,6 +1497,70 @@
           }
         },
         "security" : [ ]
+      }
+    },
+    "/v1/vault/items/{id}" : {
+      "get" : {
+        "tags" : [ "vault items" ],
+        "summary" : "An item's clear part and who can use it. Its secret part is handed out by opening it.",
+        "operationId" : "getVaultItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Save a change to an item. It has to be yours, or shared with you to change.",
+        "operationId" : "changeVaultItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VaultItemChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultItemResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/pages/{id}" : {
@@ -1122,6 +1895,188 @@
         }
       }
     },
+    "/v1/vault/waiting" : {
+      "get" : {
+        "tags" : [ "vault items" ],
+        "summary" : "Everyone who waits for a key to one of your items, with their public key. Two hundred at a time.",
+        "operationId" : "getVaultWaiting",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VaultWaitingResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/recoveries/{id}" : {
+      "get" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "A recovery of your own Vault: who has helped, and the shares once two have",
+        "operationId" : "getVaultRecovery",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultRecoveryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Cancel a recovery of your Vault, from any of your phones",
+        "operationId" : "cancelVaultRecovery",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/vault/people" : {
+      "get" : {
+        "tags" : [ "vault" ],
+        "summary" : "Everyone in your circles you could name as your trusted person or a helper, by name. As many as your circles hold.",
+        "operationId" : "getVaultPeople",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VaultPersonResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/helping" : {
+      "get" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "The people who asked you to be their helper, and who of them needs you now. As many as your circles hold.",
+        "operationId" : "getHelping",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VaultHelpingResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/entrusted" : {
+      "get" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "The people who named you as the one who can ask for their Vault. As many as your circles hold.",
+        "operationId" : "getEntrusted",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EntrustedVaultResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/entrusted/{id}" : {
+      "get" : {
+        "tags" : [ "vault emergency" ],
+        "summary" : "Someone's emergency access, as the person they trust. What opens is listed only once it is open.",
+        "operationId" : "getEntrustedVault",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EntrustedVaultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vault/attention" : {
+      "get" : {
+        "tags" : [ "vault" ],
+        "summary" : "What in the Vault needs you now: someone asked for your Vault, a recovery is open, someone needs your help",
+        "operationId" : "getVaultAttention",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultAttentionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/things/{id}" : {
       "get" : {
         "tags" : [ "things" ],
@@ -1272,6 +2227,130 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/vault" : {
+      "get" : {
+        "tags" : [ "vault items" ],
+        "summary" : "The Vault's home in a circle: six drawers with their counts, what needs a look, what others shared with you",
+        "operationId" : "getVaultHome",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultHomeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/vault/items" : {
+      "get" : {
+        "tags" : [ "vault items" ],
+        "summary" : "The Vault items in a circle you can see, last changed first",
+        "operationId" : "getVaultItems",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "category",
+          "in" : "query",
+          "description" : "Only this drawer",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          }
+        }, {
+          "name" : "mine",
+          "in" : "query",
+          "description" : "True for only your own, false for only what others shared with you",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "look",
+          "in" : "query",
+          "description" : "True for only those whose password needs a look",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageVaultItemRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/vault-keys" : {
+      "get" : {
+        "tags" : [ "vault" ],
+        "summary" : "The public keys of the people in a circle who have a Vault, and who can't be shared with yet. Thirty at most.",
+        "operationId" : "getVaultKeys",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VaultKeysResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1442,6 +2521,56 @@
         }
       }
     },
+    "/v1/vault/helpers/{id}" : {
+      "delete" : {
+        "tags" : [ "vault helpers" ],
+        "summary" : "Take a helper off your list. Their share is thrown away.",
+        "operationId" : "removeVaultHelper",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/guest-passes/{id}/cards/{cardId}" : {
+      "delete" : {
+        "tags" : [ "guest passes" ],
+        "summary" : "Take a sealed card off a pass",
+        "operationId" : "removeGuestPassCard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cardId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/checklists/{id}/done" : {
       "delete" : {
         "tags" : [ "checklists" ],
@@ -1473,13 +2602,657 @@
   },
   "components" : {
     "schemas" : {
-      "Access" : {
-        "type" : "string",
-        "enum" : [ "edit", "view", "none" ]
+      "SetUpVaultRequest" : {
+        "type" : "object",
+        "properties" : {
+          "publicKey" : {
+            "type" : "string",
+            "description" : "The public key (X25519, 32 bytes), base64url",
+            "maxLength" : 43,
+            "minLength" : 1
+          },
+          "wrappedPrivateKey" : {
+            "type" : "string",
+            "description" : "The private key, sealed with a key made from the Vault key. base64url.",
+            "maxLength" : 512,
+            "minLength" : 1
+          },
+          "salt" : {
+            "type" : "string",
+            "description" : "The salt that went into making that key, base64url",
+            "maxLength" : 64,
+            "minLength" : 1
+          },
+          "kdf" : {
+            "$ref" : "#/components/schemas/VaultKdf"
+          }
+        },
+        "required" : [ "kdf", "publicKey", "salt", "wrappedPrivateKey" ]
+      },
+      "VaultKdf" : {
+        "type" : "object",
+        "properties" : {
+          "n" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "scrypt's N: a power of two, 16384 to 4194304"
+          },
+          "r" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "scrypt's r, 1 to 32"
+          },
+          "p" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "scrypt's p, 1 to 16"
+          }
+        }
+      },
+      "VaultRecordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "setUp" : {
+            "type" : "boolean",
+            "description" : "False until this person has set up a Vault. Everything else is null then."
+          },
+          "publicKey" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their public key (X25519), base64url"
+          },
+          "wrappedPrivateKey" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their private key, sealed with a key made from the Vault key"
+          },
+          "salt" : {
+            "type" : [ "string", "null" ],
+            "description" : "The salt that went into making that key, base64url"
+          },
+          "kdf" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/VaultKdf"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "keyVersion" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Counts up each time the Vault key is replaced"
+          },
+          "keySaved" : {
+            "type" : "boolean",
+            "description" : "True once they said: I've saved my key"
+          },
+          "createdAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "createdAt", "kdf", "keySaved", "keyVersion", "publicKey", "salt", "setUp", "wrappedPrivateKey" ]
+      },
+      "ReplaceVaultKeyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "wrappedPrivateKey" : {
+            "type" : "string",
+            "description" : "The same private key, sealed with a key made from the new Vault key",
+            "maxLength" : 512,
+            "minLength" : 1
+          },
+          "salt" : {
+            "type" : "string",
+            "maxLength" : 64,
+            "minLength" : 1
+          },
+          "kdf" : {
+            "$ref" : "#/components/schemas/VaultKdf"
+          }
+        },
+        "required" : [ "kdf", "salt", "wrappedPrivateKey" ]
       },
       "Audience" : {
         "type" : "string",
         "enum" : [ "me", "some", "circle" ]
+      },
+      "Hidden" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "through" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "VaultAccess" : {
+        "type" : "string",
+        "enum" : [ "use", "see", "change" ]
+      },
+      "VaultRotation" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "ciphertext" : {
+            "type" : "string"
+          },
+          "myWrappedKey" : {
+            "type" : "string"
+          },
+          "emergencyWrappedKey" : {
+            "type" : "string"
+          }
+        }
+      },
+      "VaultShareChange" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "everyone" : {
+            "$ref" : "#/components/schemas/VaultAccess"
+          },
+          "people" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultShareWith"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Hidden"
+            }
+          },
+          "rotation" : {
+            "$ref" : "#/components/schemas/VaultRotation"
+          }
+        }
+      },
+      "VaultShareWith" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "access" : {
+            "$ref" : "#/components/schemas/VaultAccess"
+          },
+          "once" : {
+            "type" : "boolean"
+          },
+          "stopsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "wrappedKey" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GrantState" : {
+        "type" : "string",
+        "enum" : [ "ready", "waiting", "used", "stopped" ]
+      },
+      "MemberKind" : {
+        "type" : "string",
+        "enum" : [ "person", "child", "pet" ]
+      },
+      "Role" : {
+        "type" : "string",
+        "enum" : [ "owner", "adult", "teen", "child", "guest" ]
+      },
+      "VaultItemPersonResponse" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MemberKind"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "owner" : {
+            "type" : "boolean"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True for the signed-in person"
+          },
+          "publicKey" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their public key, to wrap the item's key for. Null when they have no Vault."
+          },
+          "missing" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why nothing can be sealed for them, when that is so: no_phone (no sign-in of their own) or no_vault"
+          },
+          "access" : {
+            "description" : "What they may do. Null: it isn't shared with them.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/VaultAccess"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "state" : {
+            "description" : "Where their key stands. Null: it isn't shared with them.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GrantState"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "once" : {
+            "type" : "boolean",
+            "description" : "True when it is gone for them after it is opened once"
+          },
+          "stopsAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it stops working for them"
+          },
+          "openedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When they were last handed it. Only its owner is told."
+          },
+          "changedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When they last saved a change to it"
+          }
+        },
+        "required" : [ "access", "avatarUrl", "changedAt", "kind", "memberId", "missing", "name", "once", "openedAt", "owner", "publicKey", "role", "state", "stopsAt", "you" ]
+      },
+      "VaultSharingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "everyone" : {
+            "$ref" : "#/components/schemas/VaultAccess",
+            "description" : "With everyone: what someone gets who wasn't given something else by name"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "people" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultItemPersonResponse"
+            }
+          }
+        },
+        "required" : [ "audience", "everyone", "itemId", "mine", "people", "title" ]
+      },
+      "VaultKeyFor" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "wrappedKey" : {
+            "type" : "string"
+          }
+        }
+      },
+      "VaultKeysRequest" : {
+        "type" : "object",
+        "properties" : {
+          "keys" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultKeyFor"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "keys" ]
+      },
+      "HelperAnswerRequest" : {
+        "type" : "object",
+        "properties" : {
+          "accept" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "accept" ]
+      },
+      "HelpNeededResponse" : {
+        "type" : "object",
+        "properties" : {
+          "recoveryId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lapsesAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "given" : {
+            "type" : "boolean",
+            "description" : "True once you passed your share on"
+          }
+        },
+        "required" : [ "given", "lapsesAt", "recoveryId", "startedAt" ]
+      },
+      "HelperState" : {
+        "type" : "string",
+        "enum" : [ "asked", "accepted", "declined" ]
+      },
+      "VaultHelpingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "person" : {
+            "$ref" : "#/components/schemas/VaultPersonResponse"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/HelperState"
+          },
+          "askedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "recovery" : {
+            "description" : "Their open recovery, when they are getting back in right now",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/HelpNeededResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "askedAt", "id", "person", "recovery", "state" ]
+      },
+      "VaultPersonResponse" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Who they are in a circle you share. Null when you share none any more."
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "hasVault" : {
+            "type" : "boolean",
+            "description" : "False for someone who hasn't set up a Vault: nothing can be sealed for them yet"
+          },
+          "publicKey" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their public key, to seal to. Null without a Vault."
+          }
+        },
+        "required" : [ "avatarUrl", "hasVault", "memberId", "name", "publicKey" ]
+      },
+      "PassShareOnRequest" : {
+        "type" : "object",
+        "properties" : {
+          "recoveryId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The recovery you were shown"
+          },
+          "resealedShare" : {
+            "type" : "string",
+            "description" : "Your share, sealed again to the temporary public key. base64url.",
+            "maxLength" : 512,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "recoveryId", "resealedShare" ]
+      },
+      "HelperShare" : {
+        "type" : "object",
+        "properties" : {
+          "helperId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sealedShare" : {
+            "type" : "string"
+          }
+        }
+      },
+      "HelperSharesRequest" : {
+        "type" : "object",
+        "properties" : {
+          "shares" : {
+            "type" : "array",
+            "description" : "One share for each helper who said yes, all from the same split",
+            "items" : {
+              "$ref" : "#/components/schemas/HelperShare"
+            },
+            "maxItems" : 5,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "shares" ]
+      },
+      "VaultHelperResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "person" : {
+            "$ref" : "#/components/schemas/VaultPersonResponse"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/HelperState"
+          },
+          "hasShare" : {
+            "type" : "boolean",
+            "description" : "True when they keep a share of your Vault key"
+          },
+          "askedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "answeredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "answeredAt", "askedAt", "hasShare", "id", "person", "state" ]
+      },
+      "VaultHelpersResponse" : {
+        "type" : "object",
+        "properties" : {
+          "helpers" : {
+            "type" : "array",
+            "description" : "The people you asked, in the order you asked them. Five at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultHelperResponse"
+            }
+          },
+          "needed" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many helpers it takes to let you back in"
+          },
+          "ready" : {
+            "type" : "boolean",
+            "description" : "True when enough helpers hold a share: you could get back in without your key"
+          },
+          "sharesDue" : {
+            "type" : "boolean",
+            "description" : "True when your phone should split the key again and send new shares: someone said yes since the last split"
+          }
+        },
+        "required" : [ "helpers", "needed", "ready", "sharesDue" ]
+      },
+      "EmergencyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "trustedMemberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A member of one of your circles who has a Vault"
+          },
+          "waitHours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How long you have to say no, in hours. 48 when left out.",
+            "maximum" : 168,
+            "minimum" : 24
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "What opens: each item's key, wrapped for the trusted person",
+            "items" : {
+              "$ref" : "#/components/schemas/EscrowKey"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "A note for the family, sealed for the trusted person. base64url, 16 KB at most.",
+            "maxLength" : 22000
+          },
+          "noteMine" : {
+            "type" : "string",
+            "description" : "The same note, sealed for yourself, so you can read it again",
+            "maxLength" : 22000
+          }
+        },
+        "required" : [ "trustedMemberId" ]
+      },
+      "EscrowKey" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "wrappedKey" : {
+            "type" : "string",
+            "description" : "The item's key, wrapped for the trusted person"
+          }
+        }
+      },
+      "EmergencyItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          }
+        },
+        "required" : [ "category", "id", "title" ]
+      },
+      "EmergencyState" : {
+        "type" : "string",
+        "enum" : [ "off", "ready", "asked", "open" ]
+      },
+      "VaultCategory" : {
+        "type" : "string",
+        "enum" : [ "login", "card", "id", "wifi", "code", "secret" ]
+      },
+      "VaultEmergencyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "state" : {
+            "$ref" : "#/components/schemas/EmergencyState"
+          },
+          "trusted" : {
+            "description" : "The person who can ask. Null while it is off.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/VaultPersonResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "waitHours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How long you have to say no after they ask, in hours: 24 to 168"
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "What opens. Two hundred at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/EmergencyItemResponse"
+            }
+          },
+          "noteMine" : {
+            "type" : [ "string", "null" ],
+            "description" : "Your note for the family, sealed for yourself so you can read it again"
+          },
+          "askedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When they asked. Set while a request is running or has opened."
+          },
+          "opensAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it opens (or opened) unless you say no"
+          },
+          "refusedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When you last said no"
+          },
+          "openedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it opened to them"
+          }
+        },
+        "required" : [ "askedAt", "items", "noteMine", "openedAt", "opensAt", "refusedAt", "state", "trusted", "waitHours" ]
+      },
+      "Access" : {
+        "type" : "string",
+        "enum" : [ "edit", "view", "none" ]
       },
       "AudienceChange" : {
         "type" : "object",
@@ -1501,19 +3274,6 @@
             "items" : {
               "$ref" : "#/components/schemas/Hidden"
             }
-          }
-        }
-      },
-      "Hidden" : {
-        "type" : "object",
-        "properties" : {
-          "memberId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "through" : {
-            "type" : "string",
-            "format" : "date"
           }
         }
       },
@@ -1614,21 +3374,13 @@
         "type" : "string",
         "enum" : [ "family", "couple", "flat", "crew", "solo" ]
       },
-      "MemberKind" : {
-        "type" : "string",
-        "enum" : [ "person", "child", "pet" ]
-      },
       "Place" : {
         "type" : "string",
         "enum" : [ "plan", "notes", "library", "money", "vault" ]
       },
-      "Role" : {
-        "type" : "string",
-        "enum" : [ "owner", "adult", "teen", "child", "guest" ]
-      },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page", "checklist" ]
+        "enum" : [ "page", "checklist", "vault_item" ]
       },
       "AboutRequest" : {
         "type" : "object",
@@ -1877,6 +3629,427 @@
         },
         "required" : [ "authorizationCode" ]
       },
+      "StartRecoveryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "tempPublicKey" : {
+            "type" : "string",
+            "description" : "The public key of a key pair this phone made just for this. base64url.",
+            "maxLength" : 43,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "clientId", "tempPublicKey" ]
+      },
+      "RecoveryHelperResponse" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "$ref" : "#/components/schemas/VaultPersonResponse"
+          },
+          "given" : {
+            "type" : "boolean",
+            "description" : "True once they passed their share on"
+          },
+          "resealedShare" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their share, sealed to the temporary key. Only while the recovery is open and enough have helped."
+          }
+        },
+        "required" : [ "given", "person", "resealedShare" ]
+      },
+      "RecoveryState" : {
+        "type" : "string",
+        "enum" : [ "open", "done", "cancelled", "lapsed" ]
+      },
+      "VaultRecoveryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/RecoveryState"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lapsesAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "tempPublicKey" : {
+            "type" : "string",
+            "description" : "The temporary public key it was started with, so a phone can tell it is its own"
+          },
+          "needed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "given" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "ready" : {
+            "type" : "boolean",
+            "description" : "True when enough helpers have helped and the shares below can rebuild the key"
+          },
+          "helpers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecoveryHelperResponse"
+            }
+          }
+        },
+        "required" : [ "endedAt", "given", "helpers", "id", "lapsesAt", "needed", "ready", "startedAt", "state", "tempPublicKey" ]
+      },
+      "NewVaultItemRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "site" : {
+            "type" : "string",
+            "description" : "A site or a label, kept in the clear: netflix.com, home",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "expiresOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "For an ID: the day it runs out"
+          },
+          "health" : {
+            "$ref" : "#/components/schemas/VaultHealth",
+            "description" : "How good the password is, as the phone judged. OK when left out."
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Who it is about: members of the circle",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "ciphertext" : {
+            "type" : "string",
+            "description" : "Everything else, sealed with the item's own key. base64url, 64 KB at most.",
+            "maxLength" : 87382,
+            "minLength" : 1
+          },
+          "wrappedKey" : {
+            "type" : "string",
+            "description" : "The item's key, wrapped for yourself. base64url.",
+            "maxLength" : 512,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "category", "ciphertext", "circleId", "clientId", "title", "wrappedKey" ]
+      },
+      "VaultHealth" : {
+        "type" : "string",
+        "enum" : [ "ok", "weak", "reused", "leaked" ]
+      },
+      "AudienceChip" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "For some people: who, besides its owner",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "description" : "The first names of people it is hidden from today",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "PersonBrief" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "VaultItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "site" : {
+            "type" : "string"
+          },
+          "expiresOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "renewSoon" : {
+            "type" : "boolean"
+          },
+          "health" : {
+            "$ref" : "#/components/schemas/VaultHealth"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Counts up with every new ciphertext. Send it back when saving one."
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "changedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When its secret part was last changed"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean",
+            "description" : "True when you may save changes: it is yours, or it was shared with you to change"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "owner" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "myAccess" : {
+            "$ref" : "#/components/schemas/VaultAccess"
+          },
+          "myState" : {
+            "$ref" : "#/components/schemas/GrantState"
+          },
+          "once" : {
+            "type" : "boolean",
+            "description" : "True when it is gone for you after you open it once"
+          },
+          "stopsAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it stops working for you"
+          },
+          "sample" : {
+            "type" : "boolean"
+          },
+          "glance" : {
+            "type" : "string"
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Who it is about, so it shows on their page",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who can use it: its owner first, then everyone it is shared with",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultItemPersonResponse"
+            }
+          }
+        },
+        "required" : [ "about", "canEdit", "category", "changedAt", "chip", "circleId", "expiresOn", "glance", "health", "id", "mine", "myAccess", "myState", "once", "owner", "people", "renewSoon", "sample", "site", "stopsAt", "title", "updatedAt", "version" ]
+      },
+      "VaultOpenedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "ciphertext" : {
+            "type" : "string",
+            "description" : "The item, sealed with its own key"
+          },
+          "wrappedKey" : {
+            "type" : "string",
+            "description" : "The item's key, wrapped for you"
+          },
+          "access" : {
+            "$ref" : "#/components/schemas/VaultAccess"
+          },
+          "once" : {
+            "type" : "boolean",
+            "description" : "True when this was the one time: the API has just erased your key for it"
+          }
+        },
+        "required" : [ "access", "ciphertext", "id", "once", "version", "wrappedKey" ]
+      },
+      "AskHelperRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A member of one of your circles who has a Vault"
+          }
+        },
+        "required" : [ "clientId", "memberId" ]
+      },
+      "EntrustedOpenedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "site" : {
+            "type" : "string"
+          },
+          "ciphertext" : {
+            "type" : "string"
+          },
+          "wrappedKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "category", "ciphertext", "id", "site", "title", "wrappedKey" ]
+      },
+      "EntrustedItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "site" : {
+            "type" : "string"
+          },
+          "openedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When you were first handed it"
+          }
+        },
+        "required" : [ "category", "id", "openedAt", "site", "title" ]
+      },
+      "EntrustedVaultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "owner" : {
+            "$ref" : "#/components/schemas/VaultPersonResponse"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/EmergencyState"
+          },
+          "waitHours" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "askedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "opensAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it opens, unless they say no before then"
+          },
+          "refusedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When they last said no"
+          },
+          "openedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their note, sealed for you. Only once it is open."
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "What opened to you. Empty until it is open.",
+            "items" : {
+              "$ref" : "#/components/schemas/EntrustedItemResponse"
+            }
+          }
+        },
+        "required" : [ "askedAt", "id", "items", "note", "openedAt", "opensAt", "owner", "refusedAt", "state", "waitHours" ]
+      },
       "NewPageRequest" : {
         "type" : "object",
         "properties" : {
@@ -1904,28 +4077,6 @@
           }
         },
         "required" : [ "circleId", "clientId" ]
-      },
-      "AudienceChip" : {
-        "type" : "object",
-        "properties" : {
-          "audience" : {
-            "$ref" : "#/components/schemas/Audience"
-          },
-          "people" : {
-            "type" : "array",
-            "description" : "For some people: who, besides its owner",
-            "items" : {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }
-          },
-          "hiddenFrom" : {
-            "type" : "array",
-            "description" : "The first names of people it is hidden from today",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }
       },
       "PageResponse" : {
         "type" : "object",
@@ -1959,21 +4110,6 @@
           }
         },
         "required" : [ "body", "canEdit", "chip", "circleId", "id", "mine", "title", "updatedAt" ]
-      },
-      "PersonBrief" : {
-        "type" : "object",
-        "properties" : {
-          "memberId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "avatarUrl" : {
-            "type" : [ "string", "null" ]
-          }
-        }
       },
       "MediaKind" : {
         "type" : "string",
@@ -2026,6 +4162,140 @@
           }
         },
         "required" : [ "headers", "mediaId", "method", "uploadUrl" ]
+      },
+      "NewGuestPassCardRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "label" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "ciphertext" : {
+            "type" : "string",
+            "description" : "The text to show, sealed with the pass's key. base64url.",
+            "maxLength" : 4096,
+            "minLength" : 1
+          },
+          "once" : {
+            "type" : "boolean",
+            "description" : "True when it shows once and is then gone for good"
+          },
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The Vault item it was made from, if any"
+          }
+        },
+        "required" : [ "ciphertext", "clientId", "label" ]
+      },
+      "GuestPassResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "guestName" : {
+            "type" : "string"
+          },
+          "startsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "url" : {
+            "type" : "string",
+            "description" : "The link to send to the guest"
+          },
+          "code" : {
+            "type" : "string",
+            "description" : "The four digits the guest types. Tell them another way than the link."
+          },
+          "running" : {
+            "type" : "boolean",
+            "description" : "True between its start and its end, unless it was ended early"
+          },
+          "opened" : {
+            "type" : "boolean",
+            "description" : "True once a phone has opened it"
+          },
+          "things" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PassThingResponse"
+            }
+          },
+          "cards" : {
+            "type" : "array",
+            "description" : "Sealed cards: a door code, a Wi‑Fi password. Ten at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/PassCardResponse"
+            }
+          },
+          "keyForMaker" : {
+            "type" : [ "string", "null" ],
+            "description" : "The pass's key, sealed to your own Vault, so another phone of yours can build the whole link again. Only shown to whoever made the pass."
+          }
+        },
+        "required" : [ "cards", "circleId", "code", "endsAt", "guestName", "id", "keyForMaker", "opened", "running", "startsAt", "things", "url" ]
+      },
+      "PassCardResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "once" : {
+            "type" : "boolean",
+            "description" : "True when it shows once and is then gone for good"
+          },
+          "shown" : {
+            "type" : "boolean",
+            "description" : "True once the guest's page has shown it"
+          },
+          "shownAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The Vault item it was made from"
+          }
+        },
+        "required" : [ "id", "label", "once", "shown", "shownAt", "thingId" ]
+      },
+      "PassThingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "kind", "title" ]
       },
       "NewCircleRequest" : {
         "type" : "object",
@@ -2113,72 +4383,41 @@
               "type" : "string",
               "format" : "uuid"
             }
+          },
+          "cards" : {
+            "type" : "array",
+            "description" : "Sealed cards made on this phone: a door code, a Wi‑Fi password. Ten at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/NewSealedCard"
+            }
+          },
+          "keyForMaker" : {
+            "type" : "string",
+            "description" : "The pass's key, sealed to your own Vault, so another phone of yours can build the whole link",
+            "maxLength" : 512
           }
         },
         "required" : [ "clientId", "endsAt", "guestName", "thingIds" ]
       },
-      "GuestPassResponse" : {
+      "NewSealedCard" : {
         "type" : "object",
         "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "guestName" : {
+          "label" : {
             "type" : "string"
           },
-          "startsAt" : {
+          "ciphertext" : {
             "type" : "string",
-            "format" : "date-time"
+            "description" : "The text to show, sealed with the pass's key (AES-GCM): base64url of nonce and ciphertext"
           },
-          "endsAt" : {
+          "once" : {
+            "type" : "boolean"
+          },
+          "thingId" : {
             "type" : "string",
-            "format" : "date-time"
-          },
-          "url" : {
-            "type" : "string",
-            "description" : "The link to send to the guest"
-          },
-          "code" : {
-            "type" : "string",
-            "description" : "The four digits the guest types. Tell them another way than the link."
-          },
-          "running" : {
-            "type" : "boolean",
-            "description" : "True between its start and its end, unless it was ended early"
-          },
-          "opened" : {
-            "type" : "boolean",
-            "description" : "True once a phone has opened it"
-          },
-          "things" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/PassThingResponse"
-            }
+            "format" : "uuid",
+            "description" : "The Vault item it was made from, if any"
           }
-        },
-        "required" : [ "circleId", "code", "endsAt", "guestName", "id", "opened", "running", "startsAt", "things", "url" ]
-      },
-      "PassThingResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "kind" : {
-            "$ref" : "#/components/schemas/ThingKind"
-          },
-          "title" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "id", "kind", "title" ]
+        }
       },
       "NewChecklistRequest" : {
         "type" : "object",
@@ -2398,6 +4637,53 @@
         },
         "required" : [ "email" ]
       },
+      "VaultItemChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "site" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "expiresOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "removeExpiry" : {
+            "type" : "boolean"
+          },
+          "health" : {
+            "$ref" : "#/components/schemas/VaultHealth"
+          },
+          "about" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "ciphertext" : {
+            "type" : "string",
+            "description" : "A new ciphertext, sealed with the same item key",
+            "maxLength" : 87382
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "With a ciphertext: the version the phone read"
+          }
+        }
+      },
       "PageChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -2545,6 +4831,192 @@
           }
         }
       },
+      "VaultWaitingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "publicKey" : {
+            "type" : "string",
+            "description" : "Their public key, to wrap the item's key for"
+          }
+        },
+        "required" : [ "avatarUrl", "circleId", "itemId", "memberId", "name", "publicKey", "title" ]
+      },
+      "PageVaultItemRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultItemRowResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "VaultItemRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "site" : {
+            "type" : "string",
+            "description" : "A site or a label, in the clear: netflix.com, home"
+          },
+          "expiresOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "For an ID: the day it runs out"
+          },
+          "renewSoon" : {
+            "type" : "boolean",
+            "description" : "True for an ID that runs out within a year, or has"
+          },
+          "health" : {
+            "$ref" : "#/components/schemas/VaultHealth",
+            "description" : "How good the password is, as the phone that saved it judged"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "owner" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "myAccess" : {
+            "$ref" : "#/components/schemas/VaultAccess",
+            "description" : "What you may do with it: use, see or change"
+          },
+          "myState" : {
+            "$ref" : "#/components/schemas/GrantState",
+            "description" : "Whether its key is there for you: ready, waiting, used (once, and opened), stopped"
+          },
+          "sample" : {
+            "type" : "boolean",
+            "description" : "True for an item of the sample data: it has no real ciphertext and can't be opened"
+          },
+          "glance" : {
+            "type" : "string",
+            "description" : "A few words on what it is: Login · netflix.com"
+          }
+        },
+        "required" : [ "canEdit", "category", "chip", "circleId", "expiresOn", "glance", "health", "id", "mine", "myAccess", "myState", "owner", "renewSoon", "sample", "site", "title", "updatedAt" ]
+      },
+      "ShareToPassOnResponse" : {
+        "type" : "object",
+        "properties" : {
+          "recoveryId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sealedShare" : {
+            "type" : "string",
+            "description" : "Your share of their Vault key, sealed to your own public key"
+          },
+          "tempPublicKey" : {
+            "type" : "string",
+            "description" : "The temporary public key of their new phone: open your share and seal it to this"
+          }
+        },
+        "required" : [ "recoveryId", "sealedShare", "tempPublicKey" ]
+      },
+      "VaultAttentionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "emergency" : {
+            "description" : "Your own emergency access, when your trusted person has asked or it has opened. Say no, or switch it off.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/VaultEmergencyResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "recovery" : {
+            "description" : "A recovery of your Vault that is open. Cancel it if it isn't yours.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/VaultRecoveryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "helperAsks" : {
+            "type" : "array",
+            "description" : "People who asked you to be their helper and wait for your answer",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultHelpingResponse"
+            }
+          },
+          "helpNeeded" : {
+            "type" : "array",
+            "description" : "People you help who are getting back in now and still need your share",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultHelpingResponse"
+            }
+          },
+          "entrusted" : {
+            "type" : "array",
+            "description" : "Vaults you asked for: waiting for the time to pass, or open to you",
+            "items" : {
+              "$ref" : "#/components/schemas/EntrustedVaultResponse"
+            }
+          },
+          "waitingForKeys" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many people wait for your phone to wrap a key for them"
+          },
+          "sharesDue" : {
+            "type" : "boolean",
+            "description" : "True when your phone should split your Vault key again for your helpers"
+          }
+        },
+        "required" : [ "emergency", "entrusted", "helpNeeded", "helperAsks", "recovery", "sharesDue", "waitingForKeys" ]
+      },
       "ThingBrief" : {
         "type" : "object",
         "properties" : {
@@ -2642,6 +5114,123 @@
             "type" : "boolean"
           }
         }
+      },
+      "VaultDrawerResponse" : {
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "$ref" : "#/components/schemas/VaultCategory"
+          },
+          "items" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "category", "items" ]
+      },
+      "VaultHomeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "drawers" : {
+            "type" : "array",
+            "description" : "The six drawers, each with how many items you may see in it",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultDrawerResponse"
+            }
+          },
+          "needsALook" : {
+            "$ref" : "#/components/schemas/VaultNeedsALookResponse"
+          },
+          "sharedWithYouCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many items here are someone else's, shared with you"
+          },
+          "sharedWithYou" : {
+            "type" : "array",
+            "description" : "The latest of them, five at most",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultItemRowResponse"
+            }
+          }
+        },
+        "required" : [ "drawers", "needsALook", "sharedWithYou", "sharedWithYouCount" ]
+      },
+      "VaultNeedsALookResponse" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weak" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reused" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "leaked" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "leaked", "reused", "total", "weak" ]
+      },
+      "VaultKeyHolderResponse" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MemberKind"
+          },
+          "role" : {
+            "$ref" : "#/components/schemas/Role"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True for the signed-in person's own place in the circle"
+          },
+          "publicKey" : {
+            "type" : [ "string", "null" ],
+            "description" : "Their public key. Null when nothing can be sealed for them yet."
+          },
+          "missing" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why not, when there is no key: no_phone (they have no sign-in of their own) or no_vault (they haven't set up their Vault)"
+          }
+        },
+        "required" : [ "avatarUrl", "kind", "memberId", "missing", "name", "publicKey", "role", "you" ]
+      },
+      "VaultKeysResponse" : {
+        "type" : "object",
+        "properties" : {
+          "people" : {
+            "type" : "array",
+            "description" : "People in the circle a Vault item can be sealed for",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultKeyHolderResponse"
+            }
+          },
+          "without" : {
+            "type" : "array",
+            "description" : "People in the circle who can't be shared with yet, and why",
+            "items" : {
+              "$ref" : "#/components/schemas/VaultKeyHolderResponse"
+            }
+          }
+        },
+        "required" : [ "people", "without" ]
       },
       "FreshCard" : {
         "type" : "object",

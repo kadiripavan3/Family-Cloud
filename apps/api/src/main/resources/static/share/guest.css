@@ -1,0 +1,6 @@
+/* The guest pass page: what it needs beyond pages.css. Colours come from tokens.css only. */
+.keep-lines { white-space: pre-wrap; }
+.sealed .secret { margin: 12px 0 0; padding: 16px 18px; border-radius: 16px; background: var(--fill); font-size: 22px; font-weight: 800; letter-spacing: .02em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sealed .btn { margin-top: 12px; }
+.sealed .meta { margin-top: 10px; }
+[hidden] { display: none !important; }
