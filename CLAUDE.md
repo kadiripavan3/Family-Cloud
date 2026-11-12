@@ -54,6 +54,12 @@ Controller (takes `@Me UUID me`) → service (the rules) → `Store` (all the SQ
 - **Photos and files** go through `media/` exactly as in Journey (ask for a target, send, say done). Four kinds: photo (made afresh in three sizes), video, file, audio (kept as they arrive, under an address that can't be guessed). A thing points at a media row; deleting the row queues the file for removal by itself.
 - **The tests' base** is `ApiTest`: `person("Nora")`, `circle(token, "family", "The Linds")`, `join(owner, circle, joiner)`, `addMember(...)`, `page(...)`, `send(method, path, token, json, expectedStatus)`, `fetch(path, token)`. `ApiDescriptionTest` holds every route to: lists take a cursor, creating takes a `clientId`, and a GET by id answers "not found" to a stranger and to someone in the circle it wasn't shared with.
 
+### How the app is put together
+
+`apps/mobile/README.md` has it under "How the app is put together": the current circle (`useCircle()`), Home's shell and the one file each place owns (`features/<place>/<Place>Home.tsx`), opening a thing of any kind by convention (`/<kind>/<id>`, `useOpenThing()`), `ThingRow`, the audience chip and sheet (`<AudienceChip thing={…} />`), `useCache()` with one file of change functions per place (`src/api/cache/<place>.ts`), one catalog file per place under `src/words/en/`, and one walk-through file per part in `scripts/e2e/steps/`. Everything in Journey's "App structure and standards" holds. Build each screen from its drawing in `design/hub/src/screens/`, then look at your own screenshot next to it.
+
+- **Check the app in a browser** after changing screens, with the API running in local mode: `cd apps/mobile && EXPO_OFFLINE=1 CI=1 npx expo export -p web`, `node ../../scripts/e2e/serve.js "$PWD/dist" 8081 &`, then `node ../../scripts/e2e/walkthrough.js /tmp/shots light` and again with `dark`. It reads `API_URL` and `WEB_URL` when they are not on 8080 and 8081 (build with `EXPO_PUBLIC_API_URL` set to the same API). The walk-through signs in as the sample people and as new ones, uses every built screen, and stops at the first thing that fails.
+
 ## The relationship with Journey
 
 - **The design system is Journey's.** `phone.css` starts with Journey's file unchanged (device, shared components, Journey's own screens) and adds this app's parts at the end, with prefixed class names. A change to colour, type or shape belongs in both repos' `design/tokens.json`. Prefer an existing component over a new one.
