@@ -372,7 +372,8 @@ exports.run = async function run(ctx) {
     await step('places', async () => {
       // On a phone this is a map; here the places are a list, each with its cover and its count.
       await R('button', { name: 'Places', exact: true }).click();
-      await T('7 places · 3 countries').waitFor();
+      // (How many places and countries is the sample data's business: a kept journey brings its own.)
+      await T(/^\d+ places · \d+ countries$/).waitFor();
       await R('button', { name: /^Lake Bled, \d+\. Show its photos$/ }).waitFor();
       await T('3 visits · last on 7 Nov').waitFor();
       await T(/^\d+ photos and 3 videos, from Alex, Mia and you$/).waitFor();

@@ -15,13 +15,16 @@ Homeport (first called Family Cloud; the repository keeps that name) is an app f
    - `docs/04-journey-link.md`: how the two apps work together, and what each codebase needs for it
    - `docs/05-design-brief.md`: what carries over from Journey's design and what is new, the screen list, what is not designed yet
    - `docs/06-build-plan.md`: how it gets built and tested, the milestones, the calls the owner still has to make, and every screen with its milestone and test level. Its last section lists every screen, and the hub build fails when that list and the screens disagree, so change both together
+   - `docs/07-vault-protocol.md`: what the Vault scrambles and how, step by step, and the questions for an outside review. Nothing about the Vault changes without it
+   - `docs/08-run-locally.md`, `docs/09-connect-services.md`: running everything on a Mac, and connecting the real services (none of it run against them yet)
+   - `docs/10-journey-changes.md`: what Journey's own code needs before the link is real
 4. For any design work, open the screens in `design/hub/src/screens/` (one file per group, order in `index.json`), their styles in `design/hub/src/phone.css`, and `design/tokens.json`.
 
 ## Sources of truth
 
 | What | Where |
 |---|---|
-| Requirements, calls and open questions | `docs/01-requirements.md` |
+| Requirements, calls and open questions (every question for the owner is in its "Questions for you") | `docs/01-requirements.md` |
 | Colours, type, radius, spacing, the name | `design/tokens.json` (a copy of Journey's Design 2.1, plus `brand` and five tints) |
 | Screen designs | `design/hub/src/screens/` and `design/hub/src/phone.css`; photos in `design/hub/img/`; 3D icons in `design/hub/icons3d/` |
 | Status, next steps, update log | `design/hub/status.json` |
@@ -39,7 +42,7 @@ cd apps/mobile && npm ci && EXPO_OFFLINE=1 npm run check      # app: types, lint
 
 - **Local first.** Every outside service has a stand-in behind a switch (`homeport.auth.mode` and friends) and the `local` profile. The app works with any email and the code 123456. Local mode starts with the people of the screens: sign in as `nora@example.com` (or `alex@`, `kai@`, `lea@`, `lena@`, `ana@`) to see The Linds, Nora and Alex, Lisbon crew and the flat; any other address starts empty.
 - **API change:** write the test, then `UPDATE_OPENAPI=1 ./mvnw test -Dtest=OpenApiDocumentTest` in `apps/api` and `npm run api:generate` in `apps/mobile`. Commit `openapi.json` and the generated client with the change. Format with `./mvnw spotless:apply`.
-- **In this cloud environment** use `/opt/maven/bin/mvn` if `./mvnw` can't download, and `EXPO_OFFLINE=1` for `expo` commands.
+- **In this cloud environment** use `/opt/maven/bin/mvn` if `./mvnw` can't download, and `EXPO_OFFLINE=1` for `expo` commands. Memory is what runs out first (16 GB): put `MAVEN_OPTS="-Xmx640m -XX:+UseSerialGC"` in front of Maven, start the API with `-Dspring-boot.run.jvmArguments="-Xmx448m"`, and never run two of a check, an export and a walk-through at once. The whole walk-through needs sample data added the same day: empty the `homeport` database and start the API again first.
 
 ### How the API is put together
 
