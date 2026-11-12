@@ -190,6 +190,17 @@ class CircleController {
         circles.remove(id, me);
     }
 
+    @GetMapping("/circles/{id}/leaving")
+    @Operation(
+            operationId = "getLeaving",
+            summary = "What leaving a circle will do, in numbers, before you do it",
+            description = "How many things only you can see will be deleted, how many shared things stay for the"
+                    + " others, and how many passwords stop working for them. Leaving itself is DELETE"
+                    + " /v1/members/{id} with your own member id.")
+    CircleService.LeavingResponse leaving(@Me UUID me, @PathVariable UUID id) {
+        return circles.leaving(id, me);
+    }
+
     @PutMapping("/members/{id}/owner")
     @Operation(operationId = "handOverCircle", summary = "The owner hands the circle to another adult")
     CircleResponse handOver(@Me UUID me, @PathVariable UUID id) {

@@ -72,7 +72,7 @@ class AccountAndHomeTest extends ApiTest {
         page(nora, alone, "Diary", "me");
         uploadPhoto(nora);
 
-        send(HttpMethod.DELETE, "/v1/me", nora, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", nora, null, 200);
 
         // Her own circle is gone; the shared one stays, with Alex as its owner and without her things.
         assertThat(jdbc.sql("select count(*) from circles where id = cast(:id as uuid)")
@@ -122,8 +122,8 @@ class AccountAndHomeTest extends ApiTest {
         page(sam, circle, "Sam's page", "circle");
 
         // Sam goes first; then Nora, who is now the last one in the circle.
-        send(HttpMethod.DELETE, "/v1/me", sam, null, 204);
-        send(HttpMethod.DELETE, "/v1/me", nora, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", sam, null, 200);
+        send(HttpMethod.DELETE, "/v1/me", nora, null, 200);
 
         assertThat(jdbc.sql("select count(*) from circles").query(Integer.class).single())
                 .isZero();

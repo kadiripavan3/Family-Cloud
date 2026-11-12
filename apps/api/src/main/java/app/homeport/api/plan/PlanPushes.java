@@ -1,36 +1,24 @@
 package app.homeport.api.plan;
 
 import app.homeport.api.common.Rules;
-import app.homeport.api.notify.DeviceStore;
-import app.homeport.api.notify.PushMessage;
-import app.homeport.api.notify.PushSender;
-import app.homeport.api.notify.PushSender.Handed;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 /**
- * Pushes about one event or reminder: who may hear of it, and handing them to the push service. A person
- * hears of a thing only if they may see it at that moment and haven't switched notifications off.
+ * Who may hear of one event or reminder when it is due: the people with a sign-in of their own who may see
+ * it at that moment and haven't switched notifications off. (The outbox checks the same again when it
+ * sends; asking here first keeps rows out of it that would only be dropped.)
  */
 @Component
 class PlanPushes {
 
-    /** A person's newest phones get the push; nobody has more than a handful. */
-    static final int PHONES_EACH = 10;
-
     private final JdbcClient jdbc;
-    private final DeviceStore devices;
-    private final PushSender sender;
 
-    PlanPushes(JdbcClient jdbc, DeviceStore devices, PushSender sender) {
+    PlanPushes(JdbcClient jdbc) {
         this.jdbc = jdbc;
-        this.devices = devices;
-        this.sender = sender;
     }
 
     /**
@@ -50,28 +38,5 @@ class PlanPushes {
                 .param("members", memberIds)
                 .query(UUID.class)
                 .list();
-    }
-
-    /** One push for each phone of these people. */
-    List<PushMessage> messages(List<UUID> userIds, String title, String body, String url, String kind) {
-        Map<UUID, List<String>> tokens = devices.tokensOf(userIds);
-        List<PushMessage> messages = new ArrayList<>();
-        for (UUID user : userIds) {
-            tokens.getOrDefault(user, List.of()).stream()
-                    .limit(PHONES_EACH)
-                    .forEach(token -> messages.add(new PushMessage(token, title, body, url, kind)));
-        }
-        return messages;
-    }
-
-    /**
-     * Hands pushes to the push service, a call's worth at a time. Never call this with a transaction open:
-     * the service is another company's server. Throws when the service can't be reached.
-     */
-    void send(List<PushMessage> messages) {
-        for (int from = 0; from < messages.size(); from += PushSender.PER_CALL) {
-            Handed handed = sender.send(messages.subList(from, Math.min(from + PushSender.PER_CALL, messages.size())));
-            devices.forget(handed.gone());
-        }
     }
 }

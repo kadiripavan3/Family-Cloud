@@ -4,6 +4,9 @@
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
+    "@noble/ciphers": "2.4.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
     "@sentry/react-native": "~8.28.0",
     "@shopify/flash-list": "2.3.2",
     "@supabase/auth-js": "2.119.0",
@@ -72,6 +75,8 @@
   "jest": {
     "preset": "jest-expo",
     "testTimeout": 15000,
+    "maxWorkers": "50%",
+    "workerIdleMemoryLimit": "800MB",
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
@@ -80,6 +85,11 @@
       "<rootDir>/jest.setup.ts"
     ],
     "resolver": "react-native-reanimated/jest/resolver",
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|@noble))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ],
     "moduleNameMapper": {
       "^@/assets/(.*)$": "<rootDir>/assets/$1",
       "^lucide-react-native$": "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js"

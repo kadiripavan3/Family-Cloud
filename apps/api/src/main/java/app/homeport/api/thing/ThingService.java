@@ -1,5 +1,7 @@
 package app.homeport.api.thing;
 
+import app.homeport.api.activity.ActivityLog;
+import app.homeport.api.activity.ActivityLog.Happened;
 import app.homeport.api.circle.CircleKind;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.circle.CircleStore.CircleRow;
@@ -9,8 +11,12 @@ import app.homeport.api.circle.MemberStore;
 import app.homeport.api.circle.MemberStore.MemberRow;
 import app.homeport.api.circle.Role;
 import app.homeport.api.common.ApiProblem;
+import app.homeport.api.common.Names;
 import app.homeport.api.media.MediaService;
 import app.homeport.api.media.MediaSize;
+import app.homeport.api.notify.Outbox;
+import app.homeport.api.notify.Push;
+import app.homeport.api.notify.PushKind;
 import app.homeport.api.thing.ThingStore.HideRow;
 import app.homeport.api.thing.ThingStore.ShareRow;
 import app.homeport.api.thing.ThingStore.ThingRow;
@@ -115,18 +121,24 @@ public class ThingService {
     private final MemberStore members;
     private final MediaService media;
     private final List<GlanceSource> glanceSources;
+    private final ActivityLog activity;
+    private final Outbox outbox;
 
     ThingService(
             ThingStore things,
             CircleService circles,
             MemberStore members,
             MediaService media,
-            List<GlanceSource> glanceSources) {
+            List<GlanceSource> glanceSources,
+            ActivityLog activity,
+            Outbox outbox) {
         this.things = things;
         this.circles = circles;
         this.members = members;
         this.media = media;
         this.glanceSources = glanceSources;
+        this.activity = activity;
+        this.outbox = outbox;
     }
 
     public static ApiProblem notFound() {
@@ -144,13 +156,18 @@ public class ThingService {
         MemberRow mine = circles.me(circleId, me);
         Audience startsAs = audience != null ? audience : circle.kind().startsAs();
         // "Some people" with nobody chosen yet is, for now, only you.
-        return things.insert(
+        UUID id = things.insert(
                 circleId,
                 mine.id(),
                 kind,
                 title == null ? "" : title.trim(),
                 startsAs == Audience.SOME ? Audience.ME : startsAs,
                 clientId);
+        // Made where others can see it: that is news for them. (What is only its owner's makes no line.)
+        if (startsAs == Audience.CIRCLE) {
+            activity.record(Happened.arrived(circleId, kind, id, true).by(mine.id()));
+        }
+        return id;
     }
 
     /** The thing, for someone who may see it. To everyone else it isn't there. */
@@ -267,7 +284,7 @@ public class ThingService {
                     ? List.of()
                     : hides.getOrDefault(row.id(), List.of()).stream()
                             .filter(HideRow::today)
-                            .map(h -> app.homeport.api.common.Names.first(h.name()))
+                            .map(h -> Names.first(h.name()))
                             .toList();
             return new AudienceChip(row.audience(), people, hiddenFrom);
         }));
@@ -396,6 +413,7 @@ public class ThingService {
         if (audience == Audience.SOME && chosen.isEmpty()) {
             throw ApiProblem.badRequest("nobody_chosen", "Pick at least one person, or choose Only you.");
         }
+        Set<UUID> sawBefore = new HashSet<>(things.seenBy(id));
         things.setAudience(id, audience, change.everyoneEdits() == null ? row.everyoneEdits() : change.everyoneEdits());
         things.clearShares(id);
         things.clearHides(id);
@@ -408,6 +426,46 @@ public class ThingService {
                 things.hide(id, hide.memberId(), hide.through());
             }
         }
+        widened(row, chosen, sawBefore);
         return audience(id, me);
+    }
+
+    /**
+     * When more people can see a thing than before, that is news: a line in Activity (read only by those who
+     * may see the thing), and a push for each person it was newly shared with by name. A photo makes no push
+     * of its own: it joins its owner's batch, which is told once.
+     */
+    private void widened(ThingRow row, List<PersonAccess> named, Set<UUID> sawBefore) {
+        List<UUID> seeNow = things.seenBy(row.id());
+        if (sawBefore.containsAll(seeNow)) {
+            return;
+        }
+        activity.record(
+                Happened.arrived(row.circleId(), row.kind(), row.id(), false).by(row.ownerId()));
+        if (row.kind() == ThingKind.PHOTO || row.kind() == ThingKind.VIDEO) {
+            return;
+        }
+        Map<UUID, MemberRow> inCircle =
+                members.of(List.of(row.circleId())).stream().collect(Collectors.toMap(MemberRow::id, m -> m));
+        String by = Names.first(inCircle.get(row.ownerId()).name());
+        // A push about the Vault never names the item.
+        boolean secret = row.place() == Place.VAULT;
+        for (PersonAccess person : named) {
+            MemberRow to = inCircle.get(person.memberId());
+            if (to == null || to.userId() == null || sawBefore.contains(to.id()) || !seeNow.contains(to.id())) {
+                continue;
+            }
+            outbox.tell(Push.to(
+                            to.userId(),
+                            PushKind.SHARED,
+                            secret
+                                    ? by + " shared something in the Vault with you"
+                                    : by + " shared " + (row.title().isBlank() ? "something" : row.title())
+                                            + " with you",
+                            secret ? "Open the Vault to see it" : "Open to see it",
+                            "/" + row.kind().code().replace('_', '-') + "/" + row.id())
+                    .about(row.circleId(), row.id())
+                    .by(row.ownerId()));
+        }
     }
 }

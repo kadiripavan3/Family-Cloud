@@ -56,7 +56,7 @@ export const you = {
     lockTitle: 'Lock the Vault after',
     hideDetails: { label: 'Hide details in notifications', note: '“A bill is due”, not which or how much' },
     /** Under the three: what they do today. */
-    phoneNote: `These are remembered on this phone. Face ID and locking the Vault need a build of ${APP} on your phone, and the Vault itself; until then they change nothing.`,
+    phoneNote: `These are remembered on this phone. The Vault locks itself after the time you choose here. Opening it with Face ID needs a build of ${APP} on your phone; in a browser it opens with a passcode.`,
     account: 'Your account',
     phones: 'Phones signed in',
     phonesNone: 'None yet',

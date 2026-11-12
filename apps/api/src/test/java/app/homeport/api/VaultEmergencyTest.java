@@ -347,7 +347,7 @@ class VaultEmergencyTest extends VaultTestBase {
                         .query(String.class)
                         .single())
                 .isEqualTo("open");
-        assertThat(jdbc.sql("select count(*) from vault_notices where kind = 'vault_emergency_open'")
+        assertThat(jdbc.sql("select count(*) from pushes where kind = 'vault_emergency_open'")
                         .query(Integer.class)
                         .single())
                 .isEqualTo(2);
@@ -443,7 +443,7 @@ class VaultEmergencyTest extends VaultTestBase {
         theWaitIsOver();
         send(HttpMethod.POST, "/v1/vault/entrusted/" + id + "/items/" + bank + "/open", alex, null, 200);
 
-        send(HttpMethod.DELETE, "/v1/me", nora, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", nora, null, 200);
 
         assertThat(fetch("/v1/vault/entrusted", alex)).isEqualTo("[]");
         send(HttpMethod.GET, "/v1/vault/entrusted/" + id, alex, null, 404);
@@ -477,7 +477,7 @@ class VaultEmergencyTest extends VaultTestBase {
                 .isNull();
 
         // And with his account gone, the arrangement is gone.
-        send(HttpMethod.DELETE, "/v1/me", alex, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", alex, null, 200);
         assertThat(JsonPath.<String>read(fetch("/v1/vault/emergency", nora), "$.state"))
                 .isEqualTo("off");
     }

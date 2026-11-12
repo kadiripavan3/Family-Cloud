@@ -24,21 +24,24 @@ public class AccountStore {
                 .query((rs, n) -> new SettingsResponse(
                         rs.getBoolean("notify_activity"),
                         rs.getBoolean("weekly_summary"),
-                        rs.getBoolean("summary_email")))
+                        rs.getBoolean("summary_email"),
+                        rs.getBoolean("hide_details")))
                 .optional();
     }
 
     public void saveSettings(UUID userId, SettingsResponse s) {
         jdbc.sql("""
-            insert into settings (user_id, notify_activity, weekly_summary, summary_email)
-            values (:me, :activity, :summary, :email)
+            insert into settings (user_id, notify_activity, weekly_summary, summary_email, hide_details)
+            values (:me, :activity, :summary, :email, :hide)
             on conflict (user_id) do update set notify_activity = excluded.notify_activity,
-              weekly_summary = excluded.weekly_summary, summary_email = excluded.summary_email, updated_at = now()
+              weekly_summary = excluded.weekly_summary, summary_email = excluded.summary_email,
+              hide_details = excluded.hide_details, updated_at = now()
             """)
                 .param("me", userId)
                 .param("activity", s.notifyActivity())
                 .param("summary", s.weeklySummary())
                 .param("email", s.summaryEmail())
+                .param("hide", s.hideDetails())
                 .update();
     }
 

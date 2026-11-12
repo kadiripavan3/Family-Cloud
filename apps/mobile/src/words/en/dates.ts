@@ -29,6 +29,8 @@ export const dates = {
   weekdayDay: (weekday: number, day: string) => `${WEEKDAYS[weekday]} ${day}`,
   /** "3 Apr to 20 Apr", "10:00 to 10:30". Both ends are already written out. */
   fromTo: (from: string, to: string) => `${from} to ${to}`,
+  /** "Nov": a month's name cut short, where there is little room (under a bar of a chart). */
+  monthAbbr: (month: number) => MONTHS[month]!.slice(0, 3),
 
   // The day picker
   /** One letter for each day of the week, Monday first. */

@@ -323,18 +323,8 @@ class LindsBoardsSeed implements Seeder {
                 "mia",
                 List.of("Pizza dough", "Mozzarella", "Tomato sauce", "Olives", "Flour"),
                 List.of("Flour"));
-        // In the drawing this one comes "from the calendar". Until Plan hands its dinners over (CalendarDinners),
-        // it is a meal like the others, with nothing to buy.
-        meal(
-                plan,
-                monday.plusDays(5),
-                "Dinner at Grandma Astrid's",
-                "🏡",
-                null,
-                "At hers. Nobody cooks.",
-                null,
-                List.of(),
-                List.of());
+        // Saturday's "Dinner at Grandma Astrid's" is not a meal of the plan: it is in the calendar (Plan's sample
+        // data has it), and the plan shows it on its day "from the calendar" (CalendarDinners).
         // "23 ingredients go to Groceries": the switch is on, pointing at the family's shopping list. That list
         // is drawn in Notes with twelve lines of its own, so the sample week's ingredients are not on it yet;
         // they are written the first time someone changes the plan, as when a list couldn't be reached.
@@ -399,9 +389,12 @@ class LindsBoardsSeed implements Seeder {
                 fields(
                         "people", people.stream().map(p -> member(p).toString()).toList(),
                         "stars", Map.of("stars", 10, "cents", 200, "currency", "EUR", "into", "Mia's skates fund")));
-        // Started eight weeks ago, so the wheel has turned twice round and stands as it did then.
+        // Started nine weeks ago: the wheel has turned twice round and one job on, so this week the laundry is
+        // Alex's, the table Mia's and Biscuit Leo's, and Nora has the week off. The bins are not on the wheel:
+        // the family takes turns at those with a reminder in Plan ("Take the bins out"), and the same job kept
+        // in two places would stand on Today twice.
         LocalDate monday = MealPlan.monday(today);
-        LocalDate startedOn = monday.minusWeeks(8);
+        LocalDate startedOn = monday.minusWeeks(9);
         w.jdbc()
                 .sql(
                         "update boards set settings = jsonb_set(settings, '{startsOn}', to_jsonb(cast(:day as text))) where thing_id = :id")
@@ -409,19 +402,6 @@ class LindsBoardsSeed implements Seeder {
                 .param("id", wheel)
                 .update();
         List<UUID> jobs = List.of(
-                add(
-                        "nora",
-                        wheel,
-                        ChoreWheel.JOB,
-                        fields(
-                                "name",
-                                "Bins and recycling",
-                                "emoji",
-                                "🗑️",
-                                "when",
-                                "Tuesday and Friday evening",
-                                "timesAWeek",
-                                2)),
                 add(
                         "nora",
                         wheel,
@@ -437,27 +417,26 @@ class LindsBoardsSeed implements Seeder {
                         wheel,
                         ChoreWheel.JOB,
                         fields("name", "Feed Biscuit", "emoji", "🐶", "when", "Every morning", "timesAWeek", 7)));
-        int[] times = {2, 2, 7, 7};
+        int[] times = {2, 7, 7};
 
-        // This week: Nora hasn't done the bins, Alex has done both loads, Mia missed one day, Leo fed Biscuit every
-        // morning.
+        // This week: Alex has done both loads, Mia missed one day, Leo fed Biscuit every morning.
         int daysSoFar = (int) (today.toEpochDay() - monday.toEpochDay()) + 1;
         Map<String, Integer> left = new LinkedHashMap<>(Map.of("mia", 34, "leo", 21));
         for (int d = 0; d < daysSoFar; d++) {
             LocalDate day = monday.plusDays(d);
             if (d < 2) {
-                tick(wheel, jobs.get(1), "alex", "alex", day, 19);
+                tick(wheel, jobs.get(0), "alex", "alex", day, 19);
             }
             if (d != 1 || daysSoFar < 3) {
-                tick(wheel, jobs.get(2), "mia", "nora", day, 18);
+                tick(wheel, jobs.get(1), "mia", "nora", day, 18);
                 left.merge("mia", -1, Integer::sum);
             }
-            tick(wheel, jobs.get(3), "leo", "nora", day, 7);
+            tick(wheel, jobs.get(2), "leo", "nora", day, 7);
             left.merge("leo", -1, Integer::sum);
         }
         // The weeks before, by the rule of the wheel, until Mia has her 34 stars and Leo his 21.
-        for (int back = 1; back <= 8; back++) {
-            int week = 8 - back;
+        for (int back = 1; back <= 9; back++) {
+            int week = 9 - back;
             for (String child : List.of("mia", "leo")) {
                 for (int job = 0; job < jobs.size(); job++) {
                     if (!people.get(Math.floorMod(job + week, people.size())).equals(child)) {

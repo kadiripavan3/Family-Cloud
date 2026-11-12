@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.homeport.api.PlanTestBase;
 import app.homeport.api.common.Jobs;
+import app.homeport.api.notify.CountedPush;
 import app.homeport.api.notify.DeviceStore;
 import app.homeport.api.notify.LoggingPushSender;
+import app.homeport.api.notify.Outbox;
+import app.homeport.api.notify.OutboxStore;
+import app.homeport.api.notify.PushDelivery;
+import app.homeport.api.notify.PushFeed;
 import app.homeport.api.notify.PushMessage;
 import app.homeport.api.notify.PushSender;
 import java.time.Instant;
@@ -17,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -47,6 +53,21 @@ class DuePushTest extends PlanTestBase {
 
     @Autowired
     Jobs jobs;
+
+    @Autowired
+    PlanPeople people;
+
+    @Autowired
+    Outbox outbox;
+
+    @Autowired
+    OutboxStore outboxStore;
+
+    @Autowired
+    ObjectProvider<PushFeed> feeds;
+
+    @Autowired
+    ObjectProvider<CountedPush> counted;
 
     /** A day and a time on the clock in Ljubljana, this many minutes from now. */
     private static String[] in(int minutes) {
@@ -195,12 +216,15 @@ class DuePushTest extends PlanTestBase {
 
         assertThat(due.sendDue(moment)).isEqualTo(3);
 
+        // The turn says which part of the day it is, whose turn it is, and who has it the next time round.
         assertThat(sent.sent())
                 .extracting(p -> p.token().replaceAll(".*\\[|]", "") + ": " + p.title() + " | " + p.body())
                 .containsExactlyInAnyOrder(
                         "nora: Call the plumber | Due at " + Words.time(LocalTime.parse(at[1])),
                         "alex: Book the car service | Due at " + Words.time(LocalTime.parse(at[1])),
-                        "alex: Take the bins out | Due at " + Words.time(LocalTime.parse(at[1])) + " · your turn");
+                        "alex: Take the bins out "
+                                + Words.partOfDay(LocalTime.parse(at[1])).toLowerCase(java.util.Locale.ROOT)
+                                + " | It's your turn. Nora has tomorrow.");
         assertThat(sent.sent().get(0).url()).startsWith("/reminder/");
         assertThat(due.sendDue(moment.plusSeconds(120))).isZero();
 
@@ -262,18 +286,26 @@ class DuePushTest extends PlanTestBase {
                 return Outcome.NOTHING;
             }
         };
-        DuePushes job = new DuePushes(events, reminders, new PlanPushes(jdbc, devices, flaky), transaction, jobs);
+        PushDelivery delivery = new PushDelivery(outboxStore, devices, flaky, feeds, counted, transaction, jobs);
+        DuePushes job =
+                new DuePushes(events, reminders, new PlanPushes(jdbc), people, outbox, delivery, transaction, jobs);
 
+        // Taken once, and waiting in the outbox: the moment has moved on, the pushes haven't gone.
         assertThat(job.sendDue(moment)).isEqualTo(2);
         assertThat(arrived).isEmpty();
-        assertThat(alert("reminders", reminder))
-                .as("put back for the next minute")
-                .isEqualTo(moment);
-        assertThat(alert("events", event)).isNotNull();
+        assertThat(alert("reminders", reminder)).as("taken, never taken again").isNull();
+        assertThat(jdbc.sql("select count(*) from pushes where status = 'pending' and attempts = 1")
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(2);
+        assertThat(job.sendDue(moment.plusSeconds(60))).isZero();
 
-        assertThat(job.sendDue(moment.plusSeconds(60))).isEqualTo(2);
+        // The outbox tries again a few minutes later, and then they arrive, once.
+        jdbc.sql("update pushes set send_after = now()").update();
+        delivery.deliverDue();
         assertThat(arrived).extracting(PushMessage::title).containsExactlyInAnyOrder("Call the plumber", "Dentist");
-        assertThat(job.sendDue(moment.plusSeconds(120))).isZero();
+        delivery.deliverDue();
+        assertThat(event).isNotNull();
         assertThat(arrived).hasSize(2);
     }
 }

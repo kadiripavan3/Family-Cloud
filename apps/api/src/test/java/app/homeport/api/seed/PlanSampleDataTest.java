@@ -65,8 +65,8 @@ class PlanSampleDataTest extends ApiTest {
                 .containsExactly(2);
         assertThat(JsonPath.<List<String>>read(home, "$.items[?(@.title == 'Take the bins out')].note"))
                 .containsExactly("Tonight · your turn");
-        assertThat(JsonPath.<List<Boolean>>read(home, "$.items[?(@.title == 'Feed Biscuit')].done"))
-                .containsExactly(true);
+        // (Feeding Biscuit comes to Today from the chore wheel, where it is Leo's job: Plan no longer keeps it too.)
+        assertThat(JsonPath.<List<String>>read(home, "$.items[*].title")).doesNotContain("Feed Biscuit");
 
         // Plan: the day's list, and Saturday with the haircut and the dinner.
         String plan = fetch("/v1/circles/" + linds + "/plan?day=" + today + "&days=1", nora);
@@ -114,8 +114,8 @@ class PlanSampleDataTest extends ApiTest {
                         + (today.getDayOfWeek() == DayOfWeek.THURSDAY ? "tomorrow" : "Friday"));
         assertThat(JsonPath.<List<String>>read(reminders, "$.asked[?(@.title == 'Book the car service')].note"))
                 .containsExactly("Asked on Monday · not done yet");
-        assertThat(JsonPath.<List<String>>read(reminders, "$.asked[?(@.title == 'Feed Biscuit')].note"))
-                .containsExactly("Done at 7:40 · 1 star");
+        // (Feeding Biscuit is Leo's job on the chore wheel, not also a reminder: it stood on Today twice.)
+        assertThat(JsonPath.<List<String>>read(reminders, "$.asked[*].title")).doesNotContain("Feed Biscuit");
         assertThat(JsonPath.<List<String>>read(reminders, "$.places[*].note"))
                 .containsExactly("When you're near the post office", "When Alex is near the shop · Groceries attached");
         assertThat(JsonPath.<String>read(

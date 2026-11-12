@@ -65,6 +65,27 @@ describe('5.6 Templates', () => {
     expect(screen.queryByRole('button', { name: /^Weekly meal plan/ })).toBeNull();
   });
 
+  it('marks one card, as the drawings do: the first until one is pressed, then the one pressed last', async () => {
+    await render(inApp(<Templates />));
+    const user = userEvent.setup();
+    expect(screen.getByRole('button', { name: /^Weekly meal plan/ })).toBeSelected();
+    expect(screen.getByRole('button', { name: /^Chore wheel/ })).not.toBeSelected();
+    await user.press(screen.getByRole('button', { name: /^Chore wheel/ }));
+    expect(screen.getByRole('button', { name: /^Chore wheel/ })).toBeSelected();
+    expect(screen.getByRole('button', { name: /^Weekly meal plan/ })).not.toBeSelected();
+    // Under a chip that doesn't hold the marked card, the first of what is shown is the marked one.
+    await user.press(screen.getByRole('button', { name: 'Keepsakes' }));
+    expect(screen.getByRole('button', { name: /^Time capsule/ })).toBeSelected();
+  });
+
+  it("marks the first of a couple's own cards in their gallery", async () => {
+    mockCircle = coupleCircle;
+    asked.mockReturnValue(loaded(coupleGallery));
+    await render(inApp(<Templates />));
+    expect(screen.getByRole('button', { name: /^Date ideas/ })).toBeSelected();
+    expect(screen.getByRole('button', { name: /^The wedding/ })).not.toBeSelected();
+  });
+
   it('searches within the cards, and says so when nothing matches', async () => {
     await render(inApp(<Templates />));
     const user = userEvent.setup();

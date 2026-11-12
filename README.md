@@ -14,6 +14,12 @@ First called Family Cloud; the repository keeps that name. One private place for
 | The two apps, together | [`docs/04-journey-link.md`](docs/04-journey-link.md) |
 | Design cues and the screen list | [`docs/05-design-brief.md`](docs/05-design-brief.md) |
 | The build plan: milestones, tests, every screen | [`docs/06-build-plan.md`](docs/06-build-plan.md) |
+| The Vault: what is scrambled, how, and what a review must look at | [`docs/07-vault-protocol.md`](docs/07-vault-protocol.md) |
+| Run it on your Mac | [`docs/08-run-locally.md`](docs/08-run-locally.md) |
+| Connect the real services | [`docs/09-connect-services.md`](docs/09-connect-services.md) |
+| What Journey itself needs for the link | [`docs/10-journey-changes.md`](docs/10-journey-changes.md) |
+| The app | [`apps/mobile`](apps/mobile) (Expo), with [how it is put together](apps/mobile/README.md) |
+| The API | [`apps/api`](apps/api) (Spring Boot) |
 | Screens | [`design/hub/src/screens/`](design/hub/src/screens/) |
 | Design tokens | [`design/tokens.json`](design/tokens.json) |
 
