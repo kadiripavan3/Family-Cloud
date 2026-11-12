@@ -1,14 +1,18 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import { onPhone } from '@/test/phone';
 
 import { Button } from '../Button';
+import { DayPicker } from '../DayPicker';
 import { Dots } from '../Dots';
 import { EmojiTabs } from '../EmojiTabs';
 import { Field } from '../Field';
+import { GrowingInput } from '../GrowingInput';
+import { MoreRow } from '../MoreRow';
 import { Tap } from '../Motion';
 import { Segmented } from '../Segmented';
+import { SelectPill } from '../SelectPill';
 import { Sheet } from '../Sheet';
 import { Toggle } from '../Toggle';
 import { WordTabs } from '../WordTabs';
@@ -196,5 +200,57 @@ describe('EmojiTabs', () => {
     expect(screen.getByRole('tab', { name: 'Today', selected: true })).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('tab', { name: 'Plan' }));
     expect(onChange).toHaveBeenCalledWith('plan');
+  });
+});
+
+describe('MoreRow', () => {
+  it('says what it does and a few lighter words after it, and can be pressed', async () => {
+    const onPress = jest.fn();
+    await render(<MoreRow emoji="📅" title="Add this week" rest="school, bins, dentist" onPress={onPress} />);
+    expect(screen.getByText('Add this week')).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Add this week. school, bins, dentist' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SelectPill', () => {
+  it('holds the current choice and opens the others', async () => {
+    const onPress = jest.fn();
+    await render(<SelectPill label="Adult" spoken="Alex: Adult. Change role" onPress={onPress} />);
+    expect(screen.getByText('Adult')).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Alex: Adult. Change role' }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('GrowingInput', () => {
+  it('is typed into like any box, and is as tall as what is in it', async () => {
+    const onChangeText = jest.fn();
+    await render(<GrowingInput label="Words" variant="body" value="One line" onChangeText={onChangeText} minHeight={40} />);
+    const box = screen.getByLabelText('Words');
+    await userEvent.setup().type(box, '!');
+    expect(onChangeText).toHaveBeenLastCalledWith('One line!');
+    await fireEvent(box, 'contentSizeChange', { nativeEvent: { contentSize: { width: 300, height: 131.2 } } });
+    expect(screen.getByLabelText('Words')).toHaveStyle({ height: 132, minHeight: 40 });
+  });
+});
+
+describe('DayPicker', () => {
+  it('steps a year at a time when the day can be long ago', async () => {
+    const onChange = jest.fn();
+    await render(onPhone(<DayPicker visible onClose={jest.fn()} title="Birthday" value="2026-11-11" max="2026-11-11" byYear onChange={onChange} />));
+    const user = userEvent.setup();
+    expect(screen.getByText('November 2026')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'A year on' })).toBeDisabled();
+    await user.press(screen.getByRole('button', { name: 'A year back' }));
+    await user.press(screen.getByRole('button', { name: 'A year back' }));
+    expect(screen.getByText('November 2024')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: '15 November 2024' }));
+    expect(onChange).toHaveBeenCalledWith('2024-11-15');
+  });
+
+  it('has no year buttons unless asked', async () => {
+    await render(onPhone(<DayPicker visible onClose={jest.fn()} title="Day" value="2026-11-11" onChange={jest.fn()} />));
+    expect(screen.queryByRole('button', { name: 'A year back' })).toBeNull();
   });
 });

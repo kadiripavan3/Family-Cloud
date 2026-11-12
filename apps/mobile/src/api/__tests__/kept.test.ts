@@ -80,6 +80,17 @@ describe('what was read stays on the phone', () => {
     expect(kept).not.toContain('/v1/circles/c79');
   });
 
+  it('never writes down what was searched for, or an invitation', () => {
+    const client = newClient();
+    const now = Date.now();
+    client.setQueryData(['/v1/me'], { id: 'nora' }, { updatedAt: now });
+    client.setQueryData(['/v1/circles'], [], { updatedAt: now });
+    client.setQueryData(['/v1/circles/c1/today', { day: '2026-11-11' }], {}, { updatedAt: now });
+    client.setQueryData(['/v1/circles/c1/search', { q: 'passport' }], { words: 'passport', hits: [] }, { updatedAt: now });
+    client.setQueryData(['/v1/join/the-linds'], { name: 'The Linds' }, { updatedAt: now });
+    expect(addresses(snapshot(client, 'nora', now)).sort()).toEqual(['/v1/circles', '/v1/circles/c1/today', '/v1/me']);
+  });
+
   it('is written a little after a change, only while someone is signed in, and removed on sign-out', async () => {
     jest.useFakeTimers();
     try {

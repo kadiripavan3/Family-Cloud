@@ -35,15 +35,44 @@ The spine: the pieces every place builds on. Their names and signatures are fixe
 - **Made-up answers for tests** go in your own file `src/test/samples/<place>.ts`. What every test shares is in `@/test/samples`: Nora, the three sample circles and their people (`linds`, `coupleCircle`, `crewCircle`, `soloCircle`, `alex`, `mia`, …), `thing()`, `page()`, `checklist()`, `audience()`, the chips (`onlyMe`, `everyone`, `withAlex`, `notMia`), and `loaded()` / `pending()` / `failed()` for a mocked query. `inApp(<Screen />)` (`@/test/phone`) is a screen on a phone with the data layer around it.
 - **The walk-through** has one file per part in `scripts/e2e/steps/` (`02-library.js` … `10-journey.js`), run in order after `01-spine.js`. Every file starts signed out on the welcome screen and ends there: `await ctx.signIn('nora@example.com')` first, `await ctx.signOut()` last. `const alex = await ctx.second('Alex Demo')` is a second, new person signed in on a second phone (`alex.page`, `alex.T`, `alex.R`, `alex.L`, `alex.shot`, `alex.token`, `alex.close()`), for the steps where what one person shares another must or must not find.
 - **Options for a screen in the stack** (a sheet on an iPhone, no swipe to close) are set by the screen itself with `<Stack.Screen options={…} />` from `expo-router`, not in `app/(app)/_layout.tsx`.
-- **In `src/ui`** since the foundation: `Segmented` (a few choices in one grey bar), and `EmojiTabs` takes `six`.
+- **A form that makes a thing** (`/new/...`) reads who it starts as seen by with `const [audience, setAudience] = useStartsAs(circle)` (`src/features/sharing/useStartsAs.ts`: what the + sheet handed over, else what the circle's kind says), shows it with `<StartsAsPill circle={circle} value={audience} onChange={setAudience} />`, and sends `audience` with its request. `/new/note` and `/new/checklist` are the two examples. `newThingHref('event')` (`src/features/today/newThings.ts`) is the link to one of the ten from anywhere.
+- **A screen that can lose what was typed** guards itself with `const unsaved = useUnsaved(changed)` (`src/features/navigation/useUnsaved.ts`) and a `ConfirmSheet` while `unsaved.asking`; call `unsaved.release()` after saving, before going on to another screen.
+- **A choice that is remembered on the phone** (a switch that has no place in the API) is `const [value, set] = useKept(key, initial)` (`src/lib/useKept.ts`). Every screen that uses the same key sees the same value at once.
+- **A person in a list** is `PersonRow` (`src/features/people`), and the line under their name is `memberLine(member, circle)`. `AddSomeoneSheet` adds someone to a circle; `RoleSheet` changes a role.
+- **Days, times and money**: besides `formatDay` and `timeAgo`, `lib/dates` has `formatComingDay` ("Today", "Tomorrow", "Fri 4 Dec"), `formatTime` ("18:00"), `formatSpan` ("Today, 18:00 to 23:30"), `atTime(day, '18:00')`, `ageOn` and `nextBirthday`; `lib/money` has `formatMoney(cents)` ("€45", "€45.50").
+- **In `src/ui`** since the foundation: `Segmented` (a few choices in one grey bar), `MoreRow` (a soft row with an emoji, a bold line and an arrow), `Blob` (a big emoji on a soft round ground), `SelectPill` (a small pill that holds a choice and opens the others), `GrowingInput` (a box typed straight into the page, as tall as what is in it); `EmojiTabs` takes `six`, `NoteBox` takes `soft` and `trailing`, `DayPicker` takes `byYear` (for a birthday), and `ThingRow` takes `picked` for a list to tick things in.
 
 ## What is built
 
-The foundation: welcome, how it works, signing in (the test sign-in takes any email and the code 123456), creating a profile, the four tabs and the + button, and on You: notifications, appearance, logging out and deleting the account.
+The foundation: welcome, how it works, signing in (the test sign-in takes any email and the code 123456), creating a profile, the four tabs and the + button, notifications, appearance, logging out and deleting the account.
 
-The spine's shared pieces (above): the current circle and the sheet that changes it, Home's shell with its six places, opening a thing of any kind, the audience chip and sheet.
+Milestone 1, the spine: circles, people and sharing.
 
-Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: each of Home's six places, People, Activity, the + sheet and the ten things it opens, search, and setting up a circle (which so far offers "Just me for now", a circle of one).
+| Screen (design) | Address | |
+|---|---|---|
+| 2.1 Who is it for? | `/setup` | Makes the circle. "Just me for now" makes a circle of one. Also from "New circle". |
+| 2.5 Made for your kind of circle | `/setup/made` | After choosing Couple, Housemates or Friends. |
+| 2.2 Name it and invite people | `/setup/people` | An adult by email, a child or a pet without a phone; roles only in a family; the link to join. |
+| 2.3 Bring your things in | `/setup/bring-in` | The switches are remembered on the phone. Each import arrives with its place. |
+| 2.4 All set | `/setup/ready` | Three shortcuts, each opening on top of Home. |
+| 2.6 What each kind gets | `/circle/<id>/kind` | From a circle's settings (`/circle/<id>`, from "Your circles" on You, `/circles`). |
+| An invitation | `/join/<code>` | Not drawn. Joining is the moment the question about notifications waits for. |
+| 3.1 Today, 13.1 Loading, 13.3 A brand-new circle | `/` | Draws whatever the API's Today holds, from every place. |
+| 3.2 Your circles | (a sheet on Home) | |
+| 3.3 Find anything | `/search`, `/search?place=notes` | |
+| 3.4 The + button | (a sheet on the tab bar) | "Type it" is drawn and says it arrives with Plan. |
+| 4.1 People | `/people` | |
+| 4.2 A person's page | `/person/<id>` | "Coming up" waits for Plan. |
+| 4.3 Who can see this? | (the sheet behind every audience chip) | |
+| 4.4 Keep it a surprise | `/page/<id>` | Any page that is hidden from someone says so, and until when. |
+| 4.5 Guest pass | `/guest-pass/new`, `/guest-pass/<id>`, `/guest-passes` | The guest's side is a web page the API serves. |
+| 4.6 A child's view | `/person/<id>/access` | |
+| A page, a list | `/page/<id>`, `/checklist/<id>`, `/new/note`, `/new/checklist` | Simple and solid; they get richer with Notes. |
+| 12.1 You | `/you` | The numbers come from the API. The swap button and the line about Journey say when they will work. |
+| 12.3 Privacy and security | `/settings/security` | The three choices under "This phone" are remembered on the phone. |
+| Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
+
+Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: five of Home's six places (all but Today), Activity, eight of the ten things the + sheet opens, "Storage and backup" (`/settings/storage`), and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 
 ## The API's description
 

@@ -57,6 +57,17 @@ describe('asking about notifications inside the app', () => {
     expect(seen).toHaveBeenCalledTimes(1); // remembered on this phone as soon as it is shown
   });
 
+  it("asks, by the app's own list of moments, after someone joined a circle by its link", async () => {
+    await render(onPhone(<AskAboutNotifications />));
+    await did('GET', '/v1/join/the-linds');
+    await did('PUT', '/v1/circles/c1/join-link');
+    await act(async () => void (await jest.advanceTimersByTimeAsync(2000)));
+    expect(screen.queryByText(QUESTION)).toBeNull();
+    await did('PUT', '/v1/join/the-linds');
+    await act(async () => void (await jest.advanceTimersByTimeAsync(900)));
+    expect(screen.getByText(QUESTION)).toBeOnTheScreen();
+  });
+
   it('gives the reason first, and the phone asks only after a yes', async () => {
     await render(asking());
     await did('POST', '/v1/circles/c1/jobs');
