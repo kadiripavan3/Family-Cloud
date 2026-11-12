@@ -242,7 +242,7 @@ async function newFamily(ctx) {
     await R('button', { name: 'Save', exact: true }).waitFor({ state: 'detached' });
     await T(/^Edited/).waitFor();
     await shot('page');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('tab', { name: 'Today', selected: true }).waitFor();
   });
 
@@ -353,7 +353,7 @@ async function newFamily(ctx) {
     await sam.page.goto(`${WEB_URL}/page/${secret}`);
     await sam.R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });
     ctx.expectNotFound = false;
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('checklist', async () => {
@@ -388,7 +388,7 @@ async function newFamily(ctx) {
     await R('checkbox', { name: 'Milk, 2 litres', checked: true }).waitFor({ timeout: 15000 });
     await T('1 left of 3').waitFor();
     await shot('checklist');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('people', async () => {
@@ -450,8 +450,8 @@ async function newFamily(ctx) {
     await T('At 18').waitFor();
     await R('radio', { name: 'Child' }).click();
     await R('radio', { name: 'Child', checked: true }).waitFor();
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('remove-someone', async () => {
@@ -531,7 +531,7 @@ async function newFamily(ctx) {
     await R('button', { name: 'Got it' }).click();
     await R('button', { name: /^Storage and backup/ }).click();
     await R('heading', { name: 'Storage and backup' }).waitFor();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('security', async () => {
@@ -546,7 +546,7 @@ async function newFamily(ctx) {
     await T('The Vault: nothing').waitFor();
     await T('The rest: private, but readable by the service').waitFor();
     await shot('security-new');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     // The choices are remembered on the phone, and You says them.
     await T('Face ID off · Vault locks after 5 minutes').waitFor();
   });
@@ -561,7 +561,7 @@ async function newFamily(ctx) {
     await R('button', { name: /^Guest passes/ }).click();
     await R('button', { name: /^Ines, the sitter\..*Ended$/ }).waitFor();
     await shot('guest-passes');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     // Its kind is one setting, and changing it deletes nothing.
     await R('button', { name: /^Kind of circle\. Family/ }).click();
     await T('The Linds is set up for a family').waitFor();
@@ -571,10 +571,10 @@ async function newFamily(ctx) {
     await shot('circle-kinds-new');
     await R('radio', { name: 'Family', exact: true }).click();
     await T('The Linds is set up for a family').waitFor();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: /^Kind of circle\. Family/ }).waitFor();
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('appearance', async () => {
@@ -586,14 +586,14 @@ async function newFamily(ctx) {
     const other = ctx.scheme === 'dark' ? 'Light' : 'Dark';
     await R('button', { name: new RegExp(`^${other}\\.`) }).click();
     await shot(`appearance-${other.toLowerCase()}`);
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: `Appearance. ${other}` }).waitFor();
     await shot(`settings-${other.toLowerCase()}`);
     await R('button', { name: /^Appearance/ }).click();
     await R('button', { name: /^Automatic\./ }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: 'Appearance. Automatic' }).waitFor();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('log-out', async () => {
@@ -631,13 +631,13 @@ async function newFamily(ctx) {
     if (!saved.ok()) throw new Error(`saving the switch gave ${saved.status()}`);
     await R('switch', { name: 'The Sunday summary', checked: false }).waitFor();
     await shot('notification-settings');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: 'Notifications', exact: true }).click();
     await T('Tell me about').waitFor();
     await R('switch', { name: 'The Sunday summary', checked: false }).waitFor();
     await R('switch', { name: 'What happens in your circles', checked: true }).waitFor();
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('delete-account', async () => {
@@ -755,7 +755,7 @@ async function sampleCircles(ctx) {
     await R('heading', { name: 'Electricity' }).waitFor();
     await T(/^This is a bill\. It opens here once Money is built/).waitFor();
     await shot('thing-to-come');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('circle-switch', async () => {
@@ -825,7 +825,7 @@ async function sampleCircles(ctx) {
     await shot('audience');
     await R('button', { name: 'Done' }).click();
     await T('Who can see this?').waitFor({ state: 'detached' });
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: 'Cancel' }).click();
   });
 
@@ -873,9 +873,9 @@ async function sampleCircles(ctx) {
     await T('€45', { exact: true }).waitFor();
     await T('Alex bought them').waitFor();
     await shot('checklist-gifts');
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('child', async () => {
@@ -887,8 +887,8 @@ async function sampleCircles(ctx) {
     await T('Leo can').waitFor();
     await T('You or Alex get asked first').waitFor();
     await shot('child');
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('you', async () => {
@@ -900,7 +900,7 @@ async function sampleCircles(ctx) {
     await R('button', { name: /^Privacy and security/ }).click();
     await T("What we can and can't see").waitFor();
     await shot('security');
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   await step('circle-kinds', async () => {
@@ -914,9 +914,9 @@ async function sampleCircles(ctx) {
     await T('17, from Secret Santa to splitting costs').waitFor();
     await T('Changing the kind deletes nothing').waitFor();
     await shot('circle-kinds');
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
+    await R('button', { name: 'Back', exact: true }).click();
   });
 
   // (These load the app afresh, so they come last.)
