@@ -15,6 +15,7 @@ import java.security.SecureRandom;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,7 +92,13 @@ public class CircleService {
             List<MemberResponse> members,
 
             @Schema(description = "How many things of each kind are shared with you here, by kind of thing")
-            Map<String, Integer> shared) {}
+            Map<String, Integer> shared,
+
+            @Schema(
+                    nullable = true,
+                    description = "A few words the places add under the circle's name in the list of your circles,"
+                            + " after what kind it is and how many people: you're owed €64. Null with nothing to say.")
+            String line) {}
 
     public record JoinPreview(UUID circleId, String name, CircleKind kind, int people, boolean alreadyIn) {}
 
@@ -99,14 +107,22 @@ public class CircleService {
     private final ProfileStore profiles;
     private final MediaService media;
     private final PublicUrls urls;
+    private final ObjectProvider<CircleLine> lines;
 
+    // The places that add a line need the circles themselves: they are asked for when a list is read, not before.
     CircleService(
-            CircleStore circles, MemberStore members, ProfileStore profiles, MediaService media, PublicUrls urls) {
+            CircleStore circles,
+            MemberStore members,
+            ProfileStore profiles,
+            MediaService media,
+            PublicUrls urls,
+            ObjectProvider<CircleLine> lines) {
         this.circles = circles;
         this.members = members;
         this.profiles = profiles;
         this.media = media;
         this.urls = urls;
+        this.lines = lines;
     }
 
     // ---------- reading ----------
@@ -151,6 +167,16 @@ public class CircleService {
         Map<UUID, List<MemberRow>> people =
                 members.of(ids).stream().collect(Collectors.groupingBy(MemberRow::circleId));
         Map<UUID, Map<String, Integer>> shared = circles.sharedCounts(ids, me);
+        // What each place has to say about each circle, one after the other when several do.
+        Map<UUID, String> said = new HashMap<>();
+        if (!ids.isEmpty()) {
+            lines.orderedStream()
+                    .forEach(place -> place.lines(me, ids).forEach((circle, words) -> {
+                        if (words != null && !words.isBlank()) {
+                            said.merge(circle, words, (before, more) -> before + " · " + more);
+                        }
+                    }));
+        }
         return rows.stream()
                 .map(circle -> {
                     List<MemberRow> in = people.getOrDefault(circle.id(), List.of());
@@ -172,7 +198,8 @@ public class CircleService {
                             circle.createdAt(),
                             iRunIt ? joinUrl(circle.joinCode()) : null,
                             in.stream().map(m -> view(m, me)).toList(),
-                            shared.getOrDefault(circle.id(), Map.of()));
+                            shared.getOrDefault(circle.id(), Map.of()),
+                            said.get(circle.id()));
                 })
                 .toList();
     }

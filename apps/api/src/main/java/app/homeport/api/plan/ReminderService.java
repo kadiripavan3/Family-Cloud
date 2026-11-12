@@ -4,6 +4,7 @@ import app.homeport.api.circle.MemberKind;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.common.Keyset;
 import app.homeport.api.common.Page;
+import app.homeport.api.notify.Nudge;
 import app.homeport.api.notify.PushMessage;
 import app.homeport.api.plan.PlanPeople.Person;
 import app.homeport.api.plan.ReminderStore.Reminder;
@@ -34,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -225,6 +227,7 @@ public class ReminderService {
     private final PlanPeople people;
     private final Giving giving;
     private final PlanPushes pushes;
+    private final ApplicationEventPublisher events;
 
     ReminderService(
             ThingService things,
@@ -232,13 +235,15 @@ public class ReminderService {
             ReminderStore reminders,
             PlanPeople people,
             Giving giving,
-            PlanPushes pushes) {
+            PlanPushes pushes,
+            ApplicationEventPublisher events) {
         this.things = things;
         this.thingStore = thingStore;
         this.reminders = reminders;
         this.people = people;
         this.giving = giving;
         this.pushes = pushes;
+        this.events = events;
     }
 
     // ---------- making and changing ----------
@@ -498,7 +503,8 @@ public class ReminderService {
 
     /**
      * A gentle push to whoever has a reminder you made, once an hour at most. This method opens no
-     * transaction, so none is open while the push is handed over.
+     * transaction, so none is open while the push is handed over. Each person nudged is also told of as a
+     * {@link Nudge}, marked as pushed already.
      */
     public void nudge(UUID id, UUID me) {
         ThingRow row = things.requireOwner(id, me);
@@ -517,12 +523,9 @@ public class ReminderService {
         if (!reminders.nudge(id)) {
             throw ApiProblem.conflict("nudged_already", "You nudged a moment ago. Give it an hour.");
         }
-        List<PushMessage> messages = pushes.messages(
-                pushes.mayHear(id, holders),
-                row.title(),
-                "A gentle nudge from " + circle.get(mine).name() + ".",
-                "/reminder/" + id,
-                "reminder_nudge");
+        String sentence = "A gentle nudge from " + circle.get(mine).name() + ".";
+        List<PushMessage> messages =
+                pushes.messages(pushes.mayHear(id, holders), row.title(), sentence, "/reminder/" + id, Nudge.REMINDER);
         try {
             pushes.send(messages);
         } catch (RuntimeException unreachable) {
@@ -532,6 +535,11 @@ public class ReminderService {
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "push_unreachable",
                     "We couldn't reach their phone just now. Try again in a moment.");
+        }
+        // Told to whoever keeps track of what people were told. The push itself has gone out from here.
+        for (UUID holder : holders) {
+            events.publishEvent(new Nudge(
+                    row.circleId(), id, ThingKind.REMINDER, mine, holder, row.title(), sentence, Nudge.REMINDER, true));
         }
     }
 

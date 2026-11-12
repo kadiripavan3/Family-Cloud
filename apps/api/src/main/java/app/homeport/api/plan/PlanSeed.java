@@ -7,6 +7,7 @@ import app.homeport.api.page.PageService;
 import app.homeport.api.plan.EventService.NewEvent;
 import app.homeport.api.plan.EventService.NewGuest;
 import app.homeport.api.plan.EventService.When;
+import app.homeport.api.plan.GoalService.GoalChange;
 import app.homeport.api.plan.GoalService.NewGoal;
 import app.homeport.api.plan.GoalService.Source;
 import app.homeport.api.plan.ReminderService.NewReminder;
@@ -181,6 +182,32 @@ class PlanSeed implements Seeder {
                         null,
                         Audience.CIRCLE),
                 UUID.randomUUID());
+        // The trip the family is saving for: two weeks, "3 to 17 April" on the screens. It ends 107 days
+        // before Mia's passport runs out in the Library's sample data (the 2nd, nine months from now), so the
+        // passport's page says "Runs out 4 months after Norway". The Library links the two.
+        LocalDate backHome = today.plusMonths(9).withDayOfMonth(2).minusDays(107);
+        w.thing(
+                "event/norway-trip",
+                events.create(
+                                nora,
+                                new NewEvent(
+                                        linds,
+                                        "Norway " + backHome.getYear(),
+                                        new When(backHome.minusDays(14), null, backHome, null, ZONE),
+                                        null,
+                                        "Two weeks by train and ferry",
+                                        null,
+                                        null,
+                                        null,
+                                        List.of(
+                                                new NewGuest(w.member("linds", "nora"), null, null, Answer.GOING),
+                                                new NewGuest(w.member("linds", "alex"), null, null, Answer.GOING),
+                                                new NewGuest(mia, null, null, Answer.GOING),
+                                                new NewGuest(leo, null, null, Answer.GOING)),
+                                        null,
+                                        Audience.CIRCLE),
+                                UUID.randomUUID())
+                        .id());
         party(w, nora, linds, mia, leo);
     }
 
@@ -447,24 +474,29 @@ class PlanSeed implements Seeder {
                 .update();
 
         LocalDate secondOfJanuary = LocalDate.of(today.getYear() + 1, 1, 2);
-        reminders.create(
-                nora,
-                new NewReminder(
-                        linds,
-                        "Renew Mia's passport",
-                        "It expires in August. The form is on the government site; she needs a new photo.",
-                        secondOfJanuary,
-                        null,
-                        ZONE,
-                        null,
-                        null,
-                        List.of(alexHere),
-                        false,
-                        null,
-                        null,
-                        List.of(mia),
-                        null),
-                UUID.randomUUID());
+        // The Library's scan of the passport links to this one: "A reminder is set for 2 January".
+        w.thing(
+                "reminder/renew-mias-passport",
+                reminders
+                        .create(
+                                nora,
+                                new NewReminder(
+                                        linds,
+                                        "Renew Mia's passport",
+                                        "It expires in August. The form is on the government site; she needs a new photo.",
+                                        secondOfJanuary,
+                                        null,
+                                        ZONE,
+                                        null,
+                                        null,
+                                        List.of(alexHere),
+                                        false,
+                                        null,
+                                        null,
+                                        List.of(mia),
+                                        null),
+                                UUID.randomUUID())
+                        .id());
     }
 
     // ---------- goals ----------
@@ -513,6 +545,31 @@ class PlanSeed implements Seeder {
         put(norway, nora, alexHere, 85_000, "", today.minusDays(20));
         put(norway, nora, mia, 500, "from her pocket money", today.minusDays(12));
         put(norway, nora, alexHere, 15_000, "payday", today.minusDays(10));
+        // "Reads “Saved” in Norway budget": once Money's sample data has made that sheet, the goal reads its
+        // number there (a sheet's id, a slash, the name of one of its totals). Until then, and without it, it
+        // shows what was put in above, which comes to the same €5,600.
+        w.thing("goal/norway", norway);
+        w.whenThing(
+                "sheet/norway-budget",
+                sheet -> goals.change(
+                        norway,
+                        nora,
+                        new GoalChange(
+                                null,
+                                null,
+                                null,
+                                null,
+                                false,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                false,
+                                new Source(GoalSource.SHEET, sheet + "/Saved", "“Saved” in Norway budget"),
+                                false,
+                                null),
+                        today));
 
         UUID books = goals.create(
                         nora,
@@ -614,7 +671,14 @@ class PlanSeed implements Seeder {
                         UUID.randomUUID(),
                         today)
                 .id();
-        put(skates, nora, mia, 34, "", today.minusDays(2));
+        // Her 34 stars came from the chore wheel, ten at a time, as her piggy bank counts them on the same
+        // Sundays. The boards' sample data links the wheel and the piggy bank to this goal.
+        LocalDate sunday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        put(skates, nora, mia, 10, "from the chore wheel", sunday.minusDays(42));
+        put(skates, nora, mia, 10, "from the chore wheel", sunday.minusDays(28));
+        put(skates, nora, mia, 4, "from the chore wheel", sunday.minusDays(14));
+        put(skates, nora, mia, 10, "from the chore wheel", sunday);
+        w.thing("goal/skates-fund", skates);
         // Everything here is made in one moment; the list of goals is in the order they were made.
         int place = 0;
         for (UUID goal : List.of(norway, books, run, car, skates)) {

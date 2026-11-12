@@ -54,7 +54,9 @@ class GoalController {
             @NotNull(message = "Choose where the goal reads its number from.")
             GoalSource kind,
 
-            @Schema(description = "Where the number is, as the place that owns it names it")
+            @Schema(
+                    description = "Where the number is, as the place that owns it names it. For a sheet: the sheet's"
+                            + " id, a slash, and the name of one of its totals (GET /v1/sheets/{id}/totals).")
             @NotBlank(message = "Choose where the goal reads its number from.")
             @Size(max = 300)
             String ref,

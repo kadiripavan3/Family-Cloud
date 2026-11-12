@@ -240,6 +240,14 @@ class EventController {
         return events.answer(id, me, request.answer());
     }
 
+    @DeleteMapping("/events/{id}/answer")
+    @Operation(
+            operationId = "unanswerEvent",
+            summary = "Take your own answer back: you haven't answered again. Taking back what isn't there is fine.")
+    EventResponse unanswer(@Me UUID me, @PathVariable UUID id) {
+        return events.unanswer(id, me);
+    }
+
     @PostMapping("/events/{id}/guests")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(operationId = "addEventGuest", summary = "Put someone on an event: one of the circle, or a name")

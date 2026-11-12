@@ -9,7 +9,9 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -171,6 +173,25 @@ public class EventStore {
                 .param("me", me)
                 .query((rs, n) -> new Event(ThingStore.row(rs, n), row(rs)))
                 .list();
+    }
+
+    /**
+     * The first and the last day of each of these events (of its first time, for one that repeats). The ids
+     * that are no event are left out. Who may see them was checked by whoever asks.
+     */
+    public Map<UUID, Map.Entry<LocalDate, LocalDate>> days(List<UUID> ids) {
+        Map<UUID, Map.Entry<LocalDate, LocalDate>> days = new HashMap<>();
+        if (ids.isEmpty()) {
+            return days;
+        }
+        jdbc.sql("select thing_id, starts_on, ends_on from events where thing_id in (:ids)")
+                .param("ids", ids)
+                .query((rs, n) -> days.put(
+                        rs.getObject("thing_id", UUID.class),
+                        Map.entry(
+                                rs.getObject("starts_on", LocalDate.class), rs.getObject("ends_on", LocalDate.class))))
+                .list();
+        return days;
     }
 
     /**

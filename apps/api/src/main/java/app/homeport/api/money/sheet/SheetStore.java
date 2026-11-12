@@ -1,5 +1,6 @@
 package app.homeport.api.money.sheet;
 
+import app.homeport.api.common.Rules;
 import app.homeport.api.common.Sql;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -569,29 +570,33 @@ public class SheetStore {
 
     // ---------- search ----------
 
-    /** Sheets of a circle with these words in a cell, a row's note, a column's name or a tab's name. */
-    public List<Map.Entry<UUID, String>> search(UUID circleId, String pattern, int limit) {
+    /** Sheets of a circle the viewer may see with these words in a cell, a row's note, a column's name or a tab's name. */
+    public List<Map.Entry<UUID, String>> search(UUID circleId, UUID me, String pattern, int limit) {
+        String sees = Rules.sees("t", ":me");
         return jdbc.sql("""
             select distinct on (found.thing_id) found.thing_id, found.words from (
               select b.thing_id, left(c.value, 90) as words, 1 as rank
               from sheet_rows r join sheet_tabs b on b.id = r.tab_id join things t on t.id = b.thing_id,
                    jsonb_each_text(r.cells) c
               where t.circle_id = :circle and jsonb_typeof(r.cells -> c.key) = 'string' and c.value ilike :pattern
+                and\s""" + sees + """
               union all
               select b.thing_id, left(r.note, 90), 2
               from sheet_rows r join sheet_tabs b on b.id = r.tab_id join things t on t.id = b.thing_id
-              where t.circle_id = :circle and r.note ilike :pattern
+              where t.circle_id = :circle and r.note ilike :pattern and\s""" + sees + """
               union all
               select b.thing_id, 'Column: ' || c.name, 3
               from sheet_columns c join sheet_tabs b on b.id = c.tab_id join things t on t.id = b.thing_id
-              where t.circle_id = :circle and c.name ilike :pattern
+              where t.circle_id = :circle and c.name ilike :pattern and\s""" + sees + """
               union all
               select b.thing_id, 'Tab: ' || b.name, 4
               from sheet_tabs b join things t on t.id = b.thing_id
-              where t.circle_id = :circle and b.name ilike :pattern) found
+              where t.circle_id = :circle and b.name ilike :pattern and\s""" + sees + """
+              ) found
             order by found.thing_id, found.rank limit :limit
             """)
                 .param("circle", circleId)
+                .param("me", me)
                 .param("pattern", pattern)
                 .param("limit", limit)
                 .query((rs, n) -> Map.entry(rs.getObject("thing_id", UUID.class), rs.getString("words")))

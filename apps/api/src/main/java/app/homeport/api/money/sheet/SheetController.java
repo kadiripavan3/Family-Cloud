@@ -7,6 +7,7 @@ import app.homeport.api.common.Page;
 import app.homeport.api.money.sheet.SheetService.ColumnChange;
 import app.homeport.api.money.sheet.SheetService.FormulaResponse;
 import app.homeport.api.money.sheet.SheetService.LoanInput;
+import app.homeport.api.money.sheet.SheetService.NamedTotalResponse;
 import app.homeport.api.money.sheet.SheetService.NewColumn;
 import app.homeport.api.money.sheet.SheetService.RowCardResponse;
 import app.homeport.api.money.sheet.SheetService.RowChange;
@@ -314,6 +315,16 @@ class SheetController {
                     Integer limit,
             @Parameter(description = DAY) @RequestParam(required = false) LocalDate day) {
         return sheets.get(id, me, tab, limit, day);
+    }
+
+    @GetMapping("/sheets/{id}/totals")
+    @Operation(
+            operationId = "getSheetTotals",
+            summary = "The numbers a sheet works out that something else can read by name: its tiles, then the"
+                    + " totals under its columns, of every tab. A goal reads one of them: its source's ref is the"
+                    + " sheet's id, a slash, and the name. A few dozen at most.")
+    List<NamedTotalResponse> totals(@Me UUID me, @PathVariable UUID id) {
+        return sheets.namedTotals(id, me);
     }
 
     @GetMapping("/sheets/{id}/rows")

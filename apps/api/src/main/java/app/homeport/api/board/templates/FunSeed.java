@@ -441,6 +441,9 @@ class FunSeed implements Seeder {
                         "fund", Map.of("name", "Skates fund", "stars", 50),
                         "spendGoalCents", 2000,
                         "giveGoalCents", 1500));
+        // Its skates fund is the goal "Mia's skates fund" in Plan, which counts the same 34 stars.
+        w.thing("board/mias-piggy-bank", board);
+        w.link("board/mias-piggy-bank", "goal/skates-fund");
         LocalDate sunday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
         // Spend €8.40, Save €12.00, Give €3.00; 34 stars paid in towards the 50 of the skates fund.
         money(

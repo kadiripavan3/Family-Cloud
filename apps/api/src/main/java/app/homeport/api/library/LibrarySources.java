@@ -141,8 +141,8 @@ class LibrarySources implements TodaySource, SearchSource {
     }
 
     @Override
-    public List<Found> find(UUID circleId, String words, int limit) {
-        return documents.inside(circleId, words, limit).stream()
+    public List<Found> find(UUID me, UUID circleId, String words, int limit) {
+        return documents.inside(circleId, me, words, limit).stream()
                 .map(found -> new Found(
                         found.thingId(),
                         "Found inside: …"

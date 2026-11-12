@@ -2,9 +2,9 @@ package app.homeport.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.homeport.api.money.split.ReminderAsked;
 import app.homeport.api.money.split.SplitService;
 import app.homeport.api.money.split.SplitService.Owed;
+import app.homeport.api.notify.Nudge;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import java.util.UUID;
@@ -368,19 +368,22 @@ class SplitTest extends ApiTest {
         assertThat(JsonPath.<String>read(reminded, "$.settle[0].from.name")).isEqualTo("Lea");
         assertThat(JsonPath.<String>read(reminded, "$.settle[0].remindedAt")).isNotBlank();
         // Whoever sends notifications hears of it; Money sends nothing itself.
-        List<ReminderAsked> asked = events.stream(ReminderAsked.class).toList();
+        List<Nudge> asked = events.stream(Nudge.class).toList();
         assertThat(asked).hasSize(1);
         assertThat(asked.get(0).toMemberId().toString()).isEqualTo(l);
         assertThat(asked.get(0).byMemberId().toString()).isEqualTo(n);
-        assertThat(asked.get(0).cents()).isEqualTo(1200);
+        assertThat(asked.get(0).thingId().toString()).isEqualTo(split);
         assertThat(asked.get(0).title()).isEqualTo("Lisbon weekend");
+        assertThat(asked.get(0).sentence()).isEqualTo("A reminder from Nora: you owe €12.");
+        assertThat(asked.get(0).code()).isEqualTo(Nudge.SPLIT);
+        assertThat(asked.get(0).pushed()).isFalse();
 
         // Only someone who is owed by them can remind: not a bystander, not the one who owes, and nobody who is even.
         assertThat(send(HttpMethod.PUT, "/v1/splits/" + split + "/reminders/" + l, kai, null, 400))
                 .contains("They don't owe you anything here.");
         send(HttpMethod.PUT, "/v1/splits/" + split + "/reminders/" + n, lea, null, 400);
         send(HttpMethod.PUT, "/v1/splits/" + split + "/reminders/" + k, nora, null, 400);
-        assertThat(events.stream(ReminderAsked.class).count()).isEqualTo(1);
+        assertThat(events.stream(Nudge.class).count()).isEqualTo(1);
     }
 
     @Test

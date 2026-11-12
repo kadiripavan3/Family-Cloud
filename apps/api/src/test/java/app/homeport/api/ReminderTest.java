@@ -3,18 +3,25 @@ package app.homeport.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.homeport.api.notify.LoggingPushSender;
+import app.homeport.api.notify.Nudge;
 import app.homeport.api.notify.PushMessage;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 /** Reminders: yours and the ones you gave away, ticking, coming round again, taking turns, and waiting for a place. */
+@RecordApplicationEvents
 class ReminderTest extends PlanTestBase {
 
     @Autowired
     LoggingPushSender pushes;
+
+    @Autowired
+    ApplicationEvents events;
 
     private String tick(String token, String id, boolean done, String dueOn, int expected) throws Exception {
         return send(
@@ -341,6 +348,16 @@ class ReminderTest extends PlanTestBase {
         assertThat(pushes.sent().get(0).title()).isEqualTo("Book the car service");
         assertThat(pushes.sent().get(0).body()).isEqualTo("A gentle nudge from Nora.");
         assertThat(pushes.sent().get(0).url()).isEqualTo("/reminder/" + id);
+        // Whoever keeps track of what people were told hears of it too, and that the push has gone out already.
+        List<Nudge> told = events.stream(Nudge.class).toList();
+        assertThat(told).hasSize(1);
+        assertThat(told.get(0).thingId().toString()).isEqualTo(id);
+        assertThat(told.get(0).byMemberId().toString()).isEqualTo(noraId);
+        assertThat(told.get(0).toMemberId().toString()).isEqualTo(alexId);
+        assertThat(told.get(0).title()).isEqualTo("Book the car service");
+        assertThat(told.get(0).sentence()).isEqualTo("A gentle nudge from Nora.");
+        assertThat(told.get(0).code()).isEqualTo(Nudge.REMINDER);
+        assertThat(told.get(0).pushed()).isTrue();
         // Not again within the hour.
         String problem = send(HttpMethod.POST, "/v1/reminders/" + id + "/nudge", nora, null, 409);
         assertThat(JsonPath.<String>read(problem, "$.detail")).isEqualTo("You nudged a moment ago. Give it an hour.");
@@ -352,6 +369,9 @@ class ReminderTest extends PlanTestBase {
         send(HttpMethod.POST, "/v1/reminders/" + id + "/nudge", nora, null, 409);
         send(HttpMethod.POST, "/v1/reminders/" + reminder(nora, "My own", "") + "/nudge", nora, null, 409);
         assertThat(pushes.sent()).hasSize(1);
+        assertThat(events.stream(Nudge.class).count())
+                .as("a nudge that was refused tells nobody")
+                .isEqualTo(1);
     }
 
     @Test
