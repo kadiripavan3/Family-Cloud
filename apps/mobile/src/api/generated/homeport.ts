@@ -522,6 +522,9 @@ export const ThingKind = {
   event: 'event',
   reminder: 'reminder',
   goal: 'goal',
+  bill: 'bill',
+  sheet: 'sheet',
+  split: 'split',
 } as const;
 
 export type Place = typeof Place[keyof typeof Place];
@@ -567,15 +570,6 @@ export interface AboutRequest {
   memberIds: string[];
 }
 
-export interface TickRequest {
-  /** True to tick it, false to take the tick away */
-  done: boolean;
-  /** The due day you were looking at. A tick that already arrived for it changes nothing, so sending this twice ticks once. */
-  dueOn?: string;
-  /** The day on the phone. One that repeats is next due after it. */
-  day?: string;
-}
-
 export interface PersonBrief {
   memberId?: string;
   name?: string;
@@ -589,6 +583,109 @@ export interface AudienceChip {
   people?: PersonBrief[];
   /** The first names of people it is hidden from today */
   hiddenFrom?: string[];
+}
+
+export type ShareMode = typeof ShareMode[keyof typeof ShareMode];
+
+
+export const ShareMode = {
+  equal: 'equal',
+  shares: 'shares',
+  exact: 'exact',
+} as const;
+
+export interface ExpenseShareResponse {
+  person: PersonBrief;
+  /** Their weight: 1 for an equal split, their shares, or their exact cents */
+  weight: number;
+  /** What that comes to, in cents. The shares of an expense add up to it. */
+  cents: number;
+  you: boolean;
+}
+
+export interface ExpenseResponse {
+  id: string;
+  splitId: string;
+  title: string;
+  emoji: string;
+  amountCents: number;
+  paidBy: PersonBrief | null;
+  paidByYou: boolean;
+  mode: ShareMode;
+  spentOn: string;
+  /** Who shares it, and what each one's part comes to */
+  shares: ExpenseShareResponse[];
+  addedBy: PersonBrief | null;
+  createdAt: string;
+}
+
+export interface PaymentResponse {
+  id: string;
+  from: PersonBrief;
+  to: PersonBrief;
+  amountCents: number;
+  paidOn: string;
+  createdAt: string;
+}
+
+export interface StandingResponse {
+  person: PersonBrief;
+  /** What they paid for, in cents */
+  paidCents: number;
+  /** Their share of everything, in cents */
+  shareCents: number;
+  /** Above zero: they are owed this. Below zero: they owe it. In cents, with the payments already made counted in. */
+  balanceCents: number;
+  you: boolean;
+}
+
+export interface ToPayResponse {
+  from: PersonBrief;
+  to: PersonBrief;
+  cents: number;
+  /** True when the signed-in person is the one to pay */
+  youPay: boolean;
+  /** True when the signed-in person is the one paid: they can remind the other */
+  paysYou: boolean;
+  /**
+     * When the one who pays was last reminded
+     * @nullable
+     */
+  remindedAt: string | null;
+}
+
+export interface SplitResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  currency: string;
+  /** How many expenses were added */
+  expenses: number;
+  /** What they come to in all, in cents */
+  totalCents: number;
+  /** Above zero: you are owed this. Below zero: you owe it. Zero: you are even. */
+  myBalanceCents: number;
+  /** Everyone in the circle who can share a cost, and where each stands */
+  people: StandingResponse[];
+  /** The fewest payments that settle everything: yours first, then the largest */
+  settle: ToPayResponse[];
+  /** The twenty latest expenses. The rest come from the expenses route. */
+  latest: ExpenseResponse[];
+  /** The twenty latest payments that were made */
+  paid: PaymentResponse[];
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface TickRequest {
+  /** True to tick it, false to take the tick away */
+  done: boolean;
+  /** The due day you were looking at. A tick that already arrived for it changes nothing, so sending this twice ticks once. */
+  dueOn?: string;
+  /** The day on the phone. One that repeats is next due after it. */
+  day?: string;
 }
 
 export type NoteIcon = typeof NoteIcon[keyof typeof NoteIcon];
@@ -1198,6 +1295,128 @@ export interface ChecklistResponse {
   editedAt: string | null;
 }
 
+export interface PaidRequest {
+  /** Which time it was due: the bill's dueOn as the app shows it. A second send of the same tap then changes nothing. */
+  dueOn: string;
+  /** Whose share. Left out: your own, or the whole bill when you pay no share of it. */
+  memberId?: string;
+  /** True to mark every share at once */
+  everyone?: boolean;
+  /** False to take it back. Left out: true. */
+  paid?: boolean;
+}
+
+export type Repeat = typeof Repeat[keyof typeof Repeat];
+
+
+export const Repeat = {
+  once: 'once',
+  monthly: 'monthly',
+  months: 'months',
+  yearly: 'yearly',
+} as const;
+
+export type PaidHow = typeof PaidHow[keyof typeof PaidHow];
+
+
+export const PaidHow = {
+  by_hand: 'by_hand',
+  standing_order: 'standing_order',
+  direct_debit: 'direct_debit',
+} as const;
+
+export interface ShareResponse {
+  person: PersonBrief;
+  /** Their part of the whole: 1 and 1 is half each */
+  parts: number;
+  /** What that comes to for the amount due now, in cents. The shares add up to the amount. */
+  cents: number;
+  paid: boolean;
+  /** @nullable */
+  paidAt: string | null;
+  /** Who marked it paid: usually themselves */
+  paidBy: PersonBrief | null;
+  /** True for the signed-in person's own share */
+  you: boolean;
+}
+
+export interface PastDueResponse {
+  dueOn: string;
+  amountCents: number;
+  paid: boolean;
+  /** True for the one the bill shows now */
+  current: boolean;
+}
+
+export interface BillResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  /** Who it is paid to: Elektro Ljubljana */
+  payee: string;
+  emoji: string;
+  currency: string;
+  /** What is due now, or what was paid last for a bill that is done, in cents */
+  amountCents: number;
+  dueOn: string;
+  /** True when nothing is due: a bill that came once and is paid */
+  paid: boolean;
+  /** @nullable */
+  paidAt: string | null;
+  paidBy: PersonBrief | null;
+  repeat: Repeat;
+  /** For every few months: how many */
+  everyMonths: number;
+  /** The day of the month it comes round on */
+  dueDay: number;
+  subscription: boolean;
+  /**
+     * What it costs in a year, in cents. Null for a bill that comes once.
+     * @nullable
+     */
+  yearCents: number | null;
+  pays: PaidHow;
+  /**
+     * Remind this many days before it is due. Null for no reminder.
+     * @nullable
+     */
+  remindDays: number | null;
+  note: string;
+  /**
+     * The payee's own page for paying, which Pay opens
+     * @nullable
+     */
+  payUrl: string | null;
+  iban: string;
+  reference: string;
+  /** Who pays, and whether each has. One person is someone paying all of it. */
+  shares: ShareResponse[];
+  /** The signed-in person's own share, when they pay one */
+  myShare: ShareResponse | null;
+  /** The last six times it was due, the oldest first, the one shown now included */
+  history: PastDueResponse[];
+  /**
+     * What it usually comes to: the average of those, in cents. Null with fewer than two.
+     * @nullable
+     */
+  usualCents: number | null;
+  /**
+     * How much more (or, below zero, less) than the time before, in cents
+     * @nullable
+     */
+  changeCents: number | null;
+  /** What it is linked to: its login in the Vault, its invoice in the Library */
+  links: ThingBrief[];
+  /** The first linked thing in the Vault: its login */
+  login: ThingBrief | null;
+  /** The first linked thing in the Library: its invoice */
+  invoice: ThingBrief | null;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
 export interface StartRecoveryRequest {
   clientId: string;
   /**
@@ -1398,6 +1617,577 @@ export interface EntrustedVaultResponse {
   items: EntrustedItemResponse[];
 }
 
+export interface NewSplitRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * Three letters. Left out: EUR.
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+}
+
+export interface NewPaymentRequest {
+  clientId: string;
+  from: string;
+  to: string;
+  /**
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  amountCents: number;
+  /** The day it was paid. Left out: today. */
+  paidOn?: string;
+}
+
+export interface ShareRequest {
+  memberId: string;
+  /**
+     * For a split by shares: how many shares are theirs, 1 to 1,000
+     * @minimum 1
+     * @maximum 1000
+     */
+  weight?: number;
+  /**
+     * For exact amounts: theirs, in cents. They must add up to what it cost.
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  cents?: number;
+}
+
+export interface NewExpenseRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 120
+     */
+  title: string;
+  /**
+     * @minLength 0
+     * @maxLength 16
+     */
+  emoji?: string;
+  /**
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  amountCents: number;
+  /** Who paid. Left out: you. */
+  paidBy?: string;
+  /** Left out: equally */
+  mode?: ShareMode;
+  /**
+     * Who shares it. Left out, for an equal split: everyone in the circle.
+     * @minItems 0
+     * @maxItems 30
+     */
+  shares?: ShareRequest[];
+  /** The day it was spent. Left out: today. */
+  spentOn?: string;
+}
+
+export interface LoanRequest {
+  /**
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  principalCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  ratePercent: number;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  years: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000000
+     */
+  extraCents?: number;
+}
+
+export type SheetTemplate = typeof SheetTemplate[keyof typeof SheetTemplate];
+
+
+export const SheetTemplate = {
+  monthly_budget: 'monthly_budget',
+  trip_budget: 'trip_budget',
+  party_budget: 'party_budget',
+  loan: 'loan',
+  savings: 'savings',
+  tax_checklist: 'tax_checklist',
+  car_costs: 'car_costs',
+} as const;
+
+export interface NewSheetRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * Left out with a template: the template's own name
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * Three letters. Left out: EUR.
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+  /** Start from a template, with its columns, formulas and sample rows. Left out: a blank sheet. */
+  template?: SheetTemplate;
+  /** Keep a loan plan as a sheet: a row for each year, with these numbers */
+  loan?: LoanRequest;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+  /** The day on the person's phone, for the dates in a template's sample rows */
+  day?: string;
+}
+
+export type CellKind = typeof CellKind[keyof typeof CellKind];
+
+
+export const CellKind = {
+  empty: 'empty',
+  text: 'text',
+  number: 'number',
+  money: 'money',
+  date: 'date',
+  tick: 'tick',
+  person: 'person',
+  problem: 'problem',
+} as const;
+
+export interface CellResponse {
+  kind: CellKind;
+  /** @nullable */
+  text: string | null;
+  /** @nullable */
+  number: number | null;
+  /**
+     * Money, in cents of the sheet's currency
+     * @nullable
+     */
+  cents: number | null;
+  /** @nullable */
+  date: string | null;
+  /** @nullable */
+  ticked: boolean | null;
+  /** @nullable */
+  people: PersonBrief[] | null;
+  /**
+     * Why it can't be worked out, in plain words: Price is empty
+     * @nullable
+     */
+  problem: string | null;
+}
+
+export type ColumnKind = typeof ColumnKind[keyof typeof ColumnKind];
+
+
+export const ColumnKind = {
+  text: 'text',
+  number: 'number',
+  money: 'money',
+  date: 'date',
+  tick: 'tick',
+  choice: 'choice',
+  person: 'person',
+  formula: 'formula',
+} as const;
+
+export type PartKind = typeof PartKind[keyof typeof PartKind];
+
+
+export const PartKind = {
+  function: 'function',
+  column: 'column',
+  sign: 'sign',
+  number: 'number',
+  text: 'text',
+  words: 'words',
+  bracket: 'bracket',
+} as const;
+
+export interface PartResponse {
+  kind: PartKind;
+  text: string;
+  /**
+     * For a column chip: which column
+     * @nullable
+     */
+  columnId: string | null;
+}
+
+export type Summary = typeof Summary[keyof typeof Summary];
+
+
+export const Summary = {
+  none: 'none',
+  sum: 'sum',
+  avg: 'avg',
+  count: 'count',
+  min: 'min',
+  max: 'max',
+  ticked: 'ticked',
+} as const;
+
+export interface TotalResponse {
+  cell: CellResponse;
+  /**
+     * For a count of ticks: out of how many rows. 2 of 6.
+     * @nullable
+     */
+  of: number | null;
+  /** The same as chips: SUM, Cost */
+  parts: PartResponse[];
+  /** What it does, as a sentence: Adds up every row in Cost. */
+  says: string;
+  /** How many rows were left out because they couldn't be worked out */
+  leftOut: number;
+  /**
+     * Said when rows were left out: 1 row left out: Price is empty
+     * @nullable
+     */
+  leftOutSays: string | null;
+}
+
+export interface ColumnResponse {
+  id: string;
+  name: string;
+  kind: ColumnKind;
+  /** For a choice: what can be chosen */
+  options: string[];
+  /**
+     * For a formula column: the formula, written with column names
+     * @nullable
+     */
+  formula: string | null;
+  /** For a formula column: the formula as chips to draw */
+  parts: PartResponse[];
+  /**
+     * For a formula column: the formula as a sentence
+     * @nullable
+     */
+  says: string | null;
+  /**
+     * For a formula column whose formula can't be used: why
+     * @nullable
+     */
+  problem: string | null;
+  summary: Summary;
+  total: TotalResponse | null;
+}
+
+/**
+ * What each column holds in this row, by column id. Formula columns are worked out.
+ */
+export type RowResponseCells = {[key: string]: CellResponse};
+
+export interface RowResponse {
+  id: string;
+  /** Its place in the tab, counting from 1 */
+  number: number;
+  /** What each column holds in this row, by column id. Formula columns are worked out. */
+  cells: RowResponseCells;
+  note: string;
+  /** How many receipts and papers are kept with it */
+  papers: number;
+}
+
+export interface TabBriefResponse {
+  id: string;
+  name: string;
+  rows: number;
+}
+
+export interface TileResponse {
+  id: string;
+  name: string;
+  formula: string;
+  parts: PartResponse[];
+  says: string;
+  cell: CellResponse;
+  leftOut: number;
+  /** @nullable */
+  leftOutSays: string | null;
+  /**
+     * The tile it is shown against: Paid, of Planned
+     * @nullable
+     */
+  ofTileId: string | null;
+  /** @nullable */
+  ofName: string | null;
+  ofCell: CellResponse | null;
+}
+
+export interface TabResponse {
+  id: string;
+  name: string;
+  columns: ColumnResponse[];
+  tiles: TileResponse[];
+  rowCount: number;
+  /** The first rows. The rest come from the rows route, a page at a time. */
+  rows: RowResponse[];
+  /**
+     * Send this as `cursor` to the rows route for the rows that follow. Null when these are all.
+     * @nullable
+     */
+  nextRows: string | null;
+}
+
+export interface SheetResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  currency: string;
+  /** The template it started from */
+  template: SheetTemplate | null;
+  /** One word for the kind of sheet it is: Trip, Monthly. Empty for a sheet that started blank. */
+  tag: string;
+  updatedAt: string;
+  /** Who changed it last */
+  editedBy: PersonBrief | null;
+  /** Who else has it open right now */
+  here: PersonBrief[];
+  tabs: TabBriefResponse[];
+  /** The tab that was asked for, or the first */
+  tab: TabResponse;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface NewTabRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 40
+     */
+  name: string;
+  /** Give it the columns and tiles of this tab of the same sheet, without its rows: next month's budget */
+  copyColumnsOf?: string;
+}
+
+export interface NewTileRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 40
+     */
+  name: string;
+  /**
+     * A formula that gives one number for the tab: SUM([Cost]) - SUMIF([Paid], [Cost])
+     * @minLength 0
+     * @maxLength 1000
+     */
+  formula: string;
+  /** Show it against this other tile of the tab: Paid, of Planned */
+  ofTileId?: string;
+}
+
+/**
+ * What to put in which column, by column id. Text and a choice: a string. A number: a number or a string like "12.5". Money: whole cents. A date: "2027-01-15". A tick: true or false. A person: a member id, or a list of them.
+ */
+export type NewRowRequestCells = {[key: string]: unknown};
+
+export interface NewRowRequest {
+  clientId: string;
+  /** What to put in which column, by column id. Text and a choice: a string. A number: a number or a string like "12.5". Money: whole cents. A date: "2027-01-15". A tick: true or false. A person: a member id, or a list of them. */
+  cells?: NewRowRequestCells;
+  /**
+     * @minLength 0
+     * @maxLength 2000
+     */
+  note?: string;
+  /** Put it just before this row. Left out: at the end. */
+  before?: string;
+}
+
+/**
+ * The row of totals, by column id
+ */
+export type RowChangedResponseTotals = {[key: string]: TotalResponse};
+
+export interface RowChangedResponse {
+  row: RowResponse;
+  rowCount: number;
+  tiles: TileResponse[];
+  /** The row of totals, by column id */
+  totals: RowChangedResponseTotals;
+}
+
+export interface FormulaRequest {
+  /**
+     * @minLength 0
+     * @maxLength 1000
+     */
+  formula: string;
+  /** The formula column being changed, when it is one */
+  columnId?: string;
+  /** The day on the person's phone, for TODAY() */
+  day?: string;
+}
+
+export interface ColumnBriefResponse {
+  id: string;
+  name: string;
+  kind: ColumnKind;
+}
+
+export interface FunctionResponse {
+  /** How it is typed: SUMIF */
+  name: string;
+  /** What its chip says: SUM IF */
+  label: string;
+  says: string;
+  example: string;
+}
+
+export interface FormulaResponse {
+  /** False when the formula couldn't be read or the question wasn't understood */
+  understood: boolean;
+  /**
+     * The formula, written with column names, to save as it is
+     * @nullable
+     */
+  formula: string | null;
+  /** True when it gives one number for the whole tab (a tile); false when it is worked out for each row (a column) */
+  oneAnswer: boolean;
+  parts: PartResponse[];
+  /** @nullable */
+  says: string | null;
+  /** The answer: the number for a tile, the first row's for a column */
+  answer: CellResponse | null;
+  leftOut: number;
+  /** @nullable */
+  leftOutSays: string | null;
+  /**
+     * What is wrong with it, or how to ask instead, in a sentence
+     * @nullable
+     */
+  problem: string | null;
+  /** Questions this tab can answer, shown when one wasn't understood */
+  examples: string[];
+  columns: ColumnBriefResponse[];
+  functions: FunctionResponse[];
+}
+
+export interface NewColumnRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 40
+     */
+  name: string;
+  /** Left out: text */
+  kind?: ColumnKind;
+  /**
+     * For a choice: what can be chosen
+     * @minItems 0
+     * @maxItems 30
+     * @items.minLength 0
+     * @items.maxLength 40
+     */
+  options?: string[];
+  /**
+     * For a formula column: the formula, written with column names: [Price] * [Qty]
+     * @minLength 0
+     * @maxLength 1000
+     */
+  formula?: string;
+  /** What stands under it in the row of totals. Left out: nothing. */
+  summary?: Summary;
+}
+
+export interface AskRequest {
+  /**
+     * @minLength 0
+     * @maxLength 300
+     */
+  question: string;
+  /** The day on the person's phone, for TODAY() */
+  day?: string;
+}
+
+export interface NewPaperRequest {
+  clientId: string;
+  /** A photo or a document you uploaded */
+  mediaId: string;
+}
+
+export type MediaKind = typeof MediaKind[keyof typeof MediaKind];
+
+
+export const MediaKind = {
+  photo: 'photo',
+  video: 'video',
+  file: 'file',
+  audio: 'audio',
+} as const;
+
+export interface MediaResponse {
+  id: string;
+  kind: MediaKind;
+  /** A picture: the photo itself, or null for a file with no picture */
+  url: string;
+  /**
+     * The same picture, small, for lists and grids
+     * @nullable
+     */
+  thumbUrl: string | null;
+  /**
+     * For a video, a document or a recording: the file itself
+     * @nullable
+     */
+  fileUrl: string | null;
+  /** @nullable */
+  fileName: string | null;
+  contentType: string;
+  /** @nullable */
+  width: number | null;
+  /** @nullable */
+  height: number | null;
+  /** @nullable */
+  durationSeconds: number | null;
+  /** @nullable */
+  bytes: number | null;
+}
+
+export interface RowLinkResponse {
+  id: string;
+  label: string;
+}
+
+export interface RowCardResponse {
+  sheetId: string;
+  sheetTitle: string;
+  currency: string;
+  tabId: string;
+  tabName: string;
+  columns: ColumnResponse[];
+  row: RowResponse;
+  /** Receipts and papers kept with the row. Twenty at most. */
+  papers: MediaResponse[];
+  /** How many rows the tab has: Row 3 of 6 */
+  of: number;
+  previous: RowLinkResponse | null;
+  next: RowLinkResponse | null;
+  canEdit: boolean;
+}
+
 export interface Recurrence {
   unit: Unit;
   /** Every how many days, weeks, months or years. Left out: every one. */
@@ -1559,44 +2349,6 @@ export interface Mark {
      * @nullable
      */
   memberId?: string | null;
-}
-
-export type MediaKind = typeof MediaKind[keyof typeof MediaKind];
-
-
-export const MediaKind = {
-  photo: 'photo',
-  video: 'video',
-  file: 'file',
-  audio: 'audio',
-} as const;
-
-export interface MediaResponse {
-  id: string;
-  kind: MediaKind;
-  /** A picture: the photo itself, or null for a file with no picture */
-  url: string;
-  /**
-     * The same picture, small, for lists and grids
-     * @nullable
-     */
-  thumbUrl: string | null;
-  /**
-     * For a video, a document or a recording: the file itself
-     * @nullable
-     */
-  fileUrl: string | null;
-  /** @nullable */
-  fileName: string | null;
-  contentType: string;
-  /** @nullable */
-  width: number | null;
-  /** @nullable */
-  height: number | null;
-  /** @nullable */
-  durationSeconds: number | null;
-  /** @nullable */
-  bytes: number | null;
 }
 
 export interface BlockResponse {
@@ -3638,6 +4390,130 @@ export interface ActRequest {
   body?: ActRequestBody;
 }
 
+export interface NewBillRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * What to call it: Electricity. Left out: who it is paid to.
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 120
+     */
+  payee?: string;
+  /**
+     * @minLength 0
+     * @maxLength 16
+     */
+  emoji?: string;
+  /**
+     * @minimum 0
+     * @maximum 100000000000
+     */
+  amountCents: number;
+  /**
+     * Three letters. Left out: EUR.
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+  dueOn: string;
+  /** Left out: once */
+  repeat?: Repeat;
+  /**
+     * For every few months: how many, 2 to 24
+     * @minimum 2
+     * @maximum 24
+     */
+  everyMonths?: number;
+  subscription?: boolean;
+  /** Left out: by hand */
+  pays?: PaidHow;
+  /**
+     * Remind this many days before it is due. Left out: no reminder.
+     * @minimum 0
+     * @maximum 30
+     */
+  remindDays?: number;
+  /**
+     * @minLength 0
+     * @maxLength 2000
+     */
+  note?: string;
+  /**
+     * The payee's own page for paying
+     * @minLength 0
+     * @maxLength 500
+     */
+  payUrl?: string;
+  /**
+     * @minLength 0
+     * @maxLength 42
+     */
+  iban?: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  reference?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+  /**
+     * Who pays. Left out: you pay all of it.
+     * @minItems 0
+     * @maxItems 30
+     */
+  shares?: ShareRequest[];
+}
+
+export interface ReadTextResponse {
+  value: string;
+  /** The line it was read from, as it was sent */
+  line: string;
+  /** Which of the lines sent that was, counting from 0 */
+  lineNumber: number;
+}
+
+export interface ReadAmountResponse {
+  /** The amount, in cents */
+  value: number;
+  line: string;
+  lineNumber: number;
+}
+
+export interface ReadDayResponse {
+  value: string;
+  line: string;
+  lineNumber: number;
+}
+
+export interface ReadRepeatResponse {
+  value: Repeat;
+  line: string;
+  lineNumber: number;
+}
+
+export interface BillReadingResponse {
+  /** Who to pay */
+  payee: ReadTextResponse | null;
+  /** The amount to pay */
+  amountCents: ReadAmountResponse | null;
+  /** The currency found next to an amount, or EUR when none was */
+  currency: string;
+  dueOn: ReadDayResponse | null;
+  iban: ReadTextResponse | null;
+  reference: ReadTextResponse | null;
+  /** Set when the text says, or the kind of bill suggests, how it comes round */
+  repeat: ReadRepeatResponse | null;
+  /** A name for the bill: Electricity, Netflix, or who to pay */
+  title: string;
+  /** An emoji for it */
+  emoji: string;
+}
+
 export interface NewAlbum {
   clientId: string;
   circleId: string;
@@ -3763,6 +4639,132 @@ export interface VaultItemChangeRequest {
   ciphertext?: string;
   /** With a ciphertext: the version the phone read */
   version?: number;
+}
+
+export interface RenameRequest {
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+}
+
+export interface ExpenseChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 16
+     */
+  emoji?: string;
+  /**
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  amountCents?: number;
+  paidBy?: string;
+  mode?: ShareMode;
+  /**
+     * Who shares it, all of them: this replaces who shared it before
+     * @minItems 1
+     * @maxItems 30
+     */
+  shares?: ShareRequest[];
+  spentOn?: string;
+}
+
+export interface SheetChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+}
+
+export interface TileChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  name?: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  formula?: string;
+  ofTileId?: string;
+  /** True to show it on its own again */
+  removeOf?: boolean;
+  /** Move it to just before this tile */
+  before?: string;
+  /** Move it to the end */
+  toEnd?: boolean;
+}
+
+export interface TabChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  name?: string;
+  /** Move it to just before this tab */
+  before?: string;
+  /** Move it to the end */
+  toEnd?: boolean;
+}
+
+/**
+ * Only the cells that change, by column id; the others stay as they are. Null empties a cell.
+ */
+export type RowChangeRequestCells = {[key: string]: unknown};
+
+export interface RowChangeRequest {
+  /** Only the cells that change, by column id; the others stay as they are. Null empties a cell. */
+  cells?: RowChangeRequestCells;
+  /**
+     * @minLength 0
+     * @maxLength 2000
+     */
+  note?: string;
+  /** Move it to just before this row */
+  before?: string;
+  /** Move it to the end */
+  toEnd?: boolean;
+}
+
+export interface ColumnChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  name?: string;
+  /** A column that holds values keeps its kind, except between text and a choice */
+  kind?: ColumnKind;
+  /**
+     * @minItems 0
+     * @maxItems 30
+     * @items.minLength 0
+     * @items.maxLength 40
+     */
+  options?: string[];
+  /**
+     * @minLength 0
+     * @maxLength 1000
+     */
+  formula?: string;
+  summary?: Summary;
+  /** Move it to just before this column */
+  before?: string;
+  /** Move it to the end */
+  toEnd?: boolean;
 }
 
 export interface ReminderChangeRequest {
@@ -4185,6 +5187,78 @@ export interface EntryChangeRequest {
   fields: EntryChangeRequestFields;
 }
 
+export interface BillChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 120
+     */
+  payee?: string;
+  /**
+     * @minLength 0
+     * @maxLength 16
+     */
+  emoji?: string;
+  /**
+     * What is due now, in cents
+     * @minimum 0
+     * @maximum 100000000000
+     */
+  amountCents?: number;
+  /**
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+  /** When it is due now. It comes round on this day of the month from then on. */
+  dueOn?: string;
+  repeat?: Repeat;
+  /**
+     * @minimum 2
+     * @maximum 24
+     */
+  everyMonths?: number;
+  subscription?: boolean;
+  pays?: PaidHow;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  remindDays?: number;
+  removeReminder?: boolean;
+  /**
+     * @minLength 0
+     * @maxLength 2000
+     */
+  note?: string;
+  /**
+     * @minLength 0
+     * @maxLength 500
+     */
+  payUrl?: string;
+  removePayUrl?: boolean;
+  /**
+     * @minLength 0
+     * @maxLength 42
+     */
+  iban?: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  reference?: string;
+  /**
+     * Who pays, all of them: this replaces the shares there were
+     * @minItems 1
+     * @maxItems 30
+     */
+  shares?: ShareRequest[];
+}
+
 export interface AlbumChange {
   /**
      * @minLength 1
@@ -4277,6 +5351,103 @@ export interface VaultAttentionResponse {
   waitingForKeys: number;
   /** True when your phone should split your Vault key again for your helpers */
   sharesDue: boolean;
+}
+
+export interface PageExpenseResponse {
+  items: ExpenseResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface PageRowResponse {
+  items: RowResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface TemplateResponse {
+  code: SheetTemplate;
+  title: string;
+  emoji: string;
+  says: string;
+  /** True for the ones with sliders to try before keeping them: the loan and the savings plan */
+  live: boolean;
+}
+
+export interface SavingsYearResponse {
+  year: number;
+  savedCents: number;
+}
+
+export interface SavingsPlanResponse {
+  goalCents: number;
+  savedCents: number;
+  monthlyCents: number;
+  ratePercent: number;
+  /** False when the goal isn't reached in a hundred years at this pace */
+  reached: boolean;
+  /** How many months until the goal is reached. Zero when it isn't. */
+  months: number;
+  /** What was put aside by then, the start included, in cents */
+  putInCents: number;
+  /** What the interest added, in cents */
+  interestCents: number;
+  /** What is saved at the end of each year */
+  chart: SavingsYearResponse[];
+}
+
+export interface LoanFiguresResponse {
+  /** What is paid each month, in cents */
+  paymentCents: number;
+  /** How many payments it takes, the last one included */
+  payments: number;
+  /** The last payment, which settles what is left; often smaller than the others */
+  lastPaymentCents: number;
+  /** All the interest paid, in cents */
+  interestCents: number;
+  /** Everything paid: what was borrowed and the interest, in cents */
+  totalCents: number;
+}
+
+export interface LoanPointResponse {
+  year: number;
+  owedCents: number;
+  /**
+     * The same with the extra paid each month. Null when no extra was asked about.
+     * @nullable
+     */
+  owedWithExtraCents: number | null;
+}
+
+export interface LoanYearResponse {
+  year: number;
+  paidCents: number;
+  interestCents: number;
+  owedCents: number;
+}
+
+export interface LoanPlanResponse {
+  principalCents: number;
+  ratePercent: number;
+  years: number;
+  extraCents: number;
+  plan: LoanFiguresResponse;
+  /** The same loan with the extra paid each month. Null when no extra was asked about. */
+  withExtra: LoanFiguresResponse | null;
+  /** How much sooner it is paid off with the extra, to the nearest month. A small last payment counts as the part of a month it is of a full one: 265 payments and a last one of a tenth of the size is 265.1 months, 35 sooner than 300. */
+  monthsSooner: number;
+  /** How much less interest is paid with the extra, in cents */
+  interestSavedCents: number;
+  /** What is still owed at the end of each year, with and without the extra: the chart */
+  chart: LoanPointResponse[];
+  /** The schedule year by year, with the extra when one was asked about. Fifty lines at most. */
+  schedule: LoanYearResponse[];
 }
 
 export interface PersonPageResponse {
@@ -4662,6 +5833,58 @@ export interface StorageResponse {
   people: PersonBytes[];
 }
 
+export interface SplitBriefResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  currency: string;
+  myBalanceCents: number;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface PageSplitBriefResponse {
+  items: SplitBriefResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface SheetBriefResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  currency: string;
+  template: SheetTemplate | null;
+  tag: string;
+  tabs: number;
+  updatedAt: string;
+  editedBy: PersonBrief | null;
+  /**
+     * Its first tile's name: Planned
+     * @nullable
+     */
+  headlineName: string | null;
+  /** Its first tile's number: €7,640 */
+  headline: CellResponse | null;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface PageSheetBriefResponse {
+  items: SheetBriefResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
 export interface SearchHit {
   thing?: ThingBrief;
   /**
@@ -4836,6 +6059,76 @@ export interface MonthResponse {
   month: string;
   /** Whole weeks, Monday first, that hold the month */
   days: MonthDayResponse[];
+}
+
+export interface BillRowResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  payee: string;
+  emoji: string;
+  currency: string;
+  amountCents: number;
+  dueOn: string;
+  paid: boolean;
+  /** @nullable */
+  paidAt: string | null;
+  repeat: Repeat;
+  subscription: boolean;
+  /** @nullable */
+  yearCents: number | null;
+  pays: PaidHow;
+  /** The others who pay a share of it: split with Alex */
+  splitWith: PersonBrief[];
+  /**
+     * The signed-in person's own share in cents, when they pay one
+     * @nullable
+     */
+  myShareCents: number | null;
+  /** True when the signed-in person's own share is paid */
+  mySharePaid: boolean;
+  /** True when it is linked to something in the Vault you may see: its login */
+  hasLogin: boolean;
+  /** True when it is linked to something in the Library you may see: its invoice */
+  hasInvoice: boolean;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface OwingResponse {
+  person: PersonBrief;
+  cents: number;
+  currency: string;
+}
+
+export interface MoneyResponse {
+  day: string;
+  /** The currency the sums are in: the one most of the circle's bills are kept in */
+  currency: string;
+  /** Other currencies there are bills in. Those bills are in the lists, not in the sums. */
+  otherCurrencies: string[];
+  /** The first day of the month the card is about */
+  monthStart: string;
+  /** Everything due in that month, paid or not, in cents */
+  monthTotalCents: number;
+  /** How much of it is paid, in cents */
+  monthPaidCents: number;
+  /** Still to pay and due by the end of this week (Sunday), overdue ones included, in cents */
+  dueThisWeekCents: number;
+  /** What the subscriptions come to in a month, in cents */
+  subscriptionsMonthCents: number;
+  /** What the subscriptions come to in a year, in cents */
+  subscriptionsYearCents: number;
+  /** How many subscriptions there are */
+  subscriptions: number;
+  /** Who owes you (above zero) and whom you owe (below zero), from the circle's splits. The five largest. */
+  owing: OwingResponse[];
+  /** The five bills due soonest that aren't paid */
+  dueSoon: BillRowResponse[];
+  /** The six sheets changed last */
+  sheets: SheetBriefResponse[];
 }
 
 export interface PageThingBrief {
@@ -5052,6 +6345,24 @@ export interface PageBoardCard {
   nextCursor?: string | null;
 }
 
+export type BillShow = typeof BillShow[keyof typeof BillShow];
+
+
+export const BillShow = {
+  due: 'due',
+  paid: 'paid',
+  subscriptions: 'subscriptions',
+} as const;
+
+export interface PageBillRowResponse {
+  items: BillRowResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
 export type AlbumTab = typeof AlbumTab[keyof typeof AlbumTab];
 
 
@@ -5119,6 +6430,36 @@ export type GetMyVaultItemsParams = {
   limit?: number;
 };
 
+export type AddSplitPaymentParams = {
+  /** The day on the person's phone, for an expense with no day of its own. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetSplitExpensesParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type AddSplitExpenseParams = {
+  /** The day on the person's phone, for an expense with no day of its own. The API's own day when left out. */
+  day?: string;
+};
+
+export type AddSheetTileParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type AddSheetRowParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type AddSheetColumnParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
 export type GetLibraryCommentsParams = {
   cursor?: string;
   limit?: number;
@@ -5168,6 +6509,35 @@ export type AddBoardEntryParams = {
 
 export type ActOnBoardParams = {
   /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetSheetParams = {
+  /** Which tab. Left out: the first. */
+  tab?: string;
+  /** How many rows to send with it. Left out: 100. */
+  limit?: number;
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type ChangeSheetTileParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetSheetRowParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type ChangeSheetRowParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type ChangeSheetColumnParams = {
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
   day?: string;
 };
 
@@ -5225,6 +6595,37 @@ export type ChangeBoardEntryParams = {
   day?: string;
 };
 
+export type GetSheetRowsParams = {
+  /** Which tab. Left out: the first. */
+  tab?: string;
+  cursor?: string;
+  limit?: number;
+  /** The day on the person's phone, for TODAY() in a formula. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetSavingsPlanParams = {
+  /** The goal, in cents */
+  goalCents: number;
+  /** Put aside each month, in cents */
+  monthlyCents: number;
+  /** Saved already, in cents. Left out: nothing. */
+  savedCents?: number;
+  /** Interest a year, in percent. Left out: none. */
+  ratePercent?: number;
+};
+
+export type GetLoanPlanParams = {
+  /** What is borrowed, in cents */
+  principalCents: number;
+  /** Interest a year, in percent: 3.4 */
+  ratePercent: number;
+  /** Over how many years, 1 to 50 */
+  years: number;
+  /** Paid on top each month, in cents. Left out: nothing. */
+  extraCents?: number;
+};
+
 export type GetFolderItemsParams = {
   cursor?: string;
   limit?: number;
@@ -5251,6 +6652,16 @@ export type GetVaultItemsParams = {
 export type GetTodayParams = {
   /** The day on the person's phone. The API's own day when left out. */
   day?: string;
+};
+
+export type GetSplitsParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetSheetsParams = {
+  cursor?: string;
+  limit?: number;
 };
 
 export type SearchCircleParams = {
@@ -5292,6 +6703,11 @@ export type GetMonthParams = {
   month?: string;
   /** Only what concerns this person of the circle */
   member?: string;
+};
+
+export type GetMoneyParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
 };
 
 export type GetLinkableParams = {
@@ -5362,6 +6778,13 @@ export type GetChecklistsParams = {
 
 export type GetBoardsParams = {
   template?: Template;
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetBillsParams = {
+  /** due, paid or subscriptions. Left out: due. */
+  show?: BillShow;
   cursor?: string;
   limit?: number;
 };
@@ -7387,6 +8810,80 @@ export const useSaveAbout = <TError = unknown,
       return useMutation(getSaveAboutMutationOptions(options), queryClient);
     }
 
+export const getRemindSplitMemberUrl = (id: string,
+    memberId: string,) => {
+
+
+
+
+  return `/v1/splits/${id}/reminders/${memberId}`
+}
+
+/**
+ * @summary Remind someone of what they owe you in a split. Keeps the time; the notification itself is sent by whoever sends notifications.
+ */
+export const remindSplitMember = async (id: string,
+    memberId: string, options?: Parameters<typeof apiFetch>[1]): Promise<SplitResponse> => {
+
+  return apiFetch<SplitResponse>(getRemindSplitMemberUrl(id,memberId),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemindSplitMemberMutationKey = () => ['remindSplitMember'] as const;
+
+export const getRemindSplitMemberMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof remindSplitMember>>, TError,RemindSplitMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof remindSplitMember>>, TError,RemindSplitMemberMutationVariables, TContext> => {
+
+const mutationKey = getRemindSplitMemberMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof remindSplitMember>>, RemindSplitMemberMutationVariables> = (props) => {
+          const {id,memberId} = props ?? {};
+
+          return  remindSplitMember(id,memberId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemindSplitMemberMutationResult = NonNullable<Awaited<ReturnType<typeof remindSplitMember>>>
+
+    export type RemindSplitMemberMutationError = unknown
+    export type RemindSplitMemberMutationVariables = {id: string;memberId: string}
+
+    /** @summary Remind someone of what they owe you in a split. Keeps the time; the notification itself is sent by whoever sends notifications. */
+export const useRemindSplitMember = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof remindSplitMember>>, TError,RemindSplitMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof remindSplitMember>>,
+        TError,
+        RemindSplitMemberMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemindSplitMemberMutationOptions(options), queryClient);
+    }
+
 export const getTickReminderUrl = (id: string,) => {
 
 
@@ -9172,6 +10669,93 @@ export const useLookAtChecklist = <TError = unknown,
       return useMutation(getLookAtChecklistMutationOptions(options), queryClient);
     }
 
+export const getMarkBillPaidUrl = (id: string,) => {
+
+
+
+
+  return `/v1/bills/${id}/paid`
+}
+
+/**
+ * @summary Mark a share of a bill as paid, or take that back. A repeating bill is due again once every share is paid.
+ */
+export const markBillPaid = async (id: string,
+    paidRequest: PaidRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BillResponse>(getMarkBillPaidUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paidRequest)
+  }
+);}
+
+
+
+
+
+export const getMarkBillPaidMutationKey = () => ['markBillPaid'] as const;
+
+export const getMarkBillPaidMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markBillPaid>>, TError,MarkBillPaidMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markBillPaid>>, TError,MarkBillPaidMutationVariables, TContext> => {
+
+const mutationKey = getMarkBillPaidMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markBillPaid>>, MarkBillPaidMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  markBillPaid(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkBillPaidMutationResult = NonNullable<Awaited<ReturnType<typeof markBillPaid>>>
+    export type MarkBillPaidMutationBody = PaidRequest
+    export type MarkBillPaidMutationError = unknown
+    export type MarkBillPaidMutationVariables = {id: string;data: PaidRequest}
+
+    /** @summary Mark a share of a bill as paid, or take that back. A repeating bill is due again once every share is paid. */
+export const useMarkBillPaid = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markBillPaid>>, TError,MarkBillPaidMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markBillPaid>>,
+        TError,
+        MarkBillPaidMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkBillPaidMutationOptions(options), queryClient);
+    }
+
 export const getStartVaultRecoveryUrl = () => {
 
 
@@ -10072,6 +11656,1201 @@ export const useRefuseEmergency = <TError = unknown,
         TContext
       > => {
       return useMutation(getRefuseEmergencyMutationOptions(options), queryClient);
+    }
+
+export const getCreateSplitUrl = () => {
+
+
+
+
+  return `/v1/splits`
+}
+
+/**
+ * @summary Start keeping count of a group's shared costs
+ */
+export const createSplit = async (newSplitRequest: NewSplitRequest, options?: Parameters<typeof apiFetch>[1]): Promise<SplitResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SplitResponse>(getCreateSplitUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newSplitRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateSplitMutationKey = () => ['createSplit'] as const;
+
+export const getCreateSplitMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSplit>>, TError,CreateSplitMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSplit>>, TError,CreateSplitMutationVariables, TContext> => {
+
+const mutationKey = getCreateSplitMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSplit>>, CreateSplitMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSplit(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSplitMutationResult = NonNullable<Awaited<ReturnType<typeof createSplit>>>
+    export type CreateSplitMutationBody = NewSplitRequest
+    export type CreateSplitMutationError = unknown
+    export type CreateSplitMutationVariables = {data: NewSplitRequest}
+
+    /** @summary Start keeping count of a group's shared costs */
+export const useCreateSplit = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSplit>>, TError,CreateSplitMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createSplit>>,
+        TError,
+        CreateSplitMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSplitMutationOptions(options), queryClient);
+    }
+
+export const getAddSplitPaymentUrl = (id: string,
+    params?: AddSplitPaymentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/splits/${id}/payments?${stringifiedParams}` : `/v1/splits/${id}/payments`
+}
+
+/**
+ * @summary Mark a payment as made: one person paid another to settle up. The app pays nothing itself.
+ */
+export const addSplitPayment = async (id: string,
+    newPaymentRequest: NewPaymentRequest,
+    params?: AddSplitPaymentParams, options?: Parameters<typeof apiFetch>[1]): Promise<PaymentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<PaymentResponse>(getAddSplitPaymentUrl(id,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newPaymentRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSplitPaymentMutationKey = () => ['addSplitPayment'] as const;
+
+export const getAddSplitPaymentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSplitPayment>>, TError,AddSplitPaymentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSplitPayment>>, TError,AddSplitPaymentMutationVariables, TContext> => {
+
+const mutationKey = getAddSplitPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSplitPayment>>, AddSplitPaymentMutationVariables> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  addSplitPayment(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSplitPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof addSplitPayment>>>
+    export type AddSplitPaymentMutationBody = NewPaymentRequest
+    export type AddSplitPaymentMutationError = unknown
+    export type AddSplitPaymentMutationVariables = {id: string;data: NewPaymentRequest;params?: AddSplitPaymentParams}
+
+    /** @summary Mark a payment as made: one person paid another to settle up. The app pays nothing itself. */
+export const useAddSplitPayment = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSplitPayment>>, TError,AddSplitPaymentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSplitPayment>>,
+        TError,
+        AddSplitPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSplitPaymentMutationOptions(options), queryClient);
+    }
+
+export const getGetSplitExpensesUrl = (id: string,
+    params?: GetSplitExpensesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/splits/${id}/expenses?${stringifiedParams}` : `/v1/splits/${id}/expenses`
+}
+
+/**
+ * @summary The expenses of a split, the latest first
+ */
+export const getSplitExpenses = async (id: string,
+    params?: GetSplitExpensesParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageExpenseResponse> => {
+
+  return apiFetch<PageExpenseResponse>(getGetSplitExpensesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSplitExpensesInfiniteQueryKey = (id: string,
+    params?: GetSplitExpensesParams,) => {
+    return [
+    'infinite', `/v1/splits/${id}/expenses`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetSplitExpensesQueryKey = (id: string,
+    params?: GetSplitExpensesParams,) => {
+    return [
+    `/v1/splits/${id}/expenses`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSplitExpensesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getSplitExpenses>>, GetSplitExpensesParams['cursor']>, TError = unknown>(id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData, QueryKey, GetSplitExpensesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSplitExpensesInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSplitExpenses>>, QueryKey, GetSplitExpensesParams['cursor']> = ({ signal, pageParam }) => getSplitExpenses(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData, QueryKey, GetSplitExpensesParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSplitExpensesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getSplitExpenses>>>
+export type GetSplitExpensesInfiniteQueryError = unknown
+
+
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpensesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplitExpenses>>, GetSplitExpensesParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSplitExpensesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData, QueryKey, GetSplitExpensesParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplitExpenses>>,
+          TError,
+          Awaited<ReturnType<typeof getSplitExpenses>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpensesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplitExpenses>>, GetSplitExpensesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData, QueryKey, GetSplitExpensesParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplitExpenses>>,
+          TError,
+          Awaited<ReturnType<typeof getSplitExpenses>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpensesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplitExpenses>>, GetSplitExpensesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData, QueryKey, GetSplitExpensesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpensesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplitExpenses>>, GetSplitExpensesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData, QueryKey, GetSplitExpensesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSplitExpensesInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetSplitExpensesQueryOptions = <TData = Awaited<ReturnType<typeof getSplitExpenses>>, TError = unknown>(id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSplitExpensesQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSplitExpenses>>> = ({ signal }) => getSplitExpenses(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSplitExpensesQueryResult = NonNullable<Awaited<ReturnType<typeof getSplitExpenses>>>
+export type GetSplitExpensesQueryError = unknown
+
+
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpenses<TData = Awaited<ReturnType<typeof getSplitExpenses>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSplitExpensesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplitExpenses>>,
+          TError,
+          Awaited<ReturnType<typeof getSplitExpenses>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpenses<TData = Awaited<ReturnType<typeof getSplitExpenses>>, TError = unknown>(
+ id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplitExpenses>>,
+          TError,
+          Awaited<ReturnType<typeof getSplitExpenses>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpenses<TData = Awaited<ReturnType<typeof getSplitExpenses>>, TError = unknown>(
+ id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The expenses of a split, the latest first */
+export function useGetSplitExpenses<TData = Awaited<ReturnType<typeof getSplitExpenses>>, TError = unknown>(
+ id: string,
+    params?: GetSplitExpensesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplitExpenses>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSplitExpensesQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddSplitExpenseUrl = (id: string,
+    params?: AddSplitExpenseParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/splits/${id}/expenses?${stringifiedParams}` : `/v1/splits/${id}/expenses`
+}
+
+/**
+ * @summary Add what someone paid, and who shares it
+ */
+export const addSplitExpense = async (id: string,
+    newExpenseRequest: NewExpenseRequest,
+    params?: AddSplitExpenseParams, options?: Parameters<typeof apiFetch>[1]): Promise<ExpenseResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ExpenseResponse>(getAddSplitExpenseUrl(id,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newExpenseRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSplitExpenseMutationKey = () => ['addSplitExpense'] as const;
+
+export const getAddSplitExpenseMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSplitExpense>>, TError,AddSplitExpenseMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSplitExpense>>, TError,AddSplitExpenseMutationVariables, TContext> => {
+
+const mutationKey = getAddSplitExpenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSplitExpense>>, AddSplitExpenseMutationVariables> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  addSplitExpense(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSplitExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof addSplitExpense>>>
+    export type AddSplitExpenseMutationBody = NewExpenseRequest
+    export type AddSplitExpenseMutationError = unknown
+    export type AddSplitExpenseMutationVariables = {id: string;data: NewExpenseRequest;params?: AddSplitExpenseParams}
+
+    /** @summary Add what someone paid, and who shares it */
+export const useAddSplitExpense = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSplitExpense>>, TError,AddSplitExpenseMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSplitExpense>>,
+        TError,
+        AddSplitExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSplitExpenseMutationOptions(options), queryClient);
+    }
+
+export const getCreateSheetUrl = () => {
+
+
+
+
+  return `/v1/sheets`
+}
+
+/**
+ * @summary Start a sheet: blank, from a template, or from a loan plan
+ */
+export const createSheet = async (newSheetRequest: NewSheetRequest, options?: Parameters<typeof apiFetch>[1]): Promise<SheetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SheetResponse>(getCreateSheetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newSheetRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateSheetMutationKey = () => ['createSheet'] as const;
+
+export const getCreateSheetMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSheet>>, TError,CreateSheetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSheet>>, TError,CreateSheetMutationVariables, TContext> => {
+
+const mutationKey = getCreateSheetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSheet>>, CreateSheetMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSheet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSheetMutationResult = NonNullable<Awaited<ReturnType<typeof createSheet>>>
+    export type CreateSheetMutationBody = NewSheetRequest
+    export type CreateSheetMutationError = unknown
+    export type CreateSheetMutationVariables = {data: NewSheetRequest}
+
+    /** @summary Start a sheet: blank, from a template, or from a loan plan */
+export const useCreateSheet = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSheet>>, TError,CreateSheetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createSheet>>,
+        TError,
+        CreateSheetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSheetMutationOptions(options), queryClient);
+    }
+
+export const getAddSheetTabUrl = (id: string,) => {
+
+
+
+
+  return `/v1/sheets/${id}/tabs`
+}
+
+/**
+ * @summary Add a tab to a sheet. A sheet holds 24.
+ */
+export const addSheetTab = async (id: string,
+    newTabRequest: NewTabRequest, options?: Parameters<typeof apiFetch>[1]): Promise<SheetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SheetResponse>(getAddSheetTabUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newTabRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSheetTabMutationKey = () => ['addSheetTab'] as const;
+
+export const getAddSheetTabMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetTab>>, TError,AddSheetTabMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSheetTab>>, TError,AddSheetTabMutationVariables, TContext> => {
+
+const mutationKey = getAddSheetTabMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSheetTab>>, AddSheetTabMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addSheetTab(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSheetTabMutationResult = NonNullable<Awaited<ReturnType<typeof addSheetTab>>>
+    export type AddSheetTabMutationBody = NewTabRequest
+    export type AddSheetTabMutationError = unknown
+    export type AddSheetTabMutationVariables = {id: string;data: NewTabRequest}
+
+    /** @summary Add a tab to a sheet. A sheet holds 24. */
+export const useAddSheetTab = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetTab>>, TError,AddSheetTabMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSheetTab>>,
+        TError,
+        AddSheetTabMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSheetTabMutationOptions(options), queryClient);
+    }
+
+export const getAddSheetTileUrl = (tabId: string,
+    params?: AddSheetTileParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-tabs/${tabId}/tiles?${stringifiedParams}` : `/v1/sheet-tabs/${tabId}/tiles`
+}
+
+/**
+ * @summary Add a tile on top of a tab: a named total. A tab holds 12.
+ */
+export const addSheetTile = async (tabId: string,
+    newTileRequest: NewTileRequest,
+    params?: AddSheetTileParams, options?: Parameters<typeof apiFetch>[1]): Promise<TileResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<TileResponse>(getAddSheetTileUrl(tabId,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newTileRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSheetTileMutationKey = () => ['addSheetTile'] as const;
+
+export const getAddSheetTileMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetTile>>, TError,AddSheetTileMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSheetTile>>, TError,AddSheetTileMutationVariables, TContext> => {
+
+const mutationKey = getAddSheetTileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSheetTile>>, AddSheetTileMutationVariables> = (props) => {
+          const {tabId,data,params} = props ?? {};
+
+          return  addSheetTile(tabId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSheetTileMutationResult = NonNullable<Awaited<ReturnType<typeof addSheetTile>>>
+    export type AddSheetTileMutationBody = NewTileRequest
+    export type AddSheetTileMutationError = unknown
+    export type AddSheetTileMutationVariables = {tabId: string;data: NewTileRequest;params?: AddSheetTileParams}
+
+    /** @summary Add a tile on top of a tab: a named total. A tab holds 12. */
+export const useAddSheetTile = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetTile>>, TError,AddSheetTileMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSheetTile>>,
+        TError,
+        AddSheetTileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSheetTileMutationOptions(options), queryClient);
+    }
+
+export const getAddSheetRowUrl = (tabId: string,
+    params?: AddSheetRowParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-tabs/${tabId}/rows?${stringifiedParams}` : `/v1/sheet-tabs/${tabId}/rows`
+}
+
+/**
+ * @summary Add a row to a tab. A tab holds 2,000.
+ */
+export const addSheetRow = async (tabId: string,
+    newRowRequest: NewRowRequest,
+    params?: AddSheetRowParams, options?: Parameters<typeof apiFetch>[1]): Promise<RowChangedResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<RowChangedResponse>(getAddSheetRowUrl(tabId,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newRowRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSheetRowMutationKey = () => ['addSheetRow'] as const;
+
+export const getAddSheetRowMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetRow>>, TError,AddSheetRowMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSheetRow>>, TError,AddSheetRowMutationVariables, TContext> => {
+
+const mutationKey = getAddSheetRowMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSheetRow>>, AddSheetRowMutationVariables> = (props) => {
+          const {tabId,data,params} = props ?? {};
+
+          return  addSheetRow(tabId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSheetRowMutationResult = NonNullable<Awaited<ReturnType<typeof addSheetRow>>>
+    export type AddSheetRowMutationBody = NewRowRequest
+    export type AddSheetRowMutationError = unknown
+    export type AddSheetRowMutationVariables = {tabId: string;data: NewRowRequest;params?: AddSheetRowParams}
+
+    /** @summary Add a row to a tab. A tab holds 2,000. */
+export const useAddSheetRow = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetRow>>, TError,AddSheetRowMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSheetRow>>,
+        TError,
+        AddSheetRowMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSheetRowMutationOptions(options), queryClient);
+    }
+
+export const getReadFormulaUrl = (tabId: string,) => {
+
+
+
+
+  return `/v1/sheet-tabs/${tabId}/formula`
+}
+
+/**
+ * @summary Read a formula without keeping it: as chips, as a sentence, and with its answer. Also lists the columns and functions to build one from.
+ */
+export const readFormula = async (tabId: string,
+    formulaRequest: FormulaRequest, options?: Parameters<typeof apiFetch>[1]): Promise<FormulaResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<FormulaResponse>(getReadFormulaUrl(tabId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(formulaRequest)
+  }
+);}
+
+
+
+
+
+export const getReadFormulaMutationKey = () => ['readFormula'] as const;
+
+export const getReadFormulaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readFormula>>, TError,ReadFormulaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof readFormula>>, TError,ReadFormulaMutationVariables, TContext> => {
+
+const mutationKey = getReadFormulaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof readFormula>>, ReadFormulaMutationVariables> = (props) => {
+          const {tabId,data} = props ?? {};
+
+          return  readFormula(tabId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReadFormulaMutationResult = NonNullable<Awaited<ReturnType<typeof readFormula>>>
+    export type ReadFormulaMutationBody = FormulaRequest
+    export type ReadFormulaMutationError = unknown
+    export type ReadFormulaMutationVariables = {tabId: string;data: FormulaRequest}
+
+    /** @summary Read a formula without keeping it: as chips, as a sentence, and with its answer. Also lists the columns and functions to build one from. */
+export const useReadFormula = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readFormula>>, TError,ReadFormulaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof readFormula>>,
+        TError,
+        ReadFormulaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReadFormulaMutationOptions(options), queryClient);
+    }
+
+export const getAddSheetColumnUrl = (tabId: string,
+    params?: AddSheetColumnParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-tabs/${tabId}/columns?${stringifiedParams}` : `/v1/sheet-tabs/${tabId}/columns`
+}
+
+/**
+ * @summary Add a column to the end of a tab. A tab holds 40.
+ */
+export const addSheetColumn = async (tabId: string,
+    newColumnRequest: NewColumnRequest,
+    params?: AddSheetColumnParams, options?: Parameters<typeof apiFetch>[1]): Promise<ColumnResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ColumnResponse>(getAddSheetColumnUrl(tabId,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newColumnRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSheetColumnMutationKey = () => ['addSheetColumn'] as const;
+
+export const getAddSheetColumnMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetColumn>>, TError,AddSheetColumnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSheetColumn>>, TError,AddSheetColumnMutationVariables, TContext> => {
+
+const mutationKey = getAddSheetColumnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSheetColumn>>, AddSheetColumnMutationVariables> = (props) => {
+          const {tabId,data,params} = props ?? {};
+
+          return  addSheetColumn(tabId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSheetColumnMutationResult = NonNullable<Awaited<ReturnType<typeof addSheetColumn>>>
+    export type AddSheetColumnMutationBody = NewColumnRequest
+    export type AddSheetColumnMutationError = unknown
+    export type AddSheetColumnMutationVariables = {tabId: string;data: NewColumnRequest;params?: AddSheetColumnParams}
+
+    /** @summary Add a column to the end of a tab. A tab holds 40. */
+export const useAddSheetColumn = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetColumn>>, TError,AddSheetColumnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSheetColumn>>,
+        TError,
+        AddSheetColumnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSheetColumnMutationOptions(options), queryClient);
+    }
+
+export const getAskFormulaUrl = (tabId: string,) => {
+
+
+
+
+  return `/v1/sheet-tabs/${tabId}/ask`
+}
+
+/**
+ * @summary Ask in words: one of a set of known questions is answered with a formula, by rule. Anything else is told how to write one.
+ */
+export const askFormula = async (tabId: string,
+    askRequest: AskRequest, options?: Parameters<typeof apiFetch>[1]): Promise<FormulaResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<FormulaResponse>(getAskFormulaUrl(tabId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(askRequest)
+  }
+);}
+
+
+
+
+
+export const getAskFormulaMutationKey = () => ['askFormula'] as const;
+
+export const getAskFormulaMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askFormula>>, TError,AskFormulaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof askFormula>>, TError,AskFormulaMutationVariables, TContext> => {
+
+const mutationKey = getAskFormulaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askFormula>>, AskFormulaMutationVariables> = (props) => {
+          const {tabId,data} = props ?? {};
+
+          return  askFormula(tabId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AskFormulaMutationResult = NonNullable<Awaited<ReturnType<typeof askFormula>>>
+    export type AskFormulaMutationBody = AskRequest
+    export type AskFormulaMutationError = unknown
+    export type AskFormulaMutationVariables = {tabId: string;data: AskRequest}
+
+    /** @summary Ask in words: one of a set of known questions is answered with a formula, by rule. Anything else is told how to write one. */
+export const useAskFormula = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askFormula>>, TError,AskFormulaMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof askFormula>>,
+        TError,
+        AskFormulaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAskFormulaMutationOptions(options), queryClient);
+    }
+
+export const getAddSheetRowPaperUrl = (rowId: string,) => {
+
+
+
+
+  return `/v1/sheet-rows/${rowId}/papers`
+}
+
+/**
+ * @summary Keep a receipt or a paper with a row. A row keeps 20.
+ */
+export const addSheetRowPaper = async (rowId: string,
+    newPaperRequest: NewPaperRequest, options?: Parameters<typeof apiFetch>[1]): Promise<RowCardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<RowCardResponse>(getAddSheetRowPaperUrl(rowId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newPaperRequest)
+  }
+);}
+
+
+
+
+
+export const getAddSheetRowPaperMutationKey = () => ['addSheetRowPaper'] as const;
+
+export const getAddSheetRowPaperMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetRowPaper>>, TError,AddSheetRowPaperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSheetRowPaper>>, TError,AddSheetRowPaperMutationVariables, TContext> => {
+
+const mutationKey = getAddSheetRowPaperMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSheetRowPaper>>, AddSheetRowPaperMutationVariables> = (props) => {
+          const {rowId,data} = props ?? {};
+
+          return  addSheetRowPaper(rowId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSheetRowPaperMutationResult = NonNullable<Awaited<ReturnType<typeof addSheetRowPaper>>>
+    export type AddSheetRowPaperMutationBody = NewPaperRequest
+    export type AddSheetRowPaperMutationError = unknown
+    export type AddSheetRowPaperMutationVariables = {rowId: string;data: NewPaperRequest}
+
+    /** @summary Keep a receipt or a paper with a row. A row keeps 20. */
+export const useAddSheetRowPaper = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSheetRowPaper>>, TError,AddSheetRowPaperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addSheetRowPaper>>,
+        TError,
+        AddSheetRowPaperMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddSheetRowPaperMutationOptions(options), queryClient);
     }
 
 export const getCreateReminderUrl = () => {
@@ -13890,6 +16669,178 @@ export const useActOnBoard = <TError = unknown,
       return useMutation(getActOnBoardMutationOptions(options), queryClient);
     }
 
+export const getCreateBillUrl = () => {
+
+
+
+
+  return `/v1/bills`
+}
+
+/**
+ * @summary Add a bill or a subscription
+ */
+export const createBill = async (newBillRequest: NewBillRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BillResponse>(getCreateBillUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newBillRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateBillMutationKey = () => ['createBill'] as const;
+
+export const getCreateBillMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBill>>, TError,CreateBillMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBill>>, TError,CreateBillMutationVariables, TContext> => {
+
+const mutationKey = getCreateBillMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBill>>, CreateBillMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBill(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBillMutationResult = NonNullable<Awaited<ReturnType<typeof createBill>>>
+    export type CreateBillMutationBody = NewBillRequest
+    export type CreateBillMutationError = unknown
+    export type CreateBillMutationVariables = {data: NewBillRequest}
+
+    /** @summary Add a bill or a subscription */
+export const useCreateBill = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBill>>, TError,CreateBillMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createBill>>,
+        TError,
+        CreateBillMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateBillMutationOptions(options), queryClient);
+    }
+
+export const getReadBillUrl = () => {
+
+
+
+
+  return `/v1/bills/read`
+}
+
+/**
+ * @summary Read a bill from the text of a photo or a PDF: who to pay, how much, by when. It suggests; nothing is saved.
+ */
+export const readBill = async (readRequest: ReadRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillReadingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BillReadingResponse>(getReadBillUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(readRequest)
+  }
+);}
+
+
+
+
+
+export const getReadBillMutationKey = () => ['readBill'] as const;
+
+export const getReadBillMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readBill>>, TError,ReadBillMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof readBill>>, TError,ReadBillMutationVariables, TContext> => {
+
+const mutationKey = getReadBillMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof readBill>>, ReadBillMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  readBill(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReadBillMutationResult = NonNullable<Awaited<ReturnType<typeof readBill>>>
+    export type ReadBillMutationBody = ReadRequest
+    export type ReadBillMutationError = unknown
+    export type ReadBillMutationVariables = {data: ReadRequest}
+
+    /** @summary Read a bill from the text of a photo or a PDF: who to pay, how much, by when. It suggests; nothing is saved. */
+export const useReadBill = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readBill>>, TError,ReadBillMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof readBill>>,
+        TError,
+        ReadBillMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReadBillMutationOptions(options), queryClient);
+    }
+
 export const getCreateAlbumUrl = () => {
 
 
@@ -14421,6 +17372,1335 @@ export const useChangeVaultItem = <TError = unknown,
         TContext
       > => {
       return useMutation(getChangeVaultItemMutationOptions(options), queryClient);
+    }
+
+export const getGetSplitUrl = (id: string,) => {
+
+
+
+
+  return `/v1/splits/${id}`
+}
+
+/**
+ * @summary A split: where everyone stands, the fewest payments that settle it, and the latest expenses
+ */
+export const getSplit = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<SplitResponse> => {
+
+  return apiFetch<SplitResponse>(getGetSplitUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSplitQueryKey = (id: string,) => {
+    return [
+    `/v1/splits/${id}`
+    ] as const;
+    }
+
+
+export const getGetSplitQueryOptions = <TData = Awaited<ReturnType<typeof getSplit>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSplitQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSplit>>> = ({ signal }) => getSplit(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSplit>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSplitQueryResult = NonNullable<Awaited<ReturnType<typeof getSplit>>>
+export type GetSplitQueryError = unknown
+
+
+/** @summary A split: where everyone stands, the fewest payments that settle it, and the latest expenses */
+export function useGetSplit<TData = Awaited<ReturnType<typeof getSplit>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplit>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplit>>,
+          TError,
+          Awaited<ReturnType<typeof getSplit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A split: where everyone stands, the fewest payments that settle it, and the latest expenses */
+export function useGetSplit<TData = Awaited<ReturnType<typeof getSplit>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplit>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplit>>,
+          TError,
+          Awaited<ReturnType<typeof getSplit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A split: where everyone stands, the fewest payments that settle it, and the latest expenses */
+export function useGetSplit<TData = Awaited<ReturnType<typeof getSplit>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A split: where everyone stands, the fewest payments that settle it, and the latest expenses */
+export function useGetSplit<TData = Awaited<ReturnType<typeof getSplit>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplit>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSplitQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRenameSplitUrl = (id: string,) => {
+
+
+
+
+  return `/v1/splits/${id}`
+}
+
+/**
+ * @summary Rename a split
+ */
+export const renameSplit = async (id: string,
+    renameRequest: RenameRequest, options?: Parameters<typeof apiFetch>[1]): Promise<SplitResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SplitResponse>(getRenameSplitUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(renameRequest)
+  }
+);}
+
+
+
+
+
+export const getRenameSplitMutationKey = () => ['renameSplit'] as const;
+
+export const getRenameSplitMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSplit>>, TError,RenameSplitMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameSplit>>, TError,RenameSplitMutationVariables, TContext> => {
+
+const mutationKey = getRenameSplitMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameSplit>>, RenameSplitMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameSplit(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameSplitMutationResult = NonNullable<Awaited<ReturnType<typeof renameSplit>>>
+    export type RenameSplitMutationBody = RenameRequest
+    export type RenameSplitMutationError = unknown
+    export type RenameSplitMutationVariables = {id: string;data: RenameRequest}
+
+    /** @summary Rename a split */
+export const useRenameSplit = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSplit>>, TError,RenameSplitMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renameSplit>>,
+        TError,
+        RenameSplitMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenameSplitMutationOptions(options), queryClient);
+    }
+
+export const getRemoveSplitExpenseUrl = (expenseId: string,) => {
+
+
+
+
+  return `/v1/split-expenses/${expenseId}`
+}
+
+/**
+ * @summary Remove an expense. Removing one that is gone is fine.
+ */
+export const removeSplitExpense = async (expenseId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSplitExpenseUrl(expenseId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSplitExpenseMutationKey = () => ['removeSplitExpense'] as const;
+
+export const getRemoveSplitExpenseMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSplitExpense>>, TError,RemoveSplitExpenseMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSplitExpense>>, TError,RemoveSplitExpenseMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSplitExpenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSplitExpense>>, RemoveSplitExpenseMutationVariables> = (props) => {
+          const {expenseId} = props ?? {};
+
+          return  removeSplitExpense(expenseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSplitExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof removeSplitExpense>>>
+
+    export type RemoveSplitExpenseMutationError = unknown
+    export type RemoveSplitExpenseMutationVariables = {expenseId: string}
+
+    /** @summary Remove an expense. Removing one that is gone is fine. */
+export const useRemoveSplitExpense = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSplitExpense>>, TError,RemoveSplitExpenseMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSplitExpense>>,
+        TError,
+        RemoveSplitExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSplitExpenseMutationOptions(options), queryClient);
+    }
+
+export const getChangeSplitExpenseUrl = (expenseId: string,) => {
+
+
+
+
+  return `/v1/split-expenses/${expenseId}`
+}
+
+/**
+ * @summary Change an expense: what it was, how much, who paid, who shares it
+ */
+export const changeSplitExpense = async (expenseId: string,
+    expenseChangeRequest: ExpenseChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ExpenseResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ExpenseResponse>(getChangeSplitExpenseUrl(expenseId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(expenseChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeSplitExpenseMutationKey = () => ['changeSplitExpense'] as const;
+
+export const getChangeSplitExpenseMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSplitExpense>>, TError,ChangeSplitExpenseMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSplitExpense>>, TError,ChangeSplitExpenseMutationVariables, TContext> => {
+
+const mutationKey = getChangeSplitExpenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSplitExpense>>, ChangeSplitExpenseMutationVariables> = (props) => {
+          const {expenseId,data} = props ?? {};
+
+          return  changeSplitExpense(expenseId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSplitExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof changeSplitExpense>>>
+    export type ChangeSplitExpenseMutationBody = ExpenseChangeRequest
+    export type ChangeSplitExpenseMutationError = unknown
+    export type ChangeSplitExpenseMutationVariables = {expenseId: string;data: ExpenseChangeRequest}
+
+    /** @summary Change an expense: what it was, how much, who paid, who shares it */
+export const useChangeSplitExpense = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSplitExpense>>, TError,ChangeSplitExpenseMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSplitExpense>>,
+        TError,
+        ChangeSplitExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSplitExpenseMutationOptions(options), queryClient);
+    }
+
+export const getGetSheetUrl = (id: string,
+    params?: GetSheetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheets/${id}?${stringifiedParams}` : `/v1/sheets/${id}`
+}
+
+/**
+ * @summary A sheet: its tabs, and one tab with its columns, tiles, totals and first rows, all worked out
+ */
+export const getSheet = async (id: string,
+    params?: GetSheetParams, options?: Parameters<typeof apiFetch>[1]): Promise<SheetResponse> => {
+
+  return apiFetch<SheetResponse>(getGetSheetUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSheetQueryKey = (id: string,
+    params?: GetSheetParams,) => {
+    return [
+    `/v1/sheets/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSheetQueryOptions = <TData = Awaited<ReturnType<typeof getSheet>>, TError = unknown>(id: string,
+    params?: GetSheetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheet>>> = ({ signal }) => getSheet(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSheet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetQueryResult = NonNullable<Awaited<ReturnType<typeof getSheet>>>
+export type GetSheetQueryError = unknown
+
+
+/** @summary A sheet: its tabs, and one tab with its columns, tiles, totals and first rows, all worked out */
+export function useGetSheet<TData = Awaited<ReturnType<typeof getSheet>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSheetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheet>>,
+          TError,
+          Awaited<ReturnType<typeof getSheet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A sheet: its tabs, and one tab with its columns, tiles, totals and first rows, all worked out */
+export function useGetSheet<TData = Awaited<ReturnType<typeof getSheet>>, TError = unknown>(
+ id: string,
+    params?: GetSheetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheet>>,
+          TError,
+          Awaited<ReturnType<typeof getSheet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A sheet: its tabs, and one tab with its columns, tiles, totals and first rows, all worked out */
+export function useGetSheet<TData = Awaited<ReturnType<typeof getSheet>>, TError = unknown>(
+ id: string,
+    params?: GetSheetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A sheet: its tabs, and one tab with its columns, tiles, totals and first rows, all worked out */
+export function useGetSheet<TData = Awaited<ReturnType<typeof getSheet>>, TError = unknown>(
+ id: string,
+    params?: GetSheetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheet>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeSheetUrl = (id: string,) => {
+
+
+
+
+  return `/v1/sheets/${id}`
+}
+
+/**
+ * @summary Rename a sheet, or change the currency it counts in
+ */
+export const changeSheet = async (id: string,
+    sheetChangeRequest: SheetChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<SheetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SheetResponse>(getChangeSheetUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sheetChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeSheetMutationKey = () => ['changeSheet'] as const;
+
+export const getChangeSheetMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheet>>, TError,ChangeSheetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSheet>>, TError,ChangeSheetMutationVariables, TContext> => {
+
+const mutationKey = getChangeSheetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSheet>>, ChangeSheetMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeSheet(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSheetMutationResult = NonNullable<Awaited<ReturnType<typeof changeSheet>>>
+    export type ChangeSheetMutationBody = SheetChangeRequest
+    export type ChangeSheetMutationError = unknown
+    export type ChangeSheetMutationVariables = {id: string;data: SheetChangeRequest}
+
+    /** @summary Rename a sheet, or change the currency it counts in */
+export const useChangeSheet = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheet>>, TError,ChangeSheetMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSheet>>,
+        TError,
+        ChangeSheetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSheetMutationOptions(options), queryClient);
+    }
+
+export const getRemoveSheetTileUrl = (tileId: string,) => {
+
+
+
+
+  return `/v1/sheet-tiles/${tileId}`
+}
+
+/**
+ * @summary Remove a tile. Removing one that is gone is fine.
+ */
+export const removeSheetTile = async (tileId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSheetTileUrl(tileId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSheetTileMutationKey = () => ['removeSheetTile'] as const;
+
+export const getRemoveSheetTileMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetTile>>, TError,RemoveSheetTileMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSheetTile>>, TError,RemoveSheetTileMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSheetTileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSheetTile>>, RemoveSheetTileMutationVariables> = (props) => {
+          const {tileId} = props ?? {};
+
+          return  removeSheetTile(tileId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSheetTileMutationResult = NonNullable<Awaited<ReturnType<typeof removeSheetTile>>>
+
+    export type RemoveSheetTileMutationError = unknown
+    export type RemoveSheetTileMutationVariables = {tileId: string}
+
+    /** @summary Remove a tile. Removing one that is gone is fine. */
+export const useRemoveSheetTile = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetTile>>, TError,RemoveSheetTileMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSheetTile>>,
+        TError,
+        RemoveSheetTileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSheetTileMutationOptions(options), queryClient);
+    }
+
+export const getChangeSheetTileUrl = (tileId: string,
+    params?: ChangeSheetTileParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-tiles/${tileId}?${stringifiedParams}` : `/v1/sheet-tiles/${tileId}`
+}
+
+/**
+ * @summary Change a tile: its name, its formula, what it is shown against, its place
+ */
+export const changeSheetTile = async (tileId: string,
+    tileChangeRequest: TileChangeRequest,
+    params?: ChangeSheetTileParams, options?: Parameters<typeof apiFetch>[1]): Promise<TileResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<TileResponse>(getChangeSheetTileUrl(tileId,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tileChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeSheetTileMutationKey = () => ['changeSheetTile'] as const;
+
+export const getChangeSheetTileMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetTile>>, TError,ChangeSheetTileMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSheetTile>>, TError,ChangeSheetTileMutationVariables, TContext> => {
+
+const mutationKey = getChangeSheetTileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSheetTile>>, ChangeSheetTileMutationVariables> = (props) => {
+          const {tileId,data,params} = props ?? {};
+
+          return  changeSheetTile(tileId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSheetTileMutationResult = NonNullable<Awaited<ReturnType<typeof changeSheetTile>>>
+    export type ChangeSheetTileMutationBody = TileChangeRequest
+    export type ChangeSheetTileMutationError = unknown
+    export type ChangeSheetTileMutationVariables = {tileId: string;data: TileChangeRequest;params?: ChangeSheetTileParams}
+
+    /** @summary Change a tile: its name, its formula, what it is shown against, its place */
+export const useChangeSheetTile = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetTile>>, TError,ChangeSheetTileMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSheetTile>>,
+        TError,
+        ChangeSheetTileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSheetTileMutationOptions(options), queryClient);
+    }
+
+export const getRemoveSheetTabUrl = (tabId: string,) => {
+
+
+
+
+  return `/v1/sheet-tabs/${tabId}`
+}
+
+/**
+ * @summary Remove a tab with everything in it. A sheet keeps its last tab. Removing one that is gone is fine.
+ */
+export const removeSheetTab = async (tabId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSheetTabUrl(tabId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSheetTabMutationKey = () => ['removeSheetTab'] as const;
+
+export const getRemoveSheetTabMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetTab>>, TError,RemoveSheetTabMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSheetTab>>, TError,RemoveSheetTabMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSheetTabMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSheetTab>>, RemoveSheetTabMutationVariables> = (props) => {
+          const {tabId} = props ?? {};
+
+          return  removeSheetTab(tabId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSheetTabMutationResult = NonNullable<Awaited<ReturnType<typeof removeSheetTab>>>
+
+    export type RemoveSheetTabMutationError = unknown
+    export type RemoveSheetTabMutationVariables = {tabId: string}
+
+    /** @summary Remove a tab with everything in it. A sheet keeps its last tab. Removing one that is gone is fine. */
+export const useRemoveSheetTab = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetTab>>, TError,RemoveSheetTabMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSheetTab>>,
+        TError,
+        RemoveSheetTabMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSheetTabMutationOptions(options), queryClient);
+    }
+
+export const getChangeSheetTabUrl = (tabId: string,) => {
+
+
+
+
+  return `/v1/sheet-tabs/${tabId}`
+}
+
+/**
+ * @summary Rename a tab or move it
+ */
+export const changeSheetTab = async (tabId: string,
+    tabChangeRequest: TabChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<SheetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SheetResponse>(getChangeSheetTabUrl(tabId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tabChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeSheetTabMutationKey = () => ['changeSheetTab'] as const;
+
+export const getChangeSheetTabMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetTab>>, TError,ChangeSheetTabMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSheetTab>>, TError,ChangeSheetTabMutationVariables, TContext> => {
+
+const mutationKey = getChangeSheetTabMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSheetTab>>, ChangeSheetTabMutationVariables> = (props) => {
+          const {tabId,data} = props ?? {};
+
+          return  changeSheetTab(tabId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSheetTabMutationResult = NonNullable<Awaited<ReturnType<typeof changeSheetTab>>>
+    export type ChangeSheetTabMutationBody = TabChangeRequest
+    export type ChangeSheetTabMutationError = unknown
+    export type ChangeSheetTabMutationVariables = {tabId: string;data: TabChangeRequest}
+
+    /** @summary Rename a tab or move it */
+export const useChangeSheetTab = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetTab>>, TError,ChangeSheetTabMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSheetTab>>,
+        TError,
+        ChangeSheetTabMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSheetTabMutationOptions(options), queryClient);
+    }
+
+export const getGetSheetRowUrl = (rowId: string,
+    params?: GetSheetRowParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-rows/${rowId}?${stringifiedParams}` : `/v1/sheet-rows/${rowId}`
+}
+
+/**
+ * @summary A row opened as a card: every column's value, its note, its papers, and the rows before and after
+ */
+export const getSheetRow = async (rowId: string,
+    params?: GetSheetRowParams, options?: Parameters<typeof apiFetch>[1]): Promise<RowCardResponse> => {
+
+  return apiFetch<RowCardResponse>(getGetSheetRowUrl(rowId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSheetRowQueryKey = (rowId: string,
+    params?: GetSheetRowParams,) => {
+    return [
+    `/v1/sheet-rows/${rowId}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSheetRowQueryOptions = <TData = Awaited<ReturnType<typeof getSheetRow>>, TError = unknown>(rowId: string,
+    params?: GetSheetRowParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRow>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetRowQueryKey(rowId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheetRow>>> = ({ signal }) => getSheetRow(rowId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: rowId !== null && rowId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSheetRow>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetRowQueryResult = NonNullable<Awaited<ReturnType<typeof getSheetRow>>>
+export type GetSheetRowQueryError = unknown
+
+
+/** @summary A row opened as a card: every column's value, its note, its papers, and the rows before and after */
+export function useGetSheetRow<TData = Awaited<ReturnType<typeof getSheetRow>>, TError = unknown>(
+ rowId: string,
+    params: undefined |  GetSheetRowParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRow>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetRow>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetRow>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A row opened as a card: every column's value, its note, its papers, and the rows before and after */
+export function useGetSheetRow<TData = Awaited<ReturnType<typeof getSheetRow>>, TError = unknown>(
+ rowId: string,
+    params?: GetSheetRowParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRow>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetRow>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetRow>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A row opened as a card: every column's value, its note, its papers, and the rows before and after */
+export function useGetSheetRow<TData = Awaited<ReturnType<typeof getSheetRow>>, TError = unknown>(
+ rowId: string,
+    params?: GetSheetRowParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRow>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A row opened as a card: every column's value, its note, its papers, and the rows before and after */
+export function useGetSheetRow<TData = Awaited<ReturnType<typeof getSheetRow>>, TError = unknown>(
+ rowId: string,
+    params?: GetSheetRowParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRow>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetRowQueryOptions(rowId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRemoveSheetRowUrl = (rowId: string,) => {
+
+
+
+
+  return `/v1/sheet-rows/${rowId}`
+}
+
+/**
+ * @summary Remove a row. Removing one that is gone is fine.
+ */
+export const removeSheetRow = async (rowId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSheetRowUrl(rowId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSheetRowMutationKey = () => ['removeSheetRow'] as const;
+
+export const getRemoveSheetRowMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetRow>>, TError,RemoveSheetRowMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSheetRow>>, TError,RemoveSheetRowMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSheetRowMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSheetRow>>, RemoveSheetRowMutationVariables> = (props) => {
+          const {rowId} = props ?? {};
+
+          return  removeSheetRow(rowId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSheetRowMutationResult = NonNullable<Awaited<ReturnType<typeof removeSheetRow>>>
+
+    export type RemoveSheetRowMutationError = unknown
+    export type RemoveSheetRowMutationVariables = {rowId: string}
+
+    /** @summary Remove a row. Removing one that is gone is fine. */
+export const useRemoveSheetRow = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetRow>>, TError,RemoveSheetRowMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSheetRow>>,
+        TError,
+        RemoveSheetRowMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSheetRowMutationOptions(options), queryClient);
+    }
+
+export const getChangeSheetRowUrl = (rowId: string,
+    params?: ChangeSheetRowParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-rows/${rowId}?${stringifiedParams}` : `/v1/sheet-rows/${rowId}`
+}
+
+/**
+ * @summary Change some cells of a row, its note or its place. Cells that aren't sent stay as they are.
+ */
+export const changeSheetRow = async (rowId: string,
+    rowChangeRequest: RowChangeRequest,
+    params?: ChangeSheetRowParams, options?: Parameters<typeof apiFetch>[1]): Promise<RowChangedResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<RowChangedResponse>(getChangeSheetRowUrl(rowId,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rowChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeSheetRowMutationKey = () => ['changeSheetRow'] as const;
+
+export const getChangeSheetRowMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetRow>>, TError,ChangeSheetRowMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSheetRow>>, TError,ChangeSheetRowMutationVariables, TContext> => {
+
+const mutationKey = getChangeSheetRowMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSheetRow>>, ChangeSheetRowMutationVariables> = (props) => {
+          const {rowId,data,params} = props ?? {};
+
+          return  changeSheetRow(rowId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSheetRowMutationResult = NonNullable<Awaited<ReturnType<typeof changeSheetRow>>>
+    export type ChangeSheetRowMutationBody = RowChangeRequest
+    export type ChangeSheetRowMutationError = unknown
+    export type ChangeSheetRowMutationVariables = {rowId: string;data: RowChangeRequest;params?: ChangeSheetRowParams}
+
+    /** @summary Change some cells of a row, its note or its place. Cells that aren't sent stay as they are. */
+export const useChangeSheetRow = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetRow>>, TError,ChangeSheetRowMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSheetRow>>,
+        TError,
+        ChangeSheetRowMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSheetRowMutationOptions(options), queryClient);
+    }
+
+export const getRemoveSheetColumnUrl = (columnId: string,) => {
+
+
+
+
+  return `/v1/sheet-columns/${columnId}`
+}
+
+/**
+ * @summary Remove a column and what it held. One that a formula uses stays until the formula changes. Removing one that is gone is fine.
+ */
+export const removeSheetColumn = async (columnId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSheetColumnUrl(columnId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSheetColumnMutationKey = () => ['removeSheetColumn'] as const;
+
+export const getRemoveSheetColumnMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetColumn>>, TError,RemoveSheetColumnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSheetColumn>>, TError,RemoveSheetColumnMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSheetColumnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSheetColumn>>, RemoveSheetColumnMutationVariables> = (props) => {
+          const {columnId} = props ?? {};
+
+          return  removeSheetColumn(columnId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSheetColumnMutationResult = NonNullable<Awaited<ReturnType<typeof removeSheetColumn>>>
+
+    export type RemoveSheetColumnMutationError = unknown
+    export type RemoveSheetColumnMutationVariables = {columnId: string}
+
+    /** @summary Remove a column and what it held. One that a formula uses stays until the formula changes. Removing one that is gone is fine. */
+export const useRemoveSheetColumn = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetColumn>>, TError,RemoveSheetColumnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSheetColumn>>,
+        TError,
+        RemoveSheetColumnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSheetColumnMutationOptions(options), queryClient);
+    }
+
+export const getChangeSheetColumnUrl = (columnId: string,
+    params?: ChangeSheetColumnParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheet-columns/${columnId}?${stringifiedParams}` : `/v1/sheet-columns/${columnId}`
+}
+
+/**
+ * @summary Change one column: its name, its formula, its choices, its total, its place
+ */
+export const changeSheetColumn = async (columnId: string,
+    columnChangeRequest: ColumnChangeRequest,
+    params?: ChangeSheetColumnParams, options?: Parameters<typeof apiFetch>[1]): Promise<ColumnResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ColumnResponse>(getChangeSheetColumnUrl(columnId,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(columnChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeSheetColumnMutationKey = () => ['changeSheetColumn'] as const;
+
+export const getChangeSheetColumnMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetColumn>>, TError,ChangeSheetColumnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeSheetColumn>>, TError,ChangeSheetColumnMutationVariables, TContext> => {
+
+const mutationKey = getChangeSheetColumnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeSheetColumn>>, ChangeSheetColumnMutationVariables> = (props) => {
+          const {columnId,data,params} = props ?? {};
+
+          return  changeSheetColumn(columnId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeSheetColumnMutationResult = NonNullable<Awaited<ReturnType<typeof changeSheetColumn>>>
+    export type ChangeSheetColumnMutationBody = ColumnChangeRequest
+    export type ChangeSheetColumnMutationError = unknown
+    export type ChangeSheetColumnMutationVariables = {columnId: string;data: ColumnChangeRequest;params?: ChangeSheetColumnParams}
+
+    /** @summary Change one column: its name, its formula, its choices, its total, its place */
+export const useChangeSheetColumn = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeSheetColumn>>, TError,ChangeSheetColumnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeSheetColumn>>,
+        TError,
+        ChangeSheetColumnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeSheetColumnMutationOptions(options), queryClient);
     }
 
 export const getGetReminderUrl = (id: string,
@@ -17316,6 +21596,194 @@ export const useChangeBoardEntry = <TError = unknown,
       return useMutation(getChangeBoardEntryMutationOptions(options), queryClient);
     }
 
+export const getGetBillUrl = (id: string,) => {
+
+
+
+
+  return `/v1/bills/${id}`
+}
+
+/**
+ * @summary A bill: what is due, who pays, the last six, its login and invoice
+ */
+export const getBill = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<BillResponse> => {
+
+  return apiFetch<BillResponse>(getGetBillUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBillQueryKey = (id: string,) => {
+    return [
+    `/v1/bills/${id}`
+    ] as const;
+    }
+
+
+export const getGetBillQueryOptions = <TData = Awaited<ReturnType<typeof getBill>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBill>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBillQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBill>>> = ({ signal }) => getBill(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBill>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBillQueryResult = NonNullable<Awaited<ReturnType<typeof getBill>>>
+export type GetBillQueryError = unknown
+
+
+/** @summary A bill: what is due, who pays, the last six, its login and invoice */
+export function useGetBill<TData = Awaited<ReturnType<typeof getBill>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBill>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBill>>,
+          TError,
+          Awaited<ReturnType<typeof getBill>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A bill: what is due, who pays, the last six, its login and invoice */
+export function useGetBill<TData = Awaited<ReturnType<typeof getBill>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBill>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBill>>,
+          TError,
+          Awaited<ReturnType<typeof getBill>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A bill: what is due, who pays, the last six, its login and invoice */
+export function useGetBill<TData = Awaited<ReturnType<typeof getBill>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBill>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A bill: what is due, who pays, the last six, its login and invoice */
+export function useGetBill<TData = Awaited<ReturnType<typeof getBill>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBill>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBillQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeBillUrl = (id: string,) => {
+
+
+
+
+  return `/v1/bills/${id}`
+}
+
+/**
+ * @summary Change a bill: this time's amount and day, how it comes round, who pays
+ */
+export const changeBill = async (id: string,
+    billChangeRequest: BillChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BillResponse>(getChangeBillUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(billChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeBillMutationKey = () => ['changeBill'] as const;
+
+export const getChangeBillMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBill>>, TError,ChangeBillMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeBill>>, TError,ChangeBillMutationVariables, TContext> => {
+
+const mutationKey = getChangeBillMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeBill>>, ChangeBillMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeBill(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeBillMutationResult = NonNullable<Awaited<ReturnType<typeof changeBill>>>
+    export type ChangeBillMutationBody = BillChangeRequest
+    export type ChangeBillMutationError = unknown
+    export type ChangeBillMutationVariables = {id: string;data: BillChangeRequest}
+
+    /** @summary Change a bill: this time's amount and day, how it comes round, who pays */
+export const useChangeBill = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBill>>, TError,ChangeBillMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeBill>>,
+        TError,
+        ChangeBillMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeBillMutationOptions(options), queryClient);
+    }
+
 export const getGetAlbumUrl = (id: string,) => {
 
 
@@ -18545,6 +23013,518 @@ export function useGetLinks<TData = Awaited<ReturnType<typeof getLinks>>, TError
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetLinksQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSheetRowsUrl = (id: string,
+    params?: GetSheetRowsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/sheets/${id}/rows?${stringifiedParams}` : `/v1/sheets/${id}/rows`
+}
+
+/**
+ * @summary The rows of a tab, in their order, a page at a time
+ */
+export const getSheetRows = async (id: string,
+    params?: GetSheetRowsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageRowResponse> => {
+
+  return apiFetch<PageRowResponse>(getGetSheetRowsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSheetRowsInfiniteQueryKey = (id: string,
+    params?: GetSheetRowsParams,) => {
+    return [
+    'infinite', `/v1/sheets/${id}/rows`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetSheetRowsQueryKey = (id: string,
+    params?: GetSheetRowsParams,) => {
+    return [
+    `/v1/sheets/${id}/rows`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSheetRowsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getSheetRows>>, GetSheetRowsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData, QueryKey, GetSheetRowsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetRowsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheetRows>>, QueryKey, GetSheetRowsParams['cursor']> = ({ signal, pageParam }) => getSheetRows(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData, QueryKey, GetSheetRowsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetRowsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getSheetRows>>>
+export type GetSheetRowsInfiniteQueryError = unknown
+
+
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRowsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheetRows>>, GetSheetRowsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSheetRowsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData, QueryKey, GetSheetRowsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetRows>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetRows>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRowsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheetRows>>, GetSheetRowsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData, QueryKey, GetSheetRowsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetRows>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetRows>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRowsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheetRows>>, GetSheetRowsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData, QueryKey, GetSheetRowsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRowsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheetRows>>, GetSheetRowsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData, QueryKey, GetSheetRowsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetRowsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetSheetRowsQueryOptions = <TData = Awaited<ReturnType<typeof getSheetRows>>, TError = unknown>(id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetRowsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheetRows>>> = ({ signal }) => getSheetRows(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetRowsQueryResult = NonNullable<Awaited<ReturnType<typeof getSheetRows>>>
+export type GetSheetRowsQueryError = unknown
+
+
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRows<TData = Awaited<ReturnType<typeof getSheetRows>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSheetRowsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetRows>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetRows>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRows<TData = Awaited<ReturnType<typeof getSheetRows>>, TError = unknown>(
+ id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetRows>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetRows>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRows<TData = Awaited<ReturnType<typeof getSheetRows>>, TError = unknown>(
+ id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The rows of a tab, in their order, a page at a time */
+export function useGetSheetRows<TData = Awaited<ReturnType<typeof getSheetRows>>, TError = unknown>(
+ id: string,
+    params?: GetSheetRowsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetRows>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetRowsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSheetTemplatesUrl = () => {
+
+
+
+
+  return `/v1/sheet-templates`
+}
+
+/**
+ * @summary The templates a sheet can start from. Seven of them.
+ */
+export const getSheetTemplates = async ( options?: Parameters<typeof apiFetch>[1]): Promise<TemplateResponse[]> => {
+
+  return apiFetch<TemplateResponse[]>(getGetSheetTemplatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSheetTemplatesQueryKey = () => {
+    return [
+    `/v1/sheet-templates`
+    ] as const;
+    }
+
+
+export const getGetSheetTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof getSheetTemplates>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetTemplatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheetTemplates>>> = ({ signal }) => getSheetTemplates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSheetTemplates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof getSheetTemplates>>>
+export type GetSheetTemplatesQueryError = unknown
+
+
+/** @summary The templates a sheet can start from. Seven of them. */
+export function useGetSheetTemplates<TData = Awaited<ReturnType<typeof getSheetTemplates>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetTemplates>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetTemplates>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetTemplates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The templates a sheet can start from. Seven of them. */
+export function useGetSheetTemplates<TData = Awaited<ReturnType<typeof getSheetTemplates>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetTemplates>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheetTemplates>>,
+          TError,
+          Awaited<ReturnType<typeof getSheetTemplates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The templates a sheet can start from. Seven of them. */
+export function useGetSheetTemplates<TData = Awaited<ReturnType<typeof getSheetTemplates>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The templates a sheet can start from. Seven of them. */
+export function useGetSheetTemplates<TData = Awaited<ReturnType<typeof getSheetTemplates>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheetTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSavingsPlanUrl = (params: GetSavingsPlanParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/money/savings-plan?${stringifiedParams}` : `/v1/money/savings-plan`
+}
+
+/**
+ * @summary How long until a savings goal, for sliders: the months, what was put in, what interest added. Nothing is saved.
+ */
+export const getSavingsPlan = async (params: GetSavingsPlanParams, options?: Parameters<typeof apiFetch>[1]): Promise<SavingsPlanResponse> => {
+
+  return apiFetch<SavingsPlanResponse>(getGetSavingsPlanUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavingsPlanQueryKey = (params?: GetSavingsPlanParams,) => {
+    return [
+    `/v1/money/savings-plan`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSavingsPlanQueryOptions = <TData = Awaited<ReturnType<typeof getSavingsPlan>>, TError = unknown>(params: GetSavingsPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavingsPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavingsPlanQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavingsPlan>>> = ({ signal }) => getSavingsPlan(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavingsPlan>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSavingsPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getSavingsPlan>>>
+export type GetSavingsPlanQueryError = unknown
+
+
+/** @summary How long until a savings goal, for sliders: the months, what was put in, what interest added. Nothing is saved. */
+export function useGetSavingsPlan<TData = Awaited<ReturnType<typeof getSavingsPlan>>, TError = unknown>(
+ params: GetSavingsPlanParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavingsPlan>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavingsPlan>>,
+          TError,
+          Awaited<ReturnType<typeof getSavingsPlan>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary How long until a savings goal, for sliders: the months, what was put in, what interest added. Nothing is saved. */
+export function useGetSavingsPlan<TData = Awaited<ReturnType<typeof getSavingsPlan>>, TError = unknown>(
+ params: GetSavingsPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavingsPlan>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSavingsPlan>>,
+          TError,
+          Awaited<ReturnType<typeof getSavingsPlan>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary How long until a savings goal, for sliders: the months, what was put in, what interest added. Nothing is saved. */
+export function useGetSavingsPlan<TData = Awaited<ReturnType<typeof getSavingsPlan>>, TError = unknown>(
+ params: GetSavingsPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavingsPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary How long until a savings goal, for sliders: the months, what was put in, what interest added. Nothing is saved. */
+export function useGetSavingsPlan<TData = Awaited<ReturnType<typeof getSavingsPlan>>, TError = unknown>(
+ params: GetSavingsPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSavingsPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSavingsPlanQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetLoanPlanUrl = (params: GetLoanPlanParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/money/loan-plan?${stringifiedParams}` : `/v1/money/loan-plan`
+}
+
+/**
+ * @summary The sums of a loan, for sliders: the monthly payment, the interest, the schedule by year, and what paying extra changes. Nothing is saved.
+ */
+export const getLoanPlan = async (params: GetLoanPlanParams, options?: Parameters<typeof apiFetch>[1]): Promise<LoanPlanResponse> => {
+
+  return apiFetch<LoanPlanResponse>(getGetLoanPlanUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLoanPlanQueryKey = (params?: GetLoanPlanParams,) => {
+    return [
+    `/v1/money/loan-plan`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetLoanPlanQueryOptions = <TData = Awaited<ReturnType<typeof getLoanPlan>>, TError = unknown>(params: GetLoanPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLoanPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLoanPlanQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLoanPlan>>> = ({ signal }) => getLoanPlan(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLoanPlan>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLoanPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getLoanPlan>>>
+export type GetLoanPlanQueryError = unknown
+
+
+/** @summary The sums of a loan, for sliders: the monthly payment, the interest, the schedule by year, and what paying extra changes. Nothing is saved. */
+export function useGetLoanPlan<TData = Awaited<ReturnType<typeof getLoanPlan>>, TError = unknown>(
+ params: GetLoanPlanParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLoanPlan>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLoanPlan>>,
+          TError,
+          Awaited<ReturnType<typeof getLoanPlan>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sums of a loan, for sliders: the monthly payment, the interest, the schedule by year, and what paying extra changes. Nothing is saved. */
+export function useGetLoanPlan<TData = Awaited<ReturnType<typeof getLoanPlan>>, TError = unknown>(
+ params: GetLoanPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLoanPlan>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLoanPlan>>,
+          TError,
+          Awaited<ReturnType<typeof getLoanPlan>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sums of a loan, for sliders: the monthly payment, the interest, the schedule by year, and what paying extra changes. Nothing is saved. */
+export function useGetLoanPlan<TData = Awaited<ReturnType<typeof getLoanPlan>>, TError = unknown>(
+ params: GetLoanPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLoanPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sums of a loan, for sliders: the monthly payment, the interest, the schedule by year, and what paying extra changes. Nothing is saved. */
+export function useGetLoanPlan<TData = Awaited<ReturnType<typeof getLoanPlan>>, TError = unknown>(
+ params: GetLoanPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLoanPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLoanPlanQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -20131,6 +25111,396 @@ export function useGetStorage<TData = Awaited<ReturnType<typeof getStorage>>, TE
 
 
 
+export const getGetSplitsUrl = (id: string,
+    params?: GetSplitsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/splits?${stringifiedParams}` : `/v1/circles/${id}/splits`
+}
+
+/**
+ * @summary The splits in a circle you can see, last changed first
+ */
+export const getSplits = async (id: string,
+    params?: GetSplitsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageSplitBriefResponse> => {
+
+  return apiFetch<PageSplitBriefResponse>(getGetSplitsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSplitsInfiniteQueryKey = (id: string,
+    params?: GetSplitsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/splits`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetSplitsQueryKey = (id: string,
+    params?: GetSplitsParams,) => {
+    return [
+    `/v1/circles/${id}/splits`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSplitsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getSplits>>, GetSplitsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData, QueryKey, GetSplitsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSplitsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSplits>>, QueryKey, GetSplitsParams['cursor']> = ({ signal, pageParam }) => getSplits(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData, QueryKey, GetSplitsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSplitsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getSplits>>>
+export type GetSplitsInfiniteQueryError = unknown
+
+
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplitsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplits>>, GetSplitsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSplitsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData, QueryKey, GetSplitsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplits>>,
+          TError,
+          Awaited<ReturnType<typeof getSplits>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplitsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplits>>, GetSplitsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData, QueryKey, GetSplitsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplits>>,
+          TError,
+          Awaited<ReturnType<typeof getSplits>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplitsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplits>>, GetSplitsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData, QueryKey, GetSplitsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplitsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSplits>>, GetSplitsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData, QueryKey, GetSplitsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSplitsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetSplitsQueryOptions = <TData = Awaited<ReturnType<typeof getSplits>>, TError = unknown>(id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSplitsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSplits>>> = ({ signal }) => getSplits(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSplitsQueryResult = NonNullable<Awaited<ReturnType<typeof getSplits>>>
+export type GetSplitsQueryError = unknown
+
+
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplits<TData = Awaited<ReturnType<typeof getSplits>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSplitsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplits>>,
+          TError,
+          Awaited<ReturnType<typeof getSplits>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplits<TData = Awaited<ReturnType<typeof getSplits>>, TError = unknown>(
+ id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSplits>>,
+          TError,
+          Awaited<ReturnType<typeof getSplits>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplits<TData = Awaited<ReturnType<typeof getSplits>>, TError = unknown>(
+ id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The splits in a circle you can see, last changed first */
+export function useGetSplits<TData = Awaited<ReturnType<typeof getSplits>>, TError = unknown>(
+ id: string,
+    params?: GetSplitsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSplits>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSplitsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSheetsUrl = (id: string,
+    params?: GetSheetsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/sheets?${stringifiedParams}` : `/v1/circles/${id}/sheets`
+}
+
+/**
+ * @summary The sheets in a circle you can see, last changed first
+ */
+export const getSheets = async (id: string,
+    params?: GetSheetsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageSheetBriefResponse> => {
+
+  return apiFetch<PageSheetBriefResponse>(getGetSheetsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSheetsInfiniteQueryKey = (id: string,
+    params?: GetSheetsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/sheets`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetSheetsQueryKey = (id: string,
+    params?: GetSheetsParams,) => {
+    return [
+    `/v1/circles/${id}/sheets`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSheetsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getSheets>>, GetSheetsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData, QueryKey, GetSheetsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheets>>, QueryKey, GetSheetsParams['cursor']> = ({ signal, pageParam }) => getSheets(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData, QueryKey, GetSheetsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getSheets>>>
+export type GetSheetsInfiniteQueryError = unknown
+
+
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheetsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheets>>, GetSheetsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSheetsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData, QueryKey, GetSheetsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheets>>,
+          TError,
+          Awaited<ReturnType<typeof getSheets>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheetsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheets>>, GetSheetsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData, QueryKey, GetSheetsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheets>>,
+          TError,
+          Awaited<ReturnType<typeof getSheets>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheetsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheets>>, GetSheetsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData, QueryKey, GetSheetsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheetsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getSheets>>, GetSheetsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData, QueryKey, GetSheetsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetSheetsQueryOptions = <TData = Awaited<ReturnType<typeof getSheets>>, TError = unknown>(id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheets>>> = ({ signal }) => getSheets(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSheetsQueryResult = NonNullable<Awaited<ReturnType<typeof getSheets>>>
+export type GetSheetsQueryError = unknown
+
+
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheets<TData = Awaited<ReturnType<typeof getSheets>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetSheetsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheets>>,
+          TError,
+          Awaited<ReturnType<typeof getSheets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheets<TData = Awaited<ReturnType<typeof getSheets>>, TError = unknown>(
+ id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSheets>>,
+          TError,
+          Awaited<ReturnType<typeof getSheets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheets<TData = Awaited<ReturnType<typeof getSheets>>, TError = unknown>(
+ id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The sheets in a circle you can see, last changed first */
+export function useGetSheets<TData = Awaited<ReturnType<typeof getSheets>>, TError = unknown>(
+ id: string,
+    params?: GetSheetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSheets>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSheetsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getSearchCircleUrl = (id: string,
     params?: SearchCircleParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -21269,6 +26639,122 @@ export function useGetMonth<TData = Awaited<ReturnType<typeof getMonth>>, TError
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetMonthQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMoneyUrl = (id: string,
+    params?: GetMoneyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/money?${stringifiedParams}` : `/v1/circles/${id}/money`
+}
+
+/**
+ * @summary Money's first page: the month's bills, what is due soon, subscriptions, who owes whom, and the sheets
+ */
+export const getMoney = async (id: string,
+    params?: GetMoneyParams, options?: Parameters<typeof apiFetch>[1]): Promise<MoneyResponse> => {
+
+  return apiFetch<MoneyResponse>(getGetMoneyUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMoneyQueryKey = (id: string,
+    params?: GetMoneyParams,) => {
+    return [
+    `/v1/circles/${id}/money`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMoneyQueryOptions = <TData = Awaited<ReturnType<typeof getMoney>>, TError = unknown>(id: string,
+    params?: GetMoneyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoney>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMoneyQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMoney>>> = ({ signal }) => getMoney(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMoney>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMoneyQueryResult = NonNullable<Awaited<ReturnType<typeof getMoney>>>
+export type GetMoneyQueryError = unknown
+
+
+/** @summary Money's first page: the month's bills, what is due soon, subscriptions, who owes whom, and the sheets */
+export function useGetMoney<TData = Awaited<ReturnType<typeof getMoney>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetMoneyParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoney>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMoney>>,
+          TError,
+          Awaited<ReturnType<typeof getMoney>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Money's first page: the month's bills, what is due soon, subscriptions, who owes whom, and the sheets */
+export function useGetMoney<TData = Awaited<ReturnType<typeof getMoney>>, TError = unknown>(
+ id: string,
+    params?: GetMoneyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoney>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMoney>>,
+          TError,
+          Awaited<ReturnType<typeof getMoney>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Money's first page: the month's bills, what is due soon, subscriptions, who owes whom, and the sheets */
+export function useGetMoney<TData = Awaited<ReturnType<typeof getMoney>>, TError = unknown>(
+ id: string,
+    params?: GetMoneyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoney>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Money's first page: the month's bills, what is due soon, subscriptions, who owes whom, and the sheets */
+export function useGetMoney<TData = Awaited<ReturnType<typeof getMoney>>, TError = unknown>(
+ id: string,
+    params?: GetMoneyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoney>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMoneyQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -22791,6 +28277,201 @@ export function useGetBoards<TData = Awaited<ReturnType<typeof getBoards>>, TErr
 
 
 
+export const getGetBillsUrl = (id: string,
+    params?: GetBillsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/bills?${stringifiedParams}` : `/v1/circles/${id}/bills`
+}
+
+/**
+ * @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions
+ */
+export const getBills = async (id: string,
+    params?: GetBillsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageBillRowResponse> => {
+
+  return apiFetch<PageBillRowResponse>(getGetBillsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBillsInfiniteQueryKey = (id: string,
+    params?: GetBillsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/bills`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetBillsQueryKey = (id: string,
+    params?: GetBillsParams,) => {
+    return [
+    `/v1/circles/${id}/bills`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBillsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getBills>>, GetBillsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData, QueryKey, GetBillsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBillsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBills>>, QueryKey, GetBillsParams['cursor']> = ({ signal, pageParam }) => getBills(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData, QueryKey, GetBillsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBillsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getBills>>>
+export type GetBillsInfiniteQueryError = unknown
+
+
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBillsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBills>>, GetBillsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBillsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData, QueryKey, GetBillsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBills>>,
+          TError,
+          Awaited<ReturnType<typeof getBills>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBillsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBills>>, GetBillsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData, QueryKey, GetBillsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBills>>,
+          TError,
+          Awaited<ReturnType<typeof getBills>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBillsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBills>>, GetBillsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData, QueryKey, GetBillsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBillsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBills>>, GetBillsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData, QueryKey, GetBillsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBillsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetBillsQueryOptions = <TData = Awaited<ReturnType<typeof getBills>>, TError = unknown>(id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBillsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBills>>> = ({ signal }) => getBills(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBillsQueryResult = NonNullable<Awaited<ReturnType<typeof getBills>>>
+export type GetBillsQueryError = unknown
+
+
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBills<TData = Awaited<ReturnType<typeof getBills>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBillsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBills>>,
+          TError,
+          Awaited<ReturnType<typeof getBills>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBills<TData = Awaited<ReturnType<typeof getBills>>, TError = unknown>(
+ id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBills>>,
+          TError,
+          Awaited<ReturnType<typeof getBills>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBills<TData = Awaited<ReturnType<typeof getBills>>, TError = unknown>(
+ id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The bills in a circle you can see: still to pay (soonest first), paid (latest first) or the subscriptions */
+export function useGetBills<TData = Awaited<ReturnType<typeof getBills>>, TError = unknown>(
+ id: string,
+    params?: GetBillsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBills>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBillsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetAlbumsUrl = (id: string,
     params?: GetAlbumsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -23056,6 +28737,152 @@ export const useRemoveVaultHelper = <TError = unknown,
         TContext
       > => {
       return useMutation(getRemoveVaultHelperMutationOptions(options), queryClient);
+    }
+
+export const getRemoveSplitPaymentUrl = (paymentId: string,) => {
+
+
+
+
+  return `/v1/split-payments/${paymentId}`
+}
+
+/**
+ * @summary Take back a payment that was marked as made. One that is gone is fine.
+ */
+export const removeSplitPayment = async (paymentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSplitPaymentUrl(paymentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSplitPaymentMutationKey = () => ['removeSplitPayment'] as const;
+
+export const getRemoveSplitPaymentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSplitPayment>>, TError,RemoveSplitPaymentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSplitPayment>>, TError,RemoveSplitPaymentMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSplitPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSplitPayment>>, RemoveSplitPaymentMutationVariables> = (props) => {
+          const {paymentId} = props ?? {};
+
+          return  removeSplitPayment(paymentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSplitPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof removeSplitPayment>>>
+
+    export type RemoveSplitPaymentMutationError = unknown
+    export type RemoveSplitPaymentMutationVariables = {paymentId: string}
+
+    /** @summary Take back a payment that was marked as made. One that is gone is fine. */
+export const useRemoveSplitPayment = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSplitPayment>>, TError,RemoveSplitPaymentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSplitPayment>>,
+        TError,
+        RemoveSplitPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSplitPaymentMutationOptions(options), queryClient);
+    }
+
+export const getRemoveSheetRowPaperUrl = (rowId: string,
+    mediaId: string,) => {
+
+
+
+
+  return `/v1/sheet-rows/${rowId}/papers/${mediaId}`
+}
+
+/**
+ * @summary Take a paper off a row. Its file is removed with it.
+ */
+export const removeSheetRowPaper = async (rowId: string,
+    mediaId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveSheetRowPaperUrl(rowId,mediaId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveSheetRowPaperMutationKey = () => ['removeSheetRowPaper'] as const;
+
+export const getRemoveSheetRowPaperMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetRowPaper>>, TError,RemoveSheetRowPaperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSheetRowPaper>>, TError,RemoveSheetRowPaperMutationVariables, TContext> => {
+
+const mutationKey = getRemoveSheetRowPaperMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSheetRowPaper>>, RemoveSheetRowPaperMutationVariables> = (props) => {
+          const {rowId,mediaId} = props ?? {};
+
+          return  removeSheetRowPaper(rowId,mediaId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSheetRowPaperMutationResult = NonNullable<Awaited<ReturnType<typeof removeSheetRowPaper>>>
+
+    export type RemoveSheetRowPaperMutationError = unknown
+    export type RemoveSheetRowPaperMutationVariables = {rowId: string;mediaId: string}
+
+    /** @summary Take a paper off a row. Its file is removed with it. */
+export const useRemoveSheetRowPaper = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSheetRowPaper>>, TError,RemoveSheetRowPaperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeSheetRowPaper>>,
+        TError,
+        RemoveSheetRowPaperMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveSheetRowPaperMutationOptions(options), queryClient);
     }
 
 export const getRemoveLibraryCommentUrl = (commentId: string,) => {
