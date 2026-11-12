@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { BookOpen, CalendarDays, ChevronRight, Ellipsis, FolderOpen, Trash2, Wallet } from 'lucide-react-native';
+import { Book, CalendarDays, ChevronRight, Ellipsis, FolderOpen, Trash2, Wallet } from 'lucide-react-native';
 import { type ReactNode, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -151,7 +151,7 @@ function Loaded({ trip, folder, refreshing, onRefresh }: { trip: TripResponse; f
         {trip.book?.pageId ? (
           <View style={{ marginTop: 16 }}>
             <RowGroup>
-              <Row first icon={(c) => <BookOpen size={18} color={c} />} label={says.book.title} note={words.together.kept.by(trip.book.byline)} onPress={() => router.push(thingHref({ kind: 'page', id: trip.book?.pageId }))} />
+              <Row first icon={(c) => <Book size={18} color={c} />} label={says.book.title} note={words.together.kept.by(trip.book.byline)} onPress={() => router.push(thingHref({ kind: 'page', id: trip.book?.pageId }))} />
               {trip.money?.paidCents != null ? (
                 <Row
                   icon={(c) => <Wallet size={18} color={c} />}
@@ -165,7 +165,7 @@ function Loaded({ trip, folder, refreshing, onRefresh }: { trip: TripResponse; f
         ) : journey && trip.stage === 'keep' ? (
           // Over, and not kept yet: the journey comes home as the trip's book.
           <>
-            <NoteBox icon={(c) => <BookOpen size={20} color={c} />} title={says.bringHome.title} style={{ marginTop: 16, marginHorizontal: layout.barGutter }}>
+            <NoteBox icon={(c) => <Book size={20} color={c} />} title={says.bringHome.title} style={{ marginTop: 16, marginHorizontal: layout.barGutter }}>
               {says.bringHome.body}
             </NoteBox>
             <View style={{ marginTop: 10, marginHorizontal: layout.barGutter }}>
@@ -173,7 +173,7 @@ function Loaded({ trip, folder, refreshing, onRefresh }: { trip: TripResponse; f
             </View>
           </>
         ) : (
-          <NoteBox icon={(c) => <BookOpen size={20} color={c} />} title={says.book.later.title} style={{ marginTop: 16, marginHorizontal: layout.barGutter }}>
+          <NoteBox icon={(c) => <Book size={20} color={c} />} title={says.book.later.title} style={{ marginTop: 16, marginHorizontal: layout.barGutter }}>
             {says.book.later.body}
           </NoteBox>
         )}

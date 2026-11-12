@@ -101,7 +101,7 @@ Milestone 1, the spine: circles, people and sharing.
 | 4.5 Guest pass | `/guest-pass/new`, `/guest-pass/<id>`, `/guest-passes` | The guest's side is a web page the API serves. |
 | 4.6 A child's view | `/person/<id>/access` | |
 | A page, a list | `/page/<id>`, `/checklist/<id>`, `/new/note`, `/new/checklist` | Simple and solid; they get richer with Notes. |
-| 12.1 You | `/you` | The numbers come from the API. The swap button and the line about Journey say when they will work. |
+| 12.1 You | `/you` | The numbers come from the API. The swap button and the line about Journey open "Your apps" (10.1). |
 | 12.3 Privacy and security | `/settings/security` | The three choices under "This phone" are remembered on the phone. |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
@@ -174,6 +174,23 @@ Milestone 6, the Vault. Its contract is `docs/07-vault-protocol.md`; its cryptog
 - **Nothing a phone has opened goes into the data layer.** A screen that handles keys or what they open runs its work with `useSecretAction()` (`features/vault`), never with `useMutation`, and keeps what it shows in its own state. `NothingSecretIsKept.test.tsx` searches the data layer for it.
 - **A screen of the Vault** is wrapped in `VaultScreen` (`features/vault/Gate`): locked, it shows the locked page; unlocked, any touch on it starts the two minutes again.
 - **Another screen that needs a sealed card for a guest** calls `sealForGuest(text, key?)` (`features/vault/crypto/guest`); the guest pass screens use `features/vault/PassCards`.
+
+Milestone 10, with Journey: the link between the two apps (`src/features/journeyLink`). Journey itself is a stand-in in local mode; opening it needs both apps on a phone, and every "Open in Journey" says so where it can't (`useOpenJourney`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 10.1 One account, two apps | (a sheet: hold the You tab, or the swap button and the account row on You) | `AppSwitchSheet`, from `getJourneySwitch`. |
+| 10.2 In Journey: keep it | `homeport://keep?journey=<id>`, `/keep?journey=<id>` | Journey's own screen. Here only the link it opens: it lands on 10.3 (`lib/links.ts`). |
+| 10.3 What to keep | `/journey/keep/<journey id>` (`?trip=<folder id>` for a trip's book), `/journey/keep` | The four switches, the folder, who sees it; then the job with its progress, and what came home. The list of your journeys is not drawn. |
+| 10.4 A journey, kept as a book | `/page/<id>`, `/journey/kept` | A page that is a kept journey's book is drawn as one (`useBookOf`, `JourneyBook`); `?as=page` shows it the way Notes does. The list of kept journeys is not drawn. |
+| 10.5 Tell it as a journey | `/journey/tell/new?moment=<photo id>` or `?album=<id>`, then `/journey/tell/<draft id>` | `tellHref(...)` is the way in from anywhere; `tellOnly(ids)` first when only some of it is meant. Closing a draft throws it away. |
+| 10.6 Before it leaves home | `/journey/tell/<draft id>/check` | The three switches, what it starts as, every photo one by one, then sending with its progress. |
+| 10.7 A trip, start to finish | `/folder/<id>` | A folder that was given dates is drawn as a trip (`useTripOf`, `TripSpace`); `?as=folder` shows it the way Notes does. "Make it a trip" is in a folder's menu. |
+| 10.8 Journey, at home | `/` (Today), `/journey/at-home` | `TodayJourneyCard` draws the cards whose `look` is `journey_away` or `journey_on_this_day`; `useBedtimeHold` keeps a `goodnight` card back until bedtime. The page behind them (who is away, where home is, bedtime) is not drawn. |
+| 10.9 Goodnight from far away | `/goodnight/<id>` | Played by opening its file, as the Library's videos are. "Send one back" records with the phone's camera or takes a video file. |
+
+- **A job the API runs by itself** (keeping, sending) is followed with `useJourneyJob(started)` and drawn with `JobProgress`.
+- **A heart that can be a child's** (`HeartsSheet`): in a circle with people who have no phone, a heart on something from far away asks whose it is.
 
 Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: Activity, and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 

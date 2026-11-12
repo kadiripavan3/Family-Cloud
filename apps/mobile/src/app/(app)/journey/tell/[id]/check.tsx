@@ -201,7 +201,9 @@ function Sending({ started, draft, onAgain }: { started: JourneyJobResponse | nu
       void cache.journeyDraftSent(draft.id);
     }
   }, [job?.status, cache, draft.id]);
-  const close = () => {
+  const close = async () => {
+    // The draft's own screen, underneath, knows by now that it was sent, and lets go without asking.
+    await cache.journeyDraftSent(draft.id).catch(() => undefined);
     // Out of the whole flow: past the draft, back to where it was started from.
     if (router.canDismiss()) router.dismiss(2);
     else router.replace('/');
@@ -225,7 +227,7 @@ function Sending({ started, draft, onAgain }: { started: JourneyJobResponse | nu
       {done ? (
         <View style={{ gap: 10, paddingTop: 12, paddingBottom: 12, paddingHorizontal: layout.rowGutter }}>
           <Button label={words.together.open.inJourney} size="lg" block icon={(c) => <Route size={19} color={c} strokeWidth={2.4} />} onPress={() => openJourney(draft.openUrl)} />
-          <Button label={says.sent.close} size="lg" block variant="soft" onPress={close} />
+          <Button label={says.sent.close} size="lg" block variant="soft" onPress={() => void close()} />
         </View>
       ) : null}
       {toast}

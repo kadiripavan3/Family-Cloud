@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import { ApiError } from '@/api/fetcher';
 import { changeJourneyDraft, deleteJourneyDraft, draftJourney, useGetJourneyDraft } from '@/api/generated/homeport';
@@ -13,7 +13,16 @@ const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGo
 let mockParams: { id?: string; left?: string; moment?: string; album?: string; circle?: string } = {};
 const mockCache = { journeyDraftChanged: jest.fn(() => Promise.resolve()), journeyDraftGone: jest.fn() };
 const mockOpenJourney = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => mockParams }));
+let mockGuard: { on: boolean; ask?: (options: { repeat: () => void }) => void } = { on: false };
+const mockStopGuard = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useLocalSearchParams: () => mockParams,
+  usePreventRemove: (on: boolean, ask: (options: { repeat: () => void }) => void) => {
+    mockGuard = { on, ask };
+    return mockStopGuard;
+  },
+}));
 jest.mock('@/auth/session', () => ({ useSession: () => ({ status: 'signedIn' }) }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/lib/ids', () => ({ newClientId: () => 'client-1' }));
@@ -134,6 +143,21 @@ describe('10.5 Tell it as a journey', () => {
     expect(mockCache.journeyDraftGone).toHaveBeenCalledWith(DRAFT);
   });
 
+  it("asks the same when the phone's own way back is used, and then goes on with it", async () => {
+    jest.mocked(deleteJourneyDraft).mockResolvedValue(undefined);
+    await render(inApp(<TellJourney />));
+    expect(mockGuard.on).toBe(true);
+    const repeat = jest.fn();
+    await act(async () => mockGuard.ask?.({ repeat }));
+    expect(screen.getByRole('header', { name: 'Throw this draft away?' })).toBeOnTheScreen();
+    expect(repeat).not.toHaveBeenCalled();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Throw it away' }));
+    await waitFor(() => expect(repeat).toHaveBeenCalled());
+    expect(mockStopGuard).toHaveBeenCalled();
+    expect(deleteJourneyDraft).toHaveBeenCalledWith(DRAFT);
+    expect(mockRouter.back).not.toHaveBeenCalled();
+  });
+
   it('stays when the answer is to keep writing', async () => {
     await render(inApp(<TellJourney />));
     const user = userEvent.setup();
@@ -157,7 +181,8 @@ describe('10.5 Tell it as a journey', () => {
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: 'Open in Journey' }));
     expect(mockOpenJourney).toHaveBeenCalledWith(`journey://journey/${id(70)}`);
-    // Closing it asks nothing: there is nothing to throw away.
+    // Closing it asks nothing, whichever way: there is nothing to throw away.
+    expect(mockGuard.on).toBe(false);
     await user.press(screen.getByRole('button', { name: 'Close' }));
     expect(mockRouter.back).toHaveBeenCalled();
   });

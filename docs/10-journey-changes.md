@@ -66,7 +66,7 @@ Each has: what it is, where it goes in Journey, what Homeport already expects fr
 - Label: "Keep in Homeport", with Homeport's mark. Words go in `src/words/en/journey.ts` under `recap`.
 - It opens `homeport://keep?journey=<journey id>`. Homeport's app then shows "What to keep" (10.3) for that journey.
 - Not installed: the same as in change 1.
-- **Homeport's side is built:** `GET /v1/journey/journeys/{journeyId}/keep-options?circleId=…` and `POST /v1/journey/keeps`. The app must still be taught the `homeport://keep` link.
+- **Homeport's side is built:** `GET /v1/journey/journeys/{journeyId}/keep-options?circleId=…` and `POST /v1/journey/keeps`, and the app knows the `homeport://keep` link: it lands on "What to keep" for that journey, also after a sign-in on the way (`apps/mobile/src/lib/links.ts`, and the screen at `/keep`). That the link opens the app from Journey was not tried on a phone.
 - **Size:** small. **Test:** Journey's walk-through opens a recap as its author and finds the button; as a follower it isn't there.
 
 ### 3. When each photo was taken, and its fingerprint

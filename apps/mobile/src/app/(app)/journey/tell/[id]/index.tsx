@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { Sparkle, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -97,11 +97,27 @@ function Loaded({ draft, notIn }: { draft: JourneyDraftResponse; notIn: number }
     mutationFn: (request: JourneyDraftChangeRequest) => changeJourneyDraft(draft.id, request),
     onSuccess: (changed) => void cache.journeyDraftChanged(changed),
   });
+  // Android's back button and a swipe ask the same question as the X, for as long as the draft is one.
+  const goOn = useRef<(() => void) | null>(null);
+  const [thrown, setThrown] = useState(false);
+  const stopGuard = usePreventRemove(open && !thrown, ({ repeat }) => {
+    goOn.current = repeat;
+    setLeaving(true);
+  });
+  const stay = () => {
+    goOn.current = null;
+    setLeaving(false);
+  };
   const discard = useMutation({
     mutationFn: () => deleteJourneyDraft(draft.id),
     onSuccess: () => {
       setLeaving(false);
-      leave();
+      setThrown(true);
+      stopGuard();
+      // On with what was asked for (the way back that was stopped), or simply out.
+      const carryOn = goOn.current;
+      goOn.current = null;
+      (carryOn ?? leave)();
       cache.journeyDraftGone(draft.id);
     },
   });
@@ -183,7 +199,7 @@ function Loaded({ draft, notIn }: { draft: JourneyDraftResponse; notIn: number }
       <DaySheet day={shown} days={draft.days} onClose={() => setDay(null)} onChange={(request) => change.mutate(request)} busy={change.isPending} problem={change.isError ? messageFor(change.error) : null} />
       <ConfirmSheet
         visible={leaving}
-        onClose={() => setLeaving(false)}
+        onClose={stay}
         title={says.leave.title}
         body={says.leave.body}
         confirm={says.leave.confirm}
