@@ -10,6 +10,7 @@ import { addDays, today } from '@/lib/dates';
 import { inApp } from '@/test/phone';
 import { failed, linds, loaded, pending } from '@/test/samples';
 import { ALEX_KEY, emergency, ITEM_KEY, itemPerson, leaNoVault, miaNoPhone, NETFLIX, NETFLIX_INSIDE, NORA_KEY, noraOwns, sharing, vaultItem, vaultPerson } from '@/test/samples/vault';
+import { words } from '@/words';
 
 const mockRouter = { push: jest.fn() };
 const mockCache = { vaultItemShared: jest.fn(() => Promise.resolve()) };
@@ -62,6 +63,17 @@ describe('9.4 Share a secret', () => {
     expect(screen.getByText(/^“Can use, can't keep” is a rule of the app, not of the mathematics\. A phone that can fill a password in holds that password for that moment/)).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('radio', { name: /^Can see/ }));
     expect(screen.queryByText(/is a rule of the app/)).toBeNull();
+  });
+
+  it('hands nobody a key the screen has let go of: zeros are never wrapped as if they were the key', async () => {
+    const letGo = { ...opened, itemKey: new Uint8Array(32) };
+    await render(inApp(<ShareSheet visible onClose={onClose} item={vaultItem()} opened={letGo} onSaved={onSaved} />));
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('checkbox', { name: 'Share with Alex' }));
+    await user.press(screen.getByRole('button', { name: 'Share with 1 person' }));
+    expect(await screen.findByText(words.vault.problems.locked)).toBeOnTheScreen();
+    expect(saveVaultSharing).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
   });
 
   it("wraps the item's key for the person it is shared with, so that only they can open it, and saves all of it in one go", async () => {

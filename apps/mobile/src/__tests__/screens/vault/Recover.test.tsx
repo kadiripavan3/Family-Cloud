@@ -61,7 +61,8 @@ describe('getting back in with helpers', () => {
     needs.mockReturnValue(loaded(attention()));
     (jest.mocked(useGetVaultHelpers) as unknown as jest.Mock).mockReturnValue(loaded(helpers({ ready: true })));
     running.mockReturnValue(loaded(mine()));
-    mockKeeper.takeRecovery.mockResolvedValue({ id: 'r-1', privateKey: TEMP_KEY.slice() });
+    // Like the phone's storage: a copy each time it is asked, which whoever takes it overwrites when done.
+    mockKeeper.takeRecovery.mockImplementation(async () => ({ id: 'r-1', privateKey: TEMP_KEY.slice() }));
   });
   afterEach(async () => {
     await cleanup();
@@ -78,17 +79,25 @@ describe('getting back in with helpers', () => {
 
   it('starts a recovery with the public half of a key pair made for it; the private half stays on this phone', async () => {
     jest.mocked(startVaultRecovery).mockImplementation(async (request) => mine({ tempPublicKey: request.tempPublicKey }));
+    // Like the phone's storage: it keeps a copy of its own.
+    const stored: { account: string; id: string; privateKey: Uint8Array }[] = [];
+    (mockKeeper.keepRecovery as jest.Mock).mockImplementation(async (account: string, kept: { id: string; privateKey: Uint8Array }) => {
+      stored.push({ account, id: kept.id, privateKey: kept.privateKey.slice() });
+    });
     await render(inApp(<Recover />));
     await userEvent.setup().press(screen.getByRole('button', { name: 'Ask my helpers' }));
     await waitFor(() => expect(mockCache.vaultRecoveryChanged).toHaveBeenCalled());
     const sent = jest.mocked(startVaultRecovery).mock.calls[0]![0];
     expect(sent.clientId).toBe('client-1');
     expect(sent.tempPublicKey).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    const [account, kept] = mockKeeper.keepRecovery.mock.calls[0] as unknown as [string, { id: string; privateKey: Uint8Array }];
-    expect(account).toBe('a-nora');
-    expect(kept.id).toBe('r-1');
-    expect(toBase64Url(publicKeyOf(kept.privateKey))).toBe(sent.tempPublicKey);
-    expect(JSON.stringify(sent)).not.toContain(toBase64Url(kept.privateKey));
+    expect(stored).toHaveLength(1);
+    expect(stored[0]!.account).toBe('a-nora');
+    expect(stored[0]!.id).toBe('r-1');
+    expect(toBase64Url(publicKeyOf(stored[0]!.privateKey))).toBe(sent.tempPublicKey);
+    expect(JSON.stringify(sent)).not.toContain(toBase64Url(stored[0]!.privateKey));
+    // What was handed to the storage is overwritten once it is stored.
+    const [, handedIn] = mockKeeper.keepRecovery.mock.calls[0] as unknown as [string, { privateKey: Uint8Array }];
+    expect(handedIn.privateKey).toEqual(new Uint8Array(32));
   });
 
   it('while it runs on the phone that started it: the check words, who has helped, and when it lapses', async () => {

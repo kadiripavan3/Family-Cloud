@@ -94,21 +94,31 @@ export function lockVault(): void {
   tell();
 }
 
-/** The Vault was used: the two minutes start again. Does nothing while locked. */
+/**
+ * The time is up although the timer hasn't fired yet: a phone that slept, a page the browser slowed down.
+ * The key is not handed out after its time, whatever the timer does.
+ */
+function overdue(): boolean {
+  return locksAt !== null && Date.now() >= locksAt;
+}
+
+/** The Vault was used: the two minutes start again. Does nothing while locked, and using it after its time locks it instead. */
 export function vaultUsed(): void {
   if (!privateKey) return;
+  if (overdue()) return lockVault();
   startTimer();
   tell();
 }
 
 /** The private key, for one operation. Throws `VaultLocked` when there is none. Never keep what this returns. */
 export function vaultPrivateKey(): Uint8Array {
+  if (overdue()) lockVault();
   if (!privateKey) throw new VaultLocked();
   return privateKey;
 }
 
 export function isVaultUnlocked(): boolean {
-  return privateKey !== null;
+  return privateKey !== null && !overdue();
 }
 
 const subscribe = (heard: () => void) => {

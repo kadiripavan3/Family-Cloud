@@ -172,7 +172,7 @@ What the app does with all of the above between the API and the screen. None of 
 - when the person locks it by hand;
 - when they sign out, however the sign-in ends.
 
-A screen of the Vault that is open when it locks is replaced by the locked page, and starts afresh after unlocking: nothing it held outlives the lock. (JavaScript gives no promise that no copy of a key is left in memory; see the questions.)
+A screen of the Vault that is open when it locks is replaced by the locked page, and starts afresh after unlocking: nothing it held outlives the lock. The key is not handed out after its time even when the timer is late (a phone that slept, a page the browser slowed down): each use checks the clock. A key that was let go of is all zeros, and the app refuses to seal with one or to wrap one for anybody. (JavaScript gives no promise that no copy of a key is left in memory; see the questions.)
 
 **Between unlocks the private key is kept wrapped**, one of two ways:
 

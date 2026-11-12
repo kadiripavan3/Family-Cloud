@@ -171,6 +171,13 @@ describe('sealing with a key both sides hold', () => {
       expect(JSON.stringify(error)).not.toContain('p0pcorn');
     }
   });
+
+  it('refuses to seal with a key that was let go of (all zeros): it would look sealed and open for anyone', () => {
+    const key = newKey();
+    key.fill(0);
+    expect(() => seal(key, utf8('hunter2'), 'item')).toThrow('this key has been let go of');
+    expect(() => sealWithNonce(new Uint8Array(32), new Uint8Array(24), utf8('hunter2'), 'item')).toThrow('this key has been let go of');
+  });
 });
 
 describe('sealing for a person', () => {

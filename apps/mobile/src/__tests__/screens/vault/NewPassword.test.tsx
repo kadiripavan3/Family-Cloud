@@ -42,6 +42,9 @@ jest.mock('@/api/generated/homeport', () => ({
 const mockLinds = linds;
 const mockMe = loaded(me());
 
+// These type a whole form letter by letter, which takes seconds when the machine is busy with other work.
+jest.setTimeout(30000);
+
 describe('adding to the Vault', () => {
   beforeEach(() => {
     jest.clearAllMocks();

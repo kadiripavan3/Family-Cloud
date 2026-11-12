@@ -52,6 +52,18 @@ describe('the unlocked Vault', () => {
     expect(isVaultUnlocked()).toBe(false);
   });
 
+  it('gives no key once its time is up, even when the timer is late (a phone that slept, a page the browser slowed down)', () => {
+    const key = aKey();
+    unlockVault(key);
+    // The clock moves on and no timer fires.
+    jest.setSystemTime(Date.now() + LOCK_AFTER_MS);
+    expect(isVaultUnlocked()).toBe(false);
+    // Using it now doesn't buy more time.
+    vaultUsed();
+    expect(() => vaultPrivateKey()).toThrow(VaultLocked);
+    expect(key).toEqual(new Uint8Array(32));
+  });
+
   it('overwrites the key when it locks: whoever still holds the bytes holds zeros', () => {
     const key = aKey();
     unlockVault(key);

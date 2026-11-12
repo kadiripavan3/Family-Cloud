@@ -70,12 +70,15 @@ export type KeptRecovery = { id: string; privateKey: Uint8Array };
  */
 let recovery: (KeptRecovery & { account: string }) | null = null;
 
+/** Keeps a copy of its own: whoever hands the key in overwrites theirs. */
 export async function keepRecovery(account: string, kept: KeptRecovery): Promise<void> {
-  recovery = { ...kept, account };
+  recovery?.privateKey.fill(0);
+  recovery = { id: kept.id, privateKey: kept.privateKey.slice(), account };
 }
 
+/** Hands out a copy, as the phone's storage does: whoever takes it overwrites it when they are done. */
 export async function takeRecovery(account: string): Promise<KeptRecovery | null> {
-  return recovery && recovery.account === account ? { id: recovery.id, privateKey: recovery.privateKey } : null;
+  return recovery && recovery.account === account ? { id: recovery.id, privateKey: recovery.privateKey.slice() } : null;
 }
 
 export async function forgetRecovery(): Promise<void> {

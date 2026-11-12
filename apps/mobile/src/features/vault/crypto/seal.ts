@@ -60,6 +60,8 @@ const publicKeyOf32 = () => new Error('a public key must be 32 bytes');
 /** The bytes of a sealed piece for a given nonce. Only `seal` and the tests against published vectors call this: a nonce is never chosen by hand. */
 export function sealWithNonce(key: Uint8Array, nonce: Uint8Array, plaintext: Uint8Array, purpose: Purpose): Uint8Array {
   need32(key, sealingKey);
+  // A key that was let go of is all zeros (`wipe`). What is sealed with it would look sealed and open for anyone.
+  if (sameBytes(key, new Uint8Array(KEY_BYTES))) throw new Error('this key has been let go of');
   if (nonce.length !== NONCE_BYTES) throw new Error('a nonce must be 24 bytes');
   return concat(Uint8Array.of(VERSION), nonce, xchacha20poly1305(key, nonce, infoFor(purpose)).encrypt(plaintext));
 }

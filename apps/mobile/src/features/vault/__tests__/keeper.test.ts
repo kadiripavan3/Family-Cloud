@@ -128,4 +128,15 @@ describe('the key between unlocks, in the browser preview', () => {
     await browser.forgetRecovery();
     expect(await browser.takeRecovery('nora')).toBeNull();
   });
+
+  it('keeps a copy of its own and hands out copies, so whoever holds one can overwrite theirs', async () => {
+    const handedIn = aKey();
+    await browser.keepRecovery('nora', { id: 'recovery-1', privateKey: handedIn });
+    handedIn.fill(0);
+    const taken = await browser.takeRecovery('nora');
+    expect(taken?.privateKey).toEqual(aKey());
+    taken?.privateKey.fill(0);
+    expect((await browser.takeRecovery('nora'))?.privateKey).toEqual(aKey());
+    await browser.forgetRecovery();
+  });
 });

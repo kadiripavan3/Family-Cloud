@@ -32,7 +32,7 @@ import {
 } from '@/api/generated/homeport';
 import { newClientId } from '@/lib/ids';
 
-import { fromBase64Url, fromUtf8, toBase64Url, utf8, wipe } from './crypto/bytes';
+import { fromBase64Url, fromUtf8, sameBytes, toBase64Url, utf8, wipe } from './crypto/bytes';
 import { sealForGuest } from './crypto/guest';
 import { DoesNotOpen, newKey, newKeyPair, open, openMine, publicKeyOf, seal, sealFor } from './crypto/seal';
 import { join, split } from './crypto/shamir';
@@ -41,7 +41,7 @@ import { healthOf } from './health';
 import { decodeInside, encodeInside, type Fields, type Inside, insideOf, labelsMatch, passwordOf } from './inside';
 import { keptChanged } from './kept';
 import { forgetKept, forgetRecovery, keepBehindDevice, keepBehindPasscode, keepRecovery, takeFromDevice, takeRecovery, takeWithPasscode } from './keeper';
-import { forgetPassword, holdFreshVaultKey, rememberPassword, unlockVault, usedElsewhere, vaultPrivateKey, vaultUsed } from './session';
+import { forgetPassword, holdFreshVaultKey, isVaultUnlocked, rememberPassword, unlockVault, usedElsewhere, VaultLocked, vaultPrivateKey, vaultUsed } from './session';
 
 /**
  * What the phone does with keys, step by step, as docs/07-vault-protocol.md "The messages" describes each
@@ -62,6 +62,15 @@ export function recordOf(vault: VaultRecordResponse): VaultRecord {
 }
 
 const myPublicKey = () => publicKeyOf(vaultPrivateKey());
+
+/**
+ * An item key a screen hands back, checked before it is wrapped for anyone: a key the screen has let go of
+ * meanwhile is all zeros, and must be handed to nobody as if it were the item's key.
+ */
+function stillHeld(itemKey: Uint8Array): Uint8Array {
+  if (itemKey.length !== 32 || sameBytes(itemKey, new Uint8Array(32))) throw new VaultLocked();
+  return itemKey;
+}
 
 // ---------- a person's Vault ----------
 
@@ -170,9 +179,11 @@ type Clear = { id: string; title?: string | null; site?: string | null; category
  * ciphertext with it.
  */
 export async function openItem(item: Clear): Promise<Opened> {
-  const privateKey = vaultPrivateKey();
+  // Asked before the API is: a locked Vault must never spend a look it can't use.
+  vaultPrivateKey();
   const handed = await openVaultItem(item.id);
-  const itemKey = openMine(privateKey, handed.wrappedKey, 'item-key');
+  // Taken afresh after the wait: had the Vault locked meanwhile, bytes held from before would be zeros. This says "locked" instead.
+  const itemKey = openMine(vaultPrivateKey(), handed.wrappedKey, 'item-key');
   const inside = decodeInside(open(itemKey, handed.ciphertext, 'item'));
   vaultUsed();
   rememberPassword(item.id, inside.title, passwordOf(inside));
@@ -265,7 +276,7 @@ export async function shareItem(item: Clear, opened: Pick<Opened, 'inside' | 'it
   const mine = myPublicKey();
   const roster = new Map(sharing.people.map((person) => [person.memberId, person]));
   const rotate = removesSomeone(sharing, draft);
-  const itemKey = rotate ? newKey() : opened.itemKey;
+  const itemKey = rotate ? newKey() : stillHeld(opened.itemKey);
   try {
     const people: VaultShareWith[] = draft.map((person) => {
       const now = roster.get(person.memberId);
@@ -303,14 +314,14 @@ export async function shareItem(item: Clear, opened: Pick<Opened, 'inside' | 'it
  * with the public key the API reports. Returns how many keys were handed over.
  */
 export async function giveWaitingKeys(): Promise<number> {
-  const privateKey = vaultPrivateKey();
+  vaultPrivateKey();
   const waiting = await getVaultWaiting();
   const byItem = new Map<string, typeof waiting>();
   for (const one of waiting) byItem.set(one.itemId, [...(byItem.get(one.itemId) ?? []), one]);
   let given = 0;
   for (const [itemId, people] of byItem) {
     const handed = await openVaultItem(itemId);
-    const itemKey = openMine(privateKey, handed.wrappedKey, 'item-key');
+    const itemKey = openMine(vaultPrivateKey(), handed.wrappedKey, 'item-key');
     try {
       await giveVaultKeys(itemId, { keys: people.map((person) => ({ memberId: person.memberId, wrappedKey: sealFor(fromBase64Url(person.publicKey), itemKey, 'item-key') })) });
       given += people.length;
@@ -331,12 +342,12 @@ export type EmergencyDraft = { trustedMemberId: string; trustedPublicKey: string
  * trusted person, the note sealed for them, and once more for its writer so they can read it again.
  */
 export async function saveEmergencyAccess(draft: EmergencyDraft): Promise<VaultEmergencyResponse> {
-  const privateKey = vaultPrivateKey();
+  vaultPrivateKey();
   const trusted = fromBase64Url(draft.trustedPublicKey);
   const items = [];
   for (const id of draft.itemIds) {
     const handed = await openVaultItem(id);
-    const itemKey = openMine(privateKey, handed.wrappedKey, 'item-key');
+    const itemKey = openMine(vaultPrivateKey(), handed.wrappedKey, 'item-key');
     items.push({ id, wrappedKey: sealFor(trusted, itemKey, 'escrow-key') });
     wipe(itemKey);
   }
@@ -346,7 +357,7 @@ export async function saveEmergencyAccess(draft: EmergencyDraft): Promise<VaultE
     waitHours: draft.waitHours,
     items,
     note: note ? sealFor(trusted, utf8(note), 'escrow-note') : undefined,
-    noteMine: note ? sealFor(publicKeyOf(privateKey), utf8(note), 'own-note') : undefined,
+    noteMine: note ? sealFor(myPublicKey(), utf8(note), 'own-note') : undefined,
   });
   vaultUsed();
   return saved;
@@ -364,9 +375,9 @@ export function readEntrustedNote(entrusted: Pick<EntrustedVaultResponse, 'note'
 
 /** The trusted person's side, once it is open: one of the items that were entrusted, opened with its key from the escrow. */
 export async function openEntrusted(entrustedId: string, itemId: string): Promise<Inside> {
-  const privateKey = vaultPrivateKey();
+  vaultPrivateKey();
   const handed = await openEntrustedItem(entrustedId, itemId);
-  const itemKey = openMine(privateKey, handed.wrappedKey, 'escrow-key');
+  const itemKey = openMine(vaultPrivateKey(), handed.wrappedKey, 'escrow-key');
   try {
     vaultUsed();
     return decodeInside(open(itemKey, handed.ciphertext, 'item'));
@@ -404,9 +415,9 @@ export async function splitForHelpers(typedVaultKey: string, vault: VaultRecordR
  * temporary key of the new phone. Only works while the recovery is open.
  */
 export async function passMyShareOn(helpingId: string): Promise<void> {
-  const privateKey = vaultPrivateKey();
+  vaultPrivateKey();
   const toPassOn = await getShareToPassOn(helpingId);
-  const share = openMine(privateKey, toPassOn.sealedShare, 'helper-share');
+  const share = openMine(vaultPrivateKey(), toPassOn.sealedShare, 'helper-share');
   try {
     await passShareOn(helpingId, { recoveryId: toPassOn.recoveryId, resealedShare: sealFor(fromBase64Url(toPassOn.tempPublicKey), share, 'recovery-share') });
     vaultUsed();
@@ -418,15 +429,23 @@ export async function passMyShareOn(helpingId: string): Promise<void> {
 /** A new phone without the Vault key: makes a temporary key pair, starts a recovery with its public half, and keeps the private half until the recovery ends. */
 export async function startRecovery(account: string): Promise<VaultRecoveryResponse> {
   const pair = newKeyPair();
-  const recovery = await startVaultRecovery({ clientId: newClientId(), tempPublicKey: toBase64Url(pair.publicKey) });
-  await keepRecovery(account, { id: recovery.id, privateKey: pair.privateKey });
-  return recovery;
+  try {
+    const recovery = await startVaultRecovery({ clientId: newClientId(), tempPublicKey: toBase64Url(pair.publicKey) });
+    await keepRecovery(account, { id: recovery.id, privateKey: pair.privateKey });
+    return recovery;
+  } finally {
+    wipe(pair.privateKey);
+  }
 }
 
 /** True when this phone holds the temporary key a recovery was started with. */
 export async function isMyRecovery(account: string, recovery: Pick<VaultRecoveryResponse, 'id' | 'tempPublicKey'>): Promise<boolean> {
   const kept = await takeRecovery(account);
-  return !!kept && kept.id === recovery.id && belongsTo(kept.privateKey, recovery.tempPublicKey);
+  try {
+    return !!kept && kept.id === recovery.id && belongsTo(kept.privateKey, recovery.tempPublicKey);
+  } finally {
+    wipe(kept?.privateKey);
+  }
 }
 
 /**
@@ -436,12 +455,14 @@ export async function isMyRecovery(account: string, recovery: Pick<VaultRecovery
  */
 export async function finishRecovery(account: string, recovery: VaultRecoveryResponse, onProgress?: Progress): Promise<void> {
   const kept = await takeRecovery(account);
-  if (!kept || kept.id !== recovery.id) throw new Error('this phone did not start this recovery');
-  const passedOn = recovery.helpers.flatMap((helper) => (helper.resealedShare ? [helper.resealedShare] : []));
-  if (passedOn.length < 2) throw new Error('two helpers have to pass their share on first');
-  const shares = passedOn.slice(0, 2).map((sealed) => openMine(kept.privateKey, sealed, 'recovery-share'));
-  const rebuilt = join(shares[0]!, shares[1]!);
+  const shares: Uint8Array[] = [];
+  let rebuilt: Uint8Array | null = null;
   try {
+    if (!kept || kept.id !== recovery.id) throw new Error('this phone did not start this recovery');
+    const passedOn = recovery.helpers.flatMap((helper) => (helper.resealedShare ? [helper.resealedShare] : []));
+    if (passedOn.length < 2) throw new Error('two helpers have to pass their share on first');
+    for (const sealed of passedOn.slice(0, 2)) shares.push(openMine(kept.privateKey, sealed, 'recovery-share'));
+    rebuilt = join(shares[0]!, shares[1]!);
     let vaultKey: string;
     try {
       vaultKey = fromUtf8(rebuilt);
@@ -451,7 +472,7 @@ export async function finishRecovery(account: string, recovery: VaultRecoveryRes
     }
     unlockVault(await unwrapPrivateKey(vaultKey, recordOf(await getVault()), onProgress));
   } finally {
-    wipe(rebuilt, ...shares);
+    wipe(kept?.privateKey, rebuilt, ...shares);
   }
   await finishVaultRecovery(recovery.id);
   await forgetRecovery(account);
@@ -464,7 +485,8 @@ export function passKeyForMaker(vault: VaultRecordResponse | undefined): string 
   if (!vault?.setUp || !vault.publicKey) return undefined;
   const passKey = newKey();
   try {
-    return sealFor(fromBase64Url(vault.publicKey), passKey, 'pass-key');
+    // While unlocked the phone knows its own public key and doesn't take the API's word for it.
+    return sealFor(isVaultUnlocked() ? myPublicKey() : fromBase64Url(vault.publicKey), passKey, 'pass-key');
   } finally {
     wipe(passKey);
   }
