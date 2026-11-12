@@ -156,14 +156,15 @@ export function PlainRow({ icon, title, note, first, children }: { icon: (color:
 }
 
 /**
- * A journey's cover as a small square: its photo, or Journey's route on a quiet ground where it has none
- * (a challenge without a cover) or while it loads.
+ * A journey's cover as a small square: its photo, over Journey's route on a quiet ground, which is what
+ * shows where it has no cover (a challenge), while it loads, or when the picture can't be had.
  */
 export function JourneyCover({ uri, size }: { uri: string | null | undefined; size: number }) {
   const { colors } = useTheme();
   return (
-    <Photo uri={uri} radius="thumb" style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.fill2 }}>
-      {uri ? null : <Route size={size * 0.4} color={colors.muted} />}
-    </Photo>
+    <View style={{ width: size, height: size, borderRadius: radius.thumb, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.fill2 }}>
+      <Route size={size * 0.4} color={colors.muted} />
+      {uri ? <Photo uri={uri} radius="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent' }} /> : null}
+    </View>
   );
 }

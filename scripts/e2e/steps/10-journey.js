@@ -171,6 +171,8 @@ exports.run = async function run(ctx) {
       await T('Choose one of the places your photos were taken. A photo taken within 150 metres of it counts as taken at home.').waitFor();
       await shot('journey-where-home-is');
       await R('button', { name: /^Lake Bled\. Slovenia · \d+ photos$/ }).click();
+      // The sheet closes once it is saved.
+      await page.getByRole('heading', { name: 'Where is home?' }).waitFor({ state: 'detached', timeout: 20000 });
       await R('button', { name: /^Where home is\. Set\./ }).waitFor();
       const moved = await ctx.api(nora, 'GET', `/v1/circles/${linds.id}/journey/settings`);
       if (moved.bedtime !== '19:30' || Math.abs(moved.homeLat - home.homeLat) < 0.01) throw new Error('bedtime or where home is was not saved');
@@ -182,7 +184,7 @@ exports.run = async function run(ctx) {
       await R('button', { name: /^The clock home keeps\./ }).click();
       await R('heading', { name: 'The clock home keeps' }).waitFor();
       await R('button', { name: /^Use this phone's clock: / }).click();
-      await page.waitForTimeout(600);
+      await page.getByRole('heading', { name: 'The clock home keeps' }).waitFor({ state: 'detached', timeout: 20000 });
       await tidy();
     });
 
