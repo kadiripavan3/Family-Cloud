@@ -104,6 +104,23 @@ class ApiDescriptionTest extends ApiTest {
                 "$.id");
         String code = JsonPath.<String>read(fetch("/v1/circles/" + circle, nora), "$.joinUrl")
                 .replaceFirst(".*/", "");
+        // A Vault item only Nora can see. (What is scrambled is made up here: the API never looks inside.)
+        send(
+                HttpMethod.PUT,
+                "/v1/vault",
+                nora,
+                "{\"publicKey\":\"%s\",\"wrappedPrivateKey\":\"AAAA\",\"salt\":\"%s\",\"kdf\":{\"n\":32768,\"r\":8,\"p\":1}}"
+                        .formatted("A".repeat(43), "A".repeat(22)),
+                200);
+        String vaultItem = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/vault/items",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Bank\",\"category\":\"login\",\"ciphertext\":\"AAAA\",\"wrappedKey\":\"AAAA\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
 
         // The Library's kinds, each only Nora's: a photo, a document (a scan), a video and an album.
         String clipTarget = send(
@@ -146,9 +163,10 @@ class ApiDescriptionTest extends ApiTest {
                                         id(), circle, java.time.LocalDate.now().plusYears(1)),
                         201),
                 "$.id");
-        List<String> forStranger = new ArrayList<>(List.of(circle, child, page, pass, album, list, folder, board));
+        List<String> forStranger =
+                new ArrayList<>(List.of(circle, child, page, pass, album, list, folder, board, vaultItem));
         forStranger.addAll(library);
-        List<String> forAlex = new ArrayList<>(List.of(page, album, list, folder, board));
+        List<String> forAlex = new ArrayList<>(List.of(page, album, list, folder, board, vaultItem));
         forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {

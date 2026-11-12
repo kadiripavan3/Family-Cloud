@@ -2,6 +2,7 @@ package app.homeport.api.guest;
 
 import app.homeport.api.auth.Me;
 import app.homeport.api.guest.GuestPassService.GuestPassResponse;
+import app.homeport.api.guest.GuestPassService.NewSealedCard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,7 +47,33 @@ class GuestPassController {
             @NotNull(message = "Choose when the pass ends.") Instant endsAt,
 
             @NotNull(message = "Choose what the guest can open.")
-            List<UUID> thingIds) {}
+            List<UUID> thingIds,
+
+            @Schema(description = "Sealed cards made on this phone: a door code, a Wi‑Fi password. Ten at most.")
+            List<NewSealedCard> cards,
+
+            @Schema(
+                    description =
+                            "The pass's key, sealed to your own Vault, so another phone of yours can build the whole link",
+                    maxLength = 512)
+            String keyForMaker) {}
+
+    record NewGuestPassCardRequest(
+            @NotNull(message = "Something went wrong on our side. Try again.")
+            UUID clientId,
+
+            @NotBlank(message = "Give the card a short name.") @Size(max = 60, message = "Use 60 characters or fewer.")
+            String label,
+
+            @NotBlank(message = "Something went wrong on our side. Try again.")
+            @Schema(description = "The text to show, sealed with the pass's key. base64url.", maxLength = 4096)
+            String ciphertext,
+
+            @Schema(description = "True when it shows once and is then gone for good")
+            Boolean once,
+
+            @Schema(description = "The Vault item it was made from, if any")
+            UUID thingId) {}
 
     @PostMapping("/circles/{id}/guest-passes")
     @ResponseStatus(HttpStatus.CREATED)
@@ -59,6 +86,8 @@ class GuestPassController {
                 request.startsAt(),
                 request.endsAt(),
                 request.thingIds(),
+                request.cards(),
+                request.keyForMaker(),
                 request.clientId());
     }
 
@@ -72,6 +101,26 @@ class GuestPassController {
     @Operation(operationId = "getGuestPass", summary = "One guest pass")
     GuestPassResponse get(@Me UUID me, @PathVariable UUID id) {
         return passes.get(id, me);
+    }
+
+    @PostMapping("/guest-passes/{id}/cards")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(
+            operationId = "addGuestPassCard",
+            summary = "Add a sealed card to a pass: a door code or a Wi‑Fi password only the guest's page can open")
+    GuestPassResponse addCard(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody NewGuestPassCardRequest request) {
+        return passes.addCard(
+                id,
+                me,
+                new NewSealedCard(request.label(), request.ciphertext(), request.once(), request.thingId()),
+                request.clientId());
+    }
+
+    @DeleteMapping("/guest-passes/{id}/cards/{cardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "removeGuestPassCard", summary = "Take a sealed card off a pass")
+    void removeCard(@Me UUID me, @PathVariable UUID id, @PathVariable UUID cardId) {
+        passes.removeCard(id, cardId, me);
     }
 
     @DeleteMapping("/guest-passes/{id}")

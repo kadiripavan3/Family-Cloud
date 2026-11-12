@@ -19,7 +19,8 @@ public enum ThingKind {
     ALBUM(Place.LIBRARY),
     /** A space or a folder in Notes: a space is a folder at the top. */
     FOLDER(Place.NOTES),
-    BOARD(Place.NOTES);
+    BOARD(Place.NOTES),
+    VAULT_ITEM(Place.VAULT);
 
     private final Place place;
 

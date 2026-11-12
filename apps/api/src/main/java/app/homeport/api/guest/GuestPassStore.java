@@ -27,13 +27,22 @@ public class GuestPassStore {
             Instant endsAt,
             String device,
             int wrongCodes,
-            Instant endedAt) {}
+            Instant endedAt,
+            String keyForMaker) {}
 
     public record PassThing(UUID passId, UUID thingId, ThingKind kind, String title) {}
 
+    /**
+     * A sealed card on a pass: a label in the clear and a ciphertext only the guest's browser can open, with
+     * the key from the link. The ciphertext is gone once a show-once card was shown.
+     */
+    public record PassCard(
+            UUID id, UUID passId, String label, String ciphertext, boolean once, Instant shownAt, UUID thingId) {}
+
     private static final String COLUMNS = """
         p.id, p.circle_id, c.name as circle_name, p.made_by, p.guest_name, p.token, p.code, p.starts_at, p.ends_at,
-        p.device, p.wrong_codes, p.ended_at from guest_passes p join circles c on c.id = p.circle_id
+        p.device, p.wrong_codes, p.ended_at, p.key_for_maker
+        from guest_passes p join circles c on c.id = p.circle_id
         """;
 
     private final JdbcClient jdbc;
@@ -55,7 +64,8 @@ public class GuestPassStore {
                 Sql.instant(rs, "ends_at"),
                 rs.getString("device"),
                 rs.getInt("wrong_codes"),
-                Sql.instant(rs, "ended_at"));
+                Sql.instant(rs, "ended_at"),
+                rs.getString("key_for_maker"));
     }
 
     /** Makes a pass. Sending the same clientId again makes nothing and returns the pass made the first time. */
@@ -133,6 +143,76 @@ public class GuestPassStore {
                         ThingKind.read(rs.getString("kind")),
                         rs.getString("title")))
                 .list();
+    }
+
+    // ---------- sealed cards ----------
+
+    /** Keeps the pass's own key, sealed to its maker's Vault. Only the first one counts. */
+    public void keyForMaker(UUID id, String sealedKey) {
+        jdbc.sql("update guest_passes set key_for_maker = coalesce(key_for_maker, :key) where id = :id")
+                .param("id", id)
+                .param("key", sealedKey)
+                .update();
+    }
+
+    /** Adds a sealed card. Sending the same clientId again adds nothing and returns the card made the first time. */
+    public UUID addCard(UUID passId, String label, String ciphertext, boolean once, UUID thingId, UUID clientId) {
+        return jdbc.sql("""
+            insert into guest_pass_cards (id, pass_id, label, ciphertext, once, thing_id, client_id)
+            values (:id, :pass, :label, :ciphertext, :once, :thing, :client)
+            on conflict (pass_id, client_id) do update set client_id = excluded.client_id
+            returning id
+            """)
+                .param("id", UUID.randomUUID())
+                .param("pass", passId)
+                .param("label", label)
+                .param("ciphertext", ciphertext)
+                .param("once", once)
+                .param("thing", thingId)
+                .param("client", clientId)
+                .query(UUID.class)
+                .single();
+    }
+
+    /** The sealed cards of these passes, in the order they were added. Ten a pass at most. */
+    public List<PassCard> cards(List<UUID> passIds) {
+        if (passIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql("""
+            select id, pass_id, label, ciphertext, once, shown_at, thing_id from guest_pass_cards
+            where pass_id in (:ids) order by pass_id, seq
+            """)
+                .param("ids", passIds)
+                .query((rs, n) -> new PassCard(
+                        rs.getObject("id", UUID.class),
+                        rs.getObject("pass_id", UUID.class),
+                        rs.getString("label"),
+                        rs.getString("ciphertext"),
+                        rs.getBoolean("once"),
+                        Sql.instant(rs, "shown_at"),
+                        rs.getObject("thing_id", UUID.class)))
+                .list();
+    }
+
+    public boolean removeCard(UUID passId, UUID cardId) {
+        return jdbc.sql("delete from guest_pass_cards where id = :card and pass_id = :pass")
+                        .param("card", cardId)
+                        .param("pass", passId)
+                        .update()
+                == 1;
+    }
+
+    /**
+     * The guest's page says a card was shown. The first time is written down, and a show-once card loses its
+     * ciphertext in the same statement: from here on the API has nothing left to hand out.
+     */
+    public boolean cardShown(UUID passId, UUID cardId) {
+        return jdbc.sql("""
+            update guest_pass_cards set shown_at = coalesce(shown_at, now()),
+              ciphertext = case when once then null else ciphertext end
+            where id = :card and pass_id = :pass
+            """).param("card", cardId).param("pass", passId).update() == 1;
     }
 
     public void end(UUID id) {
