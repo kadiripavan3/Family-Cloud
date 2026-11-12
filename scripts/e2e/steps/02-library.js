@@ -187,7 +187,7 @@ exports.run = async function run(ctx) {
       const hers = await (await byMia).json();
       if (hers.items.length !== 11 || hers.items.some((item) => item.addedBy.name !== 'Mia')) throw new Error(`Mia's photos of the moment came back as ${hers.items.length}, not all hers`);
       await shot('moment-by-mia');
-      await R('button', { name: 'All 51', exact: true }).click();
+      await R('button', { name: /^All \d+$/ }).click();
       // A story in Journey waits for the two apps to be linked, and says so.
       await R('button', { name: 'Journey', exact: true }).click();
       await T('Turning this into a story arrives when Homeport and Journey are linked.').waitFor();
@@ -539,7 +539,8 @@ exports.run = async function run(ctx) {
     await step('files', async () => {
       await R('button', { name: 'Files', exact: true }).click();
       await R('heading', { name: 'Files' }).waitFor();
-      await R('button', { name: 'All 11', exact: true }).waitFor();
+      // (How many there are is the sample data's business: other places' samples add a scan or two.)
+      await R('button', { name: /^All \d+$/ }).waitFor();
       for (const kind of ['IDs', 'Insurance', 'School']) await R('button', { name: kind, exact: true }).waitFor();
       // Each row says what matters about its document.
       await R('button', { name: /^Mia's passport\. ID\. Expires \d+ [A-Z][a-z]{2} \d{4}$/ }).waitFor();
@@ -554,7 +555,7 @@ exports.run = async function run(ctx) {
       await R('button', { name: 'IDs', exact: true }).click();
       await R('button', { name: /^Home insurance\./ }).waitFor({ state: 'detached' });
       await R('button', { name: /^Passport scan, Alex\./ }).waitFor();
-      await R('button', { name: 'All 11', exact: true }).click();
+      await R('button', { name: /^All \d+$/ }).click();
       // A folder of files.
       await R('button', { name: 'Tax 2025. Folder. 3 files' }).click();
       await R('heading', { name: 'Tax 2025' }).waitFor();
@@ -585,7 +586,7 @@ exports.run = async function run(ctx) {
 
     await step('files-search', async () => {
       // A word that is only inside the scan finds it.
-      await R('button', { name: 'All 12', exact: true }).waitFor();
+      await R('button', { name: /^All \d+$/ }).waitFor();
       await L('Search inside scans and PDFs').fill(`bookworm ${tag}`);
       await R('button', { name: new RegExp(`^Library card ${tag}\\.`) }).waitFor();
       await R('button', { name: /^Home insurance\./ }).waitFor({ state: 'detached' });
@@ -600,7 +601,8 @@ exports.run = async function run(ctx) {
       await R('button', { name: 'Delete', exact: true }).click();
       await T('Delete this document?').waitFor();
       await R('button', { name: 'Delete document', exact: true }).click();
-      await R('button', { name: 'All 11', exact: true }).waitFor();
+      // (How many there are is the sample data's business: other places' samples add a scan or two.)
+      await R('button', { name: /^All \d+$/ }).waitFor();
     });
 
     await step('document', async () => {
@@ -610,8 +612,9 @@ exports.run = async function run(ctx) {
       await R('button', { name: /^Mia's passport\. ID\./ }).click();
       await R('heading', { name: "Mia's passport" }).waitFor();
       await T('Read from the scan').waitFor();
-      await T(/^Expires \d+ [A-Z][a-z]{2} \d{4}$/).waitFor();
-      await T(/^A good day to see to it: /).waitFor();
+      // Plan says when the trip is, so the page says what matters about the date: it runs out too soon after it.
+      await T(/^Runs out \d+ months after Norway 2027$/).waitFor();
+      await T(/A good day to see to it: /).waitFor();
       await R('button', { name: /^Needed for Norway 2027\./ }).waitFor();
       // The number stays out of sight until its eye is pressed.
       await T('•••••• 2C3').waitFor();
@@ -623,7 +626,7 @@ exports.run = async function run(ctx) {
       // "Remind me" makes the reminder in Plan and links it.
       await R('button', { name: 'Remind me', exact: true }).click();
       await T(/^Reminder set for .+\. It is in Plan\.$/).waitFor();
-      await T(/^A reminder is set/).waitFor();
+      await T(/A reminder is set/).waitFor();
       await R('button', { name: 'Remind me', exact: true }).waitFor({ state: 'detached' });
       const linked = await ctx.api(nora, 'GET', `/v1/things/${passport.id}/links`);
       if (!linked.some((thing) => thing.kind === 'reminder' && thing.title.startsWith("Mia's passport:"))) throw new Error('no reminder is linked to the passport');

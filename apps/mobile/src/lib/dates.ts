@@ -58,7 +58,7 @@ export function formatMonth(month: string): string {
   return words.dates.month(date.getMonth(), date.getFullYear());
 }
 
-/** "November" for the month "2026-11": its name alone, where the year stands beside it. */
+/** "November" for the month "2026-11", or for any day in it: its name alone, where the year stands beside it. */
 export function formatMonthName(month: string): string {
   return words.dates.monthName(fromISODate(`${month.slice(0, 7)}-01`).getMonth());
 }
@@ -101,6 +101,11 @@ export function timeAgo(instant: string, now: Date = new Date()): string {
 export function formatWeekday(day: string): string {
   const date = fromISODate(day);
   return words.dates.dayWithWeekday(date.getDay(), date.getDate(), date.getMonth());
+}
+
+/** "Nov": the name of the month a day is in, cut short, where there is little room (under a bar of a chart). */
+export function formatMonthAbbr(day: string): string {
+  return words.dates.monthAbbr(fromISODate(day).getMonth());
 }
 
 /** "Today", "Tomorrow" or "Fri 4 Dec": a day that is coming up. */

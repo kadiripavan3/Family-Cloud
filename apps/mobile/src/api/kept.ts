@@ -24,12 +24,16 @@ const WRITE_AFTER_MS = 3000;
 /** Always kept, whatever else was read since: without these (who you are, and your circles) the app can't open. */
 const NEEDED = ['/v1/me', '/v1/circles'];
 /**
- * Never kept, by how the address starts: addresses that hold an invitation. What belongs here as it is
- * built: everything of the Vault, which must not be written to the phone in the clear.
+ * Never kept, by how the address starts: addresses that hold an invitation, and everything of the Vault
+ * (a person's own Vault, its items, who they share with, emergency access, helpers). Nothing of the Vault is
+ * written to the phone outside its secure storage, not even the scrambled pieces and the titles.
  */
-const NOT_KEPT: string[] = ['/v1/join/'];
-/** And by how it ends: what someone searched for is nobody's business once the app is closed. */
-const NOT_KEPT_ENDING: string[] = ['/search'];
+const NOT_KEPT: string[] = ['/v1/join/', '/v1/vault'];
+/**
+ * And by how it ends: what someone searched for is nobody's business once the app is closed, and the Vault's
+ * part of a circle (its home, its lists, the circle's public keys) is the Vault's.
+ */
+const NOT_KEPT_ENDING: string[] = ['/search', '/vault', '/vault/items', '/vault-keys'];
 
 type KeptQuery = { key: readonly unknown[]; data: unknown; at: number };
 type Kept = { owner: string; queries: KeptQuery[] };

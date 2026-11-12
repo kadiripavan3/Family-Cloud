@@ -486,14 +486,14 @@ class VaultRecoveryTest extends VaultTestBase {
                 .isTrue();
 
         // Astrid deletes her account: her share and her place on the list go with it.
-        send(HttpMethod.DELETE, "/v1/me", astrid, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", astrid, null, 200);
         String left = fetch("/v1/vault/helpers", nora);
         assertThat(JsonPath.<List<String>>read(left, "$.helpers[*].person.name"))
                 .containsExactly("Alex", "Kai");
         assertThat(JsonPath.<Boolean>read(left, "$.ready")).isFalse();
 
         // Nora deletes hers: nothing of it is left for anyone.
-        send(HttpMethod.DELETE, "/v1/me", nora, null, 204);
+        send(HttpMethod.DELETE, "/v1/me", nora, null, 200);
         assertThat(fetch("/v1/vault/helping", alex)).isEqualTo("[]");
         for (String table : List.of("vault_helpers", "vault_recoveries", "vault_recovery_shares")) {
             assertThat(jdbc.sql("select count(*) from " + table)

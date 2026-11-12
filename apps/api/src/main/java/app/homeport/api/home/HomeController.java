@@ -3,6 +3,7 @@ package app.homeport.api.home;
 import app.homeport.api.auth.Me;
 import app.homeport.api.home.HomeService.PersonPageResponse;
 import app.homeport.api.home.HomeService.SearchResponse;
+import app.homeport.api.home.HomeService.SwitcherResponse;
 import app.homeport.api.home.HomeService.TodayResponse;
 import app.homeport.api.thing.Place;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,14 @@ class HomeController {
                     @RequestParam(required = false)
                     LocalDate day) {
         return home.today(id, me, day);
+    }
+
+    @GetMapping("/home/circles")
+    @Operation(
+            operationId = "getCircleSwitcher",
+            summary = "Your circles, each with one short line for the switcher, and what only you can see")
+    SwitcherResponse switcher(@Me UUID me) {
+        return home.switcher(me);
     }
 
     @GetMapping("/circles/{id}/search")

@@ -1,5 +1,8 @@
 package app.homeport.api.money;
 
+import app.homeport.api.activity.ActivityKind;
+import app.homeport.api.activity.ActivityLog;
+import app.homeport.api.activity.ActivityLog.Happened;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.common.Keyset;
@@ -243,14 +246,21 @@ public class BillService {
     private final BillStore bills;
     private final CircleService circles;
     private final MoneyPeople people;
+    private final ActivityLog activity;
 
     BillService(
-            ThingService things, ThingStore thingStore, BillStore bills, CircleService circles, MoneyPeople people) {
+            ThingService things,
+            ThingStore thingStore,
+            BillStore bills,
+            CircleService circles,
+            MoneyPeople people,
+            ActivityLog activity) {
         this.things = things;
         this.thingStore = thingStore;
         this.bills = bills;
         this.circles = circles;
         this.people = people;
+        this.activity = activity;
     }
 
     // ---------- making and changing ----------
@@ -431,6 +441,9 @@ public class BillService {
                 whose.forEach(member -> bills.mark(open.id(), member, mine));
                 settleIfAllPaid(bill, open, mine);
                 thingStore.touch(id);
+                activity.record(Happened.to(row.circleId(), ActivityKind.PAID, id)
+                        .by(mine)
+                        .note(Cash.exact(open.amountCents(), bill.currency())));
             }
         } else if (open != null && open.dueOn().equals(request.dueOn())) {
             bills.unmark(open.id(), whose);

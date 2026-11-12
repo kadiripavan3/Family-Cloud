@@ -102,10 +102,28 @@ Said now, so none of it is a surprise later.
 
 One more thing about the built-in pictures. The welcome photo and the other photos are stock pictures from Unsplash. They are fine for building and testing. Before the stores, the ones that show people should be replaced or cleared, because nobody in them agreed to advertise an app. Journey's design brief says the same of its own photos.
 
+## The first build on a phone: what to check
+
+Everything was built in the cloud and walked through in a browser. These parts have never run on a phone, so the first build of Homeport itself (not Expo Go) is their first test. Go through them with the phone in your hand and tell me what you see; expect fixes.
+
+| Part | What to try | What I expect to need fixing |
+|---|---|---|
+| **Signing in** | Apple, Google, the email code. With Journey on the same phone: "Continue as …" | Needs the accounts first ([docs/09](09-connect-services.md), steps 1 and 5). Never run. |
+| **The Vault** | Set it up; unlock with Face ID; lock it, and let it lock itself; put the app in the background and look at the app switcher; copy a password and paste it a minute later; print or save the Vault key; a second phone let in with the typed key; getting back in with two helpers | How long unlocking takes on a phone is unknown (the key is stretched in JavaScript). Whether the app switcher shows a Vault screen. The print path. |
+| **Jot outside the app** | The three widgets, the Lock Screen widgets, the list's Live Activity, the pinned note, sharing into Homeport from another app, the Action Button; on Android the widgets, the quick-settings tile, the long press on the icon, the note that stays in the notifications | All of it: written from Apple's and Google's documentation, never run. Needs a build with `JOT_NATIVE=1`. |
+| **Photos** | Pick many photos at once; the camera; a video; a HEIC photo; backing up while the app is in the background; "Free up space"; pinching the wall between days, months and years | Backing up in the background and freeing space are not built beyond their switches. Pinching is not wired. |
+| **Scans** | Photograph a bill, a school letter, a passport | Reading the words off the picture is not built: it needs a text-recognition library chosen and checked for the build. Until then the lines are typed or pasted. |
+| **Voice** | A voice jot; recording an answer for Grandma's stories; playing a recording | Recording and playing inside the app need an audio library chosen for the build. In a browser a sound file stands in. |
+| **Without a connection** | Flight mode: tick a list, write on a page, add a jot; close the app; connect again | Built and tested in a browser; a phone that closes the app in between is the real test. |
+| **Notifications** | Turn them on; from a second account ask to see a password, give a reminder, add photos; tap each; "Hide details in notifications" | Needs push connected ([docs/09](09-connect-services.md), step 6). What each opens was tested only as an address. |
+| **Links** | An invitation link, a guest pass, Grandma's story page, opened on the phone with and without the app | Opening the app from a link needs your own domain (step 8). |
+| **The two apps** | Hold the You tab to hop to Journey and back; keep a journey; tell a moment as a journey | Needs both apps installed, and the changes inside Journey ([docs/10](10-journey-changes.md)). Until then Journey is a stand-in. |
+| **Everything else** | Large text, dark mode, a small phone and a big one, the keyboard over every form, one-handed reach of the bottom bars | Layout was checked at one phone size in a browser. |
+
 ## Your part
 
 - **Now:** say go, and answer any of the six calls you want different.
-- **At each milestone:** run it on your Mac, open it on your iPhone in Expo Go as with Journey, and tell me what is wrong. I'll write the steps as Journey's “Run it” page does.
+- **At each milestone:** run it on your Mac, open it on your iPhone in Expo Go as with Journey, and tell me what is wrong. The steps are in [Run it on your Mac](08-run-locally.md).
 - **Before milestone 6 is used for real:** a security review of the Vault by someone outside. I can prepare everything for it.
 - **Milestone 11:** the accounts. They are the ones Journey needs too (Apple, Google, Supabase, Cloudflare, Expo, Fly.io, Resend): made once, used by both apps. A build on your phone needs the Apple Developer Program; Journey's tech page has what it costs and how long enrolling takes.
 

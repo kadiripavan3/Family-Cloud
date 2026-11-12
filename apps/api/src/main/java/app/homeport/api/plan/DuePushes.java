@@ -1,17 +1,22 @@
 package app.homeport.api.plan;
 
 import app.homeport.api.common.Jobs;
-import app.homeport.api.notify.PushMessage;
-import app.homeport.api.notify.PushSender;
+import app.homeport.api.notify.Outbox;
+import app.homeport.api.notify.Push;
+import app.homeport.api.notify.PushDelivery;
+import app.homeport.api.notify.PushKind;
 import app.homeport.api.plan.EventStore.DueEvent;
 import app.homeport.api.plan.EventStore.GuestRow;
+import app.homeport.api.plan.PlanPeople.Person;
 import app.homeport.api.plan.ReminderStore.DueReminder;
+import app.homeport.api.plan.ReminderStore.ReminderRow;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -24,18 +29,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Tells people about what is due: an event that asked for a reminder, a little before it starts; a reminder,
- * when it is due. Every minute, in three short steps:
+ * when it is due. Every minute, in one short transaction: lock the events and reminders whose moment has
+ * come, move each one's moment on (to the next time round, or to nothing), and put a push in the
+ * {@link Outbox} for everyone who hears of it: the people who are coming or who have the job, as far as they
+ * may see it at this moment. Marking it here, in the same transaction as the pushes, is what makes each go
+ * out once.
  *
- * <ol>
- *   <li><b>Take.</b> In one transaction: lock the events and reminders whose moment has come, move each
- *       one's moment on (to the next time round, or to nothing), and work out who hears of it: the people
- *       who are coming or who have the job, as far as they may see it at this moment and haven't switched
- *       notifications off. Marking it here is what makes each push go out once.
- *   <li><b>Hand over.</b> With no transaction open, so no database connection waits on another company's
- *       server: one call to the push service per hundred pushes.
- *   <li><b>Put back.</b> Only when a call failed: the moment of the things in that call is set again, so
- *       the next minute tries them once more. A moment more than three hours old is let go instead.
- * </ol>
+ * <p>Sending is the outbox's work ({@link PushDelivery}): it checks each person's settings and what they
+ * may see once more, tries again when the push service can't be reached, and hands nothing over twice. It is
+ * asked to send straight away, so a reminder isn't half a minute late.
  */
 @Component
 public class DuePushes {
@@ -49,20 +51,30 @@ public class DuePushes {
     /** After the API was away for longer than this, what was due in between is not announced any more. */
     static final Duration TOO_LATE = Duration.ofHours(3);
 
-    /** One event or reminder that was taken: its pushes, and what to do if they can't be handed over. */
-    private record Taken(UUID id, List<PushMessage> pushes, Runnable putBack) {}
-
     private final EventStore events;
     private final ReminderStore reminders;
     private final PlanPushes pushes;
+    private final PlanPeople people;
+    private final Outbox outbox;
+    private final PushDelivery delivery;
     private final TransactionTemplate transaction;
     private final Jobs jobs;
 
     DuePushes(
-            EventStore events, ReminderStore reminders, PlanPushes pushes, TransactionTemplate transaction, Jobs jobs) {
+            EventStore events,
+            ReminderStore reminders,
+            PlanPushes pushes,
+            PlanPeople people,
+            Outbox outbox,
+            PushDelivery delivery,
+            TransactionTemplate transaction,
+            Jobs jobs) {
         this.events = events;
         this.reminders = reminders;
         this.pushes = pushes;
+        this.people = people;
+        this.outbox = outbox;
+        this.delivery = delivery;
         this.transaction = transaction;
         this.jobs = jobs;
     }
@@ -79,52 +91,23 @@ public class DuePushes {
     }
 
     /**
-     * Sends the pushes for everything that is due at this moment. Returns how many events and reminders it
-     * took. Safe to run in several copies of the API at once: each takes its own rows.
+     * Queues the pushes for everything that is due at this moment and asks for them to be sent. Returns how
+     * many events and reminders it took. Safe to run in several copies of the API at once: each takes its
+     * own rows.
      */
     public int sendDue(Instant now) {
-        List<Taken> taken = transaction.execute(status -> take(now));
-        if (taken == null || taken.isEmpty()) {
+        Integer taken = transaction.execute(status -> take(now));
+        if (taken == null || taken == 0) {
             return 0;
         }
-        // One call's worth at a time. A call that fails puts back only the things that had a push in it.
-        List<PushMessage> call = new ArrayList<>();
-        Set<Taken> inCall = new LinkedHashSet<>();
-        for (Taken one : taken) {
-            for (PushMessage push : one.pushes()) {
-                call.add(push);
-                inCall.add(one);
-                if (call.size() == PushSender.PER_CALL) {
-                    handOver(call, inCall);
-                }
-            }
-        }
-        handOver(call, inCall);
-        return taken.size();
+        delivery.deliverDue();
+        return taken;
     }
 
-    private void handOver(List<PushMessage> call, Set<Taken> inCall) {
-        if (!call.isEmpty()) {
-            try {
-                pushes.send(call);
-            } catch (RuntimeException unreachable) {
-                log.warn(
-                        "Couldn't hand {} pushes about what is due to the push service; they will be tried again: {}",
-                        call.size(),
-                        unreachable.toString());
-                transaction.executeWithoutResult(
-                        status -> inCall.forEach(one -> one.putBack().run()));
-            }
-        }
-        call.clear();
-        inCall.clear();
-    }
-
-    /** Step one. Everything whose moment has come, marked, with the pushes to hand over for it. */
-    private List<Taken> take(Instant now) {
+    /** Everything whose moment has come: marked, with a push in the outbox for each person who hears of it. */
+    private int take(Instant now) {
         Instant until = now.plus(AHEAD);
         Instant notBefore = now.minus(TOO_LATE);
-        List<Taken> taken = new ArrayList<>();
 
         List<DueEvent> dueEvents = events.lockDue(until, AT_ONCE);
         Map<UUID, List<GuestRow>> guests = events
@@ -133,10 +116,8 @@ public class DuePushes {
                 .collect(Collectors.groupingBy(GuestRow::eventId));
         for (DueEvent due : dueEvents) {
             Instant moment = due.detail().alertAt();
-            Instant next = Alerts.forEvent(due.detail(), moment);
-            events.alertAt(due.id(), next);
+            events.alertAt(due.id(), Alerts.forEvent(due.detail(), moment));
             if (moment.isBefore(notBefore)) {
-                taken.add(new Taken(due.id(), List.of(), () -> {}));
                 continue;
             }
             // Whoever made it and whoever is coming; someone who said they can't isn't told it is about to start.
@@ -153,11 +134,11 @@ public class DuePushes {
                             ? null
                             : Words.time(due.detail().startTime()),
                     due.detail().placeWords());
-            taken.add(new Taken(
-                    due.id(),
-                    pushes.messages(
-                            pushes.mayHear(due.id(), hear), due.title(), body, "/event/" + due.id(), "event_soon"),
-                    () -> events.alertAgain(due.id(), moment, next)));
+            for (UUID user : pushes.mayHear(due.id(), hear)) {
+                outbox.tell(Push.to(user, PushKind.EVENT_SOON, due.title(), body, "/event/" + due.id())
+                        .about(due.circleId(), due.id())
+                        .once("event:" + due.id() + ":" + moment + ":" + user));
+            }
         }
 
         List<DueReminder> dueReminders = reminders.takeDue(until, AT_ONCE);
@@ -166,7 +147,6 @@ public class DuePushes {
         for (DueReminder due : dueReminders) {
             Instant moment = due.detail().alertAt();
             if (moment.isBefore(notBefore)) {
-                taken.add(new Taken(due.id(), List.of(), () -> {}));
                 continue;
             }
             // Whoever has it now: whose turn it is, else everyone it is given to, else whoever made it.
@@ -174,19 +154,46 @@ public class DuePushes {
             UUID turn = due.detail().takesTurns() ? Turns.now(due.detail().turnMemberId(), given) : null;
             List<UUID> hear = turn != null ? List.of(turn) : given.isEmpty() ? List.of(due.ownerId()) : given;
             int minutes = due.detail().remindMinutes();
-            String body = Words.dots(
-                    minutes == 0
-                            ? (due.detail().dueTime() == null
-                                    ? "Due today"
-                                    : "Due at " + Words.time(due.detail().dueTime()))
-                            : "Due in " + Words.span(minutes),
-                    turn != null ? "your turn" : null);
-            taken.add(new Taken(
-                    due.id(),
-                    pushes.messages(
-                            pushes.mayHear(due.id(), hear), due.title(), body, "/reminder/" + due.id(), "reminder_due"),
-                    () -> reminders.alertAgain(due.id(), moment)));
+            String when = minutes == 0
+                    ? (due.detail().dueTime() == null
+                            ? "Due today"
+                            : "Due at " + Words.time(due.detail().dueTime()))
+                    : "Due in " + Words.span(minutes);
+            String title = turn == null ? due.title() : turnTitle(due.title(), due.detail(), minutes);
+            String body = turn == null ? when : turnBody(due, given, minutes == 0 ? null : when);
+            for (UUID user : pushes.mayHear(due.id(), hear)) {
+                outbox.tell(Push.to(user, PushKind.REMINDER_DUE, title, body, "/reminder/" + due.id())
+                        .about(due.circleId(), due.id())
+                        .once("reminder:" + due.id() + ":" + moment + ":" + user));
+            }
         }
-        return taken;
+        return dueEvents.size() + dueReminders.size();
+    }
+
+    /** "Take the bins out tonight": a turn that is due now says which part of the day it is. */
+    static String turnTitle(String title, ReminderRow reminder, int minutesBefore) {
+        if (minutesBefore != 0) {
+            return title;
+        }
+        return title + " " + Words.partOfDay(reminder.dueTime()).toLowerCase(Locale.ROOT);
+    }
+
+    /** "It's your turn. Alex has Friday.": whose it is now, and who has it the next time it comes round. */
+    private String turnBody(DueReminder due, List<UUID> given, String when) {
+        StringBuilder body = new StringBuilder(when == null ? "" : when + ". ").append("It's your turn.");
+        ReminderRow r = due.detail();
+        UUID next = Turns.after(r.turnMemberId(), given, 1);
+        if (r.repeat() != null && r.dueOn() != null && next != null && given.size() > 1) {
+            Person who = people.in(due.circleId()).get(next);
+            LocalDate day = r.repeat().nextAfter(r.dueOn(), r.dueOn()).orElse(null);
+            if (who != null && day != null) {
+                body.append(" ")
+                        .append(app.homeport.api.common.Names.first(who.name()))
+                        .append(" has ")
+                        .append(Words.weekdayNear(day, r.dueOn()))
+                        .append(".");
+            }
+        }
+        return body.toString();
     }
 }

@@ -1,10 +1,10 @@
 {
-  "phase": "Building · milestone 1 of 11 done",
+  "phase": "Building · milestones 1 to 6 of 11 done",
   "updated": "2026-11-12",
-  "summary": "**Milestone 1 is done:** sign-in, setting up a circle of any kind, people, the one sharing rule with its chip and sheet, a child's view, guest passes, Today, search and You, each built from its drawing and walked through in a browser in light and dark, as two people where sharing matters. The API for all six places is also built and tested together (845 tests). Their screens are being built now: Library, Plan and Jot, Notes, Money, the Vault and the first templates.",
+  "summary": "**Milestones 1 to 6 are done:** the spine, the **Library**, **Plan** with **Jot**, **Notes** with the first templates, **Money** and the **Vault**. Every one of Home's six places is built from its drawings and walked through in a browser in light and dark, as two or more people where sharing matters. The API for everything that is left is written too (Activity, pushes, the Sunday summary, export and leaving, the templates for every kind of circle, the link with Journey); its screens are being built now.",
   "next": [
     "Nothing is needed from you while the build runs. Each milestone ends with a short report in the chat and an update here.",
-    "The build stops when the account's usage limit is reached, as it did once on 12 Nov. Nothing is lost when that happens; it carries on when you say so.",
+    "The build stops when the account's usage limit is reached, as it did twice on 12 Nov. Nothing is lost when that happens; it carries on when you say so.",
     "When it is done you get one list of every open question, in one place.",
     "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude)."
   ],
@@ -51,6 +51,14 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-12",
+      "text": "**Milestones 5 and 6 are built and tested: Money and the Vault.** Money: bills that repeat with who pays what, reading a bill from its lines, sheets with formulas written as sentences, a row as a card, the loan planner, splitting costs with the fewest payments. Every figure is worked out by the API, so two phones never disagree. The Vault: passwords, cards, IDs, Wi‑Fi and codes scrambled in the app before they leave it; sharing one so someone can use it, see it or change it, once or until a day; the emergency plan with its wait; your Vault key, helpers who can let you back in, and a new phone. The walk-through reads the database as it goes and fails if a password, a key or a passcode is ever there in the clear. Honest limits, also on the screens: Face ID has never run on a phone (a browser uses a passcode), nothing fills a password into other apps yet, no leak check is connected, and the Vault still needs its outside review before real secrets go in. How to run it on your Mac and how to connect the real services are written (docs 08 and 09)."
+    },
+    {
+      "date": "2026-11-12",
+      "text": "**Milestones 2, 3 and 4 are built and tested: the Library, Plan with Jot, and Notes.** The Library: the wall by day with its years, a moment, the viewer, albums, places, files, a document with its dates, selecting and sharing, storage. Plan: the day's list, the month, events with answers, Type it, reminders with turns and nudges, goals. Jot: the jot bar, what was filed and where, voice (typed in a browser), sharing in, and the widgets, pinned note and Lock Screen written for the phone build. Notes: spaces and folders inside folders, pages made of blocks with live lists, bills and passwords in them, lists that keep working offline and catch up, a page kept as a surprise. With them, the templates gallery and the first ten templates that do work: meal plan, chore wheel, time capsule, and seven keepsakes. What a phone has to do is stood in and says so on the screen: the camera and reading a scan, the microphone, a map, widgets. The walk-through found and fixed several joins between places on the way; one known flaw is left for the next pass: a long list in a browser sometimes reports a harmless layout error."
+    },
     {
       "date": "2026-11-12",
       "text": "**Milestone 1 is built and tested.** 24 screens: welcome, sign-in, the setup for each kind of circle, Home with Today, the circle switcher, search, the + sheet, People, a person's page, the audience sheet, a page hidden from one person, guest passes with the guest's own web page, a child's view, You and its settings. The walk-through signs up new people, sets up a family, a couple, a flat and a crew, and checks as a second person that a private page can't be found on Today, in search or by its address until it is shared. 547 app tests and 845 API tests pass. Two faults it found in the API were fixed: a circle with ticked lists could not be deleted, and the web page for Grandma's stories refused its own form."

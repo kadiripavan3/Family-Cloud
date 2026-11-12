@@ -37,7 +37,7 @@ class PlanSources implements TodaySource, SearchSource {
 
     /** Ids only: who may see each one is checked afterwards, by Home, for everything every place found. */
     @Override
-    public List<Found> find(UUID circleId, String words, int limit) {
+    public List<Found> find(UUID circleId, UUID me, String words, int limit) {
         return jdbc.sql("""
             select found.id, found.snippet from (
               select t.id, t.updated_at, case when e.place_words ilike :pattern then e.place_words else left(e.notes, 90) end as snippet

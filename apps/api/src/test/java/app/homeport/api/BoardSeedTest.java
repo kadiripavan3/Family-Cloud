@@ -72,8 +72,14 @@ class BoardSeedTest extends ApiTest {
 
         // 5.7 This week's meals: 29 ingredients, six at home, 23 going to Groceries.
         String meals = boardOf(nora, circle, "meal_plan");
+        // Saturday's dinner at Grandma Astrid's is in the calendar, and the plan shows it from there. (Plan's
+        // sample data puts it on the coming Saturday: this week's, unless the weekend has begun.)
         assertThat(JsonPath.<List<String>>read(meals, "$.view.days[*].meals[*].name"))
-                .containsExactly("Tomato pasta", "Lentil soup", "Tacos", "Pizza night", "Dinner at Grandma Astrid's");
+                .startsWith("Tomato pasta", "Lentil soup", "Tacos", "Pizza night");
+        if (TODAY.getDayOfWeek().getValue() < 6) {
+            assertThat(JsonPath.<List<String>>read(meals, "$.view.days[5].meals[?(@.fromCalendar == true)].name"))
+                    .containsExactly("Dinner at Grandma Astrid's");
+        }
         assertThat(JsonPath.<List<String>>read(meals, "$.view.days[*].meals[*].cook.name"))
                 .containsExactly("Alex", "Nora", "Alex", "Mia");
         assertThat(JsonPath.<Integer>read(meals, "$.view.groceries.going")).isEqualTo(23);
@@ -88,14 +94,15 @@ class BoardSeedTest extends ApiTest {
 
         // 5.8 The wheel as it stands this week, and the stars so far.
         String wheel = boardOf(alex, circle, "chore_wheel");
+        // (The bins are not on the wheel: the family takes turns at those with a reminder in Plan, and the
+        // same job in both places stood on Today twice. Nora has this week off.)
         assertThat(JsonPath.<List<String>>read(wheel, "$.view.jobs[*].name"))
-                .containsExactly("Bins and recycling", "Laundry", "Set the table", "Feed Biscuit");
+                .containsExactly("Laundry", "Set the table", "Feed Biscuit");
         assertThat(JsonPath.<List<String>>read(wheel, "$.view.jobs[*].who.name"))
-                .containsExactly("Nora", "Alex", "Mia", "Leo");
+                .containsExactly("Alex", "Mia", "Leo");
         assertThat(JsonPath.<List<Integer>>read(wheel, "$.view.people[2:4].stars"))
                 .containsExactly(34, 21);
-        assertThat(JsonPath.<Boolean>read(wheel, "$.view.jobs[3].doneToday")).isTrue();
-        assertThat(JsonPath.<Boolean>read(wheel, "$.view.jobs[0].complete")).isFalse();
+        assertThat(JsonPath.<Boolean>read(wheel, "$.view.jobs[2].doneToday")).isTrue();
         assertThat(JsonPath.<String>read(wheel, "$.view.stars.into")).isEqualTo("Mia's skates fund");
 
         // 5.9 The capsule: four things sealed inside, hidden from Mia, opening on her 18th birthday.
@@ -228,7 +235,7 @@ class BoardSeedTest extends ApiTest {
         // Today and the glances come from the same boards.
         assertThat(fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora))
                 .contains("Astrid answered, by talking")
-                .contains("Bins and recycling");
+                .contains("Set the table");
         assertThat(JsonPath.<List<String>>read(fetch("/v1/circles/" + circle + "/boards", nora), "$.items[*].glance"))
                 .contains(
                         "143 good things · opens 31 Dec",

@@ -10,6 +10,7 @@ import { words } from '@/words';
 const ICONS: Record<string, LucideIcon> = {
   page: FileText,
   checklist: SquareCheck,
+  folder: Folder,
   event: Calendar,
   reminder: Bell,
   goal: Target,
@@ -18,7 +19,6 @@ const ICONS: Record<string, LucideIcon> = {
   file: File,
   document: File,
   album: Images,
-  folder: Folder,
   board: LayoutTemplate,
   split: HandCoins,
   moment: Images,

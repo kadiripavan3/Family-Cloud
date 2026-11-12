@@ -108,12 +108,13 @@ describe('Delete account', () => {
   });
 
   it('deletes the account, signs the person out and forgets what was loaded for them', async () => {
-    answer('DELETE /v1/me', 204);
+    // Only Homeport: the sign-in is shared with Journey and is left alone unless the person asks for both.
+    answer('DELETE /v1/me?journeyToo=false', 200, { signIn: 'kept', message: '' });
     client.setQueryData(['/v1/me'], { id: 'a-nora' });
     await render(page(<DeleteAccount />));
     await userEvent.setup().press(screen.getByRole('button', { name: 'Delete my account' }));
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
-    expect(api.sent.map((sent) => sent.call)).toEqual(['DELETE /v1/me']);
+    expect(api.sent.map((sent) => sent.call)).toEqual(['DELETE /v1/me?journeyToo=false']);
     await waitFor(() => expect(client.getQueryData(['/v1/me'])).toBeUndefined());
   });
 

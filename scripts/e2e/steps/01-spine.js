@@ -216,7 +216,7 @@ async function newFamily(ctx) {
     await L('What to add').waitFor();
     await R('button', { name: 'Close' }).click();
     await R('button', { name: 'Add something' }).click();
-    // A thing that isn't built yet has its own place and says so.
+    // Each of the ten opens its own screen to make one (Money's own steps fill a bill in).
     await R('button', { name: 'Bill', exact: true }).click();
     await R('heading', { name: 'Bill' }).waitFor();
     await R('button', { name: 'Close' }).click();
@@ -239,10 +239,14 @@ async function newFamily(ctx) {
     await page.waitForURL(/\/page\/[0-9a-f-]{36}/);
     await R('button', { name: 'Seen by: The Linds. Change who can see this' }).waitFor();
     babysitter = idIn(page.url());
-    // Whoever may edit types straight into it; Save appears when something changed.
-    await L('Words', { exact: true }).fill('Bedtimes: Mia at 20:30. One story.\nSnacks: fruit is in the bowl. No sweets after dinner.\nThe neighbours, Petra and Jan, are at number 7.');
-    await R('button', { name: 'Save', exact: true }).click();
-    await R('button', { name: 'Save', exact: true }).waitFor({ state: 'detached' });
+    // The words it was made with are its first block. Whoever may edit adds to it a block at a time: each is
+    // typed in place and saved by itself (Notes' own steps build a page from every kind of block).
+    await T(/^Bedtimes: Mia at 20:30\. One story\./).waitFor();
+    await R('button', { name: 'Add text' }).click();
+    await L('Text', { exact: true }).fill('The neighbours, Petra and Jan, are at number 7.');
+    const [kept] = await Promise.all([page.waitForResponse((r) => r.request().method() === 'POST' && /\/v1\/pages\/[^/]+\/changes$/.test(r.url())), R('button', { name: 'Done', exact: true }).click()]);
+    if (!kept.ok()) throw new Error(`saving a block gave ${kept.status()}`);
+    await T('The neighbours, Petra and Jan, are at number 7.').waitFor();
     await T(/^Edited/).waitFor();
     await shot('page');
     await R('button', { name: 'Back', exact: true }).click();
@@ -267,9 +271,11 @@ async function newFamily(ctx) {
   let sam;
   /** Sam looks for Nora's page every way there is. */
   const samLooks = async () => {
-    await sam.page.goto(WEB_URL + '/');
+    // (Today shows what the phone kept from last time until the API has answered: it is the answer that counts.)
+    await Promise.all([sam.page.waitForResponse((r) => /\/v1\/circles\/[^/]+\/today/.test(r.url()) && r.status() === 200, { timeout: 10000 }).catch(() => undefined), sam.page.goto(WEB_URL + '/')]);
     await sam.R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });
     await sam.T('Babysitter notes').waitFor();
+    await sam.page.waitForTimeout(300);
     const onToday = await sam.page.getByText('Gift list for Alex').count();
     await sam.R('button', { name: 'Find anything' }).click();
     await sam.L('Search The Linds').fill('headphones');
@@ -340,6 +346,7 @@ async function newFamily(ctx) {
 
   await step('surprise', async () => {
     // Nora hides it from Sam. The chip says so, and the page says until when.
+    ctx.expectNotFound = true;
     await R('button', { name: 'Seen by: Sam and you. Change who can see this' }).click();
     await R('button', { name: 'Sam: Can view. Change' }).click();
     await R('button', { name: 'Hide it from Sam' }).click();
@@ -349,10 +356,11 @@ async function newFamily(ctx) {
     await R('button', { name: 'Seen by: Not Sam. Change who can see this' }).waitFor();
     await T('Hidden from Sam').waitFor();
     await shot('surprise-new');
+    // Sam still has the page open. It asks again every few seconds, and says by itself that it isn't there any more.
+    await sam.R('heading', { name: "This isn't available" }).waitFor({ timeout: 15000 });
     // For Sam it is gone again, every way.
     const found = await samLooks();
     if (found.onToday || found.inSearch) throw new Error(`Sam found a page that is hidden from them: ${JSON.stringify(found)}`);
-    ctx.expectNotFound = true;
     await sam.page.goto(`${WEB_URL}/page/${secret}`);
     await sam.R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });
     ctx.expectNotFound = false;
@@ -376,7 +384,7 @@ async function newFamily(ctx) {
     await R('checkbox', { name: 'Bananas', checked: false }).click();
     await R('checkbox', { name: 'Bananas', checked: true }).waitFor();
     await T('2 left of 3').waitFor();
-    await L('Add a line').fill('Dog food for Biscuit');
+    await L('Add an item').fill('Dog food for Biscuit');
     await R('button', { name: 'Add', exact: true }).click();
     await R('checkbox', { name: 'Dog food for Biscuit', checked: false }).waitFor();
     await T('3 left of 4').waitFor();
@@ -392,6 +400,10 @@ async function newFamily(ctx) {
     await T('1 left of 3').waitFor();
     await shot('checklist');
     await R('button', { name: 'Back', exact: true }).click();
+    // Sam's phone goes back to Home: an open list keeps asking for news, and Sam is taken out of the circle
+    // further on, when that list is no longer theirs to ask for.
+    await sam.page.goto(`${WEB_URL}/`);
+    await sam.R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });
   });
 
   await step('people', async () => {
@@ -753,12 +765,14 @@ async function sampleCircles(ctx) {
     await T('New in the library').waitFor();
     await R('button', { name: /^Saturday at Lake Bled\. 19 new\./ }).waitFor();
     await shot('home');
-    // Something on Today opens by its kind. A bill's own screen arrives with Money; until then it says so.
+    // Something on Today opens by its kind: the bill, on its own page in Money (whose steps pay and split it).
     await R('button', { name: '€84. Electricity. Due tomorrow · split with Alex' }).click();
     await R('heading', { name: 'Electricity' }).waitFor();
-    await T(/^This is a bill\. It opens here once Money is built/).waitFor();
-    await shot('thing-to-come');
+    await T('€84.20', { exact: true }).waitFor();
+    await T(/^Split 50\/50 with Alex/).waitFor();
+    await shot('bill-from-today');
     await R('button', { name: 'Back', exact: true }).click();
+    await T('New in the library').waitFor();
   });
 
   await step('circle-switch', async () => {
@@ -869,14 +883,12 @@ async function sampleCircles(ctx) {
     await T('The party', { exact: true }).waitFor();
     await R('button', { name: 'Party budget. Sheet. €180 of €250' }).waitFor();
     await R('button', { name: /^Party prep\. List\. \d of 9 done/ }).waitFor();
-    await shot('surprise');
-    // One of them is a list: it opens as one, with its amounts at the right.
-    await R('button', { name: /^Gift ideas\. List/ }).click();
+    // One of them is a list, drawn in the page itself with its ticks and its amounts at the right (Notes'
+    // own steps tick it and open it).
     await R('checkbox', { name: 'Roller skates, size 33', checked: true }).waitFor();
     await T('€45', { exact: true }).waitFor();
     await T('Alex bought them').waitFor();
-    await shot('checklist-gifts');
-    await R('button', { name: 'Back', exact: true }).click();
+    await shot('surprise');
     await R('button', { name: 'Back', exact: true }).click();
     await R('button', { name: 'Back', exact: true }).click();
   });
@@ -940,8 +952,13 @@ async function sampleCircles(ctx) {
     await page.goto(`${WEB_URL}/sheet/00000000-0000-4000-8000-000000000000`);
     await R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });
     ctx.expectNotFound = false;
-    // ...and an address that is no thing's has no screen at all.
+    // ...and so does one whose id isn't an id at all...
+    ctx.expectNotFound = true;
     await page.goto(`${WEB_URL}/sheet/nothing-here`);
+    await R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });
+    ctx.expectNotFound = false;
+    // ...and an address that is no screen's says that.
+    await page.goto(`${WEB_URL}/nothing/here/at-all`);
     await T("There's nothing at this address").waitFor({ timeout: 20000 });
     await R('button', { name: 'Go to Home' }).click();
     await R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });

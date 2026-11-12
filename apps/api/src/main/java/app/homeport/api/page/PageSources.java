@@ -96,7 +96,7 @@ class PageSources implements TodaySource, SearchSource, GlanceSource {
     }
 
     @Override
-    public List<Found> find(UUID circleId, String words, int limit) {
+    public List<Found> find(UUID circleId, UUID me, String words, int limit) {
         return jdbc.sql("""
             select p.thing_id, substring(p.body from greatest(position(lower(:plain) in lower(p.body)) - 30, 1) for 90) as around
             from pages p join things t on t.id = p.thing_id

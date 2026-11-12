@@ -12,9 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 /**
@@ -45,8 +42,7 @@ class WhereIsItSearch implements SearchSource {
     }
 
     @Override
-    public List<Found> find(UUID circleId, String words, int limit) {
-        UUID me = viewer();
+    public List<Found> find(UUID circleId, UUID me, String words, int limit) {
         if (me == null || !asksWhere(words)) {
             return List.of();
         }
@@ -58,13 +54,5 @@ class WhereIsItSearch implements SearchSource {
             }
         }
         return found;
-    }
-
-    /** The search has no viewer in it, so the viewer is taken from the request, as the boards' own search does. */
-    private static UUID viewer() {
-        Authentication who = SecurityContextHolder.getContext().getAuthentication();
-        return who instanceof JwtAuthenticationToken token
-                ? UUID.fromString(token.getToken().getSubject())
-                : null;
     }
 }
