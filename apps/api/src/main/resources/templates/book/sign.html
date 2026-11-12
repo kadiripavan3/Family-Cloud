@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{legal/parts :: head('The guest book')}"></head>
+<body class="plain">
+  <main class="text">
+    <p class="brandline"><span class="brand">Homeport</span></p>
+
+    <th:block th:if="${state == 'gone'}">
+      <h1>This code doesn't work any more</h1>
+      <p class="lede">The flat may have changed it. Ask your hosts for the new one.</p>
+    </th:block>
+
+    <th:block th:if="${state == 'open'}">
+      <p class="eyebrow">The guest book</p>
+      <h1 th:text="${title}">The guest book</h1>
+
+      <div id="book" th:attr="data-token=${token}">
+        <p class="lede">Leave a line for the people who live here. There is no account to make.</p>
+        <label for="name">Your name</label>
+        <input id="name" type="text" maxlength="50" autocomplete="given-name" required>
+        <label for="about">Who you are to them, or where you're from (if you like)</label>
+        <input id="about" type="text" maxlength="80">
+        <label for="text">Your line</label>
+        <textarea id="text" maxlength="300" required></textarea>
+        <label for="nights">Nights you stayed (if you like)</label>
+        <input id="nights" type="text" inputmode="numeric" maxlength="4">
+        <label for="photo">A photo (if you like)</label>
+        <input id="photo" type="file" accept="image/*">
+        <p class="problem" role="alert" id="problem" hidden></p>
+        <p class="note" id="sending" hidden>Sending your line…</p>
+        <button class="btn big" type="button" id="sign">Sign the book</button>
+        <p class="note">Your hosts read it first. It joins the book when one of them says yes.</p>
+      </div>
+
+      <div id="thanks" hidden>
+        <h2>Thank you</h2>
+        <p class="lede">Your line is with your hosts. It joins the book when one of them has read it.</p>
+      </div>
+
+      <th:block th:if="${!lines.isEmpty()}">
+        <h2>From the book</h2>
+        <div class="item" th:each="line : ${lines}">
+          <p class="what" th:text="${'“' + line.text + '”'}">“A line.”</p>
+          <p class="note" th:text="${line.name}">A guest</p>
+        </div>
+      </th:block>
+
+      <script th:inline="none">
+        (function () {
+          var box = document.getElementById('book');
+          var token = box.getAttribute('data-token');
+          var button = document.getElementById('sign');
+          var problem = document.getElementById('problem');
+          var sending = document.getElementById('sending');
+          var clientId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : null;
+
+          function fail(words) {
+            sending.hidden = true;
+            button.disabled = false;
+            problem.textContent = words || "That didn't work. Please try again.";
+            problem.hidden = false;
+          }
+
+          function done() {
+            box.hidden = true;
+            document.getElementById('thanks').hidden = false;
+          }
+
+          function said(answer) {
+            return answer.json().then(function (body) { throw new Error(body.detail || ''); });
+          }
+
+          button.addEventListener('click', function () {
+            var file = document.getElementById('photo').files[0] || null;
+            var nights = document.getElementById('nights').value.trim();
+            if (nights && !/^[0-9]+$/.test(nights)) { fail('Write how many nights you stayed, as a number.'); return; }
+            problem.hidden = true;
+            sending.hidden = false;
+            button.disabled = true;
+            fetch('/book/' + token + '/sign', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clientId: clientId,
+                name: document.getElementById('name').value,
+                about: document.getElementById('about').value,
+                text: document.getElementById('text').value,
+                nights: nights ? parseInt(nights, 10) : null,
+                photoType: file ? (file.type || 'image/jpeg') : null
+              })
+            }).then(function (answer) {
+              if (!answer.ok) { return said(answer); }
+              return answer.json();
+            }).then(function (target) {
+              if (!file || !target.uploadUrl) { done(); return null; }
+              var headers = target.headers || {};
+              if (!headers['Content-Type']) { headers['Content-Type'] = file.type || 'image/jpeg'; }
+              return fetch(target.uploadUrl, { method: target.method, headers: headers, body: file })
+                .then(function (sent) {
+                  if (!sent.ok) { throw new Error("Your line is there, but the photo didn't arrive."); }
+                  return fetch('/book/' + token + '/photo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mediaId: target.mediaId })
+                  });
+                }).then(function (kept) {
+                  if (!kept.ok) { return said(kept); }
+                  done();
+                  return null;
+                });
+            }).catch(function (error) {
+              fail(error && error.message ? error.message : null);
+            });
+          });
+        })();
+      </script>
+    </th:block>
+  </main>
+  <footer>Homeport. Everything your people keep, together.</footer>
+</body>
+</html>
