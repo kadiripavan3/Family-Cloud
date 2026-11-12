@@ -337,8 +337,9 @@ exports.run = async function run(ctx) {
       await shot('albums');
       await R('tab', { name: 'Only you, 1' }).click();
       await R('button', { name: /^For the photo book\. 4$/ }).waitFor();
-      await R('tab', { name: 'From Journey, 0' }).click();
-      await T('Nothing from Journey yet').waitFor();
+      // What was kept from Journey lands here as an album of its originals (the Journey link's own steps keep one).
+      await R('tab', { name: /^From Journey, \d+$/ }).click();
+      await R('button', { name: /^Iceland ring road\./ }).waitFor();
       await shot('albums-from-journey');
       // An album made by hand: empty until photos are put in.
       await R('button', { name: 'New album', exact: true }).click();
