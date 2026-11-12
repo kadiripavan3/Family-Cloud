@@ -197,6 +197,7 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 6. **Children who use the app themselves.** Something I should have raised sooner. A child shown as a profile that a parent looks after (Mia's page, her photos, her jobs) is one thing. A child under 13 signing in on their own tablet, as the "child's view" screen (4.6) and the Sleeps widget suggest, is another: most countries have rules about that, and Journey itself is 13 and over. The simple route is the first: children are profiles, and anything a child ticks is ticked on a parent's phone. Which do you want?
 7. **Forwarding an email in.** It needs a service that receives mail for the app, which Journey doesn't have. Worth it for the first version, or later?
 8. **Which keepsakes and perks first?** Thirty-one are drawn across the four kinds of circle. They are templates, so they can arrive a few at a time. Tell me your favourites.
+9. **Reading what you type or say.** “Type it”, Jot, a scanned bill and a school letter all turn loose words into an event, a bill or a list. By rules on the phone (private, free, right for the common cases) or by an AI service (better with anything free-form, costs per use, and the words leave the phone)? [The build plan](06-build-plan.md#calls-i-need-from-you) starts with rules.
 
 ## A suggested order
 
@@ -211,3 +212,5 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 | 7 | With Journey: Keep, then Tell | The switch and "Journey at home" can come with step 1 |
 
 Each step is useful on its own and can go to a few test circles before the next begins.
+
+[The build plan](06-build-plan.md) turns this order into eleven milestones and says, screen by screen, what is built when and how it is tested.

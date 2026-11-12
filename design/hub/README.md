@@ -16,6 +16,7 @@ The build is Journey's hub build (`design/hub` in the Journey repo) with this ap
 | Tech and costs | [`docs/02-tech-stack.md`](../../docs/02-tech-stack.md); [`src/architecture.html`](src/architecture.html) replaces its mermaid chart |
 | Design system | [`design/tokens.json`](../tokens.json) |
 | Cues | [`docs/05-design-brief.md`](../../docs/05-design-brief.md) |
+| Build plan | [`docs/06-build-plan.md`](../../docs/06-build-plan.md) |
 
 The page shell is [`src/page.html`](src/page.html), with the hub's styles in [`src/styles.css`](src/styles.css), the phone screens' styles in [`src/phone.css`](src/phone.css), behaviour in [`src/app.js`](src/app.js) and icons in [`src/icons.svg`](src/icons.svg). [`build.mjs`](build.mjs) fills the shell's `{{PLACEHOLDERS}}`.
 

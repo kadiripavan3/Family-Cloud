@@ -2,7 +2,7 @@
 
 Family Cloud is the working title of an app for iOS and Android where a family, or a group of friends, keeps things together: notes, photos and videos, the calendar, bills and budgets, goals, and passwords. Each thing is private until its owner shares it. It is the sister app of **Journey** (`kadiripavan3/Journey`): same owner, same account, same design system, same stack. The owner builds both with Claude Code and knows Java well.
 
-**Where it stands:** a first design draft. Nothing is built, and nothing in the docs is decided until the owner says so.
+**Where it stands:** a first design draft and a build plan waiting for the owner's go-ahead. Nothing is built, and nothing in the docs is decided until the owner says so.
 
 ## At the start of every session
 
@@ -14,6 +14,7 @@ Family Cloud is the working title of an app for iOS and Android where a family, 
    - `docs/03-name.md`: the name shortlist
    - `docs/04-journey-link.md`: how the two apps work together, and what each codebase needs for it
    - `docs/05-design-brief.md`: what carries over from Journey's design and what is new, the screen list, what is not designed yet
+   - `docs/06-build-plan.md`: how it gets built and tested, the milestones, the calls the owner still has to make, and every screen with its milestone and test level. Its last section lists every screen, and the hub build fails when that list and the screens disagree, so change both together
 4. For any design work, open the screens in `design/hub/src/screens/` (one file per group, order in `index.json`), their styles in `design/hub/src/phone.css`, and `design/tokens.json`.
 
 ## Sources of truth

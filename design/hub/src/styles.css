@@ -137,6 +137,7 @@ code { font-family: var(--mono); }
 .steps li { counter-increment: s; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; font-size: 15px; line-height: 1.55; }
 .steps li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-size: 14px; font-weight: 800; }
 .steps li span { padding-top: 3px; }
+.steps a, .flow a, .qs a, .updates a, .status-line a { color: var(--page-accent); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .qs { display: grid; gap: 10px; }
 .qs .q { display: grid; gap: 3px; padding: 14px 16px; border-radius: 16px; background: var(--page); }
 .qs .q b { font-size: 15px; font-weight: 800; }

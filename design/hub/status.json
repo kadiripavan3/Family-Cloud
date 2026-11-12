@@ -1,19 +1,21 @@
 {
-  "phase": "First draft · design",
+  "phase": "Design draft · build plan for your go-ahead",
   "updated": "2026-11-12",
-  "summary": "The first draft has 125 screens in 19 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). **Health has been taken out**, by your decision, because it would have needed a legal check; the two parts that hold no health details (habit charts, and a goal friends walk together) stay, moved to other groups. Notes keeps its name. The kind of circle chosen at setup shapes what it gets, with a full set drawn for couples, housemates and friends beside the family one. Nothing is built yet.",
+  "summary": "The design draft has 125 screens in 19 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). **The build plan is written and waits for your go-ahead**: eleven milestones, built the way Journey was, with every screen listed against its milestone and how it is tested. 118 of the 125 screens can be tested end to end here in a browser; the rest need a real phone or live in Journey's code. Nothing is built yet.",
   "next": [
-    "One thing I should have raised sooner: children who use the app themselves. A child as a profile a parent looks after is simple; a child under 13 signing in on their own tablet is not. Tell me which you want (question 6 under *What it does*).",
-    "Look at the newest groups at the end of the **Screens**: 17 *For couples*, 18 *For housemates*, 19 *For friends*, and the two new setup screens (2.5 and 2.6). Tell me what to keep, what to drop and what is missing for each kind of circle.",
-    "If you haven't yet: groups 14 to 16 (*Jot*, *Keepsakes*, *Fair and fun*), then the rest of the **Screens**. Group 10, *With Journey*, and the sheet screens in group 8 are the ones I most want your eye on.",
-    "Try the names for the app with the **Name** switch on the Screens page, then read *The name*.",
-    "Answer the eight questions under *What it does*. Two of them shape the build most: how private is private, and whether there is a paid plan.",
+    "Read [the build plan](#build) and say go. It starts on six defaults, listed under *Calls I need from you*; tell me any you want different. The two that shape the most: children as profiles only, and reading text by rules instead of an AI service.",
+    "Read *Where the build can't match the screen* in the plan: twelve places where a phone or a missing service means the app will do a little less than the drawing. Better you hear it now.",
+    "Still open from before: the newest screen groups (17 *For couples*, 18 *For housemates*, 19 *For friends*), the names behind the **Name** switch, and the questions under *What it does*. None of them blocks the first milestone.",
     "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude). Your first three are answered by groups 14 to 16 but stay open until then."
   ],
   "open": [
     {
       "q": "Children who use the app themselves",
-      "a": "Children as profiles that a parent looks after are simple. A child under 13 signing in on their own device brings children's privacy rules with it in most countries (Journey is 13 and over). The screens show a little of both. The simple route is profiles only: anything a child ticks is ticked on a parent's phone. Which do you want?"
+      "a": "Children as profiles that a parent looks after are simple. A child under 13 signing in on their own device brings children's privacy rules with it in most countries (Journey is 13 and over). The build plan starts with **profiles only**: anything a child ticks is ticked on a parent's phone, and screen 4.6 becomes what a parent chooses to show. Say so if you want children signing in themselves."
+    },
+    {
+      "q": "Reading what you type or say",
+      "a": "“Type it”, Jot, a scanned bill and a school letter all turn loose words into an event, a bill or a list. The build plan does it **by rules on the phone**: private, free, right for dates, amounts, names and shopping, rough on anything free-form, and it always shows its reading for you to correct. An AI service would read better, costs per use, and the words leave the phone. Which do you want?"
     },
     {
       "q": "Jot on an iPhone",
@@ -33,7 +35,7 @@
     },
     {
       "q": "What is the first version?",
-      "a": "All six places is several apps' worth of work. My suggested order: circles and sharing, Library, Plan with Jot, Notes, Money, Vault, then the links with Journey, each one going to a few test circles before the next. Does anything wait for a second version?"
+      "a": "The build plan builds everything that is drawn, in eleven milestones: circles and sharing, Library, Plan with Jot, Notes, Money, Vault, keepsakes, the other kinds of circle, what ties it together, the links with Journey, then real services and phones. Each can go to a few test circles before the next. Does anything wait for a second version?"
     },
     {
       "q": "The top row",
@@ -41,7 +43,7 @@
     },
     {
       "q": "Faces",
-      "a": "Grouping photos by who is in them is powerful and sensitive, most of all with children. On the phone only, off by default, or not at all? The draft leaves it out."
+      "a": "Grouping photos by who is in them is powerful and sensitive, most of all with children. On the phone only, off by default, or not at all? The build plan leaves it out: people are tagged by hand, and “every photo she is in” fills from the tags."
     },
     {
       "q": "Forwarding an email in",
@@ -49,6 +51,10 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-12",
+      "text": "**The build plan** is written: a new page in this hub and `docs/06-build-plan.md`. Eleven milestones in Journey's way of working (everything on one computer first, real services last), what “done” means for each, how it is tested, six calls for you with the default I'll build, twelve places where the build can't match the drawing, and all 125 screens with their milestone and test level. The hub's build now fails if that list and the screens ever disagree."
+    },
     {
       "date": "2026-11-12",
       "text": "**Health is out**, by your decision: the Health place, its eleven screens, and the health details that had crept into other screens (allergies, blood type, vaccination and medical records). The top row is six places again. Two things stayed because they hold no health details: **habit charts** (now in Fair and fun) and **a goal you walk together** (now with the friends' screens, typed in by hand, no link to the phone's health app)."

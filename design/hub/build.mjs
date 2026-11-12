@@ -40,6 +40,7 @@ const DOCS = [
   { file: 'docs/01-requirements.md', view: 'requirements' },
   { file: 'docs/02-tech-stack.md', view: 'tech' },
   { file: 'docs/05-design-brief.md', view: 'cues' },
+  { file: 'docs/06-build-plan.md', view: 'build' },
 ];
 const VIEW_OF = Object.fromEntries(DOCS.map((d) => [basename(d.file), d.view]));
 const ARCH = src('architecture.html') + '\n';
@@ -269,17 +270,31 @@ ${expand(body.trim(), `${where} #${a.id}`)}
 <figcaption><b><span class="n">${num}</span>${named(a.title)}</b><span>${named(a.note)}</span><button type="button" class="cbtn" data-comment-for="shot-${a.id}" hidden>${icon('msg')}Comment on this screen</button></figcaption>
 </figure>`;
 }
+const screenList = []; // "1.1 Welcome" for every screen, to hold the build plan to
 const screenGroups = JSON.parse(src('screens/index.json')).groups.map((g, gi) => {
   const where = `screens/${g.file}`;
   if (process.env.HUB_ALLOW_MISSING && !existsSync(join(HUB, 'src', where))) { console.warn(`(skipping ${where}: not written yet)`); return null; }
   const file = src(where);
-  const shots = [...file.matchAll(SCREEN_RE)].map((m, si) => renderScreen(attrsOf(m[1]), m[2], `${gi + 1}.${si + 1}`, where));
+  const shots = [...file.matchAll(SCREEN_RE)].map((m, si) => {
+    const a = attrsOf(m[1]), num = `${gi + 1}.${si + 1}`;
+    screenList.push(`${num} ${a.title.replace(/\{notes\}/g, NOTES).replace(/\{app\}/g, 'the app')}`);
+    return renderScreen(a, m[2], num, where);
+  });
   const stray = file.replace(SCREEN_RE, '').replace(/<!--[\s\S]*?-->/g, '').trim();
   if (stray) throw new Error(`${where}: text outside <screen> blocks: "${stray.slice(0, 60)}"`);
   if (!shots.length) throw new Error(`${where}: no screens`);
   return { ...g, n: gi + 1, shots };
 }).filter(Boolean);
 const screenTotal = screenGroups.reduce((n, g) => n + g.shots.length, 0);
+
+// The build plan ends with every screen, its milestone and how it is tested. A screen added, removed, moved or renamed is changed there too.
+if (!process.env.HUB_ALLOW_MISSING) {
+  const planned = [...read('docs/06-build-plan.md').matchAll(/^\| (\d+\.\d+) \| ([^|]+?) \|/gm)].map((m) => `${m[1]} ${m[2]}`);
+  const missing = screenList.filter((s) => !planned.includes(s)), extra = planned.filter((s) => !screenList.includes(s));
+  if (missing.length || extra.length) {
+    throw new Error(`docs/06-build-plan.md is out of step with the screens.${missing.length ? ` Not in the plan: ${missing.join('; ')}.` : ''}${extra.length ? ` In the plan but not a screen: ${extra.join('; ')}.` : ''}`);
+  }
+}
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const screenSections = screenGroups.map((g) => `<section class="sg" id="screens-${g.id}" aria-labelledby="screens-${g.id}-h">
 <div class="sg-head"><span class="sg-n">${g.n}</span><div><h2 id="screens-${g.id}-h">${esc(g.title.replace(/\{notes\}/g, NOTES))}${g.tag ? ` <span class="sg-tag">${esc(g.tag)}</span>` : ''}</h2><p>${esc(g.intro.replace(/\{notes\}/g, NOTES))}</p></div><span class="sg-count">${plural(g.shots.length, 'screen')}</span></div>
@@ -298,6 +313,7 @@ const vars = {
   SCREEN_SECTIONS: screenSections,
   SCREEN_NAV: screenNav,
   SCREEN_SUMMARY: `${plural(screenTotal, 'screen')} in ${plural(screenGroups.length, 'group')}`,
+  SCREEN_COUNT: String(screenTotal),
   DEFAULT_ACCENT: base,
   DEFAULT_NAME: brandBase,
   NAME_BUTTONS: nameButtons,
