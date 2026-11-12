@@ -101,7 +101,7 @@ describe('Delete account', () => {
   it('says what goes, in one sentence, and offers the way out as plainly as the way on', async () => {
     await render(page(<DeleteAccount />));
     expect(screen.getByRole('header', { name: 'Delete your account?' })).toBeOnTheScreen();
-    expect(screen.getByText("This can't be undone. Your profile and everything you keep in Homeport are removed for good.")).toBeOnTheScreen();
+    expect(screen.getByText("This can't be undone. Your profile and everything you keep in Homeport are removed for good. Circles other people are still in stay, without your own things.")).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Keep my account' }));
     expect(mockRouter.back).toHaveBeenCalledTimes(1);
     expect(api.sent).toEqual([]);

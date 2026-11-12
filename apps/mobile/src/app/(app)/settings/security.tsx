@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { messageFor } from '@/api/fetcher';
 import { useGetMe, useGetOverview } from '@/api/generated/homeport';
 import { useSession } from '@/auth/session';
 import { LOCK_AFTER_MINUTES, PHONE_SECURITY, type PhoneSecurity, phoneSecurityKey } from '@/features/settings/security';
+import { useSettingsEditor } from '@/features/settings/useSettingsEditor';
 import { useKept } from '@/lib/useKept';
 import { layout, useTheme } from '@/theme';
 import { AppBar } from '@/ui/AppBar';
@@ -19,8 +21,9 @@ import { words } from '@/words';
 /**
  * 12.3 Privacy and security: settings, and a straight answer to "what can you see?". The Vault: nothing.
  * Everything else is private to the people you chose, but the service can read it so that search,
- * reminders and scans work. The three choices under "This phone" are remembered on this phone; Face ID and
- * locking the Vault do their work in a build on a phone, once the Vault exists, and the page says so.
+ * reminders and scans work. Face ID and the Vault's timer are remembered on this phone. "Hide details in
+ * notifications" is the account's own setting (`hideDetails`): the API then writes "A bill is due", not
+ * which or how much, on every phone the person is signed in on.
  */
 export default function PrivacyAndSecurity() {
   const { colors } = useTheme();
@@ -29,6 +32,7 @@ export default function PrivacyAndSecurity() {
   const overview = useGetOverview().data;
   const [security, setSecurity] = useKept<PhoneSecurity>(phoneSecurityKey(account), PHONE_SECURITY);
   const [choosingLock, setChoosingLock] = useState(false);
+  const { settings, save, change } = useSettingsEditor();
   const says = words.you.security;
   const phones = overview?.phones ?? [];
 
@@ -39,9 +43,16 @@ export default function PrivacyAndSecurity() {
         <GroupLabel style={{ marginTop: 14, marginHorizontal: layout.gutter }}>{says.thisPhone}</GroupLabel>
         <RowGroup>
           <ToggleRow first label={says.faceId} value={security.faceId} onChange={(faceId) => setSecurity({ ...security, faceId })} />
-          <Row label={says.lockAfter} value={says.minutes(security.lockAfterMinutes)} onPress={() => setChoosingLock(true)} />
-          <ToggleRow label={says.hideDetails.label} note={says.hideDetails.note} value={security.hideDetails} onChange={(hideDetails) => setSecurity({ ...security, hideDetails })} />
+          {/* As drawn: the choice at the end, and no arrow. */}
+          <Row label={says.lockAfter} value={says.minutes(security.lockAfterMinutes)} trailing={false} onPress={() => setChoosingLock(true)} />
+          {/* Quiet until the account's own answer is known: the switch never shows a guess. */}
+          <ToggleRow label={says.hideDetails.label} note={says.hideDetails.note} value={settings.data?.hideDetails ?? false} locked={!settings.data} onChange={(hideDetails) => change({ hideDetails })} />
         </RowGroup>
+        {save.isError ? (
+          <Txt variant="caption" color="danger" accessibilityLiveRegion="polite" style={{ marginTop: 8, marginHorizontal: layout.gutter }}>
+            {messageFor(save.error)}
+          </Txt>
+        ) : null}
         <Txt variant="footnote" color="muted" style={{ marginTop: 8, marginHorizontal: layout.gutter }}>
           {says.phoneNote}
         </Txt>

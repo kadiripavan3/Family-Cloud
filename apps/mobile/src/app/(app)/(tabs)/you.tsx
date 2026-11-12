@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useGetMe, useGetOverview } from '@/api/generated/homeport';
+import { useGetMe, useGetOverview, useGetStorage } from '@/api/generated/homeport';
+import { useCircle } from '@/features/circles/current';
 import { TAB_BAR_ROOM } from '@/features/home/places';
+import { formatBytes } from '@/features/library/sizes';
 import { PHONE_SECURITY, type PhoneSecurity, phoneSecurityKey } from '@/features/settings/security';
 import { firstName } from '@/lib/names';
 import { useKept } from '@/lib/useKept';
@@ -32,6 +34,8 @@ export default function You() {
   const { colors, shadow } = useTheme();
   const me = useGetMe().data;
   const overview = useGetOverview().data;
+  // "48 of 200 GB": what the current circle keeps, of what it may keep.
+  const storage = useGetStorage(useCircle().id).data;
   const [security] = useKept<PhoneSecurity>(phoneSecurityKey(me?.id), PHONE_SECURITY);
   const [swapping, setSwapping] = useState(false);
   const [aboutJourney, setAboutJourney] = useState(false);
@@ -89,7 +93,7 @@ export default function You() {
         <View style={{ marginTop: 14 }}>
           <RowGroup>
             <Row first icon={(c) => <Users size={18} color={c} />} label={says.rows.circles} note={overview?.circles.length ? overview.circles.join(', ') : undefined} onPress={() => router.push('/circles')} />
-            <Row icon={(c) => <CloudUpload size={18} color={c} />} label={says.rows.storage} note={overview ? says.rows.storageNote(kept) : undefined} onPress={() => router.push('/settings/storage')} />
+            <Row icon={(c) => <CloudUpload size={18} color={c} />} label={says.rows.storage} note={storage ? says.rows.storageNote(formatBytes(storage.usedBytes), formatBytes(storage.quotaBytes)) : undefined} onPress={() => router.push('/settings/storage')} />
             <Row icon={(c) => <Shield size={18} color={c} />} label={says.rows.privacy} note={says.rows.privacyNote(security.faceId, security.lockAfterMinutes)} onPress={() => router.push('/settings/security')} />
             <Row icon={(c) => <Bell size={18} color={c} />} label={says.rows.notificationsAndAppearance} onPress={() => router.push('/settings')} />
             <Row icon={(c) => <Download size={18} color={c} />} label={says.rows.leaving} onPress={() => router.push('/settings/leaving')} />

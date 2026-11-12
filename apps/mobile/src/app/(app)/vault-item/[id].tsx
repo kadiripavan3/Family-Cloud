@@ -8,6 +8,7 @@ import { useCache } from '@/api/cache';
 import { useGetVaultItem, type VaultItemPersonResponse, type VaultItemResponse } from '@/api/generated/homeport';
 import { PersonRow } from '@/features/people/PersonRow';
 import { PageProblem } from '@/features/states/PageProblem';
+import { AskToSee } from '@/features/activity/AskToSee';
 import { type Opened, openItem } from '@/features/vault/actions';
 import { VaultScreen } from '@/features/vault/Gate';
 import { healthOf } from '@/features/vault/health';
@@ -76,6 +77,8 @@ function Item({ item }: { item: VaultItemResponse }) {
   const says = words.vault.item;
   const owner = firstName(item.owner.name);
   const openable = !item.sample && item.myState === 'ready';
+  // Someone else's item that is there for this person and can't be opened by them: its owner can be asked.
+  const shut = !item.mine && !item.sample && (item.myState === 'waiting' || item.myState === 'used' || item.myState === 'stopped');
 
   // What was opened is this screen's alone: the item's key is overwritten when the screen lets go of it.
   const held = useRef<Opened | null>(null);
@@ -183,6 +186,7 @@ function Item({ item }: { item: VaultItemResponse }) {
             {problemOf(opening.error)}
           </Txt>
         ) : null}
+        {shut && !opened ? <AskToSee thing={item} owner={owner} /> : null}
 
         <GroupLabel style={{ marginHorizontal: layout.gutter }}>{says.who}</GroupLabel>
         {item.people.map((person) => (

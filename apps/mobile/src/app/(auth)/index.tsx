@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { openPage } from '@/api/config';
+import { Farewell } from '@/features/leaving/farewell';
 import { darkTheme, radius, withAlpha } from '@/theme';
 import { BrandMark, JourneyMark } from '@/ui/Brand';
 import { Button } from '@/ui/Button';
@@ -29,11 +30,15 @@ export default function Welcome() {
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={{ flex: 1, justifyContent: 'space-between', paddingHorizontal: 24 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 12 }}>
-          <BrandMark size={36} />
-          <Txt variant="titleSmall" color="onPhoto">
-            {words.common.appName}
-          </Txt>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 12 }}>
+            <BrandMark size={36} />
+            <Txt variant="titleSmall" color="onPhoto">
+              {words.common.appName}
+            </Txt>
+          </View>
+          {/* For someone who has just deleted their account: what happened to it, and to the sign-in they share with Journey. */}
+          <Farewell />
         </View>
         <View style={{ gap: 12, paddingBottom: 12 }}>
           {/* What matters most to someone who already has the other app: there is nothing new to sign up for. */}

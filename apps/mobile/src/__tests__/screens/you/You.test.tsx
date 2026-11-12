@@ -1,19 +1,22 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { useGetMe, useGetOverview } from '@/api/generated/homeport';
+import { useGetMe, useGetOverview, useGetStorage } from '@/api/generated/homeport';
 import You from '@/app/(app)/(tabs)/you';
 import { keep } from '@/lib/keep';
 import { forgetKeptChoices } from '@/lib/useKept';
 import { onPhone } from '@/test/phone';
-import { loaded, me, nora, pending } from '@/test/samples';
+import { linds, loaded, me, nora, pending } from '@/test/samples';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
-jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetOverview: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetOverview: jest.fn(), useGetStorage: jest.fn() }));
+jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds }));
 jest.mock('@/lib/keep', () => ({ keep: { get: jest.fn(() => Promise.resolve(null)), set: jest.fn(() => Promise.resolve()), remove: jest.fn(() => Promise.resolve()) } }));
 
 const who = jest.mocked(useGetMe) as unknown as jest.Mock;
 const overview = jest.mocked(useGetOverview) as unknown as jest.Mock;
+const storage = jest.mocked(useGetStorage) as unknown as jest.Mock;
+const mockLinds = linds;
 const GB = 1024 ** 3;
 
 describe('12.1 You', () => {
@@ -23,6 +26,7 @@ describe('12.1 You', () => {
     jest.mocked(keep.get).mockResolvedValue(null);
     who.mockReturnValue(loaded(me()));
     overview.mockReturnValue(loaded({ circles: ['The Linds', 'Lisbon crew', 'Nora and Alex'], notes: 214, bytesKept: 48 * GB, phones: ['ios'] }));
+    storage.mockReturnValue(loaded({ usedBytes: 48 * GB, quotaBytes: 200 * GB }));
   });
 
   it('shows who you are: the first name large, the whole name under it', async () => {
@@ -47,10 +51,11 @@ describe('12.1 You', () => {
 
   it('shows a dash for a number it does not know yet, never a nought', async () => {
     overview.mockReturnValue(pending());
+    storage.mockReturnValue(pending());
     await render(onPhone(<You />));
     expect(screen.getByLabelText('– Circles')).toBeOnTheScreen();
     expect(screen.getByLabelText('– Kept')).toBeOnTheScreen();
-    expect(screen.queryByText(/kept · backup/)).toBeNull();
+    expect(screen.queryByText(/ of 200 GB/)).toBeNull();
   });
 
   it('lists circles, storage, security, notifications and appearance, and the way out, each with where it leads', async () => {
@@ -58,7 +63,9 @@ describe('12.1 You', () => {
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: 'Your circles. The Linds, Lisbon crew, Nora and Alex' }));
     expect(mockPush).toHaveBeenLastCalledWith('/circles');
-    await user.press(screen.getByRole('button', { name: 'Storage and backup. 48 GB kept · backup arrives with the Library' }));
+    // What the current circle keeps, of what it may keep.
+    expect(storage).toHaveBeenCalledWith('c-linds');
+    await user.press(screen.getByRole('button', { name: 'Storage and backup. 48 of 200 GB' }));
     expect(mockPush).toHaveBeenLastCalledWith('/settings/storage');
     await user.press(screen.getByRole('button', { name: 'Privacy and security. Face ID on · Vault locks after 2 minutes' }));
     expect(mockPush).toHaveBeenLastCalledWith('/settings/security');
@@ -68,8 +75,14 @@ describe('12.1 You', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/settings/leaving');
   });
 
+  it('says the unit of each when what is kept and what may be kept are far apart', async () => {
+    storage.mockReturnValue(loaded({ usedBytes: 7.9 * 1024 ** 2, quotaBytes: 200 * GB }));
+    await render(onPhone(<You />));
+    expect(screen.getByText('7.9 MB of 200 GB')).toBeOnTheScreen();
+  });
+
   it('says what was chosen on this phone for security', async () => {
-    jest.mocked(keep.get).mockImplementation((key: string) => Promise.resolve(key === 'homeport.security.a-nora' ? JSON.stringify({ faceId: false, lockAfterMinutes: 1, hideDetails: true }) : null));
+    jest.mocked(keep.get).mockImplementation((key: string) => Promise.resolve(key === 'homeport.security.a-nora' ? JSON.stringify({ faceId: false, lockAfterMinutes: 1 }) : null));
     await render(onPhone(<You />));
     expect(await screen.findByText('Face ID off · Vault locks after 1 minute')).toBeOnTheScreen();
   });

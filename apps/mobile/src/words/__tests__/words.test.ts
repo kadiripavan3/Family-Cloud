@@ -45,6 +45,8 @@ describe('the catalog of words', () => {
     // Journey is named where the two apps meet: the one account, bringing things in from it, the way over to
     // it, telling a keepsake's stories there, and the Library's ways to it. Nowhere is this app called by its name.
     expect(all.filter(([, text]) => /Journey/.test(text)).map(([path]) => path)).toEqual([
+      // The Sunday summary, where Journey's news will sit beside this app's.
+      'activity.digest.sheet.lead',
       'keepsakes.stories.book.journey',
       // The Library: a moment or a selection sent on to Journey, the albums that came home from it, what is kept from it.
       'library.notYet.story',
@@ -57,6 +59,11 @@ describe('the catalog of words', () => {
       'library.select.bar.journey',
       'library.storage.journey.title',
       'library.storage.journey.none',
+      // Deleting the account, which the two apps share: only this app, or Journey too.
+      'settings.deleteAccount.which',
+      'settings.deleteAccount.choices.homeport.note',
+      'settings.deleteAccount.choices.both.label',
+      'settings.deleteAccount.choices.both.note',
       'setup.bringIn.journey.label',
       'signIn.welcome.oneAccount.1.text',
       'signIn.choose.body',
