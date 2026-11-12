@@ -24,7 +24,7 @@ Hold the **You** tab in either app and a sheet offers the other one, already sig
 
 When a journey is finished, Journey's recap gets one more button: **Keep in Porchlight** (or whatever the name becomes). You choose what comes home:
 
-- **The story as a book.** One page in Lore, laid out by itself: cover, the numbers, then each day with its words and photos. It stays linked, so an entry added later appears too.
+- **The story as a book.** One page in Notes, laid out by itself: cover, the numbers, then each day with its words and photos. It stays linked, so an entry added later appears too.
 - **The originals.** Journey shows a lighter copy of each photo. Here the full-size files are matched to what your phone already backed up, so the Library has the real thing.
 - **The route.** Drawn on your Places map.
 - **The comments and likes**, if you want the kind words kept.
@@ -99,7 +99,7 @@ Added on 12 Nov.
 |---|---|---|---|
 | One account | Nothing: it already uses Supabase sign-in | Use the same Supabase project | Small |
 | Switch between apps | A sheet on the You tab and a link that opens the other app | The same | Small |
-| Keep a journey | A "Keep" button on the recap, and one new API answer: a journey's whole story for its author | A page template for the book in Lore, a matcher from Journey's photos to Library originals | Medium |
+| Keep a journey | A "Keep" button on the recap, and one new API answer: a journey's whole story for its author | A page template for the book in Notes, a matcher from Journey's photos to Library originals | Medium |
 | Tell it as a journey | Accept a prepared draft (title, days, photos) from this app | Sort photos into days; the privacy screen | Medium |
 | Trip space | Accept a draft with dates, route and co-authors | The space with three stages; the trip book | Medium, after the two above |
 | Journey at home | An answer listing a person's active journeys for people allowed to see them | A card on Today; On this day | Small |

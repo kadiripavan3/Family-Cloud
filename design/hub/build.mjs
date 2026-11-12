@@ -106,6 +106,7 @@ function section(md, heading) {
 
 const docs = Object.fromEntries(DOCS.map((d) => [d.view, renderDoc(read(d.file), d.view)]));
 const decisions = renderDoc(section(read('docs/01-requirements.md'), /^## (\d+\.\s*)?Calls I made for this draft\s*$/), 'requirements').html;
+const decided = renderDoc(section(read('docs/01-requirements.md'), /^## Decided by you\s*$/), 'requirements').html;
 
 /* ---------- tokens ---------- */
 const ACC = tokens.accent;
@@ -168,7 +169,7 @@ const spaces = tokens.space.map((s) => `<li><code>${s}</code><i style="--s:${s}"
    Inside it: <sb> or <sb photo> (status bar), [[icon classes]] (an icon from icons.svg),
    <kb>, <kb email> or <kb num> (keyboard), <tabbar active="home|people|activity|you" [dot]>,
    <vtabs active="today|plan|notes|library|money|health|vault" [circle="couple|flat|crew"]> (the search pill and the row of seven places),
-   {lore} (the name of the place that used to be Notes, from tokens.json),
+   {notes} (the name of the Notes place, one setting in tokens.json),
    {app} and {domain} (the name and its web address, whichever name is switched on), [[brand]] (its mark),
    <aud all|me|two|us|flat|crew> (who can see a thing), <tiles imgs="a,b,c"> (small photo tiles).
    <tabbar … as="kai"> puts someone else in the You tab, for screens seen through another person's phone.
@@ -201,12 +202,12 @@ function tabbar(active, dot, who = 'me') {
     + `${tab('activity', 'Activity', 'bell')}<span class="tab${active === 'you' ? ' on' : ''}"><img src="img/av-${who}.jpg" alt="">You</span></div>`;
 }
 // The seven places things live. Home's top row switches between them, the way Airbnb's does.
-const LORE = tokens.places.notes.label;
+const NOTES = tokens.places.notes.label;
 const CIRCLE_EMOJI = { family: '👪', couple: '❤️', flat: '🏠', crew: '🤝' };
 const PLACES = [
-  ['today', 'Today', '🏡', 'Find anything', 'Pages · photos · bills · passwords'],
+  ['today', 'Today', '🏡', 'Find anything', 'Notes · photos · bills · passwords'],
   ['plan', 'Plan', '📅', 'Find a date or a job', 'Events · reminders · lists · goals'],
-  ['notes', LORE, '📖', `Search ${LORE}`, 'Pages · lists · templates'],
+  ['notes', NOTES, '📓', `Search ${NOTES === 'Notes' ? 'notes' : NOTES}`, 'Pages · checklists · templates'],
   ['library', 'Library', '📷', 'Search the library', 'People · places · words in a scan'],
   ['money', 'Money', '💰', 'Search money', 'Bills · sheets · who owes who'],
   ['health', 'Health', '💪', 'Search Health', 'Medicines · visits · moving'],
@@ -238,12 +239,12 @@ const expand = (body, where) => {
     .replace(/<kb(?: (email|num))?>/g, (m, k) => keyboard(k))
     .replace(/<tabbar active="([a-z]*)"( dot)?(?: as="([a-z]+)")?>/g, (m, a, d, w) => tabbar(a, !!d, w))
     .replace(/<vtabs active="([a-z]*)"(?: circle="([a-z]+)")?>/g, (m, a, c) => vtabs(a, c))
-    .replace(/\{lore\}/g, LORE)
+    .replace(/\{notes\}/g, NOTES)
     .replace(/<aud ([a-z]+)>/g, (m, k) => aud(k))
     .replace(/<tiles imgs="([a-z0-9, -]+)">/g, (m, l) => tiles(l))
     .replace(/\{app\}/g, '<span class="bn"></span>').replace(/\{domain\}/g, '<span class="bd"></span>')
     .replace(/\[\[([a-z0-9-]+)((?: [a-z0-9-]+)*)\]\]/g, (m, n, c) => icon(n, c));
-  const left = out.match(/\[\[|<sb\b|<kb\b|<tabbar\b|<vtabs\b|<aud\b|<tiles\b|\{app\}|\{domain\}|\{lore\}/);
+  const left = out.match(/\[\[|<sb\b|<kb\b|<tabbar\b|<vtabs\b|<aud\b|<tiles\b|\{app\}|\{domain\}|\{notes\}/);
   if (left) throw new Error(`${where}: shorthand not understood near "${out.slice(left.index, left.index + 40)}"`);
   return out;
 };
@@ -256,8 +257,8 @@ function renderScreen(a, body, num, where) {
   if (screenIds.has(a.id)) throw new Error(`${where}: screen id "${a.id}" is used twice`);
   screenIds.add(a.id);
   const classes = ['screen', 'ph', a.theme === 'dark' ? 'always-dark' : '', a.class || ''].filter(Boolean).join(' ');
-  const named = (t) => t.replace(/\{app\}/g, '<span class="bn"></span>').replace(/\{lore\}/g, LORE);
-  const label = (a.label || `${a.title} screen. ${a.note}`).replace(/\{app\}/g, 'the app').replace(/\{lore\}/g, LORE);
+  const named = (t) => t.replace(/\{app\}/g, '<span class="bn"></span>').replace(/\{notes\}/g, NOTES);
+  const label = (a.label || `${a.title} screen. ${a.note}`).replace(/\{app\}/g, 'the app').replace(/\{notes\}/g, NOTES);
   return `<figure class="shot">
 <div class="device" id="shot-${a.id}" data-comment-target role="img" aria-label="${label}">
 <div class="${classes}">
@@ -282,12 +283,12 @@ const screenGroups = JSON.parse(src('screens/index.json')).groups.map((g, gi) =>
 const screenTotal = screenGroups.reduce((n, g) => n + g.shots.length, 0);
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const screenSections = screenGroups.map((g) => `<section class="sg" id="screens-${g.id}" aria-labelledby="screens-${g.id}-h">
-<div class="sg-head"><span class="sg-n">${g.n}</span><div><h2 id="screens-${g.id}-h">${esc(g.title.replace(/\{lore\}/g, LORE))}${g.tag ? ` <span class="sg-tag">${esc(g.tag)}</span>` : ''}</h2><p>${esc(g.intro.replace(/\{lore\}/g, LORE))}</p></div><span class="sg-count">${plural(g.shots.length, 'screen')}</span></div>
+<div class="sg-head"><span class="sg-n">${g.n}</span><div><h2 id="screens-${g.id}-h">${esc(g.title.replace(/\{notes\}/g, NOTES))}${g.tag ? ` <span class="sg-tag">${esc(g.tag)}</span>` : ''}</h2><p>${esc(g.intro.replace(/\{notes\}/g, NOTES))}</p></div><span class="sg-count">${plural(g.shots.length, 'screen')}</span></div>
 <div class="gallery">
 ${g.shots.join('\n')}
 </div>
 </section>`).join('\n');
-const screenNav = screenGroups.map((g) => `<a href="#screens-${g.id}">${esc(g.title.replace(/\{lore\}/g, LORE))}<span>${g.shots.length}</span></a>`).join('');
+const screenNav = screenGroups.map((g) => `<a href="#screens-${g.id}">${esc(g.title.replace(/\{notes\}/g, NOTES))}<span>${g.shots.length}</span></a>`).join('');
 
 /* ---------- assemble ---------- */
 const vars = {
@@ -316,6 +317,7 @@ const vars = {
   STATUS_OPEN: status.open.map((o) => `<div class="q"><b>${esc(o.q)}</b><span>${inline(o.a)}</span></div>`).join(''),
   UPDATES: (status.updates || []).map((u) => `<li><time datetime="${u.date}">${fmtDate(u.date)}</time><span>${inline(u.text)}</span></li>`).join(''),
   DECISIONS: decisions,
+  DECIDED: decided,
   BUILT_AT: fmtDate(new Date().toISOString().slice(0, 10)),
   ...Object.fromEntries(DOCS.flatMap((d) => [[`DOC_${d.view.toUpperCase()}`, docs[d.view].html], [`TOC_${d.view.toUpperCase()}`, docs[d.view].toc]])),
 };

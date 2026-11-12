@@ -119,7 +119,7 @@ So a family plan has to exist. A common shape: a free amount (say 5 to 10 GB, en
 3. **Private things are less forgiving than public posts.** One wrong rule in "who can see what" shows a child's surprise or a partner's payslip to the wrong person. That rule gets the most tests.
 4. **Live editing is hard to do well.** Start with lists, where it matters most and is easiest.
 5. **The sheet engine's licence** has to be checked before it is chosen.
-6. **Health details are specially protected.** European privacy law treats them as a special category, other countries have their own rules, and Apple and Google set conditions for apps that hold them. A dose reminder is fine; a suggestion of what dose to give would make the app a medical product. This needs someone qualified before Health is built, not after.
+6. **Health details are specially protected.** European privacy law treats them as a special category, other countries have their own rules, and Apple and Google set conditions for apps that hold them. A dose reminder is fine; a suggestion of what dose to give would make the app a medical product. This needs someone qualified before Health is built, not after. You put Health in the first version on 12 Nov, so the check should start now: it decides what Health may store and say, and it is the one thing on this list that can't be done by building carefully.
 
 ## What I checked, and what I didn't
 

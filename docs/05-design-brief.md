@@ -24,7 +24,7 @@
 | Cue | Rule |
 |---|---|
 | **The audience chip** | Every page, album, bill, sheet and password carries a small chip that says who can see it: a lock and "Only you", faces and names, or the circle. It always sits in the same place: top right of a page, bottom of a card, end of a row. A soft gold chip with a crossed eye means "hidden from someone". |
-| **The seven places** | Home's top row: Today, Plan, Lore, Library, Money, Health, Vault. The same 3D icon everywhere a place is mentioned. Seven is the most the row holds. |
+| **The seven places** | Home's top row: Today, Plan, Notes, Library, Money, Health, Vault. The same 3D icon everywhere a place is mentioned. Seven is the most the row holds. |
 | **A circle's kind** | The round button in the search pill carries the circle's own icon: a family, a heart, a house, a handshake. The layout, the colours and the components never change with the kind; the words and what is offered do. |
 | **Tints** | Five small colours tell people and categories apart in a calendar or a chart. A tint is a dot or a bar, always with the person's face or name somewhere on the same screen, and never a button. |
 | **Numbers** | Money and anything in a column uses lining, equal-width figures so digits line up. Amounts carry their currency sign. |
@@ -68,7 +68,7 @@ Nora Lind is the person using the app, the same Nora as in Journey's screens. Sh
 | 2 | Set up a circle | Who is it for? · Name it and invite people · Bring your things in · All set · Made for your kind of circle · What each kind gets |
 | 3 | Home | Today · Your circles · Find anything · The + button |
 | 4 | People and sharing | People · A person's page · Who can see this? · Keep it a surprise · Guest pass · A child's view |
-| 5 | Lore | Lore · A space · A page · Add to a page · A shared list · Templates · Weekly meal plan · Chore wheel · Time capsule |
+| 5 | Notes | Notes · A space · A page · Add to a page · A shared list · Templates · Weekly meal plan · Chore wheel · Time capsule |
 | 6 | Library | The wall · Pinch out to a year · A moment · A photo · Albums · Places · Files · A document · Select and share |
 | 7 | Plan | Plan · Month · An event · Type it · Reminders · Goals · A goal |
 | 8 | Money | Money · A bill · Scan a bill · Sheets · A sheet · A row, as a card · A formula you can read · Loan planner · Splitting with friends |
@@ -85,7 +85,7 @@ Nora Lind is the person using the app, the same Nora as in Journey's screens. Sh
 | 19 | For housemates | Today, in a shared flat · Templates for a flat · The kitty · A fairer split · Heads-up · Heard in the kitchen · The guest book · Everyone who's lived here |
 | 20 | For friends | Today, with friends · Templates for friends · When can everyone? · Secret Santa · Where next? · The dictionary · Predictions · The awards |
 
-Groups 14 to 16 were added on 11 Nov after the owner's first comments, and 17 to 20 on 12 Nov. They sit at the end so the numbers of the screens already reviewed don't move. Jot belongs after Home, Health after Money, and the keepsakes, perks and the three sets for other kinds of circle with Lore.
+Groups 14 to 16 were added on 11 Nov after the owner's first comments, and 17 to 20 on 12 Nov. They sit at the end so the numbers of the screens already reviewed don't move. Jot belongs after Home, Health after Money, and the keepsakes, perks and the three sets for other kinds of circle with Notes.
 
 ## Not designed yet
 

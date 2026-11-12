@@ -33,22 +33,11 @@
 - The logo draws itself: a house with a light on. It sits well beside Journey's route mark on the same gold square.
 - It gives the features their words. A light that is on for some people and off for others is the whole sharing model; a guest pass is "leaving the light on" for the sitter.
 
-## The place that was called Notes
+## Notes stays Notes
 
-You asked for something catchier than Notes for that place in the top row. It is now **Lore**.
+You asked on 12 Nov for a catchier name for the Notes place in the top row. I tried **Lore** on the screens (what a family, a flat or a crew knows and tells). You looked and chose to keep **Notes**, the same day. The screens say Notes again.
 
-- Lore is what a group knows and tells: how the house works, Grandma's recipes, what the children said, the crew's private jokes. That is what ends up in there.
-- It fits all four kinds of circle: family lore, our lore, house lore, crew lore.
-- It is four letters, which matters in a row of seven.
-
-| Other names | For | Against |
-|---|---|---|
-| Pages | Plain and exact | Not catchy; Apple has an app called Pages |
-| Handbook | Right for a flat and a house manual | Sounds like work; wrong for a love note |
-| Almanac | Charming, a book a household keeps | Long, and not everyone knows the word |
-| Fridge | Where a home's notes really live | Sounds like food and nothing else |
-
-It is one setting in `design/tokens.json` (`places.notes.label`). A single thing you write is still called a note or a page.
+The label is still one setting (`places.notes.label` in `design/tokens.json`) should you want to try another.
 
 ## What I checked, and what I didn't
 

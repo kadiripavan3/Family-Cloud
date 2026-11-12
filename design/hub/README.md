@@ -31,7 +31,7 @@ Each group file holds `<screen>` blocks. The build adds the phone frame, the cam
   {app} {domain}                 the app's name and its web address, whichever name is switched on
   <vtabs active="money">         the search pill and the row of seven places: today, plan, notes, library, money, health, vault
   <vtabs … circle="couple">      the same in another kind of circle: couple, flat or crew
-  {lore}                         the name of the place that was called Notes (places.notes.label in the tokens)
+  {notes}                        the name of the Notes place (places.notes.label in the tokens)
   <tabbar active="home" dot>     the tab bar: home, people, activity or you; dot marks Activity; as="kai" for someone else's phone
   <aud all> <aud two> <aud me>   the audience chip: the circle, Alex and you, only you; also us, flat, crew
   <tiles imgs="canoe,pug">       small photo tiles, by file name in img/

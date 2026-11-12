@@ -1,23 +1,19 @@
 {
   "phase": "First draft · design",
   "updated": "2026-11-12",
-  "summary": "The first draft now has 134 screens in 20 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). New since yesterday: Notes is called **Lore**; **Health** is the seventh place, for every kind of circle; and the kind of circle chosen at setup now shapes what you get, with a full set drawn for couples, housemates and friends beside the family one. The hub also covers the name, the link with Journey, and what the two apps should share. Nothing is built yet and nothing here is decided.",
+  "summary": "The first draft has 134 screens in 20 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). Two things you decided on 12 Nov are now in: **Notes keeps its name**, and **Health is in the first version**. Health is the seventh place, for every kind of circle, and the kind of circle chosen at setup shapes what it gets, with a full set drawn for couples, housemates and friends beside the family one. Nothing is built yet.",
   "next": [
-    "Look at the four newest groups at the end of the **Screens**: 17 *Health*, 18 *For couples*, 19 *For housemates*, 20 *For friends*, and the two new setup screens (2.5 and 2.6). Tell me what to keep, what to drop and what is missing for each kind of circle.",
-    "Say whether **Lore** sits right as the new name for Notes. It is in the top row of every Home screen.",
+    "Health is in the first version, so its legal check now has a date: tell me which countries you will launch in first, and who should look at it. It has to be finished before the Health step is built.",
+    "Look at the newest groups at the end of the **Screens**: 17 *Health*, 18 *For couples*, 19 *For housemates*, 20 *For friends*, and the two new setup screens (2.5 and 2.6). Tell me what to keep, what to drop and what is missing for each kind of circle.",
     "If you haven't yet: groups 14 to 16 (*Jot*, *Keepsakes*, *Fair and fun*), then the rest of the **Screens**. Group 10, *With Journey*, and the sheet screens in group 8 are the ones I most want your eye on.",
-    "Try the names with the **Name** switch on the Screens page, then read *The name*.",
-    "Answer the nine questions under *What it does*. Three of them shape the build: how private is private, whether there is a paid plan, and whether Health is in the first version.",
+    "Try the names for the app with the **Name** switch on the Screens page, then read *The name*.",
+    "Answer the eight questions under *What it does*. Two of them shape the build most: how private is private, and whether there is a paid plan.",
     "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude). Your first three are answered by groups 14 to 16 but stay open until then."
   ],
   "open": [
     {
-      "q": "Lore",
-      "a": "Notes is now called Lore: what a family, a flat or a crew knows and tells. Pages, Handbook and Almanac are the others I'd consider. It is one setting."
-    },
-    {
       "q": "Health and the law",
-      "a": "Health details are a protected kind of personal data, and app stores set their own conditions for apps that hold them. The screens stay on the safe side (records and reminders, no advice), but this needs a check by someone qualified before Health is built. First version, or after it?"
+      "a": "You've put Health in the first version, so this is no longer whether but when. Health details are a protected kind of personal data, and app stores set their own conditions for apps that hold them. The screens stay on the safe side (records and reminders, no advice). A check by someone qualified has to finish before the Health step is built. Which countries first, and who does it?"
     },
     {
       "q": "Jot on an iPhone",
@@ -36,12 +32,12 @@
       "a": "Keeping a family's full-size photos and videos costs roughly US$0.75 to 3 a month per family. A free amount with a family plan is the usual answer. The numbers are yours to set."
     },
     {
-      "q": "What is the first version?",
-      "a": "All seven places is several apps' worth of work. I suggest: circles and sharing, then Library, Plan with Jot, Lore, Money, Vault, Health, in that order, each one going to a few test circles before the next."
+      "q": "What else is in the first version?",
+      "a": "Health is in, by your decision. That brings the Vault's locked storage in with it, because Health's records are kept the same way. My suggested order: circles and sharing, Library, Plan with Jot, Notes, Money, Vault, Health, then the links with Journey. Does anything wait for a second version?"
     },
     {
       "q": "The top row",
-      "a": "Today, Plan, Lore, Library, Money, Health, Vault. Seven is all the row holds. Are these the right seven, in the right order? Is anything you'd use daily more than one tap away?"
+      "a": "Today, Plan, Notes, Library, Money, Health, Vault. Seven is all the row holds. Are these the right seven, in the right order? Is anything you'd use daily more than one tap away?"
     },
     {
       "q": "Faces",
@@ -53,6 +49,10 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-12",
+      "text": "Two decisions from you. **Notes keeps its name**: Lore is gone from every screen. **Health is in the first version**: it now has its own step in the build order, straight after the Vault whose locked storage it uses, and its legal check moves to the top of the next steps."
+    },
     {
       "date": "2026-11-12",
       "text": "Three changes you asked for, 37 more screens. **Lore** is the new name for Notes. **Health** (11 screens) is the seventh place, for every circle: who gave the medicine, a sick day written down, the emergency card, moving together, and more. **A circle's kind** now shapes what it gets: two new setup screens, and a full set each for **couples**, **housemates** and **friends** (8 screens apiece: their Home, their templates, three keepsakes, three small rituals)."
