@@ -952,8 +952,13 @@ async function sampleCircles(ctx) {
     await page.goto(`${WEB_URL}/sheet/00000000-0000-4000-8000-000000000000`);
     await R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });
     ctx.expectNotFound = false;
-    // ...and an address that is no thing's has no screen at all.
+    // ...and so does one whose id isn't an id at all...
+    ctx.expectNotFound = true;
     await page.goto(`${WEB_URL}/sheet/nothing-here`);
+    await R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });
+    ctx.expectNotFound = false;
+    // ...and an address that is no screen's says that.
+    await page.goto(`${WEB_URL}/nothing/here/at-all`);
     await T("There's nothing at this address").waitFor({ timeout: 20000 });
     await R('button', { name: 'Go to Home' }).click();
     await R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });

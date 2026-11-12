@@ -245,6 +245,13 @@ class ApiDescriptionTest extends ApiTest {
                 .as("routes that answered someone who may not see the thing")
                 .isEmpty();
 
+        // An id that isn't one names nothing: the answer is "not found", as for an id nobody has, whatever the
+        // route. A question part that can't be read is still a request we couldn't read.
+        send(HttpMethod.GET, "/v1/pages/nothing-here", nora, null, 404);
+        send(HttpMethod.GET, "/v1/things/nothing-here", nora, null, 404);
+        send(HttpMethod.GET, "/v1/circles/nothing-here/today?day=2026-11-12", nora, null, 404);
+        send(HttpMethod.GET, "/v1/circles/" + circle + "/today?day=someday", nora, null, 400);
+
         // The one thing a stranger may ask about with nothing but a link: what circle the link is for.
         assertThat(fetch("/v1/join/" + code, stranger)).contains("The Linds").doesNotContain("Mia");
     }
