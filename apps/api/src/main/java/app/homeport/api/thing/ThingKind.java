@@ -20,7 +20,10 @@ public enum ThingKind {
     /** A space or a folder in Notes: a space is a folder at the top. */
     FOLDER(Place.NOTES),
     BOARD(Place.NOTES),
-    VAULT_ITEM(Place.VAULT);
+    VAULT_ITEM(Place.VAULT),
+    EVENT(Place.PLAN),
+    REMINDER(Place.PLAN),
+    GOAL(Place.PLAN);
 
     private final Place place;
 

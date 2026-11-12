@@ -163,10 +163,27 @@ class ApiDescriptionTest extends ApiTest {
                                         id(), circle, java.time.LocalDate.now().plusYears(1)),
                         201),
                 "$.id");
-        List<String> forStranger =
-                new ArrayList<>(List.of(circle, child, page, pass, album, list, folder, board, vaultItem));
+        // Plan: an event, a reminder and a goal that are Nora's alone, and something she jotted.
+        String made = "{\"clientId\":\"%s\",\"circleId\":\"" + circle
+                + "\",\"title\":\"Hers\",\"day\":\"2026-11-11\",\"timeZone\":\"UTC\",\"target\":5}";
+        String event = JsonPath.read(send(HttpMethod.POST, "/v1/events", nora, made.formatted(id()), 201), "$.id");
+        String reminder =
+                JsonPath.read(send(HttpMethod.POST, "/v1/reminders", nora, made.formatted(id()), 201), "$.id");
+        String goal = JsonPath.read(send(HttpMethod.POST, "/v1/goals", nora, made.formatted(id()), 201), "$.id");
+        String jot = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/circles/" + circle + "/jots",
+                        nora,
+                        "{\"clientId\":\"%s\",\"text\":\"Gate code 4471\"}".formatted(id()),
+                        201),
+                "$[0].id");
+
+        List<String> forStranger = new ArrayList<>(
+                List.of(circle, child, page, pass, album, list, folder, board, vaultItem, event, reminder, goal, jot));
         forStranger.addAll(library);
-        List<String> forAlex = new ArrayList<>(List.of(page, album, list, folder, board, vaultItem));
+        List<String> forAlex =
+                new ArrayList<>(List.of(page, album, list, folder, board, vaultItem, event, reminder, goal, jot));
         forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {

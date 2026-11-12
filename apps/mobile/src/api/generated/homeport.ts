@@ -30,14 +30,78 @@ import type {
 } from '@tanstack/react-query';
 
 import { apiFetch } from '../fetcher';
-export type Access = typeof Access[keyof typeof Access];
+export interface VaultKdf {
+  /** scrypt's N: a power of two, 16384 to 4194304 */
+  n?: number;
+  /** scrypt's r, 1 to 32 */
+  r?: number;
+  /** scrypt's p, 1 to 16 */
+  p?: number;
+}
 
+export interface SetUpVaultRequest {
+  /**
+     * The public key (X25519, 32 bytes), base64url
+     * @minLength 1
+     * @maxLength 43
+     */
+  publicKey: string;
+  /**
+     * The private key, sealed with a key made from the Vault key. base64url.
+     * @minLength 1
+     * @maxLength 512
+     */
+  wrappedPrivateKey: string;
+  /**
+     * The salt that went into making that key, base64url
+     * @minLength 1
+     * @maxLength 64
+     */
+  salt: string;
+  kdf: VaultKdf;
+}
 
-export const Access = {
-  edit: 'edit',
-  view: 'view',
-  none: 'none',
-} as const;
+export interface VaultRecordResponse {
+  /** False until this person has set up a Vault. Everything else is null then. */
+  setUp: boolean;
+  /**
+     * Their public key (X25519), base64url
+     * @nullable
+     */
+  publicKey: string | null;
+  /**
+     * Their private key, sealed with a key made from the Vault key
+     * @nullable
+     */
+  wrappedPrivateKey: string | null;
+  /**
+     * The salt that went into making that key, base64url
+     * @nullable
+     */
+  salt: string | null;
+  kdf: VaultKdf | null;
+  /** Counts up each time the Vault key is replaced */
+  keyVersion: number;
+  /** True once they said: I've saved my key */
+  keySaved: boolean;
+  /** @nullable */
+  createdAt: string | null;
+}
+
+export interface ReplaceVaultKeyRequest {
+  /**
+     * The same private key, sealed with a key made from the new Vault key
+     * @minLength 1
+     * @maxLength 512
+     */
+  wrappedPrivateKey: string;
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  salt: string;
+  kdf: VaultKdf;
+}
 
 export type Audience = typeof Audience[keyof typeof Audience];
 
@@ -48,22 +112,52 @@ export const Audience = {
   circle: 'circle',
 } as const;
 
-export interface PersonAccess {
-  memberId?: string;
-  access?: Access;
-}
-
 export interface Hidden {
   memberId?: string;
   through?: string;
 }
 
-export interface AudienceChange {
-  audience?: Audience;
-  everyoneEdits?: boolean;
-  people?: PersonAccess[];
-  hiddenFrom?: Hidden[];
+export type VaultAccess = typeof VaultAccess[keyof typeof VaultAccess];
+
+
+export const VaultAccess = {
+  use: 'use',
+  see: 'see',
+  change: 'change',
+} as const;
+
+export interface VaultRotation {
+  version?: number;
+  ciphertext?: string;
+  myWrappedKey?: string;
+  emergencyWrappedKey?: string;
 }
+
+export interface VaultShareWith {
+  memberId?: string;
+  access?: VaultAccess;
+  once?: boolean;
+  stopsAt?: string;
+  wrappedKey?: string;
+}
+
+export interface VaultShareChange {
+  audience?: Audience;
+  everyone?: VaultAccess;
+  people?: VaultShareWith[];
+  hiddenFrom?: Hidden[];
+  rotation?: VaultRotation;
+}
+
+export type GrantState = typeof GrantState[keyof typeof GrantState];
+
+
+export const GrantState = {
+  ready: 'ready',
+  waiting: 'waiting',
+  used: 'used',
+  stopped: 'stopped',
+} as const;
 
 export type MemberKind = typeof MemberKind[keyof typeof MemberKind];
 
@@ -84,6 +178,315 @@ export const Role = {
   child: 'child',
   guest: 'guest',
 } as const;
+
+export interface VaultItemPersonResponse {
+  memberId: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  kind: MemberKind;
+  role: Role;
+  owner: boolean;
+  /** True for the signed-in person */
+  you: boolean;
+  /**
+     * Their public key, to wrap the item's key for. Null when they have no Vault.
+     * @nullable
+     */
+  publicKey: string | null;
+  /**
+     * Why nothing can be sealed for them, when that is so: no_phone (no sign-in of their own) or no_vault
+     * @nullable
+     */
+  missing: string | null;
+  /** What they may do. Null: it isn't shared with them. */
+  access: VaultAccess | null;
+  /** Where their key stands. Null: it isn't shared with them. */
+  state: GrantState | null;
+  /** True when it is gone for them after it is opened once */
+  once: boolean;
+  /**
+     * When it stops working for them
+     * @nullable
+     */
+  stopsAt: string | null;
+  /**
+     * When they were last handed it. Only its owner is told.
+     * @nullable
+     */
+  openedAt: string | null;
+  /**
+     * When they last saved a change to it
+     * @nullable
+     */
+  changedAt: string | null;
+}
+
+export interface VaultSharingResponse {
+  itemId: string;
+  title: string;
+  audience: Audience;
+  /** With everyone: what someone gets who wasn't given something else by name */
+  everyone: VaultAccess;
+  mine: boolean;
+  people: VaultItemPersonResponse[];
+}
+
+export interface VaultKeyFor {
+  memberId?: string;
+  wrappedKey?: string;
+}
+
+export interface VaultKeysRequest {
+  /**
+     * @minItems 0
+     * @maxItems 50
+     */
+  keys: VaultKeyFor[];
+}
+
+export interface HelperAnswerRequest {
+  accept: boolean;
+}
+
+export interface HelpNeededResponse {
+  recoveryId: string;
+  startedAt: string;
+  lapsesAt: string;
+  /** True once you passed your share on */
+  given: boolean;
+}
+
+export type HelperState = typeof HelperState[keyof typeof HelperState];
+
+
+export const HelperState = {
+  asked: 'asked',
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface VaultPersonResponse {
+  /**
+     * Who they are in a circle you share. Null when you share none any more.
+     * @nullable
+     */
+  memberId: string | null;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  /** False for someone who hasn't set up a Vault: nothing can be sealed for them yet */
+  hasVault: boolean;
+  /**
+     * Their public key, to seal to. Null without a Vault.
+     * @nullable
+     */
+  publicKey: string | null;
+}
+
+export interface VaultHelpingResponse {
+  id: string;
+  person: VaultPersonResponse;
+  state: HelperState;
+  askedAt: string;
+  /** Their open recovery, when they are getting back in right now */
+  recovery: HelpNeededResponse | null;
+}
+
+export interface PassShareOnRequest {
+  /** The recovery you were shown */
+  recoveryId: string;
+  /**
+     * Your share, sealed again to the temporary public key. base64url.
+     * @minLength 1
+     * @maxLength 512
+     */
+  resealedShare: string;
+}
+
+export interface HelperShare {
+  helperId?: string;
+  sealedShare?: string;
+}
+
+export interface HelperSharesRequest {
+  /**
+     * One share for each helper who said yes, all from the same split
+     * @minItems 0
+     * @maxItems 5
+     */
+  shares: HelperShare[];
+}
+
+export interface VaultHelperResponse {
+  id: string;
+  person: VaultPersonResponse;
+  state: HelperState;
+  /** True when they keep a share of your Vault key */
+  hasShare: boolean;
+  askedAt: string;
+  /** @nullable */
+  answeredAt: string | null;
+}
+
+export interface VaultHelpersResponse {
+  /** The people you asked, in the order you asked them. Five at most. */
+  helpers: VaultHelperResponse[];
+  /** How many helpers it takes to let you back in */
+  needed: number;
+  /** True when enough helpers hold a share: you could get back in without your key */
+  ready: boolean;
+  /** True when your phone should split the key again and send new shares: someone said yes since the last split */
+  sharesDue: boolean;
+}
+
+export interface EscrowKey {
+  id?: string;
+  /** The item's key, wrapped for the trusted person */
+  wrappedKey?: string;
+}
+
+export interface EmergencyRequest {
+  /** A member of one of your circles who has a Vault */
+  trustedMemberId: string;
+  /**
+     * How long you have to say no, in hours. 48 when left out.
+     * @minimum 24
+     * @maximum 168
+     */
+  waitHours?: number;
+  /**
+     * What opens: each item's key, wrapped for the trusted person
+     * @minItems 0
+     * @maxItems 200
+     */
+  items?: EscrowKey[];
+  /**
+     * A note for the family, sealed for the trusted person. base64url, 16 KB at most.
+     * @maxLength 22000
+     */
+  note?: string;
+  /**
+     * The same note, sealed for yourself, so you can read it again
+     * @maxLength 22000
+     */
+  noteMine?: string;
+}
+
+export type VaultCategory = typeof VaultCategory[keyof typeof VaultCategory];
+
+
+export const VaultCategory = {
+  login: 'login',
+  card: 'card',
+  id: 'id',
+  wifi: 'wifi',
+  code: 'code',
+  secret: 'secret',
+} as const;
+
+export interface EmergencyItemResponse {
+  id: string;
+  title: string;
+  category: VaultCategory;
+}
+
+export type EmergencyState = typeof EmergencyState[keyof typeof EmergencyState];
+
+
+export const EmergencyState = {
+  off: 'off',
+  ready: 'ready',
+  asked: 'asked',
+  open: 'open',
+} as const;
+
+export interface VaultEmergencyResponse {
+  state: EmergencyState;
+  /** The person who can ask. Null while it is off. */
+  trusted: VaultPersonResponse | null;
+  /** How long you have to say no after they ask, in hours: 24 to 168 */
+  waitHours: number;
+  /** What opens. Two hundred at most. */
+  items: EmergencyItemResponse[];
+  /**
+     * Your note for the family, sealed for yourself so you can read it again
+     * @nullable
+     */
+  noteMine: string | null;
+  /**
+     * When they asked. Set while a request is running or has opened.
+     * @nullable
+     */
+  askedAt: string | null;
+  /**
+     * When it opens (or opened) unless you say no
+     * @nullable
+     */
+  opensAt: string | null;
+  /**
+     * When you last said no
+     * @nullable
+     */
+  refusedAt: string | null;
+  /**
+     * When it opened to them
+     * @nullable
+     */
+  openedAt: string | null;
+}
+
+export interface FilingRequest {
+  /**
+     * The folder to put it in. Null takes it out of its folder; a folder then becomes a space.
+     * @nullable
+     */
+  folderId?: string | null;
+  /**
+     * Put it just after this thing. Left out, with atStart left out too: at the end, or where it is when it stays in its folder.
+     * @nullable
+     */
+  after?: string | null;
+  /** True to put it first */
+  atStart?: boolean;
+}
+
+export interface Crumb {
+  id?: string;
+  title?: string;
+  emoji?: string;
+}
+
+export interface Filing {
+  /**
+     * The folder it is in. Null when it isn't filed, for you.
+     * @nullable
+     */
+  folderId?: string | null;
+  /** The way to it from its space: Home, House manual. Empty when it isn't filed. */
+  breadcrumb?: Crumb[];
+}
+
+export type Access = typeof Access[keyof typeof Access];
+
+
+export const Access = {
+  edit: 'edit',
+  view: 'view',
+  none: 'none',
+} as const;
+
+export interface PersonAccess {
+  memberId?: string;
+  access?: Access;
+}
+
+export interface AudienceChange {
+  audience?: Audience;
+  everyoneEdits?: boolean;
+  people?: PersonAccess[];
+  hiddenFrom?: Hidden[];
+}
 
 export interface AudiencePerson {
   memberId?: string;
@@ -109,6 +512,16 @@ export type ThingKind = typeof ThingKind[keyof typeof ThingKind];
 export const ThingKind = {
   page: 'page',
   checklist: 'checklist',
+  photo: 'photo',
+  video: 'video',
+  document: 'document',
+  album: 'album',
+  folder: 'folder',
+  board: 'board',
+  vault_item: 'vault_item',
+  event: 'event',
+  reminder: 'reminder',
+  goal: 'goal',
 } as const;
 
 export type Place = typeof Place[keyof typeof Place];
@@ -152,6 +565,149 @@ export interface AudienceResponse {
 
 export interface AboutRequest {
   memberIds: string[];
+}
+
+export interface TickRequest {
+  /** True to tick it, false to take the tick away */
+  done: boolean;
+  /** The due day you were looking at. A tick that already arrived for it changes nothing, so sending this twice ticks once. */
+  dueOn?: string;
+  /** The day on the phone. One that repeats is next due after it. */
+  day?: string;
+}
+
+export interface PersonBrief {
+  memberId?: string;
+  name?: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+}
+
+export interface AudienceChip {
+  audience?: Audience;
+  /** For some people: who, besides its owner */
+  people?: PersonBrief[];
+  /** The first names of people it is hidden from today */
+  hiddenFrom?: string[];
+}
+
+export type NoteIcon = typeof NoteIcon[keyof typeof NoteIcon];
+
+
+export const NoteIcon = {
+  none: 'none',
+  repeat: 'repeat',
+  pin: 'pin',
+  bell: 'bell',
+  clip: 'clip',
+} as const;
+
+export interface PlaceResponse {
+  /** The place in words: the post office */
+  words: string;
+  /** @nullable */
+  lat: number | null;
+  /** @nullable */
+  lng: number | null;
+  /**
+     * How near counts, in metres
+     * @nullable
+     */
+  radiusM: number | null;
+}
+
+export type Unit = typeof Unit[keyof typeof Unit];
+
+
+export const Unit = {
+  day: 'day',
+  week: 'week',
+  month: 'month',
+  year: 'year',
+} as const;
+
+export type Weekday = typeof Weekday[keyof typeof Weekday];
+
+
+export const Weekday = {
+  mon: 'mon',
+  tue: 'tue',
+  wed: 'wed',
+  thu: 'thu',
+  fri: 'fri',
+  sat: 'sat',
+  sun: 'sun',
+} as const;
+
+export interface RepeatResponse {
+  unit: Unit;
+  every: number;
+  days: Weekday[];
+  /** @nullable */
+  until: string | null;
+  /** In a few words: Thursdays, Tue and Fri, Weekdays, Every month */
+  label: string;
+}
+
+export interface ReminderResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  notes: string;
+  /** @nullable */
+  dueOn: string | null;
+  /** @nullable */
+  dueTime: string | null;
+  timeZone: string;
+  /**
+     * The moment it is due. Null without a day.
+     * @nullable
+     */
+  dueAt: string | null;
+  /** A push this many minutes before it is due; 0 for when it is due */
+  remindMinutes: number;
+  /** Null: it is done once */
+  repeat: RepeatResponse | null;
+  takesTurns: boolean;
+  /** Whose turn it is */
+  turn: PersonBrief | null;
+  /** Whose turn it is after that */
+  then: PersonBrief | null;
+  /** Who it is given to, in the order they take turns. Empty: whoever made it does it. */
+  givenTo: PersonBrief[];
+  /** Who made it */
+  askedBy: PersonBrief | null;
+  /** For one that waits for a place. The phone watches the place. */
+  place: PlaceResponse | null;
+  /** How many stars doing it earns */
+  stars: number;
+  /** Done for good, or, for one that repeats, ticked for the day asked about */
+  done: boolean;
+  /** @nullable */
+  doneAt: string | null;
+  doneBy: PersonBrief | null;
+  /**
+     * The due day the last tick was for: send it back to take the tick away
+     * @nullable
+     */
+  tickedDueOn: string | null;
+  /** True when it is the signed-in person's to do now */
+  yours: boolean;
+  /** True when the signed-in person made it and someone else has it now */
+  asked: boolean;
+  canTick: boolean;
+  /** True when a nudge can be sent now */
+  canNudge: boolean;
+  /** The small line under the title: 19:00 · Tue and Fri · takes turns */
+  note: string;
+  noteIcon: NoteIcon;
+  /** The titles of what is linked to it */
+  attached: string[];
+  createdAt: string;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
 }
 
 /**
@@ -287,6 +843,653 @@ export interface AppleSignInRequest {
   authorizationCode: string;
 }
 
+export type ReadAs = typeof ReadAs[keyof typeof ReadAs];
+
+
+export const ReadAs = {
+  event: 'event',
+  reminder: 'reminder',
+  list_item: 'list_item',
+  note: 'note',
+  code: 'code',
+} as const;
+
+export interface MoveRequest {
+  /** What it becomes: an event, a reminder, a line of a list, or a note */
+  to: ReadAs;
+  /** For a list: which one. Left out: the shopping list. */
+  listId?: string;
+  day?: string;
+  timeZone?: string;
+  audience?: Audience;
+}
+
+export type JotSource = typeof JotSource[keyof typeof JotSource];
+
+
+export const JotSource = {
+  app: 'app',
+  widget: 'widget',
+  notification: 'notification',
+  voice: 'voice',
+  share: 'share',
+  lock_screen: 'lock_screen',
+} as const;
+
+export interface JotResponse {
+  id: string;
+  /** The same for everything that came from one line */
+  batchId: string;
+  words: string;
+  source: JotSource;
+  /** What it became. code: it was held back and hasn't been kept anywhere yet. */
+  became: ReadAs;
+  title: string;
+  /** Where it went, in a few words: Groceries, Reminder · tomorrow 9:00, Asked Alex · today 18:00 */
+  where: string;
+  /**
+     * The event, reminder or page it made, or the list it went to
+     * @nullable
+     */
+  thingId: string | null;
+  thingKind: ThingKind | null;
+  /**
+     * For a line of a list: the line
+     * @nullable
+     */
+  itemId: string | null;
+  /** True when what it made isn't there any more, or isn't shared with you any more */
+  gone: boolean;
+  createdAt: string;
+}
+
+export type Answer = typeof Answer[keyof typeof Answer];
+
+
+export const Answer = {
+  going: 'going',
+  maybe: 'maybe',
+  cant: 'cant',
+} as const;
+
+export interface AnswerRequest {
+  answer: Answer;
+}
+
+export interface GuestResponse {
+  id: string;
+  /**
+     * Their place in the circle. Null for someone from outside it.
+     * @nullable
+     */
+  memberId: string | null;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  /** What they do there, after their name: is taking her, drives. Empty for most. */
+  part: string;
+  /** Null: hasn't answered */
+  answer: Answer | null;
+  /** True for the signed-in person */
+  you: boolean;
+}
+
+export interface ThingBrief {
+  id?: string;
+  circleId?: string;
+  kind?: ThingKind;
+  place?: Place;
+  title?: string;
+  updatedAt?: string;
+  mine?: boolean;
+  canEdit?: boolean;
+  chip?: AudienceChip;
+  /**
+     * Where it stands, in a few words: 4 of 9 done
+     * @nullable
+     */
+  glance?: string | null;
+}
+
+export interface EventResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  /** The day it starts, on the calendar where it happens */
+  day: string;
+  /**
+     * Null: all day
+     * @nullable
+     */
+  time: string | null;
+  endDay: string;
+  /**
+     * Null: all day, or no end said
+     * @nullable
+     */
+  endTime: string | null;
+  allDay: boolean;
+  timeZone: string;
+  /**
+     * The moment it starts. Null for all day.
+     * @nullable
+     */
+  startsAt: string | null;
+  /** @nullable */
+  endsAt: string | null;
+  /** Where, in words: At home, Trubarjeva 12 */
+  place: string;
+  notes: string;
+  /** @nullable */
+  coverUrl: string | null;
+  /**
+     * A push this many minutes before it starts. Null: none.
+     * @nullable
+     */
+  remindMinutes: number | null;
+  /**
+     * 1 hour before
+     * @nullable
+     */
+  remindLabel: string | null;
+  /** Null: it happens once */
+  repeat: RepeatResponse | null;
+  /**
+     * For one that repeats: the next day it happens, counted from the day asked about
+     * @nullable
+     */
+  nextDay: string | null;
+  guests: GuestResponse[];
+  /** What the signed-in person answered */
+  myAnswer: Answer | null;
+  going: number;
+  maybe: number;
+  cant: number;
+  /** How many haven't answered */
+  unanswered: number;
+  /** What was linked to it: its checklist, its budget, its album */
+  links: ThingBrief[];
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface ListRequest {
+  listId: string;
+}
+
+export interface ListBriefResponse {
+  /** @nullable */
+  id: string | null;
+  title: string;
+}
+
+export type CodesGo = typeof CodesGo[keyof typeof CodesGo];
+
+
+export const CodesGo = {
+  ask: 'ask',
+  vault: 'vault',
+  note: 'note',
+} as const;
+
+export type TimedAs = typeof TimedAs[keyof typeof TimedAs];
+
+
+export const TimedAs = {
+  reminder: 'reminder',
+  event: 'event',
+} as const;
+
+export interface WaysRequest {
+  pinnedNote?: boolean;
+  voice?: boolean;
+  share?: boolean;
+  timedAs?: TimedAs;
+  codes?: CodesGo;
+  /** The list your shopping goes to in this circle */
+  buyListId?: string;
+  /** True: back to the circle's own shopping list */
+  useCirclesList?: boolean;
+}
+
+export interface WaysResponse {
+  /** A line to type in, pinned in the notifications */
+  pinnedNote: boolean;
+  voice: boolean;
+  /** Share from any app */
+  share: boolean;
+  /** What a jot with a day or a time becomes when the words don't say */
+  timedAs: TimedAs;
+  /** What happens to a jot that looks like a code or a password */
+  codes: CodesGo;
+  /** Where something to buy goes: your own choice, else the circle's list, else a list that will be made */
+  buyList: ListBriefResponse;
+  /** True when that is your own choice and not the circle's list */
+  buyListIsYours: boolean;
+  /**
+     * The address to forward email to. Null until receiving email is connected.
+     * @nullable
+     */
+  forwardAddress: string | null;
+}
+
+export interface LookRequest {
+  showTicked: boolean;
+}
+
+export type Repeats = typeof Repeats[keyof typeof Repeats];
+
+
+export const Repeats = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface ItemResponse {
+  id: string;
+  text: string;
+  /** A small line under it: Alex bought them */
+  note: string;
+  /** The heading it stands under, or empty: Dairy, Gift ideas */
+  section: string;
+  /**
+     * A price or a budget, in cents
+     * @nullable
+     */
+  amountCents: number | null;
+  done: boolean;
+  /** @nullable */
+  doneAt: string | null;
+  /** Who ticked it */
+  doneBy: PersonBrief | null;
+  /** Whose job it is */
+  assignedTo: PersonBrief | null;
+  /** Who added it */
+  addedBy: PersonBrief | null;
+  /** When it was added */
+  addedAt: string;
+  /** Set for a line that comes back by itself after it was ticked */
+  repeats: Repeats | null;
+  /** The first names of people this line is kept from. They don't get the line at all. */
+  hiddenFrom: string[];
+}
+
+export interface ListSection {
+  /** The heading. Empty for the lines under no heading. */
+  name?: string;
+  left?: number;
+  done?: number;
+  /**
+     * The amounts under it added up, in cents. Null when no line has one.
+     * @nullable
+     */
+  sumCents?: number | null;
+}
+
+export type Did = typeof Did[keyof typeof Did];
+
+
+export const Did = {
+  added: 'added',
+  ticked: 'ticked',
+} as const;
+
+export interface ListHand {
+  who?: PersonBrief;
+  did?: Did;
+  at?: string;
+}
+
+export interface ListSuggestion {
+  text?: string;
+  section?: string;
+}
+
+export interface ChecklistResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+  left: number;
+  done: number;
+  items: ItemResponse[];
+  emoji: string;
+  /** The currency of its amounts, as three letters: EUR */
+  currency: string;
+  /** True for a shopping list: a new line finds its aisle, and the aisles keep their order */
+  aisles: boolean;
+  /** Changes whenever anything in this answer would. It is also the answer's ETag: send that back as If-None-Match to be told 304 while nothing has changed. */
+  version: string;
+  /**
+     * Every amount added up, in cents. Null when no line has one.
+     * @nullable
+     */
+  sumCents: number | null;
+  /**
+     * The amounts of the ticked lines added up
+     * @nullable
+     */
+  sumDoneCents: number | null;
+  /** The headings in the order to show them, each with its own counts and sum */
+  sections: ListSection[];
+  /** Who else is in the list right now */
+  here: ListHand[];
+  /** What this list held most often before and doesn't hold now. Eight at most. */
+  suggestions: ListSuggestion[];
+  /** Your own choice for this list: whether ticked lines are shown */
+  showTicked: boolean;
+  /** True when you pinned it */
+  pinned: boolean;
+  /**
+     * The folder it is in, when you may see that folder
+     * @nullable
+     */
+  folderId: string | null;
+  /** The way to it from its space: Home, House manual */
+  breadcrumb: Crumb[];
+  /** Who changed it last */
+  editedBy: PersonBrief | null;
+  /** @nullable */
+  editedAt: string | null;
+}
+
+export interface StartRecoveryRequest {
+  clientId: string;
+  /**
+     * The public key of a key pair this phone made just for this. base64url.
+     * @minLength 1
+     * @maxLength 43
+     */
+  tempPublicKey: string;
+}
+
+export interface RecoveryHelperResponse {
+  person: VaultPersonResponse;
+  /** True once they passed their share on */
+  given: boolean;
+  /**
+     * Their share, sealed to the temporary key. Only while the recovery is open and enough have helped.
+     * @nullable
+     */
+  resealedShare: string | null;
+}
+
+export type RecoveryState = typeof RecoveryState[keyof typeof RecoveryState];
+
+
+export const RecoveryState = {
+  open: 'open',
+  done: 'done',
+  cancelled: 'cancelled',
+  lapsed: 'lapsed',
+} as const;
+
+export interface VaultRecoveryResponse {
+  id: string;
+  state: RecoveryState;
+  startedAt: string;
+  lapsesAt: string;
+  /** @nullable */
+  endedAt: string | null;
+  /** The temporary public key it was started with, so a phone can tell it is its own */
+  tempPublicKey: string;
+  needed: number;
+  given: number;
+  /** True when enough helpers have helped and the shares below can rebuild the key */
+  ready: boolean;
+  helpers: RecoveryHelperResponse[];
+}
+
+export type VaultHealth = typeof VaultHealth[keyof typeof VaultHealth];
+
+
+export const VaultHealth = {
+  ok: 'ok',
+  weak: 'weak',
+  reused: 'reused',
+  leaked: 'leaked',
+} as const;
+
+export interface NewVaultItemRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  category: VaultCategory;
+  /**
+     * A site or a label, kept in the clear: netflix.com, home
+     * @minLength 0
+     * @maxLength 120
+     */
+  site?: string;
+  /** For an ID: the day it runs out */
+  expiresOn?: string;
+  /** How good the password is, as the phone judged. OK when left out. */
+  health?: VaultHealth;
+  /**
+     * Who it is about: members of the circle
+     * @minItems 0
+     * @maxItems 30
+     */
+  about?: string[];
+  /**
+     * Everything else, sealed with the item's own key. base64url, 64 KB at most.
+     * @minLength 1
+     * @maxLength 87382
+     */
+  ciphertext: string;
+  /**
+     * The item's key, wrapped for yourself. base64url.
+     * @minLength 1
+     * @maxLength 512
+     */
+  wrappedKey: string;
+}
+
+export interface VaultItemResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  category: VaultCategory;
+  site: string;
+  /** @nullable */
+  expiresOn: string | null;
+  renewSoon: boolean;
+  health: VaultHealth;
+  /** Counts up with every new ciphertext. Send it back when saving one. */
+  version: number;
+  updatedAt: string;
+  /** When its secret part was last changed */
+  changedAt: string;
+  mine: boolean;
+  /** True when you may save changes: it is yours, or it was shared with you to change */
+  canEdit: boolean;
+  chip: AudienceChip;
+  owner: PersonBrief;
+  myAccess: VaultAccess;
+  myState: GrantState;
+  /** True when it is gone for you after you open it once */
+  once: boolean;
+  /**
+     * When it stops working for you
+     * @nullable
+     */
+  stopsAt: string | null;
+  sample: boolean;
+  glance: string;
+  /** Who it is about, so it shows on their page */
+  about: PersonBrief[];
+  /** Who can use it: its owner first, then everyone it is shared with */
+  people: VaultItemPersonResponse[];
+}
+
+export interface VaultOpenedResponse {
+  id: string;
+  version: number;
+  /** The item, sealed with its own key */
+  ciphertext: string;
+  /** The item's key, wrapped for you */
+  wrappedKey: string;
+  access: VaultAccess;
+  /** True when this was the one time: the API has just erased your key for it */
+  once: boolean;
+}
+
+export interface AskHelperRequest {
+  clientId: string;
+  /** A member of one of your circles who has a Vault */
+  memberId: string;
+}
+
+export interface EntrustedOpenedResponse {
+  id: string;
+  title: string;
+  category: VaultCategory;
+  site: string;
+  ciphertext: string;
+  wrappedKey: string;
+}
+
+export interface EntrustedItemResponse {
+  id: string;
+  title: string;
+  category: VaultCategory;
+  site: string;
+  /**
+     * When you were first handed it
+     * @nullable
+     */
+  openedAt: string | null;
+}
+
+export interface EntrustedVaultResponse {
+  id: string;
+  owner: VaultPersonResponse;
+  state: EmergencyState;
+  waitHours: number;
+  /** @nullable */
+  askedAt: string | null;
+  /**
+     * When it opens, unless they say no before then
+     * @nullable
+     */
+  opensAt: string | null;
+  /**
+     * When they last said no
+     * @nullable
+     */
+  refusedAt: string | null;
+  /** @nullable */
+  openedAt: string | null;
+  /**
+     * Their note, sealed for you. Only once it is open.
+     * @nullable
+     */
+  note: string | null;
+  /** What opened to you. Empty until it is open. */
+  items: EntrustedItemResponse[];
+}
+
+export interface Recurrence {
+  unit: Unit;
+  /** Every how many days, weeks, months or years. Left out: every one. */
+  every?: number;
+  /** For weeks: on which days. Left out: the day of the week it starts on. */
+  days?: Weekday[];
+  /**
+     * The last day it may happen on. Left out: it goes on.
+     * @nullable
+     */
+  until?: string | null;
+}
+
+export interface PlaceRequest {
+  /**
+     * The place in words: the post office
+     * @minLength 0
+     * @maxLength 200
+     */
+  words: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  lat?: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  lng?: number;
+  /**
+     * How near counts, in metres. Left out: 200.
+     * @minimum 50
+     * @maximum 5000
+     */
+  radiusM?: number;
+}
+
+export interface NewReminderRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 0
+     * @maxLength 4000
+     */
+  notes?: string;
+  /** Left out: no day. It waits for a place, or for some time. */
+  dueOn?: string;
+  /** Left out: any time that day */
+  dueTime?: string;
+  /**
+     * The time zone of the phone, such as Europe/Ljubljana
+     * @minLength 1
+     */
+  timeZone: string;
+  /**
+     * Push this many minutes before it is due. Left out: when it is due.
+     * @minimum 0
+     * @maximum 40320
+     */
+  remindMinutes?: number;
+  repeat?: Recurrence;
+  /**
+     * Who it is given to, in the order they take turns. Giving it shows it to them.
+     * @minItems 0
+     * @maxItems 30
+     */
+  givenTo?: string[];
+  /** True: one of them has it at a time, and each tick hands it on */
+  takesTurns?: boolean;
+  place?: PlaceRequest;
+  /**
+     * How many stars doing it earns
+     * @minimum 0
+     * @maximum 20
+     */
+  stars?: number;
+  /**
+     * Whose page it shows on
+     * @minItems 0
+     * @maxItems 30
+     */
+  about?: string[];
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+}
+
 export interface NewPageRequest {
   clientId: string;
   circleId: string;
@@ -296,38 +1499,66 @@ export interface NewPageRequest {
      */
   title?: string;
   /**
+     * Words to start with: they become the page's first block of text
      * @minLength 0
      * @maxLength 100000
      */
   body?: string;
   /** Left out: what the circle's kind starts things as */
   audience?: Audience;
+  /**
+     * The folder to file it in. Left out: not filed.
+     * @nullable
+     */
+  folderId?: string | null;
+  /**
+     * @minLength 0
+     * @maxLength 32
+     */
+  emoji?: string;
 }
 
-export interface PersonBrief {
-  memberId?: string;
-  name?: string;
-  /** @nullable */
-  avatarUrl?: string | null;
-}
+export type BlockKind = typeof BlockKind[keyof typeof BlockKind];
 
-export interface AudienceChip {
-  audience?: Audience;
-  /** For some people: who, besides its owner */
-  people?: PersonBrief[];
-  /** The first names of people it is hidden from today */
-  hiddenFrom?: string[];
-}
 
-export interface PageResponse {
-  id: string;
-  circleId: string;
-  title: string;
-  body: string;
-  updatedAt: string;
-  mine: boolean;
-  canEdit: boolean;
-  chip: AudienceChip;
+export const BlockKind = {
+  paragraph: 'paragraph',
+  heading: 'heading',
+  bullet: 'bullet',
+  checklist: 'checklist',
+  photo: 'photo',
+  file: 'file',
+  place: 'place',
+  live: 'live',
+} as const;
+
+export type MarkKind = typeof MarkKind[keyof typeof MarkKind];
+
+
+export const MarkKind = {
+  bold: 'bold',
+  italic: 'italic',
+  strike: 'strike',
+  link: 'link',
+  mention: 'mention',
+} as const;
+
+export interface Mark {
+  /** Where it starts in the text, from 0 */
+  start?: number;
+  /** Where it ends: the place just after its last character */
+  end?: number;
+  kind?: MarkKind;
+  /**
+     * For a link: the address, starting with http:// or https://
+     * @nullable
+     */
+  url?: string | null;
+  /**
+     * For a name: the member it is
+     * @nullable
+     */
+  memberId?: string | null;
 }
 
 export type MediaKind = typeof MediaKind[keyof typeof MediaKind];
@@ -339,6 +1570,246 @@ export const MediaKind = {
   file: 'file',
   audio: 'audio',
 } as const;
+
+export interface MediaResponse {
+  id: string;
+  kind: MediaKind;
+  /** A picture: the photo itself, or null for a file with no picture */
+  url: string;
+  /**
+     * The same picture, small, for lists and grids
+     * @nullable
+     */
+  thumbUrl: string | null;
+  /**
+     * For a video, a document or a recording: the file itself
+     * @nullable
+     */
+  fileUrl: string | null;
+  /** @nullable */
+  fileName: string | null;
+  contentType: string;
+  /** @nullable */
+  width: number | null;
+  /** @nullable */
+  height: number | null;
+  /** @nullable */
+  durationSeconds: number | null;
+  /** @nullable */
+  bytes: number | null;
+}
+
+export interface BlockResponse {
+  id: string;
+  kind: BlockKind;
+  /** The words: of a text block, under a photo or a file, or naming a place */
+  text: string;
+  /** For text: what is bold, a link or a name, as ranges over the text */
+  marks: Mark[];
+  /** For a list or a live block: the thing it shows, as it stands now. Null when you may not see it. */
+  thing: ThingBrief | null;
+  /** For a list you may see: the list with its lines, to draw and tick here */
+  checklist: ChecklistResponse | null;
+  /** True when it shows something you can't see: draw a quiet placeholder, nothing more */
+  unseen: boolean;
+  /** For a photo or a file */
+  media: MediaResponse | null;
+  /** @nullable */
+  lat: number | null;
+  /** @nullable */
+  lng: number | null;
+  updatedAt: string;
+}
+
+export interface PageResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  /** The page's plain words, written from its blocks. Search and guests read these. */
+  body: string;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+  emoji: string;
+  /** Changes whenever anything in this answer would. It is also the answer's ETag: send that back as If-None-Match to be told 304 while nothing has changed. */
+  version: string;
+  /** Who changed it last */
+  editedBy: PersonBrief | null;
+  /** @nullable */
+  editedAt: string | null;
+  /**
+     * The folder it is in, when you may see that folder
+     * @nullable
+     */
+  folderId: string | null;
+  /** The way to it from its space: Home, House manual */
+  breadcrumb: Crumb[];
+  /** True when you pinned it */
+  pinned: boolean;
+  /** What the page is made of, in order. 500 at most. */
+  blocks: BlockResponse[];
+}
+
+export interface SharedInside {
+  /** How many things inside now have the folder's audience */
+  changed?: number;
+  /** How many things inside you can see but aren't yours to share */
+  notYours?: number;
+}
+
+export interface BlockChangeRequest {
+  /**
+     * A paragraph, a heading and a bullet can become one another
+     * @nullable
+     */
+  kind?: BlockKind;
+  /**
+     * @minLength 0
+     * @maxLength 100000
+     */
+  text?: string;
+  /**
+     * Send the marks with the text they belong to. New text without marks has none.
+     * @minItems 0
+     * @maxItems 200
+     */
+  marks?: Mark[];
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  /** True to take the point of a place away and keep its words */
+  removePoint?: boolean;
+  /**
+     * Move it to just after this block (its id, or the clientId it was added with)
+     * @nullable
+     */
+  after?: string | null;
+  /** True to move it to the top */
+  atStart?: boolean;
+}
+
+export type ChangeOp = typeof ChangeOp[keyof typeof ChangeOp];
+
+
+export const ChangeOp = {
+  add: 'add',
+  change: 'change',
+  remove: 'remove',
+} as const;
+
+export interface NewBlockRequest {
+  clientId: string;
+  kind: BlockKind;
+  /**
+     * The words: of a text block, under a photo or a file, or naming a place
+     * @minLength 0
+     * @maxLength 100000
+     */
+  text?: string;
+  /**
+     * For text: what is bold, a link or a name
+     * @minItems 0
+     * @maxItems 200
+     */
+  marks?: Mark[];
+  /**
+     * Put it just after this block (its id, or the clientId it was added with). Left out, or when that block is gone: at the end.
+     * @nullable
+     */
+  after?: string | null;
+  /** True to put it first */
+  atStart?: boolean;
+  /**
+     * For a live block: the thing to show. For a list: an existing list to draw here; left out, a new list is started in the page.
+     * @nullable
+     */
+  thingId?: string | null;
+  /**
+     * For a photo or a file: your own finished upload, made for this block
+     * @nullable
+     */
+  mediaId?: string | null;
+  /**
+     * For a place: its point on the map, with lng
+     * @nullable
+     */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  /**
+     * For a new list: its name. Left out: the page's title.
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * For a new list: lines to start with
+     * @minItems 0
+     * @maxItems 100
+     * @items.minLength 0
+     * @items.maxLength 300
+     */
+  items?: string[];
+}
+
+export interface LateBlockChange {
+  op: ChangeOp;
+  /**
+     * For change and remove: the block, by its id or by the clientId it was added with
+     * @nullable
+     */
+  blockId?: string | null;
+  /**
+     * For add: the new block, as it would be sent to add it
+     * @nullable
+     */
+  add?: NewBlockRequest;
+  /**
+     * For change: what to change, as it would be sent to change it
+     * @nullable
+     */
+  change?: BlockChangeRequest;
+}
+
+export interface LateBlockChanges {
+  /**
+     * @minItems 0
+     * @maxItems 200
+     */
+  changes: LateBlockChange[];
+}
+
+export type Outcome = typeof Outcome[keyof typeof Outcome];
+
+
+export const Outcome = {
+  done: 'done',
+  gone: 'gone',
+  refused: 'refused',
+} as const;
+
+export interface BlockAnswer {
+  outcome?: Outcome;
+  /**
+     * The block it was about, when there is one
+     * @nullable
+     */
+  blockId?: string | null;
+  /**
+     * What happened, in a sentence, when it wasn't simply done
+     * @nullable
+     */
+  said?: string | null;
+}
+
+export interface BlockAnswers {
+  /** One answer for each change, in the order they were sent */
+  answers?: BlockAnswer[];
+  /** The page as it stands now */
+  page?: PageResponse;
+}
 
 export interface StartUploadRequest {
   kind: MediaKind;
@@ -352,6 +1823,8 @@ export interface StartUploadRequest {
   fileName?: string;
   /** For a video or a recording: how long it is, in whole seconds */
   durationSeconds?: number;
+  /** True for a photo going into the Library: the file is kept as it arrives, at full size, next to the sizes made from it */
+  keepOriginal?: boolean;
 }
 
 export type UploadResponseHeaders = {[key: string]: string};
@@ -365,6 +1838,669 @@ export interface UploadResponse {
   headers: UploadResponseHeaders;
 }
 
+export type DocumentCategory = typeof DocumentCategory[keyof typeof DocumentCategory];
+
+
+export const DocumentCategory = {
+  id: 'id',
+  insurance: 'insurance',
+  school: 'school',
+  receipt: 'receipt',
+  recipe: 'recipe',
+  manual: 'manual',
+  tax: 'tax',
+  health: 'health',
+  home: 'home',
+  other: 'other',
+} as const;
+
+export interface NewItem {
+  clientId: string;
+  mediaId: string;
+  /** Left out: a photo, a video or a document, as the upload is. Say document for a photo that is a scan. */
+  kind?: ThingKind;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /** When it was taken, with the offset of the clock where it was taken: 2026-11-07T11:42:00+01:00 */
+  takenAt?: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  lat?: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  lng?: number;
+  /**
+     * The name of the place, as the phone looked it up: Lake Bled
+     * @minLength 0
+     * @maxLength 80
+     */
+  placeName?: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  country?: string;
+  /** For a video or a file: a still or a first page, uploaded as a photo */
+  posterMediaId?: string;
+  /**
+     * The file's SHA-256, in hex, so the same file is recognised when it is sent again
+     * @pattern ^[0-9a-fA-F]{64}$
+     */
+  contentHash?: string;
+  /** A child or someone else without a phone it is added for. Left out: yourself. */
+  addedBy?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+  /**
+     * Who is in it
+     * @minItems 0
+     * @maxItems 30
+     */
+  about?: string[];
+  /**
+     * For a document: the words the phone read inside it
+     * @minLength 0
+     * @maxLength 200000
+     */
+  text?: string;
+  /**
+     * For a document: how many pages it has
+     * @minimum 1
+     * @maximum 5000
+     */
+  pages?: number;
+  /** For a document: what it is. Left out: guessed from its name and its words. */
+  category?: DocumentCategory;
+}
+
+export interface NewItems {
+  circleId: string;
+  /**
+     * @minItems 0
+     * @maxItems 100
+     */
+  items: NewItem[];
+}
+
+export interface ItemRow {
+  id?: string;
+  circleId?: string;
+  kind?: ThingKind;
+  /** Its caption, or a document's name. May be empty. */
+  title?: string;
+  /**
+     * Its picture, small, for a grid. A video's is a still. Null for a file.
+     * @nullable
+     */
+  thumbUrl?: string | null;
+  /**
+     * The same picture at a size for a card
+     * @nullable
+     */
+  url?: string | null;
+  /** The file itself, as it was sent: the original photo, the video, the document */
+  fileUrl?: string;
+  /** @nullable */
+  width?: number | null;
+  /** @nullable */
+  height?: number | null;
+  /**
+     * A video's length, in seconds
+     * @nullable
+     */
+  durationSeconds?: number | null;
+  takenAt?: string;
+  /** The clock where it was taken. Days, months and years are read from this. */
+  takenLocal?: string;
+  /** @nullable */
+  placeName?: string | null;
+  /**
+     * Who added it. Null when they have left the circle.
+     * @nullable
+     */
+  addedBy?: PersonBrief;
+  /** True when you gave it a heart */
+  loved?: boolean;
+  /**
+     * The moment it belongs to. Null for a document.
+     * @nullable
+     */
+  momentId?: string | null;
+  mine?: boolean;
+  canEdit?: boolean;
+  chip?: AudienceChip;
+}
+
+export interface Problem {
+  code?: string;
+  message?: string;
+}
+
+export interface Added {
+  clientId?: string;
+  /** @nullable */
+  item?: ItemRow;
+  /** True when this file was in your Library already: nothing new was made */
+  alreadyThere?: boolean;
+  /**
+     * Why this one could not be added. The others were.
+     * @nullable
+     */
+  problem?: Problem;
+}
+
+export interface AddedResponse {
+  items: Added[];
+}
+
+export interface NewCommentRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+export interface CommentResponse {
+  id: string;
+  body: string;
+  createdAt: string;
+  by: PersonBrief | null;
+  /** True when you may remove it: you wrote it, or it is under your photo */
+  canRemove: boolean;
+}
+
+export interface ShareSelected {
+  /**
+     * @minItems 0
+     * @maxItems 500
+     */
+  ids: string[];
+  audience: Audience;
+  everyoneEdits?: boolean;
+  people?: PersonAccess[];
+  hiddenFrom?: Hidden[];
+}
+
+export interface SelectResult {
+  /** How many it was done to */
+  applied?: number;
+  /** How many were left as they are: not yours to change, or no longer there */
+  skipped?: number;
+}
+
+export interface HideSelected {
+  /**
+     * @minItems 0
+     * @maxItems 500
+     */
+  ids: string[];
+  memberId: string;
+  /** The last day it is hidden. Left out: for good. */
+  through?: string;
+}
+
+export interface DeleteSelected {
+  /**
+     * @minItems 0
+     * @maxItems 500
+     */
+  ids: string[];
+}
+
+export interface HashCheck {
+  circleId: string;
+  /**
+     * @minItems 0
+     * @maxItems 500
+     * @items.pattern ^[0-9a-fA-F]{64}$
+     */
+  hashes: string[];
+}
+
+export interface KnownHash {
+  hash?: string;
+  id?: string;
+}
+
+export interface CheckResponse {
+  /** The fingerprints you already have here, each with the thing it is */
+  known: KnownHash[];
+}
+
+export interface NewGuestPassCardRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  label: string;
+  /**
+     * The text to show, sealed with the pass's key. base64url.
+     * @minLength 1
+     * @maxLength 4096
+     */
+  ciphertext: string;
+  /** True when it shows once and is then gone for good */
+  once?: boolean;
+  /** The Vault item it was made from, if any */
+  thingId?: string;
+}
+
+export interface PassThingResponse {
+  id: string;
+  kind: ThingKind;
+  title: string;
+}
+
+export interface PassCardResponse {
+  id: string;
+  label: string;
+  /** True when it shows once and is then gone for good */
+  once: boolean;
+  /** True once the guest's page has shown it */
+  shown: boolean;
+  /** @nullable */
+  shownAt: string | null;
+  /**
+     * The Vault item it was made from
+     * @nullable
+     */
+  thingId: string | null;
+}
+
+export interface GuestPassResponse {
+  id: string;
+  circleId: string;
+  guestName: string;
+  startsAt: string;
+  endsAt: string;
+  /** The link to send to the guest */
+  url: string;
+  /** The four digits the guest types. Tell them another way than the link. */
+  code: string;
+  /** True between its start and its end, unless it was ended early */
+  running: boolean;
+  /** True once a phone has opened it */
+  opened: boolean;
+  things: PassThingResponse[];
+  /** Sealed cards: a door code, a Wi‑Fi password. Ten at most. */
+  cards: PassCardResponse[];
+  /**
+     * The pass's key, sealed to your own Vault, so another phone of yours can build the whole link again. Only shown to whoever made the pass.
+     * @nullable
+     */
+  keyForMaker: string | null;
+}
+
+export type GoalSource = typeof GoalSource[keyof typeof GoalSource];
+
+
+export const GoalSource = {
+  sheet: 'sheet',
+  journey: 'journey',
+} as const;
+
+export type GoalUnit = typeof GoalUnit[keyof typeof GoalUnit];
+
+
+export const GoalUnit = {
+  money: 'money',
+  count: 'count',
+} as const;
+
+export type HowFar = typeof HowFar[keyof typeof HowFar];
+
+
+export const HowFar = {
+  number: 'number',
+  ticks: 'ticks',
+  source: 'source',
+} as const;
+
+export interface SourceRequest {
+  kind: GoalSource;
+  /**
+     * Where the number is, as the place that owns it names it
+     * @minLength 0
+     * @maxLength 300
+     */
+  ref: string;
+  /**
+     * What to call it until that place can be read: “Saved” in Norway budget
+     * @minLength 0
+     * @maxLength 120
+     */
+  words?: string;
+}
+
+export interface NewGoalRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 0
+     * @maxLength 300
+     */
+  blurb?: string;
+  /**
+     * @minLength 0
+     * @maxLength 16
+     */
+  emoji?: string;
+  coverMediaId?: string;
+  /** Left out: a plain number */
+  unit?: GoalUnit;
+  /**
+     * For money. Left out: EUR.
+     * @pattern [A-Z]{3}
+     */
+  currency?: string;
+  /**
+     * What is counted, when it isn't money: books, stars
+     * @minLength 0
+     * @maxLength 20
+     */
+  unitWords?: string;
+  /**
+     * In the goal's unit: cents for money. Not needed for a goal that counts ticks.
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  target?: number;
+  /**
+     * What there is already, put in as a first entry
+     * @minimum -100000000000
+     * @maximum 100000000000
+     */
+  current?: number;
+  /** Left out: a number, or elsewhere when a source is named */
+  how?: HowFar;
+  /** When it began. Left out: today. */
+  startDay?: string;
+  targetDay?: string;
+  source?: SourceRequest;
+  /**
+     * Steps to start with: they become a checklist linked to the goal
+     * @minItems 0
+     * @maxItems 100
+     * @items.minLength 0
+     * @items.maxLength 300
+     */
+  steps?: string[];
+  /** Or a checklist that is there already */
+  stepsListId?: string;
+  /** The day on the phone */
+  day?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+}
+
+export interface EntryResponse {
+  id: string;
+  by: PersonBrief | null;
+  /** In the goal's unit: cents for money. Below zero when something was taken out. */
+  amount: number;
+  /** Alex added €150 */
+  line: string;
+  note: string;
+  day: string;
+}
+
+export interface GoalPaceResponse {
+  /** How far, 0 to 100: what the ring shows */
+  percent: number;
+  toGo: number;
+  reached: boolean;
+  /**
+     * With a day to be done by: whether the pace so far gets there. Null without one.
+     * @nullable
+     */
+  onTrack: boolean | null;
+  /** On track: €120 a week gets there. Empty when there is nothing to say. */
+  paceLine: string;
+  /** €2,400 to go */
+  toGoLine: string;
+  /**
+     * 20 weeks left. Null without a day to be done by.
+     * @nullable
+     */
+  timeLine: string | null;
+}
+
+export interface SourceResponse {
+  kind: GoalSource;
+  ref: string;
+  /** Reads “Saved” in Norway budget */
+  line: string;
+  /** False while that place can't be read: the goal then shows what was put in by hand */
+  live: boolean;
+}
+
+export interface StepsResponse {
+  listId: string;
+  title: string;
+  left: number;
+  done: number;
+}
+
+export interface GoalResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  blurb: string;
+  emoji: string;
+  /** @nullable */
+  coverUrl: string | null;
+  unit: GoalUnit;
+  currency: string;
+  /** What is counted, when it isn't money: books, stars */
+  unitWords: string;
+  /** In the goal's unit: cents for money */
+  target: number;
+  current: number;
+  /** How far, in words: €5,600 */
+  currentLabel: string;
+  /** The target, in words: €8,000 */
+  targetLabel: string;
+  how: HowFar;
+  startDay: string;
+  /** @nullable */
+  targetDay: string | null;
+  /**
+     * by March 2027
+     * @nullable
+     */
+  byLabel: string | null;
+  /** €5,600 of €8,000 */
+  amountLine: string;
+  /** The line under the name in a list: €5,600 of €8,000 · on track for March */
+  line: string;
+  pace: GoalPaceResponse;
+  people: PersonBrief[];
+  /** All four chip in. Empty when nobody has yet. */
+  cheer: string;
+  source: SourceResponse | null;
+  steps: StepsResponse | null;
+  /** The year the twelve months are of */
+  year: number;
+  /** What was put in during each month of that year, January first */
+  months: number[];
+  /** The last few times something was put in */
+  recent: EntryResponse[];
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface NewEntryRequest {
+  clientId: string;
+  /**
+     * In the goal's unit: cents for money. Below zero to take something out.
+     * @minimum -100000000000
+     * @maximum 100000000000
+     */
+  amount: number;
+  /**
+     * A few words: payday, from her pocket money
+     * @minLength 0
+     * @maxLength 200
+     */
+  note?: string;
+  /** Left out: today */
+  day?: string;
+  /** Who put it in, when not you: a child's pocket money */
+  memberId?: string;
+}
+
+export interface NewFolderRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * The folder to make it in. Left out: a new space.
+     * @nullable
+     */
+  parentId?: string | null;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 0
+     * @maxLength 32
+     */
+  emoji?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+}
+
+export interface FolderResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  emoji: string;
+  /** True for a space: a folder at the top (or one whose parent you can't see) */
+  space: boolean;
+  /**
+     * The folder it is in. Null for a space.
+     * @nullable
+     */
+  parentId: string | null;
+  /** The folders above it, from its space down. Empty for a space. */
+  breadcrumb: Crumb[];
+  updatedAt: string;
+  mine: boolean;
+  /** True when you may rename it, put things into it and change their order */
+  canEdit: boolean;
+  chip: AudienceChip;
+  /** How many folders are inside it, at any depth, that you may see */
+  folders: number;
+  /** How many pages, lists and other things are inside it, at any depth, that you may see */
+  pages: number;
+  /** True when you pinned it */
+  pinned: boolean;
+}
+
+export interface GuestRequest {
+  /** Someone of the circle. Leave out for a name from outside it. */
+  memberId?: string;
+  /**
+     * @minLength 0
+     * @maxLength 50
+     */
+  name?: string;
+  /**
+     * What they do there, after their name: is taking her, drives
+     * @minLength 0
+     * @maxLength 80
+     */
+  part?: string;
+  answer?: Answer;
+}
+
+export interface NewEventRequest {
+  clientId: string;
+  circleId: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  day: string;
+  /** Left out: all day */
+  time?: string;
+  /** Left out: the day it starts */
+  endDay?: string;
+  endTime?: string;
+  /**
+     * The time zone of the phone, such as Europe/Ljubljana
+     * @minLength 1
+     */
+  timeZone: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  place?: string;
+  /**
+     * @minLength 0
+     * @maxLength 4000
+     */
+  notes?: string;
+  coverMediaId?: string;
+  /**
+     * Push this many minutes before it starts. Left out: no push.
+     * @minimum 0
+     * @maximum 40320
+     */
+  remindMinutes?: number;
+  repeat?: Recurrence;
+  /**
+     * Who is coming. The first one of the circle is who it is for.
+     * @minItems 0
+     * @maxItems 100
+     */
+  guests?: GuestRequest[];
+  /**
+     * Whose page it shows on
+     * @minItems 0
+     * @maxItems 30
+     */
+  about?: string[];
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+}
+
+export interface NewGuestRequest {
+  clientId: string;
+  memberId?: string;
+  /**
+     * @minLength 0
+     * @maxLength 50
+     */
+  name?: string;
+  /**
+     * @minLength 0
+     * @maxLength 80
+     */
+  part?: string;
+  answer?: Answer;
+}
+
 export interface NewCircleRequest {
   clientId: string;
   kind: CircleKind;
@@ -373,6 +2509,852 @@ export interface NewCircleRequest {
      * @maxLength 40
      */
   name: string;
+}
+
+export type Template = typeof Template[keyof typeof Template];
+
+
+export const Template = {
+  meal_plan: 'meal_plan',
+  chore_wheel: 'chore_wheel',
+  packing_list: 'packing_list',
+  house_manual: 'house_manual',
+  babysitter_notes: 'babysitter_notes',
+  birthday_planner: 'birthday_planner',
+  time_capsule: 'time_capsule',
+  school_year: 'school_year',
+  recipe_book: 'recipe_book',
+  pet_care: 'pet_care',
+  home_inventory: 'home_inventory',
+  emergency_plan: 'emergency_plan',
+  moving_house: 'moving_house',
+  open_when: 'open_when',
+  birthday_interview: 'birthday_interview',
+  said: 'said',
+  same_spot: 'same_spot',
+  stories: 'stories',
+  good_jar: 'good_jar',
+  doorframe: 'doorframe',
+  whose_turn: 'whose_turn',
+  piggy_bank: 'piggy_bank',
+  secret_missions: 'secret_missions',
+  saturday_jar: 'saturday_jar',
+  sleeps: 'sleeps',
+  where_is_it: 'where_is_it',
+  habit_charts: 'habit_charts',
+  date_ideas: 'date_ideas',
+  who_pays_what: 'who_pays_what',
+  moving_in: 'moving_in',
+  wedding: 'wedding',
+  they_mentioned_it: 'they_mentioned_it',
+  names: 'names',
+  weekend_away: 'weekend_away',
+  someday: 'someday',
+  our_story: 'our_story',
+  tucked_notes: 'tucked_notes',
+  anniversary: 'anniversary',
+  mystery_date: 'mystery_date',
+  both_yes: 'both_yes',
+  fair_share: 'fair_share',
+  cleaning_rota: 'cleaning_rota',
+  bills_by_nights: 'bills_by_nights',
+  move_in_photos: 'move_in_photos',
+  repair_log: 'repair_log',
+  house_rules: 'house_rules',
+  sofa_free: 'sofa_free',
+  house_party: 'house_party',
+  moving_out: 'moving_out',
+  heard: 'heard',
+  guest_book: 'guest_book',
+  lived_here: 'lived_here',
+  kitty: 'kitty',
+  fairer_split: 'fairer_split',
+  heads_up: 'heads_up',
+  find_date: 'find_date',
+  secret_santa: 'secret_santa',
+  where_next: 'where_next',
+  who_brings_what: 'who_brings_what',
+  split_costs: 'split_costs',
+  present_from_all: 'present_from_all',
+  games_night: 'games_night',
+  book_club: 'book_club',
+  dictionary: 'dictionary',
+  predictions: 'predictions',
+  awards: 'awards',
+  walk_together: 'walk_together',
+} as const;
+
+/**
+ * For a template that does work: what it needs to begin. See x-board-templates.
+ */
+export type StartTemplateRequestSettings = {[key: string]: unknown};
+
+export interface StartTemplateRequest {
+  clientId: string;
+  /**
+     * Left out: the template's own name
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+  /** For a template that does work: what it needs to begin. See x-board-templates. */
+  settings?: StartTemplateRequestSettings;
+}
+
+export interface MealPlanSettings {
+  /** How many people the meals are for */
+  cookingFor: number;
+  /** True while ingredients go to the shopping list */
+  toGroceries: boolean;
+  /**
+     * The checklist the plan writes to
+     * @nullable
+     */
+  groceriesListId: string | null;
+}
+
+export interface ChoreWheelStars {
+  stars: number;
+  cents: number;
+  currency: string;
+  /**
+     * What they pay into, in the family's words
+     * @nullable
+     */
+  into: string | null;
+}
+
+export interface ChoreWheelSettings {
+  /** The members on the wheel, in its order */
+  people: string[];
+  /** The Monday of the week the wheel was started: where the turning is counted from */
+  startsOn: string;
+  /** What stars turn into, when the family set that */
+  stars: ChoreWheelStars | null;
+}
+
+export interface TimeCapsuleSettings {
+  /** The day it opens */
+  opensOn: string;
+  /** The day the wait is counted from, for the bar: the day it was made, or a birthday */
+  countFrom: string;
+  /** The members it is for. Empty: everyone who can see it. */
+  forMemberIds: string[];
+  /** True when it was made as a surprise: hidden from the people it is for until the day */
+  hideFromThem: boolean;
+}
+
+export interface OpenWhenSettings {
+  /** The member the letters are for */
+  forMemberId: string;
+}
+
+export interface BirthdayInterviewSettings {
+  /** The member who is interviewed */
+  forMemberId: string;
+}
+
+export interface SaidSettings { [key: string]: unknown }
+
+export interface SameSpotSettings {
+  /**
+     * The day of the year it is usually taken, as MM-dd: 09-01
+     * @nullable
+     */
+  around: string | null;
+}
+
+export interface StoriesSettings {
+  /** Who tells the stories: Astrid Lind */
+  tellerName: string;
+  /** The weekday a question goes out, in lower case: sunday */
+  sendsOn: string;
+}
+
+export interface GoodJarSettings { [key: string]: unknown }
+
+export interface DoorframeSettings { [key: string]: unknown }
+
+export interface MealPlanIngredient {
+  id: string;
+  name: string;
+  atHome: boolean;
+  /** True while it has a line on the shopping list */
+  onList: boolean;
+}
+
+export interface MealPlanMeal {
+  /**
+     * Null for a dinner that comes from the calendar
+     * @nullable
+     */
+  id: string | null;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /** @nullable */
+  minutes: number | null;
+  /** @nullable */
+  note: string | null;
+  cook: PersonBrief | null;
+  /** True for a meal on the viewer's today */
+  tonight: boolean;
+  /** True for a dinner that comes from the calendar, not from the plan */
+  fromCalendar: boolean;
+  ingredients: MealPlanIngredient[];
+}
+
+export interface MealPlanDay {
+  day: string;
+  today: boolean;
+  meals: MealPlanMeal[];
+}
+
+export interface MealPlanRecipe {
+  id: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /** @nullable */
+  minutes: number | null;
+  /** @nullable */
+  note: string | null;
+  ingredients: string[];
+}
+
+export interface MealPlanGroceries {
+  /**
+     * The checklist the plan writes to, once there is one
+     * @nullable
+     */
+  listId: string | null;
+  /** True while ingredients go to the shopping list */
+  on: boolean;
+  /** How many of the week's ingredients are needed: what goes to the list while it is on */
+  going: number;
+  /** How many were ticked as at home */
+  atHome: number;
+}
+
+export interface MealPlanView {
+  /** The Monday of the week shown */
+  weekStart: string;
+  weekEnd: string;
+  /** Seven days, Monday first */
+  days: MealPlanDay[];
+  /** Recipes kept on the plan, to drop onto a day. Fifty at most. */
+  recipes: MealPlanRecipe[];
+  groceries: MealPlanGroceries;
+  cookingFor: number;
+}
+
+export interface ChoreWheelPerson {
+  person: PersonBrief;
+  kind: MemberKind;
+  /** Every star they ever earned on this wheel */
+  stars: number;
+}
+
+export interface ChoreWheelJob {
+  id: string;
+  name: string;
+  /** @nullable */
+  emoji: string | null;
+  /**
+     * When it is done, in the family's words: Tuesday and Friday evening
+     * @nullable
+     */
+  when: string | null;
+  /** How many times a week it is meant to be done */
+  timesAWeek: number;
+  /** Whose job it is in the week shown */
+  who: PersonBrief | null;
+  /** Whose it will be the week after */
+  next: PersonBrief | null;
+  /** How many times it was ticked in the week shown */
+  doneThisWeek: number;
+  /** The days of the week shown on which it was ticked */
+  doneOn: string[];
+  /** True when it was ticked on the viewer's today */
+  doneToday: boolean;
+  /** True when it was ticked as often as it is meant to be */
+  complete: boolean;
+  /**
+     * When it was last ticked in the week shown
+     * @nullable
+     */
+  lastDoneAt: string | null;
+}
+
+export interface ChoreWheelView {
+  /** The number of the week shown, as calendars count it */
+  week: number;
+  weekStart: string;
+  weekEnd: string;
+  /** The people on the wheel, in its order, with their stars */
+  people: ChoreWheelPerson[];
+  /** The jobs, in the wheel's order, with whose they are in the week shown */
+  jobs: ChoreWheelJob[];
+  /** How many jobs are done for the week shown */
+  done: number;
+  stars: ChoreWheelStars | null;
+}
+
+export interface BoardMedia {
+  id: string;
+  kind: MediaKind;
+  /** The photo, or the recording itself */
+  url: string;
+  /**
+     * The photo, small. Null for a recording.
+     * @nullable
+     */
+  thumbUrl: string | null;
+  /**
+     * How long a recording is, in whole seconds
+     * @nullable
+     */
+  seconds: number | null;
+}
+
+export interface TimeCapsuleItem {
+  id: string;
+  /** letter, voice, photo or photos */
+  kind: string;
+  /** What is written on the outside: A letter from Nora */
+  title: string;
+  /**
+     * A line on the outside: In her handwriting, with a photo
+     * @nullable
+     */
+  note: string | null;
+  /** The member it is from. Null when it is from someone outside. */
+  from: PersonBrief | null;
+  /**
+     * Who it is from, when that is someone outside the circle
+     * @nullable
+     */
+  fromName: string | null;
+  mine: boolean;
+  /** True for the viewer's own, not sealed yet */
+  draft: boolean;
+  /** True while this person may not read what is inside */
+  sealed: boolean;
+  /** @nullable */
+  sealedAt: string | null;
+  /**
+     * A letter's length in pages
+     * @nullable
+     */
+  pages: number | null;
+  /**
+     * A recording's length in seconds
+     * @nullable
+     */
+  seconds: number | null;
+  /**
+     * How many photos a bundle holds
+     * @nullable
+     */
+  photos: number | null;
+  /**
+     * The letter's words. Null while it is sealed for this person.
+     * @nullable
+     */
+  text: string | null;
+  /** The recording or the photo. Null while it is sealed for this person. */
+  media: BoardMedia | null;
+  /** A bundle's photos. Empty while it is sealed for this person. */
+  pictures: BoardMedia[];
+}
+
+export interface TimeCapsuleView {
+  opensOn: string;
+  /** True from the day it opens */
+  open: boolean;
+  /** True when it has opened and this person may read what is inside */
+  openForYou: boolean;
+  /** Days until it opens; 0 from the day it does */
+  daysToGo: number;
+  /** How much of the wait is over, 0 to 100 */
+  progress: number;
+  /** Who it is for. Empty: everyone who can see it. */
+  forPeople: PersonBrief[];
+  /** How many things are sealed inside */
+  sealedInside: number;
+  items: TimeCapsuleItem[];
+}
+
+export interface OpenWhenLetter {
+  id: string;
+  /** What the envelope says after “Open when…”: you can't sleep */
+  when: string;
+  /** @nullable */
+  emoji: string | null;
+  from: PersonBrief | null;
+  mine: boolean;
+  opened: boolean;
+  /** @nullable */
+  openedAt: string | null;
+  /** Who pressed open: the reader, or an adult with them */
+  openedBy: PersonBrief | null;
+  hasVoice: boolean;
+  /**
+     * journey: it comes forward when the reader is on a journey
+     * @nullable
+     */
+  forwardOn: string | null;
+  /** True when this person may open it now */
+  canOpen: boolean;
+  /**
+     * The letter. Null for everyone who may not read it.
+     * @nullable
+     */
+  text: string | null;
+  /** The voice message. Null for everyone who may not hear it. */
+  voice: BoardMedia | null;
+}
+
+export interface OpenWhenView {
+  forPerson: PersonBrief | null;
+  /** True when the letters are for the person looking */
+  youAreTheReader: boolean;
+  /** True when this person opens letters with the reader, who has no sign-in of their own */
+  youOpenForThem: boolean;
+  sealed: number;
+  opened: number;
+  letters: OpenWhenLetter[];
+}
+
+export interface BirthdayInterviewNext {
+  /** The age they turn */
+  age: number;
+  on: string;
+  inDays: number;
+  /** Mia's 10th is in 23 days */
+  line: string;
+}
+
+export interface BirthdayInterviewAnswer {
+  id: string;
+  age: number;
+  text: string;
+  /** The answer in their own voice */
+  voice: BoardMedia | null;
+  /** True for the latest round there is */
+  latest: boolean;
+}
+
+export interface BirthdayInterviewQuestion {
+  id: string;
+  text: string;
+  /** One answer per age, youngest first */
+  answers: BirthdayInterviewAnswer[];
+}
+
+export interface BirthdayInterviewView {
+  person: PersonBrief | null;
+  /** @nullable */
+  birthday: string | null;
+  /** The ages there are answers for, youngest first */
+  ages: number[];
+  /** The next birthday. Null when no birthday is known. */
+  next: BirthdayInterviewNext | null;
+  questions: BirthdayInterviewQuestion[];
+}
+
+export interface SaidPerson {
+  person: PersonBrief;
+  count: number;
+}
+
+export interface SaidQuote {
+  id: string;
+  text: string;
+  /** The member who said it */
+  who: PersonBrief | null;
+  /**
+     * Who said it, when that is someone outside the circle
+     * @nullable
+     */
+  whoName: string | null;
+  /** The day it was said */
+  day: string;
+  /**
+     * How old they were: whole years
+     * @nullable
+     */
+  ageYears: number | null;
+  /**
+     * …and the months on top
+     * @nullable
+     */
+  ageMonths: number | null;
+  /**
+     * The age in words: 6 years and 2 months
+     * @nullable
+     */
+  age: string | null;
+  /** A recording of it */
+  voice: BoardMedia | null;
+  /** Who wrote it down */
+  writtenBy: PersonBrief | null;
+  mine: boolean;
+}
+
+export interface SaidView {
+  total: number;
+  withVoice: number;
+  /** Who said them, with how many each: the chips. Thirty at most. */
+  people: SaidPerson[];
+  /** The newest thirty. The rest is read a page at a time. */
+  latest: SaidQuote[];
+}
+
+export interface SameSpotShot {
+  id: string;
+  year: number;
+  day: string;
+  photo: BoardMedia;
+  /** @nullable */
+  note: string | null;
+}
+
+export interface SameSpotView {
+  thisYear: number;
+  takenThisYear: boolean;
+  /** The newest photo from before this year: the one to lay over the camera */
+  last: SameSpotShot | null;
+  /** Every year there is a photo for, oldest first. One a year, so a few dozen at most. */
+  years: SameSpotShot[];
+  /**
+     * The day of the year it is usually taken, as MM-dd
+     * @nullable
+     */
+  around: string | null;
+}
+
+export interface StoriesQuestion {
+  id: string;
+  text: string;
+  /** Whose question it is */
+  askedBy: PersonBrief | null;
+  /** The day it goes out, or went out */
+  goesOut: string;
+  /** True once it has gone out */
+  out: boolean;
+  answered: boolean;
+  /** @nullable */
+  answeredAt: string | null;
+  /** Their answer, in their voice */
+  recording: BoardMedia | null;
+  /** The answer typed out. Empty until a speech service is connected or someone types it. */
+  transcript: string;
+  /** Photos the family added to the story */
+  photos: BoardMedia[];
+  /**
+     * The link to send them, while it is unanswered. Only for people who may change the board.
+     * @nullable
+     */
+  link: string | null;
+}
+
+export interface StoriesView {
+  tellerName: string;
+  /** Their initials, for the round picture: AL */
+  initials: string;
+  sendsOn: string;
+  /** How many questions have been answered */
+  told: number;
+  /** The newest question that has gone out */
+  thisWeek: StoriesQuestion | null;
+  /** Answered before this week's, newest first. The first twenty; the rest a page at a time. */
+  toldBefore: StoriesQuestion[];
+  /** Not sent yet, in the order they go out */
+  waiting: StoriesQuestion[];
+  /** Sent earlier and never answered. Their links still work. */
+  unanswered: StoriesQuestion[];
+}
+
+export interface GoodJarSlip {
+  id: string;
+  /** Whose good thing it is */
+  who: PersonBrief | null;
+  /** note, photo or drawing */
+  what: string;
+  day: string;
+  /**
+     * Where it is from: Reine
+     * @nullable
+     */
+  place: string | null;
+  fromJourney: boolean;
+  mine: boolean;
+  /** True while this person may not read it */
+  sealed: boolean;
+  /**
+     * What it says. Null while it is sealed for this person.
+     * @nullable
+     */
+  text: string | null;
+  /** Its photo or drawing. Null while it is sealed for this person. */
+  picture: BoardMedia | null;
+}
+
+export interface GoodJarYear {
+  year: number;
+  count: number;
+}
+
+export interface GoodJarView {
+  /** The year the jar is being filled for */
+  year: number;
+  /** How many good things are in this year's jar */
+  count: number;
+  /** The day this year's jar opens: 31 December */
+  opensOn: string;
+  /** True on the day it opens */
+  open: boolean;
+  daysToGo: number;
+  /** The five newest slips of this year, as this person may see them */
+  latest: GoodJarSlip[];
+  /** Earlier years, newest first: each one is open and can be read back */
+  years: GoodJarYear[];
+}
+
+export interface DoorframeMark {
+  id: string;
+  person: PersonBrief | null;
+  heightMm: number;
+  day: string;
+  /** @nullable */
+  note: string | null;
+  photo: BoardMedia | null;
+  /**
+     * How much they grew since their mark before this one
+     * @nullable
+     */
+  grewMm: number | null;
+  /** True for a person's newest mark */
+  latest: boolean;
+}
+
+export interface DoorframeChild {
+  person: PersonBrief;
+  heightMm: number;
+  measuredOn: string;
+  /**
+     * Growth since the mark before, and that mark's day
+     * @nullable
+     */
+  sinceLastMm: number | null;
+  /** @nullable */
+  lastMarkOn: string | null;
+  /**
+     * Growth since the last birthday, when there is a mark near it
+     * @nullable
+     */
+  sinceBirthdayMm: number | null;
+  /**
+     * Growth in this calendar year
+     * @nullable
+     */
+  thisYearMm: number | null;
+  /** True when this year's growth is their most in any year */
+  mostYet: boolean;
+  /**
+     * The tallest landmark reached: Up to Grandma Astrid's shoulder
+     * @nullable
+     */
+  landmark: string | null;
+  /** The same as ready sentences: 6 cm since the last birthday */
+  lines: string[];
+}
+
+export interface DoorframeLandmark {
+  id: string;
+  text: string;
+  heightMm: number;
+}
+
+export interface DoorframeView {
+  /** Every mark, tallest first: the ruler. A few hundred at most. */
+  marks: DoorframeMark[];
+  /** One card per person who has a mark, tallest first */
+  children: DoorframeChild[];
+  /** Ready sentences: Mia was Leo's height in the spring of 2023. */
+  comparisons: string[];
+  /** The family's own lines to measure against, tallest first */
+  landmarks: DoorframeLandmark[];
+}
+
+export interface BoardResponse {
+  id: string;
+  circleId: string;
+  template: Template;
+  title: string;
+  emoji: string;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+  /** The day the view was made for: the phone's day, as far as it can be true */
+  day: string;
+  /** The board's settings. Which shape follows from `template`: see x-board-templates. */
+  settings: MealPlanSettings | ChoreWheelSettings | TimeCapsuleSettings | OpenWhenSettings | BirthdayInterviewSettings | SaidSettings | SameSpotSettings | StoriesSettings | GoodJarSettings | DoorframeSettings;
+  /** What this person sees on the board. Which shape follows from `template`: see x-board-templates. */
+  view: MealPlanView | ChoreWheelView | TimeCapsuleView | OpenWhenView | BirthdayInterviewView | SaidView | SameSpotView | StoriesView | GoodJarView | DoorframeView;
+}
+
+export interface StartedResponse {
+  template: Template;
+  made: ThingBrief[];
+  board: BoardResponse | null;
+}
+
+export interface ReadRequest {
+  /**
+     * @minLength 0
+     * @maxLength 20000
+     */
+  text: string;
+  /** The day on the phone. The API's own day in that time zone when left out. */
+  day?: string;
+  /** The time zone of the phone, such as Europe/Ljubljana */
+  timeZone?: string;
+}
+
+export type CodeKind = typeof CodeKind[keyof typeof CodeKind];
+
+
+export const CodeKind = {
+  code: 'code',
+  password: 'password',
+  iban: 'iban',
+  card: 'card',
+} as const;
+
+export interface FoundAmountResponse {
+  cents: number;
+  currency: string;
+  around: string;
+  start: number;
+  end: number;
+}
+
+export interface FoundDateResponse {
+  day: string;
+  /** @nullable */
+  time: string | null;
+  deadline: boolean;
+  title: string;
+  around: string;
+  start: number;
+  end: number;
+}
+
+export type PersonRole = typeof PersonRole[keyof typeof PersonRole];
+
+
+export const PersonRole = {
+  for: 'for',
+  given_to: 'given_to',
+  with: 'with',
+  about: 'about',
+} as const;
+
+export type PieceKind = typeof PieceKind[keyof typeof PieceKind];
+
+
+export const PieceKind = {
+  day: 'day',
+  time: 'time',
+  person: 'person',
+  remind: 'remind',
+  repeat: 'repeat',
+  list: 'list',
+  amount: 'amount',
+  code: 'code',
+} as const;
+
+export interface PlaceSuggestionResponse {
+  /** Barber Miha */
+  words: string;
+  /** Barber Miha, from last time */
+  label: string;
+}
+
+export interface ReadPieceResponse {
+  /** Where the piece starts in the text that was sent */
+  start: number;
+  /** Where it ends: the place just after its last letter */
+  end: number;
+  text: string;
+  what: PieceKind;
+  /** What it became, in words: Sat 14 Nov, For Leo, 1 hour before */
+  became: string;
+}
+
+export interface ReadItemResponse {
+  as: ReadAs;
+  /** The part of the line this was read from */
+  words: string;
+  title: string;
+  /** @nullable */
+  day: string | null;
+  /** @nullable */
+  time: string | null;
+  /** @nullable */
+  endTime: string | null;
+  /**
+     * Sat 14 Nov · 10:00 to 10:30
+     * @nullable
+     */
+  whenLabel: string | null;
+  /**
+     * The short way to say when, for a chip: today 18:00, tomorrow 9:00
+     * @nullable
+     */
+  whenNear: string | null;
+  person: PersonBrief | null;
+  /** What the name means: for them, given to them, with them, about them */
+  personRole: PersonRole | null;
+  /**
+     * For Leo
+     * @nullable
+     */
+  personLabel: string | null;
+  /** @nullable */
+  remindMinutes: number | null;
+  /**
+     * 1 hour before
+     * @nullable
+     */
+  remindLabel: string | null;
+  repeat: RepeatResponse | null;
+  /** For a line of a list: the list it would go to */
+  list: ListBriefResponse | null;
+  /**
+     * How many: 2, 500 g
+     * @nullable
+     */
+  quantity: string | null;
+  /** For something held back: what kind of secret it looks like */
+  code: CodeKind | null;
+  /** For an event: where the last one like it was */
+  place: PlaceSuggestionResponse | null;
+  /** How it was read: the pieces of the line that were used and what each became */
+  pieces: ReadPieceResponse[];
+}
+
+export interface ReadingResponse {
+  /** True for a long text: nothing is read as a line, the days and amounts found are suggestions */
+  letter: boolean;
+  items: ReadItemResponse[];
+  dates: FoundDateResponse[];
+  amounts: FoundAmountResponse[];
 }
 
 export interface NewMemberRequest {
@@ -400,6 +3382,32 @@ export interface NewMemberRequest {
   avatarMediaId?: string;
 }
 
+export interface JotRequest {
+  clientId: string;
+  /**
+     * @minLength 0
+     * @maxLength 2000
+     */
+  text: string;
+  /** The day on the phone */
+  day?: string;
+  /** The time zone of the phone, such as Europe/Ljubljana */
+  timeZone?: string;
+  /** Where it came from. Left out: the app. */
+  source?: JotSource;
+  /** Who sees what it makes. Left out: what the circle's kind starts things as. */
+  audience?: Audience;
+}
+
+export interface NewSealedCard {
+  label?: string;
+  /** The text to show, sealed with the pass's key (AES-GCM): base64url of nonce and ciphertext */
+  ciphertext?: string;
+  once?: boolean;
+  /** The Vault item it was made from, if any */
+  thingId?: string;
+}
+
 export interface NewGuestPassRequest {
   clientId: string;
   /**
@@ -411,29 +3419,13 @@ export interface NewGuestPassRequest {
   startsAt?: string;
   endsAt: string;
   thingIds: string[];
-}
-
-export interface PassThingResponse {
-  id: string;
-  kind: ThingKind;
-  title: string;
-}
-
-export interface GuestPassResponse {
-  id: string;
-  circleId: string;
-  guestName: string;
-  startsAt: string;
-  endsAt: string;
-  /** The link to send to the guest */
-  url: string;
-  /** The four digits the guest types. Tell them another way than the link. */
-  code: string;
-  /** True between its start and its end, unless it was ended early */
-  running: boolean;
-  /** True once a phone has opened it */
-  opened: boolean;
-  things: PassThingResponse[];
+  /** Sealed cards made on this phone: a door code, a Wi‑Fi password. Ten at most. */
+  cards?: NewSealedCard[];
+  /**
+     * The pass's key, sealed to your own Vault, so another phone of yours can build the whole link
+     * @maxLength 512
+     */
+  keyForMaker?: string;
 }
 
 export interface NewChecklistRequest {
@@ -454,42 +3446,24 @@ export interface NewChecklistRequest {
      * @items.maxLength 300
      */
   items?: string[];
-}
-
-export interface ItemResponse {
-  id: string;
-  text: string;
-  /** A small line under it: Alex bought them */
-  note: string;
-  /** The heading it stands under, or empty: Dairy, Gift ideas */
-  section: string;
   /**
-     * A price or a budget, in cents
+     * The folder to file it in. Left out: not filed.
      * @nullable
      */
-  amountCents: number | null;
-  done: boolean;
-  /** @nullable */
-  doneAt: string | null;
-  /** Who ticked it */
-  doneBy: PersonBrief | null;
-  /** Whose job it is */
-  assignedTo: PersonBrief | null;
-  /** Who added it */
-  addedBy: PersonBrief | null;
-}
-
-export interface ChecklistResponse {
-  id: string;
-  circleId: string;
-  title: string;
-  updatedAt: string;
-  mine: boolean;
-  canEdit: boolean;
-  chip: AudienceChip;
-  left: number;
-  done: number;
-  items: ItemResponse[];
+  folderId?: string | null;
+  /**
+     * @minLength 0
+     * @maxLength 32
+     */
+  emoji?: string;
+  /**
+     * The currency of its amounts, three letters. Left out: EUR.
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+  /** True for a shopping list: each new line finds its aisle */
+  aisles?: boolean;
 }
 
 export interface NewItemRequest {
@@ -505,6 +3479,7 @@ export interface NewItemRequest {
      */
   note?: string;
   /**
+     * The heading to put it under. Left out: where this line went last time, or its aisle in a shopping list.
      * @minLength 0
      * @maxLength 60
      */
@@ -515,92 +3490,17 @@ export interface NewItemRequest {
      */
   amountCents?: number;
   assignedTo?: string;
-}
-
-export interface TokenRequest {
   /**
-     * @minLength 0
-     * @maxLength 254
+     * Set for a line that comes back after it was ticked
+     * @nullable
      */
-  email: string;
-  /** @minLength 1 */
-  code: string;
-}
-
-export interface TokenResponse {
-  accessToken: string;
-  expiresAt: string;
-  userId: string;
-  email: string;
-}
-
-export interface CodeRequest {
+  repeats?: Repeats;
   /**
-     * @minLength 0
-     * @maxLength 254
-     */
-  email: string;
-}
-
-export interface PageChangeRequest {
-  /**
-     * @minLength 0
-     * @maxLength 200
-     */
-  title?: string;
-  /**
-     * @minLength 0
-     * @maxLength 100000
-     */
-  body?: string;
-}
-
-export interface MemberChangeRequest {
-  /**
-     * @minLength 1
-     * @maxLength 50
-     */
-  name?: string;
-  role?: Role;
-  birthday?: string;
-  removeBirthday?: boolean;
-  /**
-     * @minLength 0
-     * @maxLength 60
-     */
-  about?: string;
-  /**
+     * Members to keep this line from. They don't get the line at all.
      * @minItems 0
-     * @maxItems 12
-     * @items.minLength 0
-     * @items.maxLength 40
+     * @maxItems 30
      */
-  facts?: string[];
-  avatarMediaId?: string;
-  removeAvatar?: boolean;
-  seesLibrary?: boolean;
-  seesPlan?: boolean;
-  seesPages?: boolean;
-}
-
-export interface CircleChangeRequest {
-  /**
-     * @minLength 1
-     * @maxLength 40
-     */
-  name?: string;
-  kind?: CircleKind;
-  /** A photo uploaded through /v1/media/uploads */
-  coverMediaId?: string;
-  removeCover?: boolean;
-}
-
-export interface RenameRequest {
-  /**
-     * @minLength 0
-     * @maxLength 200
-     */
-  title: string;
+  hideFrom?: string[];
 }
 
 export interface ItemChangeRequest {
@@ -633,23 +3533,750 @@ export interface ItemChangeRequest {
   before?: string;
   /** Move it to the end */
   toEnd?: boolean;
+  /**
+     * Make it come back after it was ticked
+     * @nullable
+     */
+  repeats?: Repeats;
+  /** True to stop it coming back */
+  stopRepeating?: boolean;
+  /**
+     * Members to keep this line from. An empty list shows it to everyone again.
+     * @minItems 0
+     * @maxItems 30
+     */
+  hideFrom?: string[];
 }
 
-export interface ThingBrief {
+export interface LateLineChange {
+  op: ChangeOp;
+  /**
+     * For change and remove: the line, by its id or by the clientId it was added with
+     * @nullable
+     */
+  itemId?: string | null;
+  /**
+     * For add: the new line, as it would be sent to add it
+     * @nullable
+     */
+  add?: NewItemRequest;
+  /**
+     * For change: what to change, as it would be sent to change it
+     * @nullable
+     */
+  change?: ItemChangeRequest;
+}
+
+export interface LateLineChanges {
+  /**
+     * @minItems 0
+     * @maxItems 200
+     */
+  changes: LateLineChange[];
+}
+
+export interface LineAnswer {
+  outcome?: Outcome;
+  /**
+     * The line it was about, when there is one
+     * @nullable
+     */
+  itemId?: string | null;
+  /**
+     * What happened, in a sentence, when it wasn't simply done
+     * @nullable
+     */
+  said?: string | null;
+}
+
+export interface LineAnswers {
+  /** One answer for each change, in the order they were sent */
+  answers?: LineAnswer[];
+  /** The list as it stands now */
+  list?: ChecklistResponse;
+}
+
+/**
+ * What the template needs to begin: names, dates, numbers. See x-board-templates.
+ */
+export type NewBoardRequestSettings = {[key: string]: unknown};
+
+export interface NewBoardRequest {
+  clientId: string;
+  circleId: string;
+  template: Template;
+  /**
+     * Left out: the template's own name
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+  /** What the template needs to begin: names, dates, numbers. See x-board-templates. */
+  settings?: NewBoardRequestSettings;
+}
+
+export interface EntryAddedResponse {
+  entryId: string;
+  board: BoardResponse;
+}
+
+/**
+ * What the verb needs. See x-board-templates.
+ */
+export type ActRequestBody = {[key: string]: unknown};
+
+export interface ActRequest {
+  /**
+     * The template's own verb: seal, open, tick
+     * @minLength 0
+     * @maxLength 40
+     */
+  verb: string;
+  /** What the verb needs. See x-board-templates. */
+  body?: ActRequestBody;
+}
+
+export interface NewAlbum {
+  clientId: string;
+  circleId: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 0
+     * @maxLength 80
+     */
+  note?: string;
+  /** Left out: what the circle's kind starts things as */
+  audience?: Audience;
+  /** Someone in the circle, a pet too: the album then fills itself with every photo and video they are in */
+  personId?: string;
+  /** True for a folder of files */
+  folder?: boolean;
+  /**
+     * Things to put into it straight away
+     * @minItems 0
+     * @maxItems 500
+     */
+  itemIds?: string[];
+  /** A photo: everything in its moment that you may see goes into the album */
+  momentOf?: string;
+}
+
+export type AlbumOrigin = typeof AlbumOrigin[keyof typeof AlbumOrigin];
+
+
+export const AlbumOrigin = {
+  hand: 'hand',
+  person: 'person',
+  journey: 'journey',
+} as const;
+
+export interface AlbumResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  /** A few words under its name: mostly asleep */
+  note: string;
+  origin: AlbumOrigin;
+  /** For an album that fills itself: whose photos it gathers */
+  person: PersonBrief | null;
+  /** True for a folder of files */
+  folder: boolean;
+  /** How many things in it you may see */
+  count: number;
+  /** How many of them someone else added in the last week */
+  fresh: number;
+  /** @nullable */
+  coverUrl: string | null;
+  /** Who added what you see in it, the one who added most first, three at most */
+  contributors: PersonBrief[];
+  /** True when everyone in the circle may put things into it */
+  everyoneAdds: boolean;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface Selection {
+  /**
+     * @minItems 0
+     * @maxItems 500
+     */
+  itemIds: string[];
+}
+
+export interface TokenRequest {
+  /**
+     * @minLength 0
+     * @maxLength 254
+     */
+  email: string;
+  /** @minLength 1 */
+  code: string;
+}
+
+export interface TokenResponse {
+  accessToken: string;
+  expiresAt: string;
+  userId: string;
+  email: string;
+}
+
+export interface CodeRequest {
+  /**
+     * @minLength 0
+     * @maxLength 254
+     */
+  email: string;
+}
+
+export interface VaultItemChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  category?: VaultCategory;
+  /**
+     * @minLength 0
+     * @maxLength 120
+     */
+  site?: string;
+  expiresOn?: string;
+  removeExpiry?: boolean;
+  health?: VaultHealth;
+  /**
+     * @minItems 0
+     * @maxItems 30
+     */
+  about?: string[];
+  /**
+     * A new ciphertext, sealed with the same item key
+     * @maxLength 87382
+     */
+  ciphertext?: string;
+  /** With a ciphertext: the version the phone read */
+  version?: number;
+}
+
+export interface ReminderChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 4000
+     */
+  notes?: string;
+  /** With a day, the day and the time change together */
+  dueOn?: string;
+  dueTime?: string;
+  timeZone?: string;
+  /** True: no day any more (and it stops repeating) */
+  removeDue?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 40320
+     */
+  remindMinutes?: number;
+  repeat?: Recurrence;
+  stopRepeating?: boolean;
+  /**
+     * Everyone it is given to, in order. An empty list takes it back.
+     * @minItems 0
+     * @maxItems 30
+     */
+  givenTo?: string[];
+  takesTurns?: boolean;
+  /** Whose turn it is now: one of the people it is given to */
+  turn?: string;
+  place?: PlaceRequest;
+  removePlace?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 20
+     */
+  stars?: number;
+}
+
+export interface PageChangeRequest {
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * All the page's words at once: they take the place of its text blocks. To change one part of a page, change that block.
+     * @minLength 0
+     * @maxLength 100000
+     */
+  body?: string;
+  /**
+     * @minLength 0
+     * @maxLength 32
+     */
+  emoji?: string;
+}
+
+export interface MemberChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  name?: string;
+  role?: Role;
+  birthday?: string;
+  removeBirthday?: boolean;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  about?: string;
+  /**
+     * @minItems 0
+     * @maxItems 12
+     * @items.minLength 0
+     * @items.maxLength 40
+     */
+  facts?: string[];
+  avatarMediaId?: string;
+  removeAvatar?: boolean;
+  seesLibrary?: boolean;
+  seesPlan?: boolean;
+  seesPages?: boolean;
+}
+
+export interface ItemChange {
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  takenAt?: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  lat?: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  lng?: number;
+  /**
+     * @minLength 0
+     * @maxLength 80
+     */
+  placeName?: string;
+  /**
+     * @minLength 0
+     * @maxLength 60
+     */
+  country?: string;
+  /** True to forget where it was taken */
+  removePlace?: boolean;
+}
+
+export interface GoalChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 300
+     */
+  blurb?: string;
+  /**
+     * @minLength 0
+     * @maxLength 16
+     */
+  emoji?: string;
+  coverMediaId?: string;
+  removeCover?: boolean;
+  /**
+     * @minLength 0
+     * @maxLength 20
+     */
+  unitWords?: string;
+  /**
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  target?: number;
+  how?: HowFar;
+  startDay?: string;
+  targetDay?: string;
+  removeTargetDay?: boolean;
+  source?: SourceRequest;
+  removeSource?: boolean;
+  stepsListId?: string;
+  /** The day on the phone */
+  day?: string;
+}
+
+export interface FolderChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 32
+     */
+  emoji?: string;
+}
+
+export interface EventChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /** With a day, the whole of when it is changes: day, time, end and time zone together */
+  day?: string;
+  /** With a day and no time: all day */
+  time?: string;
+  endDay?: string;
+  endTime?: string;
+  timeZone?: string;
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  place?: string;
+  /**
+     * @minLength 0
+     * @maxLength 4000
+     */
+  notes?: string;
+  coverMediaId?: string;
+  removeCover?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 40320
+     */
+  remindMinutes?: number;
+  stopReminding?: boolean;
+  repeat?: Recurrence;
+  stopRepeating?: boolean;
+}
+
+export interface GuestChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  name?: string;
+  /**
+     * @minLength 0
+     * @maxLength 80
+     */
+  part?: string;
+  answer?: Answer;
+  removeAnswer?: boolean;
+}
+
+export type DateLabel = typeof DateLabel[keyof typeof DateLabel];
+
+
+export const DateLabel = {
+  expires: 'expires',
+  valid_until: 'valid_until',
+  renews: 'renews',
+  due: 'due',
+  warranty: 'warranty',
+} as const;
+
+export interface DocumentChange {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  category?: DocumentCategory;
+  /**
+     * @minimum 1
+     * @maximum 5000
+     */
+  pages?: number;
+  /**
+     * The words inside it, read again on the phone
+     * @minLength 0
+     * @maxLength 200000
+     */
+  text?: string;
+  /** Set the day that matters by hand, with keyLabel */
+  keyDate?: string;
+  keyLabel?: DateLabel;
+  /** True to go back to the day read from the words, or to none */
+  removeKeyDate?: boolean;
+}
+
+export interface Clash {
+  trip?: ThingBrief;
+  tripEnds?: string;
+  /** How many months it is still good for after the trip. Many countries want six. Zero or less: it runs out before the trip ends. */
+  monthsLeftAfter?: number;
+}
+
+export interface KeyDate {
+  label?: DateLabel;
+  date?: string;
+  /** How many days from today. Negative once it has passed. */
+  daysLeft?: number;
+  /** True when it is time to do something: within 60 days, or within a year for an ID */
+  soon?: boolean;
+  /** True when someone set it by hand instead of it being read from the words */
+  byHand?: boolean;
+}
+
+export interface DocumentCard {
   id?: string;
   circleId?: string;
-  kind?: ThingKind;
-  place?: Place;
   title?: string;
-  updatedAt?: string;
+  /** The small label on its tile: PDF, JPG, or ID for a passport or a card */
+  badge?: string;
+  category?: DocumentCategory;
+  /** @nullable */
+  pages?: number | null;
+  bytes?: number;
+  /**
+     * A picture of it, small, when it has one
+     * @nullable
+     */
+  thumbUrl?: string | null;
+  /** The file itself */
+  fileUrl?: string;
+  /** @nullable */
+  keyDate?: KeyDate;
+  /**
+     * The total of a receipt, in cents
+     * @nullable
+     */
+  amountCents?: number | null;
+  /** @nullable */
+  currency?: string | null;
+  /** True when a reminder in Plan is linked to it */
+  reminderSet?: boolean;
+  /** True when something in the Vault is linked to it: the app shows a lock */
+  inVault?: boolean;
+  /**
+     * The name of the first page or list it is linked from
+     * @nullable
+     */
+  linkedFrom?: string | null;
+  /** Who it is about: it shows on their page */
+  about?: PersonBrief[];
+  /** @nullable */
+  addedBy?: PersonBrief;
+  addedAt?: string;
   mine?: boolean;
   canEdit?: boolean;
   chip?: AudienceChip;
+}
+
+export interface Fact {
+  label?: string;
+  text?: string;
   /**
-     * Where it stands, in a few words: 4 of 9 done
+     * The same as a day, when it is one
      * @nullable
      */
-  glance?: string | null;
+  date?: string | null;
+  /** True for something to show only when asked, like a passport's number */
+  secret?: boolean;
+}
+
+export interface FoundDay {
+  label?: DateLabel;
+  date?: string;
+}
+
+export interface DocumentResponse {
+  document: DocumentCard;
+  /** @nullable */
+  fileName: string | null;
+  contentType: string;
+  /**
+     * The scan as a picture, when the file is one
+     * @nullable
+     */
+  pictureUrl: string | null;
+  /** True when the phone sent the words inside it, so it can be searched */
+  hasText: boolean;
+  /** What was read from the words, to show and to correct */
+  facts: Fact[];
+  /** Every day found after a word that says what it means */
+  dates: FoundDay[];
+  /**
+     * A good day for a reminder. Making the reminder is Plan's.
+     * @nullable
+     */
+  remindOn: string | null;
+  /** What it is linked to: its entry in the Vault, the trip it is needed for */
+  linked: ThingBrief[];
+  clash: Clash | null;
+}
+
+export interface CircleChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  name?: string;
+  kind?: CircleKind;
+  /** A photo uploaded through /v1/media/uploads */
+  coverMediaId?: string;
+  removeCover?: boolean;
+}
+
+export interface ChecklistChangeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 32
+     */
+  emoji?: string;
+  /**
+     * @minLength 0
+     * @maxLength 3
+     */
+  currency?: string;
+  aisles?: boolean;
+}
+
+/**
+ * The settings to change. A name that is left out keeps its value.
+ */
+export type BoardChangeRequestSettings = {[key: string]: unknown};
+
+export interface BoardChangeRequest {
+  /**
+     * @minLength 0
+     * @maxLength 200
+     */
+  title?: string;
+  /** The settings to change. A name that is left out keeps its value. */
+  settings?: BoardChangeRequestSettings;
+}
+
+/**
+ * The fields to change. A name that is left out keeps its value; a name sent as null is taken away.
+ */
+export type EntryChangeRequestFields = {[key: string]: unknown};
+
+export interface EntryChangeRequest {
+  /** The fields to change. A name that is left out keeps its value; a name sent as null is taken away. */
+  fields: EntryChangeRequestFields;
+}
+
+export interface AlbumChange {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @minLength 0
+     * @maxLength 80
+     */
+  note?: string;
+  /** A photo to show on its card */
+  coverItemId?: string;
+  /** True to go back to showing its newest photo */
+  removeCover?: boolean;
+}
+
+export interface VaultWaitingResponse {
+  itemId: string;
+  title: string;
+  circleId: string;
+  memberId: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  /** Their public key, to wrap the item's key for */
+  publicKey: string;
+}
+
+export interface VaultItemRowResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  category: VaultCategory;
+  /** A site or a label, in the clear: netflix.com, home */
+  site: string;
+  /**
+     * For an ID: the day it runs out
+     * @nullable
+     */
+  expiresOn: string | null;
+  /** True for an ID that runs out within a year, or has */
+  renewSoon: boolean;
+  /** How good the password is, as the phone that saved it judged */
+  health: VaultHealth;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+  owner: PersonBrief;
+  /** What you may do with it: use, see or change */
+  myAccess: VaultAccess;
+  /** Whether its key is there for you: ready, waiting, used (once, and opened), stopped */
+  myState: GrantState;
+  /** True for an item of the sample data: it has no real ciphertext and can't be opened */
+  sample: boolean;
+  /** A few words on what it is: Login · netflix.com */
+  glance: string;
+}
+
+export interface PageVaultItemRowResponse {
+  items: VaultItemRowResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface ShareToPassOnResponse {
+  recoveryId: string;
+  /** Your share of their Vault key, sealed to your own public key */
+  sealedShare: string;
+  /** The temporary public key of their new phone: open your share and seal it to this */
+  tempPublicKey: string;
+}
+
+export interface VaultAttentionResponse {
+  /** Your own emergency access, when your trusted person has asked or it has opened. Say no, or switch it off. */
+  emergency: VaultEmergencyResponse | null;
+  /** A recovery of your Vault that is open. Cancel it if it isn't yours. */
+  recovery: VaultRecoveryResponse | null;
+  /** People who asked you to be their helper and wait for your answer */
+  helperAsks: VaultHelpingResponse[];
+  /** People you help who are getting back in now and still need your share */
+  helpNeeded: VaultHelpingResponse[];
+  /** Vaults you asked for: waiting for the time to pass, or open to you */
+  entrusted: EntrustedVaultResponse[];
+  /** How many people wait for your phone to wrap a key for them */
+  waitingForKeys: number;
+  /** True when your phone should split your Vault key again for your helpers */
+  sharesDue: boolean;
 }
 
 export interface PersonPageResponse {
@@ -676,12 +4303,225 @@ export interface OverviewResponse {
   phones: string[];
 }
 
+export interface MomentPerson {
+  memberId?: string;
+  name?: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  you?: boolean;
+  /** How many of its photos and videos they added */
+  count?: number;
+}
+
+export interface MomentResponse {
+  /** Ask for the moment by this: the id of its newest photo. Any of its photos' ids works. */
+  id: string;
+  circleId: string;
+  /** Saturday at Lake Bled when several people were there, otherwise the day: Thursday */
+  title: string;
+  day: string;
+  /** @nullable */
+  placeName: string | null;
+  total: number;
+  photos: number;
+  videos: number;
+  /** True when more than one person added to it */
+  shared: boolean;
+  /** Who added how many, the one who added most first */
+  people: MomentPerson[];
+  /** @nullable */
+  coverUrl: string | null;
+  /** Everyone when all of it is shared with everyone, only you when none is, otherwise some */
+  audience: Audience;
+}
+
+export interface PageCommentResponse {
+  items: CommentResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
 export interface JoinPreview {
   circleId?: string;
   name?: string;
   kind?: CircleKind;
   people?: number;
   alreadyIn?: boolean;
+}
+
+export interface PageEntryResponse {
+  items: EntryResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface NoteItem {
+  id?: string;
+  circleId?: string;
+  kind?: ThingKind;
+  place?: Place;
+  title?: string;
+  emoji?: string;
+  updatedAt?: string;
+  mine?: boolean;
+  canEdit?: boolean;
+  chip?: AudienceChip;
+  /**
+     * Where it stands, in a few words: 4 of 9 done, €12,400
+     * @nullable
+     */
+  glance?: string | null;
+  /**
+     * For a page or a list: who changed it last
+     * @nullable
+     */
+  editedBy?: PersonBrief;
+  /** @nullable */
+  editedAt?: string | null;
+  /**
+     * For a list: how many lines are left, of those you may see
+     * @nullable
+     */
+  left?: number | null;
+  /**
+     * For a list: how many lines are ticked
+     * @nullable
+     */
+  done?: number | null;
+  /** For a list: who else is in it right now */
+  here?: ListHand[];
+  /**
+     * For a folder: how many folders are inside it that you may see
+     * @nullable
+     */
+  folders?: number | null;
+  /**
+     * For a folder: how many pages and lists are inside it that you may see
+     * @nullable
+     */
+  pages?: number | null;
+  /** True when you pinned it */
+  pinned?: boolean;
+}
+
+export interface PageNoteItem {
+  items?: NoteItem[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor?: string | null;
+}
+
+export interface WidgetLineResponse {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface WidgetListResponse {
+  id: string;
+  title: string;
+  left: number;
+  done: number;
+  /** Its first lines: what is left first, then what was ticked */
+  lines: WidgetLineResponse[];
+}
+
+export interface ListInUseResponse {
+  list: WidgetListResponse;
+  /** Who is using it */
+  by: PersonBrief;
+  you: boolean;
+  since: string;
+}
+
+export interface NextLineResponse {
+  /** @nullable */
+  thingId: string | null;
+  kind: ThingKind;
+  /**
+     * 15:30, €84
+     * @nullable
+     */
+  lead: string | null;
+  title: string;
+  note: string;
+  /**
+     * For something that can be ticked: false. Null otherwise.
+     * @nullable
+     */
+  done: boolean | null;
+}
+
+export interface WidgetsResponse {
+  day: string;
+  /** What this circle puts on lists most, for one-tap adding: Milk, Eggs, Bread */
+  chips: string[];
+  /** The shopping list. Null when there is none yet. */
+  shopping: WidgetListResponse | null;
+  /** The list someone is using right now, for the Lock Screen */
+  inUse: ListInUseResponse | null;
+  /** What is next today: three lines at most */
+  next: NextLineResponse[];
+  /** How many things you jotted today */
+  addedToday: number;
+}
+
+export interface VaultDrawerResponse {
+  category: VaultCategory;
+  items: number;
+}
+
+export interface VaultNeedsALookResponse {
+  total: number;
+  weak: number;
+  reused: number;
+  leaked: number;
+}
+
+export interface VaultHomeResponse {
+  /** The six drawers, each with how many items you may see in it */
+  drawers: VaultDrawerResponse[];
+  needsALook: VaultNeedsALookResponse;
+  /** How many items here are someone else's, shared with you */
+  sharedWithYouCount: number;
+  /** The latest of them, five at most */
+  sharedWithYou: VaultItemRowResponse[];
+}
+
+export interface VaultKeyHolderResponse {
+  memberId: string;
+  name: string;
+  /** @nullable */
+  avatarUrl: string | null;
+  kind: MemberKind;
+  role: Role;
+  /** True for the signed-in person's own place in the circle */
+  you: boolean;
+  /**
+     * Their public key. Null when nothing can be sealed for them yet.
+     * @nullable
+     */
+  publicKey: string | null;
+  /**
+     * Why not, when there is no key: no_phone (they have no sign-in of their own) or no_vault (they haven't set up their Vault)
+     * @nullable
+     */
+  missing: string | null;
+}
+
+export interface VaultKeysResponse {
+  /** People in the circle a Vault item can be sealed for */
+  people: VaultKeyHolderResponse[];
+  /** People in the circle who can't be shared with yet, and why */
+  without: VaultKeyHolderResponse[];
 }
 
 export interface FreshCard {
@@ -732,6 +4572,96 @@ export interface TodayResponse {
   onlyYou: number;
 }
 
+export type TemplateGroup = typeof TemplateGroup[keyof typeof TemplateGroup];
+
+
+export const TemplateGroup = {
+  templates: 'templates',
+  keepsakes: 'keepsakes',
+  fair_and_fun: 'fair_and_fun',
+} as const;
+
+export interface GroupCount {
+  group?: TemplateGroup;
+  count?: number;
+  /** How many of them are offered to this kind of circle first */
+  yours?: number;
+}
+
+export type TemplateTopic = typeof TemplateTopic[keyof typeof TemplateTopic];
+
+
+export const TemplateTopic = {
+  home: 'home',
+  kids: 'kids',
+  food: 'food',
+  money: 'money',
+  trips: 'trips',
+  landlord: 'landlord',
+  together: 'together',
+  memories: 'memories',
+} as const;
+
+export interface TemplateCard {
+  template?: Template;
+  name?: string;
+  emoji?: string;
+  /** The line under its name */
+  line?: string;
+  group?: TemplateGroup;
+  topic?: TemplateTopic;
+  /** True for a template that does work (the LIVE tag); false for a plain starter */
+  live?: boolean;
+  /** True when it is offered to this kind of circle first */
+  yours?: boolean;
+  /** True when it can be started now */
+  ready?: boolean;
+  /**
+     * For one that can't be started yet: Coming with the next update
+     * @nullable
+     */
+  note?: string | null;
+  /** What starting it makes: Page · House manual, Checklist · When we go away */
+  makes?: string[];
+}
+
+export interface TemplateGalleryResponse {
+  kind: CircleKind;
+  /** Templates and keepsakes together: what “All 53” and “53 ready to use” count */
+  total: number;
+  /** How many of those are offered to this kind of circle first: “For two · 16” */
+  yours: number;
+  /** The three shelves with their counts. Fair and fun is counted on its own. */
+  groups: GroupCount[];
+  /** The chips this kind of circle gets next to All */
+  topics: TemplateTopic[];
+  /** Every template: this kind's own first, then the rest. 67 in all. */
+  templates: TemplateCard[];
+}
+
+export interface PersonBytes {
+  /**
+     * Null for what was added by people who have left
+     * @nullable
+     */
+  person?: PersonBrief;
+  you?: boolean;
+  bytes?: number;
+}
+
+export interface StorageResponse {
+  usedBytes: number;
+  /** How much the circle may keep. There are no plans yet: this comes from the API's settings and nothing is refused when it is passed. */
+  quotaBytes: number;
+  photoBytes: number;
+  videoBytes: number;
+  documentBytes: number;
+  /** Everything else: the pictures of the circle and its people */
+  otherBytes: number;
+  /** By whoever added it, the one with most first */
+  people: PersonBytes[];
+}
+
 export interface SearchHit {
   thing?: ThingBrief;
   /**
@@ -744,6 +4674,124 @@ export interface SearchHit {
 export interface SearchResponse {
   words: string;
   hits: SearchHit[];
+}
+
+export interface DayGroupResponse {
+  /** @nullable */
+  day: string | null;
+  reminders: ReminderResponse[];
+}
+
+export interface RemindersResponse {
+  day: string;
+  /** How many are yours to do, with the ones that wait for a place */
+  yoursCount: number;
+  /** How many you gave to someone else that aren't done */
+  askedCount: number;
+  /** Yours, by day. What is overdue stands under today; no day comes last. */
+  yours: DayGroupResponse[];
+  /** What you gave to someone else, with what they did today */
+  asked: ReminderResponse[];
+  /** Yours and asked that wait for a place instead of a time */
+  places: ReminderResponse[];
+}
+
+export interface DoneResponse {
+  tickId: string;
+  reminderId: string;
+  title: string;
+  doneAt: string;
+  doneBy: PersonBrief | null;
+  /** Whose job it was */
+  doneFor: PersonBrief | null;
+  /** @nullable */
+  dueOn: string | null;
+  stars: number;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface PageDoneResponse {
+  items: DoneResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface DotResponse {
+  /** @nullable */
+  memberId: string | null;
+  tint: number;
+}
+
+export interface DayDotsResponse {
+  day: string;
+  dots: DotResponse[];
+}
+
+export interface WhoseResponse {
+  memberId: string;
+  name: string;
+  tint: number;
+}
+
+export interface PlanEntryResponse {
+  /**
+     * The thing behind the line
+     * @nullable
+     */
+  thingId: string | null;
+  kind: ThingKind;
+  title: string;
+  day: string;
+  /**
+     * What stands in front: 15:30, All day, €84. Null for a job with only a tick.
+     * @nullable
+     */
+  lead: string | null;
+  /**
+     * The small time under it: when it ends
+     * @nullable
+     */
+  leadEnd: string | null;
+  /**
+     * For something that can be ticked: whether it is. Null otherwise.
+     * @nullable
+     */
+  done: boolean | null;
+  /** True when the signed-in person may tick it here. Send the line's day as dueOn. */
+  canTick: boolean;
+  /** The small line under the title: Weekdays · Alex drives */
+  note: string;
+  noteIcon: NoteIcon;
+  /** Whose it is, for the coloured dot. Null: everyone's. */
+  whose: WhoseResponse | null;
+  /** The faces next to it, three at most */
+  avatarUrls: string[];
+  /** Sorts the day: minutes since midnight, or 1440 for something with no time */
+  minute: number;
+  mine: boolean;
+  canEdit: boolean;
+  /** Null for a line another place brought */
+  chip: AudienceChip | null;
+}
+
+export interface PlanDayResponse {
+  day: string;
+  entries: PlanEntryResponse[];
+}
+
+export interface PlanResponse {
+  day: string;
+  /** The week the day is in, Monday first, with a dot per person who has something */
+  week: DayDotsResponse[];
+  /** The day asked for and the days after it, each with its lines in order of time */
+  days: PlanDayResponse[];
+  /** Reminders that were due before that day and are still open, each on the day it was due. They are still to do: when the day asked for is today, they belong on top. */
+  overdue: PlanEntryResponse[];
 }
 
 export interface PageRow {
@@ -766,6 +4814,198 @@ export interface PagePageRow {
   nextCursor?: string | null;
 }
 
+export interface NotesHome {
+  /** The circle's spaces that you may see, in their order. A hundred at most. */
+  spaces?: FolderResponse[];
+  /** What you pinned, in the order you pinned it. Twenty at most. */
+  pinned?: NoteItem[];
+  /** The ten pages and lists that changed last */
+  recent?: NoteItem[];
+  /** How many pages and lists aren't filed in any folder you may see */
+  unfiled?: number;
+}
+
+export interface MonthDayResponse {
+  day: string;
+  /** False for the days of the months before and after that fill the grid */
+  inMonth: boolean;
+  dots: DotResponse[];
+}
+
+export interface MonthResponse {
+  month: string;
+  /** Whole weeks, Monday first, that hold the month */
+  days: MonthDayResponse[];
+}
+
+export interface PageThingBrief {
+  items?: ThingBrief[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor?: string | null;
+}
+
+export interface WallResponse {
+  items: ItemRow[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+  /** The moments the photos of this page belong to, the newest first */
+  moments: MomentResponse[];
+}
+
+export interface TileView {
+  id?: string;
+  kind?: ThingKind;
+  /** @nullable */
+  thumbUrl?: string | null;
+}
+
+export interface MonthView {
+  /** The month, as 2026-11 */
+  month?: string;
+  photos?: number;
+  videos?: number;
+  /** Its newest pictures, for a small grid. Empty for a year that wasn't asked for. */
+  tiles?: TileView[];
+}
+
+export interface YearCount {
+  year?: number;
+  photos?: number;
+  videos?: number;
+}
+
+export interface TimelineResponse {
+  /** Every year with something in it, the newest first: the strip at the side */
+  years: YearCount[];
+  /**
+     * The year whose months follow: the one asked for, or the newest
+     * @nullable
+     */
+  year: number | null;
+  /** The months of that year with something in them, the newest first */
+  months: MonthView[];
+}
+
+export interface PlaceView {
+  /** The place's name, as the phone looked it up. Ask the wall for it with `place`. */
+  name?: string;
+  /** @nullable */
+  country?: string | null;
+  /**
+     * Where its photos were taken, on average
+     * @nullable
+     */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  count?: number;
+  photos?: number;
+  videos?: number;
+  /** On how many different days */
+  visits?: number;
+  lastDay?: string;
+  /** @nullable */
+  coverUrl?: string | null;
+  /** Who added them */
+  people?: PersonBrief[];
+}
+
+export interface PlacesResponse {
+  places: number;
+  countries: number;
+  /** The place with most photos first, five hundred at most */
+  list: PlaceView[];
+}
+
+export interface AlbumCounts {
+  shared?: number;
+  onlyYou?: number;
+  fromJourney?: number;
+}
+
+export interface PersonLens {
+  memberId?: string;
+  name?: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** How many photos and videos they are in that you may see */
+  count?: number;
+  /** @nullable */
+  coverUrl?: string | null;
+}
+
+export interface LensesResponse {
+  photos: number;
+  videos: number;
+  files: number;
+  places: number;
+  albums: AlbumCounts;
+  /** The people who are in photos, the one in most first */
+  people: PersonLens[];
+}
+
+export interface PageJotResponse {
+  items: JotResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface GoalRowResponse {
+  id: string;
+  circleId: string;
+  title: string;
+  emoji: string;
+  /** @nullable */
+  coverUrl: string | null;
+  /** How far, 0 to 100: what the ring shows */
+  percent: number;
+  /** The line under the name: €5,600 of €8,000 · on track for March */
+  line: string;
+  reached: boolean;
+  /** Where it reads its number, when not by hand */
+  source: GoalSource | null;
+  /** Who put something in, whoever began first coming first */
+  people: PersonBrief[];
+  /** All four chip in. Empty when nobody has yet. */
+  cheer: string;
+  updatedAt: string;
+  mine: boolean;
+  canEdit: boolean;
+  chip: AudienceChip;
+}
+
+export interface PageDocumentCard {
+  items?: DocumentCard[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor?: string | null;
+}
+
+export interface CategoryCount {
+  category?: DocumentCategory;
+  count?: number;
+}
+
+export interface FilesSummary {
+  /** How many documents you may see in this circle */
+  total?: number;
+  /** The kinds there are, the one with most first */
+  categories?: CategoryCount[];
+  /** The folders you may see, a hundred at most */
+  folders?: AlbumResponse[];
+}
+
 export interface ChecklistRow {
   id?: string;
   circleId?: string;
@@ -786,8 +5026,226 @@ export interface PageChecklistRow {
   nextCursor?: string | null;
 }
 
+export interface BoardCard {
+  id?: string;
+  circleId?: string;
+  template?: Template;
+  title?: string;
+  emoji?: string;
+  /**
+     * Where it stands, in a few words: 3 letters · opens 4 Dec 2034
+     * @nullable
+     */
+  glance?: string | null;
+  updatedAt?: string;
+  mine?: boolean;
+  canEdit?: boolean;
+  chip?: AudienceChip;
+}
+
+export interface PageBoardCard {
+  items?: BoardCard[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor?: string | null;
+}
+
+export type AlbumTab = typeof AlbumTab[keyof typeof AlbumTab];
+
+
+export const AlbumTab = {
+  shared: 'shared',
+  mine: 'mine',
+  journey: 'journey',
+} as const;
+
+export interface PageAlbumResponse {
+  items: AlbumResponse[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface BoardEntriesResponse {
+  items: (SaidQuote | StoriesQuestion | GoodJarSlip)[];
+  /**
+     * Send this back as `cursor` to get the next page. Null on the last page.
+     * @nullable
+     */
+  nextCursor: string | null;
+}
+
+export interface AlbumBrief {
+  id: string;
+  title: string;
+}
+
+export interface Neighbours {
+  /** Taken after it, the nearest first */
+  newer: ItemRow[];
+  /** Taken before it, the nearest first */
+  older: ItemRow[];
+  /**
+     * Its place counted from the newest, starting at 1. Only inside a moment or an album.
+     * @nullable
+     */
+  position: number | null;
+  /**
+     * How many there are. Only inside a moment or an album.
+     * @nullable
+     */
+  total: number | null;
+}
+
 export type ForgetDeviceParams = {
   token: string;
+};
+
+export type LoveLibraryItemParams = {
+  /** A child or a pet of the circle to give the heart for. Left out: yourself. */
+  as?: string;
+};
+
+export type UnloveLibraryItemParams = {
+  as?: string;
+};
+
+export type GetMyVaultItemsParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetLibraryCommentsParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetGoalEntriesParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type StartTemplateParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetJotsParams = {
+  /** The day on the person's phone, for words like tomorrow */
+  day?: string;
+  cursor?: string;
+  limit?: number;
+};
+
+export type CreateBoardParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetBoardEntriesParams = {
+  /** Only entries of this kind */
+  kind?: string;
+  /** Only entries for this member */
+  member?: string;
+  /** One of the template's own filters, such as voice */
+  filter?: string;
+  /** Only entries with these words, in what this person may read */
+  q?: string;
+  cursor?: string;
+  limit?: number;
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type AddBoardEntryParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type ActOnBoardParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetReminderParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetLibraryItemParams = {
+  kind?: ThingKind;
+  loved?: boolean;
+  by?: string;
+  about?: string;
+  place?: string;
+  album?: string;
+  /** A photo of the moment to stay inside while swiping: usually this one */
+  moment?: string;
+};
+
+export type GetGoalParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+  /** The year the twelve months are of. Left out: this year. */
+  year?: number;
+};
+
+export type GetEventParams = {
+  /** The day on the person's phone, for the next time it comes round */
+  day?: string;
+};
+
+export type GetDocumentParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type ChangeDocumentParams = {
+  day?: string;
+};
+
+export type GetBoardParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+  /** Which part, for templates with more than one: a week, a year. See x-board-templates. */
+  show?: string;
+};
+
+export type ChangeBoardParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type ChangeBoardEntryParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetFolderItemsParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetWidgetsParams = {
+  /** The day on the person's phone */
+  day?: string;
+  /** The time zone of the phone, such as Europe/Ljubljana */
+  timeZone?: string;
+};
+
+export type GetVaultItemsParams = {
+  /** Only this drawer */
+  category?: VaultCategory;
+  /** True for only your own, false for only what others shared with you */
+  mine?: boolean;
+  /** True for only those whose password needs a look */
+  look?: boolean;
+  cursor?: string;
+  limit?: number;
 };
 
 export type GetTodayParams = {
@@ -800,12 +5258,117 @@ export type SearchCircleParams = {
   place?: Place;
 };
 
+export type GetRemindersParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetDoneRemindersParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetPlanParams = {
+  /** The first day. The API's own day when left out. */
+  day?: string;
+  /** How many days from there. Left out: 7. */
+  days?: number;
+  /** Only what concerns this person of the circle */
+  member?: string;
+};
+
 export type GetPagesParams = {
   cursor?: string;
   limit?: number;
 };
 
+export type GetUnfiledNotesParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetMonthParams = {
+  /** The month, as 2026-11. This month when left out. */
+  month?: string;
+  /** Only what concerns this person of the circle */
+  member?: string;
+};
+
+export type GetLinkableParams = {
+  /** Only this kind of thing: a bill, an event, a sheet. Left out: every kind. */
+  kind?: ThingKind;
+  /** Words from its title */
+  q?: string;
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetWallParams = {
+  /** Only photos, or only videos */
+  kind?: ThingKind;
+  /** Only what you gave a heart */
+  loved?: boolean;
+  /** Only what this member added */
+  by?: string;
+  /** Only what this member is in */
+  about?: string;
+  /** Only what was taken at the place with this name */
+  place?: string;
+  /** Only what is in this album */
+  album?: string;
+  /** Only the moment this photo belongs to */
+  moment?: string;
+  /** Start at this day and go back from there: how the strip at the side jumps */
+  until?: string;
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetTimelineParams = {
+  kind?: ThingKind;
+  loved?: boolean;
+  by?: string;
+  about?: string;
+  place?: string;
+  album?: string;
+  /** The year to open. Left out: the newest with anything in it. */
+  year?: number;
+  /** How many pictures to give for each month of that year, 24 at most */
+  tiles?: number;
+};
+
+export type GetGoalsParams = {
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+};
+
+export type GetFilesParams = {
+  /** Only this kind of document */
+  category?: DocumentCategory;
+  /** Only what is in this folder */
+  folder?: string;
+  /** Only what has these words in its name or inside it */
+  q?: string;
+  /** The day on the person's phone. The API's own day when left out. */
+  day?: string;
+  cursor?: string;
+  limit?: number;
+};
+
 export type GetChecklistsParams = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetBoardsParams = {
+  template?: Template;
+  cursor?: string;
+  limit?: number;
+};
+
+export type GetAlbumsParams = {
+  /** One of the three tabs: shared, mine or journey. Left out: all of them. */
+  tab?: AlbumTab;
   cursor?: string;
   limit?: number;
 };
@@ -828,6 +5391,1390 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetVaultUrl = () => {
+
+
+
+
+  return `/v1/vault`
+}
+
+/**
+ * @summary Your own Vault record: your public key and your wrapped private key, for a new phone to open with your Vault key
+ */
+export const getVault = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecordResponse> => {
+
+  return apiFetch<VaultRecordResponse>(getGetVaultUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultQueryKey = () => {
+    return [
+    `/v1/vault`
+    ] as const;
+    }
+
+
+export const getGetVaultQueryOptions = <TData = Awaited<ReturnType<typeof getVault>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVault>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVault>>> = ({ signal }) => getVault({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVault>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultQueryResult = NonNullable<Awaited<ReturnType<typeof getVault>>>
+export type GetVaultQueryError = unknown
+
+
+/** @summary Your own Vault record: your public key and your wrapped private key, for a new phone to open with your Vault key */
+export function useGetVault<TData = Awaited<ReturnType<typeof getVault>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVault>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVault>>,
+          TError,
+          Awaited<ReturnType<typeof getVault>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your own Vault record: your public key and your wrapped private key, for a new phone to open with your Vault key */
+export function useGetVault<TData = Awaited<ReturnType<typeof getVault>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVault>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVault>>,
+          TError,
+          Awaited<ReturnType<typeof getVault>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your own Vault record: your public key and your wrapped private key, for a new phone to open with your Vault key */
+export function useGetVault<TData = Awaited<ReturnType<typeof getVault>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVault>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your own Vault record: your public key and your wrapped private key, for a new phone to open with your Vault key */
+export function useGetVault<TData = Awaited<ReturnType<typeof getVault>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVault>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetUpVaultUrl = () => {
+
+
+
+
+  return `/v1/vault`
+}
+
+/**
+ * @summary Set up your Vault with a key pair made on this phone. A second, different one is refused.
+ */
+export const setUpVault = async (setUpVaultRequest: SetUpVaultRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecordResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultRecordResponse>(getSetUpVaultUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setUpVaultRequest)
+  }
+);}
+
+
+
+
+
+export const getSetUpVaultMutationKey = () => ['setUpVault'] as const;
+
+export const getSetUpVaultMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setUpVault>>, TError,SetUpVaultMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setUpVault>>, TError,SetUpVaultMutationVariables, TContext> => {
+
+const mutationKey = getSetUpVaultMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setUpVault>>, SetUpVaultMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  setUpVault(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetUpVaultMutationResult = NonNullable<Awaited<ReturnType<typeof setUpVault>>>
+    export type SetUpVaultMutationBody = SetUpVaultRequest
+    export type SetUpVaultMutationError = unknown
+    export type SetUpVaultMutationVariables = {data: SetUpVaultRequest}
+
+    /** @summary Set up your Vault with a key pair made on this phone. A second, different one is refused. */
+export const useSetUpVault = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setUpVault>>, TError,SetUpVaultMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setUpVault>>,
+        TError,
+        SetUpVaultMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetUpVaultMutationOptions(options), queryClient);
+    }
+
+export const getReplaceVaultKeyUrl = () => {
+
+
+
+
+  return `/v1/vault/key`
+}
+
+/**
+ * @summary A new Vault key: the same private key wrapped afresh. Your helpers' shares are thrown away and have to be made again.
+ */
+export const replaceVaultKey = async (replaceVaultKeyRequest: ReplaceVaultKeyRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecordResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultRecordResponse>(getReplaceVaultKeyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(replaceVaultKeyRequest)
+  }
+);}
+
+
+
+
+
+export const getReplaceVaultKeyMutationKey = () => ['replaceVaultKey'] as const;
+
+export const getReplaceVaultKeyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replaceVaultKey>>, TError,ReplaceVaultKeyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replaceVaultKey>>, TError,ReplaceVaultKeyMutationVariables, TContext> => {
+
+const mutationKey = getReplaceVaultKeyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replaceVaultKey>>, ReplaceVaultKeyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  replaceVaultKey(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplaceVaultKeyMutationResult = NonNullable<Awaited<ReturnType<typeof replaceVaultKey>>>
+    export type ReplaceVaultKeyMutationBody = ReplaceVaultKeyRequest
+    export type ReplaceVaultKeyMutationError = unknown
+    export type ReplaceVaultKeyMutationVariables = {data: ReplaceVaultKeyRequest}
+
+    /** @summary A new Vault key: the same private key wrapped afresh. Your helpers' shares are thrown away and have to be made again. */
+export const useReplaceVaultKey = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replaceVaultKey>>, TError,ReplaceVaultKeyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof replaceVaultKey>>,
+        TError,
+        ReplaceVaultKeyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReplaceVaultKeyMutationOptions(options), queryClient);
+    }
+
+export const getConfirmVaultKeySavedUrl = () => {
+
+
+
+
+  return `/v1/vault/key-saved`
+}
+
+/**
+ * @summary Say: I've saved my key
+ */
+export const confirmVaultKeySaved = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecordResponse> => {
+
+  return apiFetch<VaultRecordResponse>(getConfirmVaultKeySavedUrl(),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getConfirmVaultKeySavedMutationKey = () => ['confirmVaultKeySaved'] as const;
+
+export const getConfirmVaultKeySavedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmVaultKeySaved>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmVaultKeySaved>>, TError,void, TContext> => {
+
+const mutationKey = getConfirmVaultKeySavedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmVaultKeySaved>>, void> = () => {
+
+
+          return  confirmVaultKeySaved(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmVaultKeySavedMutationResult = NonNullable<Awaited<ReturnType<typeof confirmVaultKeySaved>>>
+
+    export type ConfirmVaultKeySavedMutationError = unknown
+
+
+    /** @summary Say: I've saved my key */
+export const useConfirmVaultKeySaved = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmVaultKeySaved>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmVaultKeySaved>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getConfirmVaultKeySavedMutationOptions(options), queryClient);
+    }
+
+export const getGetVaultSharingUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/items/${id}/sharing`
+}
+
+/**
+ * @summary What the share sheet shows: everyone in the circle, their public keys, and what each may do. Thirty at most.
+ */
+export const getVaultSharing = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultSharingResponse> => {
+
+  return apiFetch<VaultSharingResponse>(getGetVaultSharingUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultSharingQueryKey = (id: string,) => {
+    return [
+    `/v1/vault/items/${id}/sharing`
+    ] as const;
+    }
+
+
+export const getGetVaultSharingQueryOptions = <TData = Awaited<ReturnType<typeof getVaultSharing>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultSharing>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultSharingQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultSharing>>> = ({ signal }) => getVaultSharing(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultSharing>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultSharingQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultSharing>>>
+export type GetVaultSharingQueryError = unknown
+
+
+/** @summary What the share sheet shows: everyone in the circle, their public keys, and what each may do. Thirty at most. */
+export function useGetVaultSharing<TData = Awaited<ReturnType<typeof getVaultSharing>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultSharing>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultSharing>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultSharing>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the share sheet shows: everyone in the circle, their public keys, and what each may do. Thirty at most. */
+export function useGetVaultSharing<TData = Awaited<ReturnType<typeof getVaultSharing>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultSharing>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultSharing>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultSharing>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the share sheet shows: everyone in the circle, their public keys, and what each may do. Thirty at most. */
+export function useGetVaultSharing<TData = Awaited<ReturnType<typeof getVaultSharing>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultSharing>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the share sheet shows: everyone in the circle, their public keys, and what each may do. Thirty at most. */
+export function useGetVaultSharing<TData = Awaited<ReturnType<typeof getVaultSharing>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultSharing>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultSharingQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveVaultSharingUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/items/${id}/sharing`
+}
+
+/**
+ * @summary Change who an item is shared with, with a wrapped key for each person. Only its owner can.
+ */
+export const saveVaultSharing = async (id: string,
+    vaultShareChange: VaultShareChange, options?: Parameters<typeof apiFetch>[1]): Promise<VaultSharingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultSharingResponse>(getSaveVaultSharingUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(vaultShareChange)
+  }
+);}
+
+
+
+
+
+export const getSaveVaultSharingMutationKey = () => ['saveVaultSharing'] as const;
+
+export const getSaveVaultSharingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveVaultSharing>>, TError,SaveVaultSharingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveVaultSharing>>, TError,SaveVaultSharingMutationVariables, TContext> => {
+
+const mutationKey = getSaveVaultSharingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveVaultSharing>>, SaveVaultSharingMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveVaultSharing(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveVaultSharingMutationResult = NonNullable<Awaited<ReturnType<typeof saveVaultSharing>>>
+    export type SaveVaultSharingMutationBody = VaultShareChange
+    export type SaveVaultSharingMutationError = unknown
+    export type SaveVaultSharingMutationVariables = {id: string;data: VaultShareChange}
+
+    /** @summary Change who an item is shared with, with a wrapped key for each person. Only its owner can. */
+export const useSaveVaultSharing = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveVaultSharing>>, TError,SaveVaultSharingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveVaultSharing>>,
+        TError,
+        SaveVaultSharingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveVaultSharingMutationOptions(options), queryClient);
+    }
+
+export const getGiveVaultKeysUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/items/${id}/keys`
+}
+
+/**
+ * @summary Hand keys to people who were waiting for one. Only its owner can; nobody's key is replaced.
+ */
+export const giveVaultKeys = async (id: string,
+    vaultKeysRequest: VaultKeysRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultSharingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultSharingResponse>(getGiveVaultKeysUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(vaultKeysRequest)
+  }
+);}
+
+
+
+
+
+export const getGiveVaultKeysMutationKey = () => ['giveVaultKeys'] as const;
+
+export const getGiveVaultKeysMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof giveVaultKeys>>, TError,GiveVaultKeysMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof giveVaultKeys>>, TError,GiveVaultKeysMutationVariables, TContext> => {
+
+const mutationKey = getGiveVaultKeysMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof giveVaultKeys>>, GiveVaultKeysMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  giveVaultKeys(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GiveVaultKeysMutationResult = NonNullable<Awaited<ReturnType<typeof giveVaultKeys>>>
+    export type GiveVaultKeysMutationBody = VaultKeysRequest
+    export type GiveVaultKeysMutationError = unknown
+    export type GiveVaultKeysMutationVariables = {id: string;data: VaultKeysRequest}
+
+    /** @summary Hand keys to people who were waiting for one. Only its owner can; nobody's key is replaced. */
+export const useGiveVaultKeys = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof giveVaultKeys>>, TError,GiveVaultKeysMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof giveVaultKeys>>,
+        TError,
+        GiveVaultKeysMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGiveVaultKeysMutationOptions(options), queryClient);
+    }
+
+export const getAnswerHelperAskUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/helping/${id}`
+}
+
+/**
+ * @summary Say yes or no to being someone's helper, or step down later
+ */
+export const answerHelperAsk = async (id: string,
+    helperAnswerRequest: HelperAnswerRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultHelpingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultHelpingResponse>(getAnswerHelperAskUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(helperAnswerRequest)
+  }
+);}
+
+
+
+
+
+export const getAnswerHelperAskMutationKey = () => ['answerHelperAsk'] as const;
+
+export const getAnswerHelperAskMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerHelperAsk>>, TError,AnswerHelperAskMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof answerHelperAsk>>, TError,AnswerHelperAskMutationVariables, TContext> => {
+
+const mutationKey = getAnswerHelperAskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof answerHelperAsk>>, AnswerHelperAskMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  answerHelperAsk(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnswerHelperAskMutationResult = NonNullable<Awaited<ReturnType<typeof answerHelperAsk>>>
+    export type AnswerHelperAskMutationBody = HelperAnswerRequest
+    export type AnswerHelperAskMutationError = unknown
+    export type AnswerHelperAskMutationVariables = {id: string;data: HelperAnswerRequest}
+
+    /** @summary Say yes or no to being someone's helper, or step down later */
+export const useAnswerHelperAsk = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerHelperAsk>>, TError,AnswerHelperAskMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof answerHelperAsk>>,
+        TError,
+        AnswerHelperAskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAnswerHelperAskMutationOptions(options), queryClient);
+    }
+
+export const getGetShareToPassOnUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/helping/${id}/share`
+}
+
+/**
+ * @summary Your share of someone's Vault key and the key to seal it to again. Only while they have a recovery open.
+ */
+export const getShareToPassOn = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<ShareToPassOnResponse> => {
+
+  return apiFetch<ShareToPassOnResponse>(getGetShareToPassOnUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShareToPassOnQueryKey = (id: string,) => {
+    return [
+    `/v1/vault/helping/${id}/share`
+    ] as const;
+    }
+
+
+export const getGetShareToPassOnQueryOptions = <TData = Awaited<ReturnType<typeof getShareToPassOn>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShareToPassOn>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShareToPassOnQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShareToPassOn>>> = ({ signal }) => getShareToPassOn(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShareToPassOn>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetShareToPassOnQueryResult = NonNullable<Awaited<ReturnType<typeof getShareToPassOn>>>
+export type GetShareToPassOnQueryError = unknown
+
+
+/** @summary Your share of someone's Vault key and the key to seal it to again. Only while they have a recovery open. */
+export function useGetShareToPassOn<TData = Awaited<ReturnType<typeof getShareToPassOn>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShareToPassOn>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShareToPassOn>>,
+          TError,
+          Awaited<ReturnType<typeof getShareToPassOn>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your share of someone's Vault key and the key to seal it to again. Only while they have a recovery open. */
+export function useGetShareToPassOn<TData = Awaited<ReturnType<typeof getShareToPassOn>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShareToPassOn>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShareToPassOn>>,
+          TError,
+          Awaited<ReturnType<typeof getShareToPassOn>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your share of someone's Vault key and the key to seal it to again. Only while they have a recovery open. */
+export function useGetShareToPassOn<TData = Awaited<ReturnType<typeof getShareToPassOn>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShareToPassOn>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your share of someone's Vault key and the key to seal it to again. Only while they have a recovery open. */
+export function useGetShareToPassOn<TData = Awaited<ReturnType<typeof getShareToPassOn>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShareToPassOn>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetShareToPassOnQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPassShareOnUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/helping/${id}/share`
+}
+
+/**
+ * @summary Pass your share on, sealed for their new phone
+ */
+export const passShareOn = async (id: string,
+    passShareOnRequest: PassShareOnRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultHelpingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultHelpingResponse>(getPassShareOnUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passShareOnRequest)
+  }
+);}
+
+
+
+
+
+export const getPassShareOnMutationKey = () => ['passShareOn'] as const;
+
+export const getPassShareOnMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof passShareOn>>, TError,PassShareOnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof passShareOn>>, TError,PassShareOnMutationVariables, TContext> => {
+
+const mutationKey = getPassShareOnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof passShareOn>>, PassShareOnMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  passShareOn(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PassShareOnMutationResult = NonNullable<Awaited<ReturnType<typeof passShareOn>>>
+    export type PassShareOnMutationBody = PassShareOnRequest
+    export type PassShareOnMutationError = unknown
+    export type PassShareOnMutationVariables = {id: string;data: PassShareOnRequest}
+
+    /** @summary Pass your share on, sealed for their new phone */
+export const usePassShareOn = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof passShareOn>>, TError,PassShareOnMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof passShareOn>>,
+        TError,
+        PassShareOnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPassShareOnMutationOptions(options), queryClient);
+    }
+
+export const getSaveHelperSharesUrl = () => {
+
+
+
+
+  return `/v1/vault/helpers/shares`
+}
+
+/**
+ * @summary Keep the shares of a new split of your Vault key, one sealed for each helper. Older shares are thrown away.
+ */
+export const saveHelperShares = async (helperSharesRequest: HelperSharesRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultHelpersResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultHelpersResponse>(getSaveHelperSharesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(helperSharesRequest)
+  }
+);}
+
+
+
+
+
+export const getSaveHelperSharesMutationKey = () => ['saveHelperShares'] as const;
+
+export const getSaveHelperSharesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveHelperShares>>, TError,SaveHelperSharesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveHelperShares>>, TError,SaveHelperSharesMutationVariables, TContext> => {
+
+const mutationKey = getSaveHelperSharesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveHelperShares>>, SaveHelperSharesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveHelperShares(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveHelperSharesMutationResult = NonNullable<Awaited<ReturnType<typeof saveHelperShares>>>
+    export type SaveHelperSharesMutationBody = HelperSharesRequest
+    export type SaveHelperSharesMutationError = unknown
+    export type SaveHelperSharesMutationVariables = {data: HelperSharesRequest}
+
+    /** @summary Keep the shares of a new split of your Vault key, one sealed for each helper. Older shares are thrown away. */
+export const useSaveHelperShares = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveHelperShares>>, TError,SaveHelperSharesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveHelperShares>>,
+        TError,
+        SaveHelperSharesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveHelperSharesMutationOptions(options), queryClient);
+    }
+
+export const getGetEmergencyUrl = () => {
+
+
+
+
+  return `/v1/vault/emergency`
+}
+
+/**
+ * @summary Your own emergency access: who can ask, the wait, what opens
+ */
+export const getEmergency = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultEmergencyResponse> => {
+
+  return apiFetch<VaultEmergencyResponse>(getGetEmergencyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmergencyQueryKey = () => {
+    return [
+    `/v1/vault/emergency`
+    ] as const;
+    }
+
+
+export const getGetEmergencyQueryOptions = <TData = Awaited<ReturnType<typeof getEmergency>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmergencyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmergency>>> = ({ signal }) => getEmergency({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEmergencyQueryResult = NonNullable<Awaited<ReturnType<typeof getEmergency>>>
+export type GetEmergencyQueryError = unknown
+
+
+/** @summary Your own emergency access: who can ask, the wait, what opens */
+export function useGetEmergency<TData = Awaited<ReturnType<typeof getEmergency>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEmergency>>,
+          TError,
+          Awaited<ReturnType<typeof getEmergency>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your own emergency access: who can ask, the wait, what opens */
+export function useGetEmergency<TData = Awaited<ReturnType<typeof getEmergency>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEmergency>>,
+          TError,
+          Awaited<ReturnType<typeof getEmergency>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your own emergency access: who can ask, the wait, what opens */
+export function useGetEmergency<TData = Awaited<ReturnType<typeof getEmergency>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Your own emergency access: who can ask, the wait, what opens */
+export function useGetEmergency<TData = Awaited<ReturnType<typeof getEmergency>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEmergencyQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveEmergencyUrl = () => {
+
+
+
+
+  return `/v1/vault/emergency`
+}
+
+/**
+ * @summary Turn emergency access on, or change it. What was kept before is thrown away, and a request that was running ends.
+ */
+export const saveEmergency = async (emergencyRequest: EmergencyRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultEmergencyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultEmergencyResponse>(getSaveEmergencyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(emergencyRequest)
+  }
+);}
+
+
+
+
+
+export const getSaveEmergencyMutationKey = () => ['saveEmergency'] as const;
+
+export const getSaveEmergencyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveEmergency>>, TError,SaveEmergencyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveEmergency>>, TError,SaveEmergencyMutationVariables, TContext> => {
+
+const mutationKey = getSaveEmergencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveEmergency>>, SaveEmergencyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveEmergency(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveEmergencyMutationResult = NonNullable<Awaited<ReturnType<typeof saveEmergency>>>
+    export type SaveEmergencyMutationBody = EmergencyRequest
+    export type SaveEmergencyMutationError = unknown
+    export type SaveEmergencyMutationVariables = {data: EmergencyRequest}
+
+    /** @summary Turn emergency access on, or change it. What was kept before is thrown away, and a request that was running ends. */
+export const useSaveEmergency = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveEmergency>>, TError,SaveEmergencyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveEmergency>>,
+        TError,
+        SaveEmergencyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveEmergencyMutationOptions(options), queryClient);
+    }
+
+export const getSwitchOffEmergencyUrl = () => {
+
+
+
+
+  return `/v1/vault/emergency`
+}
+
+/**
+ * @summary Switch emergency access off. Nothing more opens to anyone.
+ */
+export const switchOffEmergency = async ( options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getSwitchOffEmergencyUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getSwitchOffEmergencyMutationKey = () => ['switchOffEmergency'] as const;
+
+export const getSwitchOffEmergencyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchOffEmergency>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof switchOffEmergency>>, TError,void, TContext> => {
+
+const mutationKey = getSwitchOffEmergencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof switchOffEmergency>>, void> = () => {
+
+
+          return  switchOffEmergency(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SwitchOffEmergencyMutationResult = NonNullable<Awaited<ReturnType<typeof switchOffEmergency>>>
+
+    export type SwitchOffEmergencyMutationError = unknown
+
+
+    /** @summary Switch emergency access off. Nothing more opens to anyone. */
+export const useSwitchOffEmergency = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchOffEmergency>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof switchOffEmergency>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSwitchOffEmergencyMutationOptions(options), queryClient);
+    }
+
+export const getPinThingUrl = (id: string,) => {
+
+
+
+
+  return `/v1/things/${id}/pin`
+}
+
+/**
+ * @summary Pin a thing to the top of your Notes. Twenty at most.
+ */
+export const pinThing = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getPinThingUrl(id),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getPinThingMutationKey = () => ['pinThing'] as const;
+
+export const getPinThingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinThing>>, TError,PinThingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pinThing>>, TError,PinThingMutationVariables, TContext> => {
+
+const mutationKey = getPinThingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pinThing>>, PinThingMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  pinThing(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PinThingMutationResult = NonNullable<Awaited<ReturnType<typeof pinThing>>>
+
+    export type PinThingMutationError = unknown
+    export type PinThingMutationVariables = {id: string}
+
+    /** @summary Pin a thing to the top of your Notes. Twenty at most. */
+export const usePinThing = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinThing>>, TError,PinThingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof pinThing>>,
+        TError,
+        PinThingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPinThingMutationOptions(options), queryClient);
+    }
+
+export const getUnpinThingUrl = (id: string,) => {
+
+
+
+
+  return `/v1/things/${id}/pin`
+}
+
+/**
+ * @summary Take a pin away
+ */
+export const unpinThing = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getUnpinThingUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnpinThingMutationKey = () => ['unpinThing'] as const;
+
+export const getUnpinThingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unpinThing>>, TError,UnpinThingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unpinThing>>, TError,UnpinThingMutationVariables, TContext> => {
+
+const mutationKey = getUnpinThingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unpinThing>>, UnpinThingMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  unpinThing(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnpinThingMutationResult = NonNullable<Awaited<ReturnType<typeof unpinThing>>>
+
+    export type UnpinThingMutationError = unknown
+    export type UnpinThingMutationVariables = {id: string}
+
+    /** @summary Take a pin away */
+export const useUnpinThing = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unpinThing>>, TError,UnpinThingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unpinThing>>,
+        TError,
+        UnpinThingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnpinThingMutationOptions(options), queryClient);
+    }
 
 export const getLinkThingsUrl = (id: string,
     otherId: string,) => {
@@ -975,6 +6922,194 @@ export const useUnlinkThings = <TError = unknown,
         TContext
       > => {
       return useMutation(getUnlinkThingsMutationOptions(options), queryClient);
+    }
+
+export const getGetFilingUrl = (id: string,) => {
+
+
+
+
+  return `/v1/things/${id}/folder`
+}
+
+/**
+ * @summary Where a thing is filed: the way to it from its space
+ */
+export const getFiling = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<Filing> => {
+
+  return apiFetch<Filing>(getGetFilingUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFilingQueryKey = (id: string,) => {
+    return [
+    `/v1/things/${id}/folder`
+    ] as const;
+    }
+
+
+export const getGetFilingQueryOptions = <TData = Awaited<ReturnType<typeof getFiling>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiling>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFilingQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFiling>>> = ({ signal }) => getFiling(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFiling>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFilingQueryResult = NonNullable<Awaited<ReturnType<typeof getFiling>>>
+export type GetFilingQueryError = unknown
+
+
+/** @summary Where a thing is filed: the way to it from its space */
+export function useGetFiling<TData = Awaited<ReturnType<typeof getFiling>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiling>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFiling>>,
+          TError,
+          Awaited<ReturnType<typeof getFiling>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Where a thing is filed: the way to it from its space */
+export function useGetFiling<TData = Awaited<ReturnType<typeof getFiling>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiling>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFiling>>,
+          TError,
+          Awaited<ReturnType<typeof getFiling>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Where a thing is filed: the way to it from its space */
+export function useGetFiling<TData = Awaited<ReturnType<typeof getFiling>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiling>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Where a thing is filed: the way to it from its space */
+export function useGetFiling<TData = Awaited<ReturnType<typeof getFiling>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiling>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFilingQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getFileThingUrl = (id: string,) => {
+
+
+
+
+  return `/v1/things/${id}/folder`
+}
+
+/**
+ * @summary Move a thing into a folder, out of one, or to another place in the order
+ */
+export const fileThing = async (id: string,
+    filingRequest: FilingRequest, options?: Parameters<typeof apiFetch>[1]): Promise<Filing> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<Filing>(getFileThingUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(filingRequest)
+  }
+);}
+
+
+
+
+
+export const getFileThingMutationKey = () => ['fileThing'] as const;
+
+export const getFileThingMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fileThing>>, TError,FileThingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof fileThing>>, TError,FileThingMutationVariables, TContext> => {
+
+const mutationKey = getFileThingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof fileThing>>, FileThingMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  fileThing(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FileThingMutationResult = NonNullable<Awaited<ReturnType<typeof fileThing>>>
+    export type FileThingMutationBody = FilingRequest
+    export type FileThingMutationError = unknown
+    export type FileThingMutationVariables = {id: string;data: FilingRequest}
+
+    /** @summary Move a thing into a folder, out of one, or to another place in the order */
+export const useFileThing = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fileThing>>, TError,FileThingMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof fileThing>>,
+        TError,
+        FileThingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFileThingMutationOptions(options), queryClient);
     }
 
 export const getGetAudienceUrl = (id: string,) => {
@@ -1250,6 +7385,93 @@ export const useSaveAbout = <TError = unknown,
         TContext
       > => {
       return useMutation(getSaveAboutMutationOptions(options), queryClient);
+    }
+
+export const getTickReminderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/reminders/${id}/done`
+}
+
+/**
+ * @summary Tick a reminder or take the tick away. One that repeats moves to its next day; one that takes turns goes to the next person.
+ */
+export const tickReminder = async (id: string,
+    tickRequest: TickRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ReminderResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ReminderResponse>(getTickReminderUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tickRequest)
+  }
+);}
+
+
+
+
+
+export const getTickReminderMutationKey = () => ['tickReminder'] as const;
+
+export const getTickReminderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tickReminder>>, TError,TickReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof tickReminder>>, TError,TickReminderMutationVariables, TContext> => {
+
+const mutationKey = getTickReminderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tickReminder>>, TickReminderMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  tickReminder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TickReminderMutationResult = NonNullable<Awaited<ReturnType<typeof tickReminder>>>
+    export type TickReminderMutationBody = TickRequest
+    export type TickReminderMutationError = unknown
+    export type TickReminderMutationVariables = {id: string;data: TickRequest}
+
+    /** @summary Tick a reminder or take the tick away. One that repeats moves to its next day; one that takes turns goes to the next person. */
+export const useTickReminder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tickReminder>>, TError,TickReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof tickReminder>>,
+        TError,
+        TickReminderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTickReminderMutationOptions(options), queryClient);
     }
 
 export const getHandOverCircleUrl = (id: string,) => {
@@ -1848,6 +8070,255 @@ export const useRememberAppleSignIn = <TError = unknown,
       return useMutation(getRememberAppleSignInMutationOptions(options), queryClient);
     }
 
+export const getLoveLibraryItemUrl = (id: string,
+    params?: LoveLibraryItemParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/library/${id}/love?${stringifiedParams}` : `/v1/library/${id}/love`
+}
+
+/**
+ * @summary Give it a heart
+ */
+export const loveLibraryItem = async (id: string,
+    params?: LoveLibraryItemParams, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getLoveLibraryItemUrl(id,params),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getLoveLibraryItemMutationKey = () => ['loveLibraryItem'] as const;
+
+export const getLoveLibraryItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loveLibraryItem>>, TError,LoveLibraryItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof loveLibraryItem>>, TError,LoveLibraryItemMutationVariables, TContext> => {
+
+const mutationKey = getLoveLibraryItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof loveLibraryItem>>, LoveLibraryItemMutationVariables> = (props) => {
+          const {id,params} = props ?? {};
+
+          return  loveLibraryItem(id,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoveLibraryItemMutationResult = NonNullable<Awaited<ReturnType<typeof loveLibraryItem>>>
+
+    export type LoveLibraryItemMutationError = unknown
+    export type LoveLibraryItemMutationVariables = {id: string;params?: LoveLibraryItemParams}
+
+    /** @summary Give it a heart */
+export const useLoveLibraryItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loveLibraryItem>>, TError,LoveLibraryItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof loveLibraryItem>>,
+        TError,
+        LoveLibraryItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLoveLibraryItemMutationOptions(options), queryClient);
+    }
+
+export const getUnloveLibraryItemUrl = (id: string,
+    params?: UnloveLibraryItemParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/library/${id}/love?${stringifiedParams}` : `/v1/library/${id}/love`
+}
+
+/**
+ * @summary Take your heart back
+ */
+export const unloveLibraryItem = async (id: string,
+    params?: UnloveLibraryItemParams, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getUnloveLibraryItemUrl(id,params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnloveLibraryItemMutationKey = () => ['unloveLibraryItem'] as const;
+
+export const getUnloveLibraryItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unloveLibraryItem>>, TError,UnloveLibraryItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unloveLibraryItem>>, TError,UnloveLibraryItemMutationVariables, TContext> => {
+
+const mutationKey = getUnloveLibraryItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unloveLibraryItem>>, UnloveLibraryItemMutationVariables> = (props) => {
+          const {id,params} = props ?? {};
+
+          return  unloveLibraryItem(id,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnloveLibraryItemMutationResult = NonNullable<Awaited<ReturnType<typeof unloveLibraryItem>>>
+
+    export type UnloveLibraryItemMutationError = unknown
+    export type UnloveLibraryItemMutationVariables = {id: string;params?: UnloveLibraryItemParams}
+
+    /** @summary Take your heart back */
+export const useUnloveLibraryItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unloveLibraryItem>>, TError,UnloveLibraryItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unloveLibraryItem>>,
+        TError,
+        UnloveLibraryItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnloveLibraryItemMutationOptions(options), queryClient);
+    }
+
+export const getMoveJotUrl = (jotId: string,) => {
+
+
+
+
+  return `/v1/jots/${jotId}/move`
+}
+
+/**
+ * @summary Move a jot to another kind or another list: what it made is removed and its words are filed again. Also how a held-back code becomes just a note.
+ */
+export const moveJot = async (jotId: string,
+    moveRequest: MoveRequest, options?: Parameters<typeof apiFetch>[1]): Promise<JotResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<JotResponse>(getMoveJotUrl(jotId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(moveRequest)
+  }
+);}
+
+
+
+
+
+export const getMoveJotMutationKey = () => ['moveJot'] as const;
+
+export const getMoveJotMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveJot>>, TError,MoveJotMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof moveJot>>, TError,MoveJotMutationVariables, TContext> => {
+
+const mutationKey = getMoveJotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moveJot>>, MoveJotMutationVariables> = (props) => {
+          const {jotId,data} = props ?? {};
+
+          return  moveJot(jotId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MoveJotMutationResult = NonNullable<Awaited<ReturnType<typeof moveJot>>>
+    export type MoveJotMutationBody = MoveRequest
+    export type MoveJotMutationError = unknown
+    export type MoveJotMutationVariables = {jotId: string;data: MoveRequest}
+
+    /** @summary Move a jot to another kind or another list: what it made is removed and its words are filed again. Also how a held-back code becomes just a note. */
+export const useMoveJot = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveJot>>, TError,MoveJotMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof moveJot>>,
+        TError,
+        MoveJotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMoveJotMutationOptions(options), queryClient);
+    }
+
 export const getPreviewJoinUrl = (code: string,) => {
 
 
@@ -2021,6 +8492,527 @@ export const useJoinCircle = <TError = unknown,
       return useMutation(getJoinCircleMutationOptions(options), queryClient);
     }
 
+export const getAnswerEventUrl = (id: string,) => {
+
+
+
+
+  return `/v1/events/${id}/answer`
+}
+
+/**
+ * @summary Say going, maybe or can't for yourself. Anyone who can see an event may.
+ */
+export const answerEvent = async (id: string,
+    answerRequest: AnswerRequest, options?: Parameters<typeof apiFetch>[1]): Promise<EventResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EventResponse>(getAnswerEventUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(answerRequest)
+  }
+);}
+
+
+
+
+
+export const getAnswerEventMutationKey = () => ['answerEvent'] as const;
+
+export const getAnswerEventMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerEvent>>, TError,AnswerEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof answerEvent>>, TError,AnswerEventMutationVariables, TContext> => {
+
+const mutationKey = getAnswerEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof answerEvent>>, AnswerEventMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  answerEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnswerEventMutationResult = NonNullable<Awaited<ReturnType<typeof answerEvent>>>
+    export type AnswerEventMutationBody = AnswerRequest
+    export type AnswerEventMutationError = unknown
+    export type AnswerEventMutationVariables = {id: string;data: AnswerRequest}
+
+    /** @summary Say going, maybe or can't for yourself. Anyone who can see an event may. */
+export const useAnswerEvent = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerEvent>>, TError,AnswerEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof answerEvent>>,
+        TError,
+        AnswerEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAnswerEventMutationOptions(options), queryClient);
+    }
+
+export const getMarkShoppingListUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/shopping-list`
+}
+
+/**
+ * @summary Mark a checklist as the circle's shopping list: what reads like shopping lands in it
+ */
+export const markShoppingList = async (id: string,
+    listRequest: ListRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ListBriefResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ListBriefResponse>(getMarkShoppingListUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(listRequest)
+  }
+);}
+
+
+
+
+
+export const getMarkShoppingListMutationKey = () => ['markShoppingList'] as const;
+
+export const getMarkShoppingListMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markShoppingList>>, TError,MarkShoppingListMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markShoppingList>>, TError,MarkShoppingListMutationVariables, TContext> => {
+
+const mutationKey = getMarkShoppingListMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markShoppingList>>, MarkShoppingListMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  markShoppingList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkShoppingListMutationResult = NonNullable<Awaited<ReturnType<typeof markShoppingList>>>
+    export type MarkShoppingListMutationBody = ListRequest
+    export type MarkShoppingListMutationError = unknown
+    export type MarkShoppingListMutationVariables = {id: string;data: ListRequest}
+
+    /** @summary Mark a checklist as the circle's shopping list: what reads like shopping lands in it */
+export const useMarkShoppingList = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markShoppingList>>, TError,MarkShoppingListMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof markShoppingList>>,
+        TError,
+        MarkShoppingListMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkShoppingListMutationOptions(options), queryClient);
+    }
+
+export const getUseListUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/list-in-use`
+}
+
+/**
+ * @summary Say which list you are using right now (at the shop). It shows on the Lock Screen of everyone who may see it, for eight hours.
+ */
+export const useList = async (id: string,
+    listRequest: ListRequest, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<void>(getUseListUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(listRequest)
+  }
+);}
+
+
+
+
+
+export const getUseListMutationKey = () => ['useList'] as const;
+
+export const getUseListMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useList>>, TError,UseListMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof useList>>, TError,UseListMutationVariables, TContext> => {
+
+const mutationKey = getUseListMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof useList>>, UseListMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  useList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UseListMutationResult = NonNullable<Awaited<ReturnType<typeof useList>>>
+    export type UseListMutationBody = ListRequest
+    export type UseListMutationError = unknown
+    export type UseListMutationVariables = {id: string;data: ListRequest}
+
+    /** @summary Say which list you are using right now (at the shop). It shows on the Lock Screen of everyone who may see it, for eight hours. */
+export const useUseList = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useList>>, TError,UseListMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof useList>>,
+        TError,
+        UseListMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUseListMutationOptions(options), queryClient);
+    }
+
+export const getStopUsingListUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/list-in-use`
+}
+
+/**
+ * @summary Say you are done with the list you were using
+ */
+export const stopUsingList = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getStopUsingListUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getStopUsingListMutationKey = () => ['stopUsingList'] as const;
+
+export const getStopUsingListMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopUsingList>>, TError,StopUsingListMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopUsingList>>, TError,StopUsingListMutationVariables, TContext> => {
+
+const mutationKey = getStopUsingListMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopUsingList>>, StopUsingListMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  stopUsingList(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StopUsingListMutationResult = NonNullable<Awaited<ReturnType<typeof stopUsingList>>>
+
+    export type StopUsingListMutationError = unknown
+    export type StopUsingListMutationVariables = {id: string}
+
+    /** @summary Say you are done with the list you were using */
+export const useStopUsingList = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopUsingList>>, TError,StopUsingListMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof stopUsingList>>,
+        TError,
+        StopUsingListMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStopUsingListMutationOptions(options), queryClient);
+    }
+
+export const getGetJotWaysUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/jot-ways`
+}
+
+/**
+ * @summary The ways in you switched on, and where your jots go in this circle when it isn't obvious
+ */
+export const getJotWays = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<WaysResponse> => {
+
+  return apiFetch<WaysResponse>(getGetJotWaysUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJotWaysQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/jot-ways`
+    ] as const;
+    }
+
+
+export const getGetJotWaysQueryOptions = <TData = Awaited<ReturnType<typeof getJotWays>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJotWays>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJotWaysQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJotWays>>> = ({ signal }) => getJotWays(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJotWays>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetJotWaysQueryResult = NonNullable<Awaited<ReturnType<typeof getJotWays>>>
+export type GetJotWaysQueryError = unknown
+
+
+/** @summary The ways in you switched on, and where your jots go in this circle when it isn't obvious */
+export function useGetJotWays<TData = Awaited<ReturnType<typeof getJotWays>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJotWays>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJotWays>>,
+          TError,
+          Awaited<ReturnType<typeof getJotWays>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The ways in you switched on, and where your jots go in this circle when it isn't obvious */
+export function useGetJotWays<TData = Awaited<ReturnType<typeof getJotWays>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJotWays>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJotWays>>,
+          TError,
+          Awaited<ReturnType<typeof getJotWays>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The ways in you switched on, and where your jots go in this circle when it isn't obvious */
+export function useGetJotWays<TData = Awaited<ReturnType<typeof getJotWays>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJotWays>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The ways in you switched on, and where your jots go in this circle when it isn't obvious */
+export function useGetJotWays<TData = Awaited<ReturnType<typeof getJotWays>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJotWays>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetJotWaysQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveJotWaysUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/jot-ways`
+}
+
+/**
+ * @summary Change the ways in and where jots go. What is left out stays.
+ */
+export const saveJotWays = async (id: string,
+    waysRequest: WaysRequest, options?: Parameters<typeof apiFetch>[1]): Promise<WaysResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<WaysResponse>(getSaveJotWaysUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(waysRequest)
+  }
+);}
+
+
+
+
+
+export const getSaveJotWaysMutationKey = () => ['saveJotWays'] as const;
+
+export const getSaveJotWaysMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveJotWays>>, TError,SaveJotWaysMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveJotWays>>, TError,SaveJotWaysMutationVariables, TContext> => {
+
+const mutationKey = getSaveJotWaysMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveJotWays>>, SaveJotWaysMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveJotWays(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveJotWaysMutationResult = NonNullable<Awaited<ReturnType<typeof saveJotWays>>>
+    export type SaveJotWaysMutationBody = WaysRequest
+    export type SaveJotWaysMutationError = unknown
+    export type SaveJotWaysMutationVariables = {id: string;data: WaysRequest}
+
+    /** @summary Change the ways in and where jots go. What is left out stays. */
+export const useSaveJotWays = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveJotWays>>, TError,SaveJotWaysMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveJotWays>>,
+        TError,
+        SaveJotWaysMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveJotWaysMutationOptions(options), queryClient);
+    }
+
 export const getRenewJoinLinkUrl = (id: string,) => {
 
 
@@ -2091,6 +9083,1153 @@ export const useRenewJoinLink = <TError = unknown,
         TContext
       > => {
       return useMutation(getRenewJoinLinkMutationOptions(options), queryClient);
+    }
+
+export const getLookAtChecklistUrl = (id: string,) => {
+
+
+
+
+  return `/v1/checklists/${id}/look`
+}
+
+/**
+ * @summary Show or hide the ticked lines of a list, for you only
+ */
+export const lookAtChecklist = async (id: string,
+    lookRequest: LookRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ChecklistResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ChecklistResponse>(getLookAtChecklistUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(lookRequest)
+  }
+);}
+
+
+
+
+
+export const getLookAtChecklistMutationKey = () => ['lookAtChecklist'] as const;
+
+export const getLookAtChecklistMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lookAtChecklist>>, TError,LookAtChecklistMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof lookAtChecklist>>, TError,LookAtChecklistMutationVariables, TContext> => {
+
+const mutationKey = getLookAtChecklistMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof lookAtChecklist>>, LookAtChecklistMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  lookAtChecklist(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LookAtChecklistMutationResult = NonNullable<Awaited<ReturnType<typeof lookAtChecklist>>>
+    export type LookAtChecklistMutationBody = LookRequest
+    export type LookAtChecklistMutationError = unknown
+    export type LookAtChecklistMutationVariables = {id: string;data: LookRequest}
+
+    /** @summary Show or hide the ticked lines of a list, for you only */
+export const useLookAtChecklist = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lookAtChecklist>>, TError,LookAtChecklistMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof lookAtChecklist>>,
+        TError,
+        LookAtChecklistMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLookAtChecklistMutationOptions(options), queryClient);
+    }
+
+export const getStartVaultRecoveryUrl = () => {
+
+
+
+
+  return `/v1/vault/recoveries`
+}
+
+/**
+ * @summary Start getting back into your Vault on a new phone. You are told on every phone, and so are your helpers.
+ */
+export const startVaultRecovery = async (startRecoveryRequest: StartRecoveryRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecoveryResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultRecoveryResponse>(getStartVaultRecoveryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(startRecoveryRequest)
+  }
+);}
+
+
+
+
+
+export const getStartVaultRecoveryMutationKey = () => ['startVaultRecovery'] as const;
+
+export const getStartVaultRecoveryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startVaultRecovery>>, TError,StartVaultRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startVaultRecovery>>, TError,StartVaultRecoveryMutationVariables, TContext> => {
+
+const mutationKey = getStartVaultRecoveryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startVaultRecovery>>, StartVaultRecoveryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  startVaultRecovery(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartVaultRecoveryMutationResult = NonNullable<Awaited<ReturnType<typeof startVaultRecovery>>>
+    export type StartVaultRecoveryMutationBody = StartRecoveryRequest
+    export type StartVaultRecoveryMutationError = unknown
+    export type StartVaultRecoveryMutationVariables = {data: StartRecoveryRequest}
+
+    /** @summary Start getting back into your Vault on a new phone. You are told on every phone, and so are your helpers. */
+export const useStartVaultRecovery = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startVaultRecovery>>, TError,StartVaultRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startVaultRecovery>>,
+        TError,
+        StartVaultRecoveryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartVaultRecoveryMutationOptions(options), queryClient);
+    }
+
+export const getFinishVaultRecoveryUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/recoveries/${id}/finish`
+}
+
+/**
+ * @summary Close a recovery once the new phone has rebuilt the key
+ */
+export const finishVaultRecovery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecoveryResponse> => {
+
+  return apiFetch<VaultRecoveryResponse>(getFinishVaultRecoveryUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getFinishVaultRecoveryMutationKey = () => ['finishVaultRecovery'] as const;
+
+export const getFinishVaultRecoveryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishVaultRecovery>>, TError,FinishVaultRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finishVaultRecovery>>, TError,FinishVaultRecoveryMutationVariables, TContext> => {
+
+const mutationKey = getFinishVaultRecoveryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finishVaultRecovery>>, FinishVaultRecoveryMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  finishVaultRecovery(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinishVaultRecoveryMutationResult = NonNullable<Awaited<ReturnType<typeof finishVaultRecovery>>>
+
+    export type FinishVaultRecoveryMutationError = unknown
+    export type FinishVaultRecoveryMutationVariables = {id: string}
+
+    /** @summary Close a recovery once the new phone has rebuilt the key */
+export const useFinishVaultRecovery = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishVaultRecovery>>, TError,FinishVaultRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof finishVaultRecovery>>,
+        TError,
+        FinishVaultRecoveryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinishVaultRecoveryMutationOptions(options), queryClient);
+    }
+
+export const getGetMyVaultItemsUrl = (params?: GetMyVaultItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/vault/items?${stringifiedParams}` : `/v1/vault/items`
+}
+
+/**
+ * @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens
+ */
+export const getMyVaultItems = async (params?: GetMyVaultItemsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageVaultItemRowResponse> => {
+
+  return apiFetch<PageVaultItemRowResponse>(getGetMyVaultItemsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyVaultItemsInfiniteQueryKey = (params?: GetMyVaultItemsParams,) => {
+    return [
+    'infinite', `/v1/vault/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetMyVaultItemsQueryKey = (params?: GetMyVaultItemsParams,) => {
+    return [
+    `/v1/vault/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMyVaultItemsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getMyVaultItems>>, GetMyVaultItemsParams['cursor']>, TError = unknown>(params?: GetMyVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData, QueryKey, GetMyVaultItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyVaultItemsInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyVaultItems>>, QueryKey, GetMyVaultItemsParams['cursor']> = ({ signal, pageParam }) => getMyVaultItems({...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData, QueryKey, GetMyVaultItemsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyVaultItemsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getMyVaultItems>>>
+export type GetMyVaultItemsInfiniteQueryError = unknown
+
+
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyVaultItems>>, GetMyVaultItemsParams['cursor']>, TError = unknown>(
+ params: undefined |  GetMyVaultItemsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData, QueryKey, GetMyVaultItemsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getMyVaultItems>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyVaultItems>>, GetMyVaultItemsParams['cursor']>, TError = unknown>(
+ params?: GetMyVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData, QueryKey, GetMyVaultItemsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getMyVaultItems>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyVaultItems>>, GetMyVaultItemsParams['cursor']>, TError = unknown>(
+ params?: GetMyVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData, QueryKey, GetMyVaultItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyVaultItems>>, GetMyVaultItemsParams['cursor']>, TError = unknown>(
+ params?: GetMyVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData, QueryKey, GetMyVaultItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyVaultItemsInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetMyVaultItemsQueryOptions = <TData = Awaited<ReturnType<typeof getMyVaultItems>>, TError = unknown>(params?: GetMyVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyVaultItemsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyVaultItems>>> = ({ signal }) => getMyVaultItems(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyVaultItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyVaultItems>>>
+export type GetMyVaultItemsQueryError = unknown
+
+
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItems<TData = Awaited<ReturnType<typeof getMyVaultItems>>, TError = unknown>(
+ params: undefined |  GetMyVaultItemsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getMyVaultItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItems<TData = Awaited<ReturnType<typeof getMyVaultItems>>, TError = unknown>(
+ params?: GetMyVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getMyVaultItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItems<TData = Awaited<ReturnType<typeof getMyVaultItems>>, TError = unknown>(
+ params?: GetMyVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Every item you own, in all your circles, last changed first: to choose what opens if something happens */
+export function useGetMyVaultItems<TData = Awaited<ReturnType<typeof getMyVaultItems>>, TError = unknown>(
+ params?: GetMyVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyVaultItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyVaultItemsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateVaultItemUrl = () => {
+
+
+
+
+  return `/v1/vault/items`
+}
+
+/**
+ * @summary Keep a new item. It starts as yours alone.
+ */
+export const createVaultItem = async (newVaultItemRequest: NewVaultItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultItemResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultItemResponse>(getCreateVaultItemUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newVaultItemRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateVaultItemMutationKey = () => ['createVaultItem'] as const;
+
+export const getCreateVaultItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVaultItem>>, TError,CreateVaultItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVaultItem>>, TError,CreateVaultItemMutationVariables, TContext> => {
+
+const mutationKey = getCreateVaultItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVaultItem>>, CreateVaultItemMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createVaultItem(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVaultItemMutationResult = NonNullable<Awaited<ReturnType<typeof createVaultItem>>>
+    export type CreateVaultItemMutationBody = NewVaultItemRequest
+    export type CreateVaultItemMutationError = unknown
+    export type CreateVaultItemMutationVariables = {data: NewVaultItemRequest}
+
+    /** @summary Keep a new item. It starts as yours alone. */
+export const useCreateVaultItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVaultItem>>, TError,CreateVaultItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createVaultItem>>,
+        TError,
+        CreateVaultItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateVaultItemMutationOptions(options), queryClient);
+    }
+
+export const getOpenVaultItemUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/items/${id}/open`
+}
+
+/**
+ * @summary Be handed an item's ciphertext and your own wrapped key. It is written down, and a once-only key is gone after this.
+ */
+export const openVaultItem = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultOpenedResponse> => {
+
+  return apiFetch<VaultOpenedResponse>(getOpenVaultItemUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getOpenVaultItemMutationKey = () => ['openVaultItem'] as const;
+
+export const getOpenVaultItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openVaultItem>>, TError,OpenVaultItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openVaultItem>>, TError,OpenVaultItemMutationVariables, TContext> => {
+
+const mutationKey = getOpenVaultItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openVaultItem>>, OpenVaultItemMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  openVaultItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenVaultItemMutationResult = NonNullable<Awaited<ReturnType<typeof openVaultItem>>>
+
+    export type OpenVaultItemMutationError = unknown
+    export type OpenVaultItemMutationVariables = {id: string}
+
+    /** @summary Be handed an item's ciphertext and your own wrapped key. It is written down, and a once-only key is gone after this. */
+export const useOpenVaultItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openVaultItem>>, TError,OpenVaultItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof openVaultItem>>,
+        TError,
+        OpenVaultItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getOpenVaultItemMutationOptions(options), queryClient);
+    }
+
+export const getGetVaultHelpersUrl = () => {
+
+
+
+
+  return `/v1/vault/helpers`
+}
+
+/**
+ * @summary The people you asked to be your helpers. Five at most.
+ */
+export const getVaultHelpers = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultHelpersResponse> => {
+
+  return apiFetch<VaultHelpersResponse>(getGetVaultHelpersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultHelpersQueryKey = () => {
+    return [
+    `/v1/vault/helpers`
+    ] as const;
+    }
+
+
+export const getGetVaultHelpersQueryOptions = <TData = Awaited<ReturnType<typeof getVaultHelpers>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHelpers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultHelpersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultHelpers>>> = ({ signal }) => getVaultHelpers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultHelpers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultHelpersQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultHelpers>>>
+export type GetVaultHelpersQueryError = unknown
+
+
+/** @summary The people you asked to be your helpers. Five at most. */
+export function useGetVaultHelpers<TData = Awaited<ReturnType<typeof getVaultHelpers>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHelpers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultHelpers>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultHelpers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people you asked to be your helpers. Five at most. */
+export function useGetVaultHelpers<TData = Awaited<ReturnType<typeof getVaultHelpers>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHelpers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultHelpers>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultHelpers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people you asked to be your helpers. Five at most. */
+export function useGetVaultHelpers<TData = Awaited<ReturnType<typeof getVaultHelpers>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHelpers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people you asked to be your helpers. Five at most. */
+export function useGetVaultHelpers<TData = Awaited<ReturnType<typeof getVaultHelpers>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHelpers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultHelpersQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAskVaultHelperUrl = () => {
+
+
+
+
+  return `/v1/vault/helpers`
+}
+
+/**
+ * @summary Ask someone to be a helper. They can say yes or no.
+ */
+export const askVaultHelper = async (askHelperRequest: AskHelperRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultHelperResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultHelperResponse>(getAskVaultHelperUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(askHelperRequest)
+  }
+);}
+
+
+
+
+
+export const getAskVaultHelperMutationKey = () => ['askVaultHelper'] as const;
+
+export const getAskVaultHelperMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askVaultHelper>>, TError,AskVaultHelperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof askVaultHelper>>, TError,AskVaultHelperMutationVariables, TContext> => {
+
+const mutationKey = getAskVaultHelperMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askVaultHelper>>, AskVaultHelperMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  askVaultHelper(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AskVaultHelperMutationResult = NonNullable<Awaited<ReturnType<typeof askVaultHelper>>>
+    export type AskVaultHelperMutationBody = AskHelperRequest
+    export type AskVaultHelperMutationError = unknown
+    export type AskVaultHelperMutationVariables = {data: AskHelperRequest}
+
+    /** @summary Ask someone to be a helper. They can say yes or no. */
+export const useAskVaultHelper = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askVaultHelper>>, TError,AskVaultHelperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof askVaultHelper>>,
+        TError,
+        AskVaultHelperMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAskVaultHelperMutationOptions(options), queryClient);
+    }
+
+export const getOpenEntrustedItemUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/v1/vault/entrusted/${id}/items/${itemId}/open`
+}
+
+/**
+ * @summary Be handed one item that opened to you: its ciphertext and its key, wrapped for you
+ */
+export const openEntrustedItem = async (id: string,
+    itemId: string, options?: Parameters<typeof apiFetch>[1]): Promise<EntrustedOpenedResponse> => {
+
+  return apiFetch<EntrustedOpenedResponse>(getOpenEntrustedItemUrl(id,itemId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getOpenEntrustedItemMutationKey = () => ['openEntrustedItem'] as const;
+
+export const getOpenEntrustedItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openEntrustedItem>>, TError,OpenEntrustedItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openEntrustedItem>>, TError,OpenEntrustedItemMutationVariables, TContext> => {
+
+const mutationKey = getOpenEntrustedItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openEntrustedItem>>, OpenEntrustedItemMutationVariables> = (props) => {
+          const {id,itemId} = props ?? {};
+
+          return  openEntrustedItem(id,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenEntrustedItemMutationResult = NonNullable<Awaited<ReturnType<typeof openEntrustedItem>>>
+
+    export type OpenEntrustedItemMutationError = unknown
+    export type OpenEntrustedItemMutationVariables = {id: string;itemId: string}
+
+    /** @summary Be handed one item that opened to you: its ciphertext and its key, wrapped for you */
+export const useOpenEntrustedItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openEntrustedItem>>, TError,OpenEntrustedItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof openEntrustedItem>>,
+        TError,
+        OpenEntrustedItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getOpenEntrustedItemMutationOptions(options), queryClient);
+    }
+
+export const getAskForVaultUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/entrusted/${id}/ask`
+}
+
+/**
+ * @summary Ask for someone's Vault. They are told and can say no; asking again doesn't start the wait again.
+ */
+export const askForVault = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EntrustedVaultResponse> => {
+
+  return apiFetch<EntrustedVaultResponse>(getAskForVaultUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAskForVaultMutationKey = () => ['askForVault'] as const;
+
+export const getAskForVaultMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askForVault>>, TError,AskForVaultMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof askForVault>>, TError,AskForVaultMutationVariables, TContext> => {
+
+const mutationKey = getAskForVaultMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askForVault>>, AskForVaultMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  askForVault(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AskForVaultMutationResult = NonNullable<Awaited<ReturnType<typeof askForVault>>>
+
+    export type AskForVaultMutationError = unknown
+    export type AskForVaultMutationVariables = {id: string}
+
+    /** @summary Ask for someone's Vault. They are told and can say no; asking again doesn't start the wait again. */
+export const useAskForVault = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askForVault>>, TError,AskForVaultMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof askForVault>>,
+        TError,
+        AskForVaultMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAskForVaultMutationOptions(options), queryClient);
+    }
+
+export const getRefuseEmergencyUrl = () => {
+
+
+
+
+  return `/v1/vault/emergency/refusal`
+}
+
+/**
+ * @summary Say no to the request that is running. It ends.
+ */
+export const refuseEmergency = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultEmergencyResponse> => {
+
+  return apiFetch<VaultEmergencyResponse>(getRefuseEmergencyUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefuseEmergencyMutationKey = () => ['refuseEmergency'] as const;
+
+export const getRefuseEmergencyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refuseEmergency>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refuseEmergency>>, TError,void, TContext> => {
+
+const mutationKey = getRefuseEmergencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refuseEmergency>>, void> = () => {
+
+
+          return  refuseEmergency(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefuseEmergencyMutationResult = NonNullable<Awaited<ReturnType<typeof refuseEmergency>>>
+
+    export type RefuseEmergencyMutationError = unknown
+
+
+    /** @summary Say no to the request that is running. It ends. */
+export const useRefuseEmergency = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refuseEmergency>>, TError,void, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof refuseEmergency>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefuseEmergencyMutationOptions(options), queryClient);
+    }
+
+export const getCreateReminderUrl = () => {
+
+
+
+
+  return `/v1/reminders`
+}
+
+/**
+ * @summary Write down something to do
+ */
+export const createReminder = async (newReminderRequest: NewReminderRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ReminderResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ReminderResponse>(getCreateReminderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newReminderRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateReminderMutationKey = () => ['createReminder'] as const;
+
+export const getCreateReminderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReminder>>, TError,CreateReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReminder>>, TError,CreateReminderMutationVariables, TContext> => {
+
+const mutationKey = getCreateReminderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReminder>>, CreateReminderMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createReminder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReminderMutationResult = NonNullable<Awaited<ReturnType<typeof createReminder>>>
+    export type CreateReminderMutationBody = NewReminderRequest
+    export type CreateReminderMutationError = unknown
+    export type CreateReminderMutationVariables = {data: NewReminderRequest}
+
+    /** @summary Write down something to do */
+export const useCreateReminder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReminder>>, TError,CreateReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createReminder>>,
+        TError,
+        CreateReminderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateReminderMutationOptions(options), queryClient);
+    }
+
+export const getNudgeReminderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/reminders/${id}/nudge`
+}
+
+/**
+ * @summary A gentle push to whoever has a reminder you made. Once an hour at most.
+ */
+export const nudgeReminder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getNudgeReminderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getNudgeReminderMutationKey = () => ['nudgeReminder'] as const;
+
+export const getNudgeReminderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof nudgeReminder>>, TError,NudgeReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof nudgeReminder>>, TError,NudgeReminderMutationVariables, TContext> => {
+
+const mutationKey = getNudgeReminderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof nudgeReminder>>, NudgeReminderMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  nudgeReminder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NudgeReminderMutationResult = NonNullable<Awaited<ReturnType<typeof nudgeReminder>>>
+
+    export type NudgeReminderMutationError = unknown
+    export type NudgeReminderMutationVariables = {id: string}
+
+    /** @summary A gentle push to whoever has a reminder you made. Once an hour at most. */
+export const useNudgeReminder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof nudgeReminder>>, TError,NudgeReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof nudgeReminder>>,
+        TError,
+        NudgeReminderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getNudgeReminderMutationOptions(options), queryClient);
     }
 
 export const getCreatePageUrl = () => {
@@ -2177,6 +10316,252 @@ export const useCreatePage = <TError = unknown,
         TContext
       > => {
       return useMutation(getCreatePageMutationOptions(options), queryClient);
+    }
+
+export const getSharePageListsUrl = (id: string,) => {
+
+
+
+
+  return `/v1/pages/${id}/share-lists`
+}
+
+/**
+ * @summary Give the lists drawn in a page that are yours the page's audience
+ */
+export const sharePageLists = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<SharedInside> => {
+
+  return apiFetch<SharedInside>(getSharePageListsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSharePageListsMutationKey = () => ['sharePageLists'] as const;
+
+export const getSharePageListsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sharePageLists>>, TError,SharePageListsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sharePageLists>>, TError,SharePageListsMutationVariables, TContext> => {
+
+const mutationKey = getSharePageListsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sharePageLists>>, SharePageListsMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  sharePageLists(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SharePageListsMutationResult = NonNullable<Awaited<ReturnType<typeof sharePageLists>>>
+
+    export type SharePageListsMutationError = unknown
+    export type SharePageListsMutationVariables = {id: string}
+
+    /** @summary Give the lists drawn in a page that are yours the page's audience */
+export const useSharePageLists = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sharePageLists>>, TError,SharePageListsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof sharePageLists>>,
+        TError,
+        SharePageListsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSharePageListsMutationOptions(options), queryClient);
+    }
+
+export const getSendPageChangesUrl = (id: string,) => {
+
+
+
+
+  return `/v1/pages/${id}/changes`
+}
+
+/**
+ * @summary Send the changes a phone kept while it had no signal, in order. Each gets its own answer; one for a block that was removed doesn't stop the rest. 200 at most.
+ */
+export const sendPageChanges = async (id: string,
+    lateBlockChanges: LateBlockChanges, options?: Parameters<typeof apiFetch>[1]): Promise<BlockAnswers> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BlockAnswers>(getSendPageChangesUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(lateBlockChanges)
+  }
+);}
+
+
+
+
+
+export const getSendPageChangesMutationKey = () => ['sendPageChanges'] as const;
+
+export const getSendPageChangesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPageChanges>>, TError,SendPageChangesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendPageChanges>>, TError,SendPageChangesMutationVariables, TContext> => {
+
+const mutationKey = getSendPageChangesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendPageChanges>>, SendPageChangesMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendPageChanges(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendPageChangesMutationResult = NonNullable<Awaited<ReturnType<typeof sendPageChanges>>>
+    export type SendPageChangesMutationBody = LateBlockChanges
+    export type SendPageChangesMutationError = unknown
+    export type SendPageChangesMutationVariables = {id: string;data: LateBlockChanges}
+
+    /** @summary Send the changes a phone kept while it had no signal, in order. Each gets its own answer; one for a block that was removed doesn't stop the rest. 200 at most. */
+export const useSendPageChanges = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPageChanges>>, TError,SendPageChangesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof sendPageChanges>>,
+        TError,
+        SendPageChangesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendPageChangesMutationOptions(options), queryClient);
+    }
+
+export const getAddBlockUrl = (id: string,) => {
+
+
+
+
+  return `/v1/pages/${id}/blocks`
+}
+
+/**
+ * @summary Add a block to a page: after another block, first, or at the end
+ */
+export const addBlock = async (id: string,
+    newBlockRequest: NewBlockRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BlockResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BlockResponse>(getAddBlockUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newBlockRequest)
+  }
+);}
+
+
+
+
+
+export const getAddBlockMutationKey = () => ['addBlock'] as const;
+
+export const getAddBlockMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addBlock>>, TError,AddBlockMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addBlock>>, TError,AddBlockMutationVariables, TContext> => {
+
+const mutationKey = getAddBlockMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addBlock>>, AddBlockMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addBlock(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddBlockMutationResult = NonNullable<Awaited<ReturnType<typeof addBlock>>>
+    export type AddBlockMutationBody = NewBlockRequest
+    export type AddBlockMutationError = unknown
+    export type AddBlockMutationVariables = {id: string;data: NewBlockRequest}
+
+    /** @summary Add a block to a page: after another block, first, or at the end */
+export const useAddBlock = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addBlock>>, TError,AddBlockMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addBlock>>,
+        TError,
+        AddBlockMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddBlockMutationOptions(options), queryClient);
     }
 
 export const getStartUploadUrl = () => {
@@ -2335,6 +10720,1504 @@ export const useCompleteUpload = <TError = unknown,
         TContext
       > => {
       return useMutation(getCompleteUploadMutationOptions(options), queryClient);
+    }
+
+export const getAddToLibraryUrl = () => {
+
+
+
+
+  return `/v1/library`
+}
+
+/**
+ * @summary Add uploaded photos, videos and documents, a hundred at a time at most. Each carries its own clientId, and a file that is there already is answered with what it became.
+ */
+export const addToLibrary = async (newItems: NewItems, options?: Parameters<typeof apiFetch>[1]): Promise<AddedResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<AddedResponse>(getAddToLibraryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newItems)
+  }
+);}
+
+
+
+
+
+export const getAddToLibraryMutationKey = () => ['addToLibrary'] as const;
+
+export const getAddToLibraryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addToLibrary>>, TError,AddToLibraryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addToLibrary>>, TError,AddToLibraryMutationVariables, TContext> => {
+
+const mutationKey = getAddToLibraryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addToLibrary>>, AddToLibraryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  addToLibrary(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddToLibraryMutationResult = NonNullable<Awaited<ReturnType<typeof addToLibrary>>>
+    export type AddToLibraryMutationBody = NewItems
+    export type AddToLibraryMutationError = unknown
+    export type AddToLibraryMutationVariables = {data: NewItems}
+
+    /** @summary Add uploaded photos, videos and documents, a hundred at a time at most. Each carries its own clientId, and a file that is there already is answered with what it became. */
+export const useAddToLibrary = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addToLibrary>>, TError,AddToLibraryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addToLibrary>>,
+        TError,
+        AddToLibraryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddToLibraryMutationOptions(options), queryClient);
+    }
+
+export const getGetLibraryCommentsUrl = (id: string,
+    params?: GetLibraryCommentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/library/${id}/comments?${stringifiedParams}` : `/v1/library/${id}/comments`
+}
+
+/**
+ * @summary What people said under it, the oldest first
+ */
+export const getLibraryComments = async (id: string,
+    params?: GetLibraryCommentsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageCommentResponse> => {
+
+  return apiFetch<PageCommentResponse>(getGetLibraryCommentsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryCommentsInfiniteQueryKey = (id: string,
+    params?: GetLibraryCommentsParams,) => {
+    return [
+    'infinite', `/v1/library/${id}/comments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetLibraryCommentsQueryKey = (id: string,
+    params?: GetLibraryCommentsParams,) => {
+    return [
+    `/v1/library/${id}/comments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetLibraryCommentsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getLibraryComments>>, GetLibraryCommentsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData, QueryKey, GetLibraryCommentsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryCommentsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryComments>>, QueryKey, GetLibraryCommentsParams['cursor']> = ({ signal, pageParam }) => getLibraryComments(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData, QueryKey, GetLibraryCommentsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLibraryCommentsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryComments>>>
+export type GetLibraryCommentsInfiniteQueryError = unknown
+
+
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryCommentsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLibraryComments>>, GetLibraryCommentsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetLibraryCommentsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData, QueryKey, GetLibraryCommentsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLibraryComments>>,
+          TError,
+          Awaited<ReturnType<typeof getLibraryComments>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryCommentsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLibraryComments>>, GetLibraryCommentsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData, QueryKey, GetLibraryCommentsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLibraryComments>>,
+          TError,
+          Awaited<ReturnType<typeof getLibraryComments>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryCommentsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLibraryComments>>, GetLibraryCommentsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData, QueryKey, GetLibraryCommentsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryCommentsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLibraryComments>>, GetLibraryCommentsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData, QueryKey, GetLibraryCommentsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLibraryCommentsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetLibraryCommentsQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryComments>>, TError = unknown>(id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryCommentsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryComments>>> = ({ signal }) => getLibraryComments(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLibraryCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryComments>>>
+export type GetLibraryCommentsQueryError = unknown
+
+
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryComments<TData = Awaited<ReturnType<typeof getLibraryComments>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetLibraryCommentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLibraryComments>>,
+          TError,
+          Awaited<ReturnType<typeof getLibraryComments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryComments<TData = Awaited<ReturnType<typeof getLibraryComments>>, TError = unknown>(
+ id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLibraryComments>>,
+          TError,
+          Awaited<ReturnType<typeof getLibraryComments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryComments<TData = Awaited<ReturnType<typeof getLibraryComments>>, TError = unknown>(
+ id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What people said under it, the oldest first */
+export function useGetLibraryComments<TData = Awaited<ReturnType<typeof getLibraryComments>>, TError = unknown>(
+ id: string,
+    params?: GetLibraryCommentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryComments>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLibraryCommentsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddLibraryCommentUrl = (id: string,) => {
+
+
+
+
+  return `/v1/library/${id}/comments`
+}
+
+/**
+ * @summary Say something under it
+ */
+export const addLibraryComment = async (id: string,
+    newCommentRequest: NewCommentRequest, options?: Parameters<typeof apiFetch>[1]): Promise<CommentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<CommentResponse>(getAddLibraryCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newCommentRequest)
+  }
+);}
+
+
+
+
+
+export const getAddLibraryCommentMutationKey = () => ['addLibraryComment'] as const;
+
+export const getAddLibraryCommentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addLibraryComment>>, TError,AddLibraryCommentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addLibraryComment>>, TError,AddLibraryCommentMutationVariables, TContext> => {
+
+const mutationKey = getAddLibraryCommentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addLibraryComment>>, AddLibraryCommentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addLibraryComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddLibraryCommentMutationResult = NonNullable<Awaited<ReturnType<typeof addLibraryComment>>>
+    export type AddLibraryCommentMutationBody = NewCommentRequest
+    export type AddLibraryCommentMutationError = unknown
+    export type AddLibraryCommentMutationVariables = {id: string;data: NewCommentRequest}
+
+    /** @summary Say something under it */
+export const useAddLibraryComment = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addLibraryComment>>, TError,AddLibraryCommentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addLibraryComment>>,
+        TError,
+        AddLibraryCommentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddLibraryCommentMutationOptions(options), queryClient);
+    }
+
+export const getShareSelectedUrl = () => {
+
+
+
+
+  return `/v1/library/select/share`
+}
+
+/**
+ * @summary Set who can see many things at once. Done to the ones that are yours; says how many.
+ */
+export const shareSelected = async (shareSelectedBody: ShareSelected, options?: Parameters<typeof apiFetch>[1]): Promise<SelectResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SelectResult>(getShareSelectedUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(shareSelectedBody)
+  }
+);}
+
+
+
+
+
+export const getShareSelectedMutationKey = () => ['shareSelected'] as const;
+
+export const getShareSelectedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shareSelected>>, TError,ShareSelectedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shareSelected>>, TError,ShareSelectedMutationVariables, TContext> => {
+
+const mutationKey = getShareSelectedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shareSelected>>, ShareSelectedMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  shareSelected(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShareSelectedMutationResult = NonNullable<Awaited<ReturnType<typeof shareSelected>>>
+    export type ShareSelectedMutationBody = ShareSelected
+    export type ShareSelectedMutationError = unknown
+    export type ShareSelectedMutationVariables = {data: ShareSelected}
+
+    /** @summary Set who can see many things at once. Done to the ones that are yours; says how many. */
+export const useShareSelected = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shareSelected>>, TError,ShareSelectedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shareSelected>>,
+        TError,
+        ShareSelectedMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShareSelectedMutationOptions(options), queryClient);
+    }
+
+export const getHideSelectedUrl = () => {
+
+
+
+
+  return `/v1/library/select/hide`
+}
+
+/**
+ * @summary Hide many things from one person. Done to the ones that are yours and shared; says how many.
+ */
+export const hideSelected = async (hideSelectedBody: HideSelected, options?: Parameters<typeof apiFetch>[1]): Promise<SelectResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SelectResult>(getHideSelectedUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(hideSelectedBody)
+  }
+);}
+
+
+
+
+
+export const getHideSelectedMutationKey = () => ['hideSelected'] as const;
+
+export const getHideSelectedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof hideSelected>>, TError,HideSelectedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof hideSelected>>, TError,HideSelectedMutationVariables, TContext> => {
+
+const mutationKey = getHideSelectedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof hideSelected>>, HideSelectedMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  hideSelected(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type HideSelectedMutationResult = NonNullable<Awaited<ReturnType<typeof hideSelected>>>
+    export type HideSelectedMutationBody = HideSelected
+    export type HideSelectedMutationError = unknown
+    export type HideSelectedMutationVariables = {data: HideSelected}
+
+    /** @summary Hide many things from one person. Done to the ones that are yours and shared; says how many. */
+export const useHideSelected = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof hideSelected>>, TError,HideSelectedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof hideSelected>>,
+        TError,
+        HideSelectedMutationVariables,
+        TContext
+      > => {
+      return useMutation(getHideSelectedMutationOptions(options), queryClient);
+    }
+
+export const getDeleteSelectedUrl = () => {
+
+
+
+
+  return `/v1/library/select/delete`
+}
+
+/**
+ * @summary Delete many things for good. Done to the ones that are yours; says how many.
+ */
+export const deleteSelected = async (deleteSelectedBody: DeleteSelected, options?: Parameters<typeof apiFetch>[1]): Promise<SelectResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SelectResult>(getDeleteSelectedUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(deleteSelectedBody)
+  }
+);}
+
+
+
+
+
+export const getDeleteSelectedMutationKey = () => ['deleteSelected'] as const;
+
+export const getDeleteSelectedMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSelected>>, TError,DeleteSelectedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSelected>>, TError,DeleteSelectedMutationVariables, TContext> => {
+
+const mutationKey = getDeleteSelectedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSelected>>, DeleteSelectedMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteSelected(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSelectedMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSelected>>>
+    export type DeleteSelectedMutationBody = DeleteSelected
+    export type DeleteSelectedMutationError = unknown
+    export type DeleteSelectedMutationVariables = {data: DeleteSelected}
+
+    /** @summary Delete many things for good. Done to the ones that are yours; says how many. */
+export const useDeleteSelected = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSelected>>, TError,DeleteSelectedMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSelected>>,
+        TError,
+        DeleteSelectedMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteSelectedMutationOptions(options), queryClient);
+    }
+
+export const getCheckLibraryUrl = () => {
+
+
+
+
+  return `/v1/library/check`
+}
+
+/**
+ * @summary Which of these files are in your Library already. Ask before uploading, with each file's SHA-256.
+ */
+export const checkLibrary = async (hashCheck: HashCheck, options?: Parameters<typeof apiFetch>[1]): Promise<CheckResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<CheckResponse>(getCheckLibraryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(hashCheck)
+  }
+);}
+
+
+
+
+
+export const getCheckLibraryMutationKey = () => ['checkLibrary'] as const;
+
+export const getCheckLibraryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkLibrary>>, TError,CheckLibraryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkLibrary>>, TError,CheckLibraryMutationVariables, TContext> => {
+
+const mutationKey = getCheckLibraryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkLibrary>>, CheckLibraryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  checkLibrary(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckLibraryMutationResult = NonNullable<Awaited<ReturnType<typeof checkLibrary>>>
+    export type CheckLibraryMutationBody = HashCheck
+    export type CheckLibraryMutationError = unknown
+    export type CheckLibraryMutationVariables = {data: HashCheck}
+
+    /** @summary Which of these files are in your Library already. Ask before uploading, with each file's SHA-256. */
+export const useCheckLibrary = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkLibrary>>, TError,CheckLibraryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkLibrary>>,
+        TError,
+        CheckLibraryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckLibraryMutationOptions(options), queryClient);
+    }
+
+export const getAddGuestPassCardUrl = (id: string,) => {
+
+
+
+
+  return `/v1/guest-passes/${id}/cards`
+}
+
+/**
+ * @summary Add a sealed card to a pass: a door code or a Wi‑Fi password only the guest's page can open
+ */
+export const addGuestPassCard = async (id: string,
+    newGuestPassCardRequest: NewGuestPassCardRequest, options?: Parameters<typeof apiFetch>[1]): Promise<GuestPassResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<GuestPassResponse>(getAddGuestPassCardUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newGuestPassCardRequest)
+  }
+);}
+
+
+
+
+
+export const getAddGuestPassCardMutationKey = () => ['addGuestPassCard'] as const;
+
+export const getAddGuestPassCardMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addGuestPassCard>>, TError,AddGuestPassCardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addGuestPassCard>>, TError,AddGuestPassCardMutationVariables, TContext> => {
+
+const mutationKey = getAddGuestPassCardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addGuestPassCard>>, AddGuestPassCardMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addGuestPassCard(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddGuestPassCardMutationResult = NonNullable<Awaited<ReturnType<typeof addGuestPassCard>>>
+    export type AddGuestPassCardMutationBody = NewGuestPassCardRequest
+    export type AddGuestPassCardMutationError = unknown
+    export type AddGuestPassCardMutationVariables = {id: string;data: NewGuestPassCardRequest}
+
+    /** @summary Add a sealed card to a pass: a door code or a Wi‑Fi password only the guest's page can open */
+export const useAddGuestPassCard = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addGuestPassCard>>, TError,AddGuestPassCardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addGuestPassCard>>,
+        TError,
+        AddGuestPassCardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddGuestPassCardMutationOptions(options), queryClient);
+    }
+
+export const getCreateGoalUrl = () => {
+
+
+
+
+  return `/v1/goals`
+}
+
+/**
+ * @summary Start a goal
+ */
+export const createGoal = async (newGoalRequest: NewGoalRequest, options?: Parameters<typeof apiFetch>[1]): Promise<GoalResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<GoalResponse>(getCreateGoalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newGoalRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateGoalMutationKey = () => ['createGoal'] as const;
+
+export const getCreateGoalMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoal>>, TError,CreateGoalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGoal>>, TError,CreateGoalMutationVariables, TContext> => {
+
+const mutationKey = getCreateGoalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGoal>>, CreateGoalMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGoal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGoalMutationResult = NonNullable<Awaited<ReturnType<typeof createGoal>>>
+    export type CreateGoalMutationBody = NewGoalRequest
+    export type CreateGoalMutationError = unknown
+    export type CreateGoalMutationVariables = {data: NewGoalRequest}
+
+    /** @summary Start a goal */
+export const useCreateGoal = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoal>>, TError,CreateGoalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createGoal>>,
+        TError,
+        CreateGoalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateGoalMutationOptions(options), queryClient);
+    }
+
+export const getGetGoalEntriesUrl = (id: string,
+    params?: GetGoalEntriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/goals/${id}/entries?${stringifiedParams}` : `/v1/goals/${id}/entries`
+}
+
+/**
+ * @summary Who put what into a goal, the latest first
+ */
+export const getGoalEntries = async (id: string,
+    params?: GetGoalEntriesParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageEntryResponse> => {
+
+  return apiFetch<PageEntryResponse>(getGetGoalEntriesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGoalEntriesInfiniteQueryKey = (id: string,
+    params?: GetGoalEntriesParams,) => {
+    return [
+    'infinite', `/v1/goals/${id}/entries`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetGoalEntriesQueryKey = (id: string,
+    params?: GetGoalEntriesParams,) => {
+    return [
+    `/v1/goals/${id}/entries`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGoalEntriesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getGoalEntries>>, GetGoalEntriesParams['cursor']>, TError = unknown>(id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData, QueryKey, GetGoalEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGoalEntriesInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoalEntries>>, QueryKey, GetGoalEntriesParams['cursor']> = ({ signal, pageParam }) => getGoalEntries(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData, QueryKey, GetGoalEntriesParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGoalEntriesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getGoalEntries>>>
+export type GetGoalEntriesInfiniteQueryError = unknown
+
+
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getGoalEntries>>, GetGoalEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetGoalEntriesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData, QueryKey, GetGoalEntriesParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoalEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getGoalEntries>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getGoalEntries>>, GetGoalEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData, QueryKey, GetGoalEntriesParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoalEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getGoalEntries>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getGoalEntries>>, GetGoalEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData, QueryKey, GetGoalEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getGoalEntries>>, GetGoalEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData, QueryKey, GetGoalEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetGoalEntriesInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetGoalEntriesQueryOptions = <TData = Awaited<ReturnType<typeof getGoalEntries>>, TError = unknown>(id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGoalEntriesQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoalEntries>>> = ({ signal }) => getGoalEntries(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGoalEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof getGoalEntries>>>
+export type GetGoalEntriesQueryError = unknown
+
+
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntries<TData = Awaited<ReturnType<typeof getGoalEntries>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetGoalEntriesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoalEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getGoalEntries>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntries<TData = Awaited<ReturnType<typeof getGoalEntries>>, TError = unknown>(
+ id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoalEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getGoalEntries>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntries<TData = Awaited<ReturnType<typeof getGoalEntries>>, TError = unknown>(
+ id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Who put what into a goal, the latest first */
+export function useGetGoalEntries<TData = Awaited<ReturnType<typeof getGoalEntries>>, TError = unknown>(
+ id: string,
+    params?: GetGoalEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoalEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetGoalEntriesQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddGoalEntryUrl = (id: string,) => {
+
+
+
+
+  return `/v1/goals/${id}/entries`
+}
+
+/**
+ * @summary Put something into a goal: Add money
+ */
+export const addGoalEntry = async (id: string,
+    newEntryRequest: NewEntryRequest, options?: Parameters<typeof apiFetch>[1]): Promise<EntryResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EntryResponse>(getAddGoalEntryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newEntryRequest)
+  }
+);}
+
+
+
+
+
+export const getAddGoalEntryMutationKey = () => ['addGoalEntry'] as const;
+
+export const getAddGoalEntryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addGoalEntry>>, TError,AddGoalEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addGoalEntry>>, TError,AddGoalEntryMutationVariables, TContext> => {
+
+const mutationKey = getAddGoalEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addGoalEntry>>, AddGoalEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addGoalEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddGoalEntryMutationResult = NonNullable<Awaited<ReturnType<typeof addGoalEntry>>>
+    export type AddGoalEntryMutationBody = NewEntryRequest
+    export type AddGoalEntryMutationError = unknown
+    export type AddGoalEntryMutationVariables = {id: string;data: NewEntryRequest}
+
+    /** @summary Put something into a goal: Add money */
+export const useAddGoalEntry = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addGoalEntry>>, TError,AddGoalEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addGoalEntry>>,
+        TError,
+        AddGoalEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddGoalEntryMutationOptions(options), queryClient);
+    }
+
+export const getCreateFolderUrl = () => {
+
+
+
+
+  return `/v1/folders`
+}
+
+/**
+ * @summary Make a space, or a folder inside another
+ */
+export const createFolder = async (newFolderRequest: NewFolderRequest, options?: Parameters<typeof apiFetch>[1]): Promise<FolderResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<FolderResponse>(getCreateFolderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newFolderRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateFolderMutationKey = () => ['createFolder'] as const;
+
+export const getCreateFolderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFolder>>, TError,CreateFolderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFolder>>, TError,CreateFolderMutationVariables, TContext> => {
+
+const mutationKey = getCreateFolderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFolder>>, CreateFolderMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFolder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFolderMutationResult = NonNullable<Awaited<ReturnType<typeof createFolder>>>
+    export type CreateFolderMutationBody = NewFolderRequest
+    export type CreateFolderMutationError = unknown
+    export type CreateFolderMutationVariables = {data: NewFolderRequest}
+
+    /** @summary Make a space, or a folder inside another */
+export const useCreateFolder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFolder>>, TError,CreateFolderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFolder>>,
+        TError,
+        CreateFolderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFolderMutationOptions(options), queryClient);
+    }
+
+export const getShareFolderContentsUrl = (id: string,) => {
+
+
+
+
+  return `/v1/folders/${id}/share-inside`
+}
+
+/**
+ * @summary Give everything in a folder that is yours the folder's audience. Up to 500 things at once.
+ */
+export const shareFolderContents = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<SharedInside> => {
+
+  return apiFetch<SharedInside>(getShareFolderContentsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getShareFolderContentsMutationKey = () => ['shareFolderContents'] as const;
+
+export const getShareFolderContentsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shareFolderContents>>, TError,ShareFolderContentsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shareFolderContents>>, TError,ShareFolderContentsMutationVariables, TContext> => {
+
+const mutationKey = getShareFolderContentsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shareFolderContents>>, ShareFolderContentsMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  shareFolderContents(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShareFolderContentsMutationResult = NonNullable<Awaited<ReturnType<typeof shareFolderContents>>>
+
+    export type ShareFolderContentsMutationError = unknown
+    export type ShareFolderContentsMutationVariables = {id: string}
+
+    /** @summary Give everything in a folder that is yours the folder's audience. Up to 500 things at once. */
+export const useShareFolderContents = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shareFolderContents>>, TError,ShareFolderContentsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof shareFolderContents>>,
+        TError,
+        ShareFolderContentsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getShareFolderContentsMutationOptions(options), queryClient);
+    }
+
+export const getCreateEventUrl = () => {
+
+
+
+
+  return `/v1/events`
+}
+
+/**
+ * @summary Put an event on the calendar
+ */
+export const createEvent = async (newEventRequest: NewEventRequest, options?: Parameters<typeof apiFetch>[1]): Promise<EventResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EventResponse>(getCreateEventUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newEventRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateEventMutationKey = () => ['createEvent'] as const;
+
+export const getCreateEventMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,CreateEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,CreateEventMutationVariables, TContext> => {
+
+const mutationKey = getCreateEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvent>>, CreateEventMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEvent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEventMutationResult = NonNullable<Awaited<ReturnType<typeof createEvent>>>
+    export type CreateEventMutationBody = NewEventRequest
+    export type CreateEventMutationError = unknown
+    export type CreateEventMutationVariables = {data: NewEventRequest}
+
+    /** @summary Put an event on the calendar */
+export const useCreateEvent = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,CreateEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createEvent>>,
+        TError,
+        CreateEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateEventMutationOptions(options), queryClient);
+    }
+
+export const getAddEventGuestUrl = (id: string,) => {
+
+
+
+
+  return `/v1/events/${id}/guests`
+}
+
+/**
+ * @summary Put someone on an event: one of the circle, or a name
+ */
+export const addEventGuest = async (id: string,
+    newGuestRequest: NewGuestRequest, options?: Parameters<typeof apiFetch>[1]): Promise<GuestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<GuestResponse>(getAddEventGuestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newGuestRequest)
+  }
+);}
+
+
+
+
+
+export const getAddEventGuestMutationKey = () => ['addEventGuest'] as const;
+
+export const getAddEventGuestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addEventGuest>>, TError,AddEventGuestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addEventGuest>>, TError,AddEventGuestMutationVariables, TContext> => {
+
+const mutationKey = getAddEventGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addEventGuest>>, AddEventGuestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addEventGuest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddEventGuestMutationResult = NonNullable<Awaited<ReturnType<typeof addEventGuest>>>
+    export type AddEventGuestMutationBody = NewGuestRequest
+    export type AddEventGuestMutationError = unknown
+    export type AddEventGuestMutationVariables = {id: string;data: NewGuestRequest}
+
+    /** @summary Put someone on an event: one of the circle, or a name */
+export const useAddEventGuest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addEventGuest>>, TError,AddEventGuestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addEventGuest>>,
+        TError,
+        AddEventGuestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddEventGuestMutationOptions(options), queryClient);
     }
 
 export const getGetCirclesUrl = () => {
@@ -2524,6 +12407,191 @@ export const useCreateCircle = <TError = unknown,
       return useMutation(getCreateCircleMutationOptions(options), queryClient);
     }
 
+export const getStartTemplateUrl = (id: string,
+    template: Template,
+    params?: StartTemplateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/templates/${template}/start?${stringifiedParams}` : `/v1/circles/${id}/templates/${template}/start`
+}
+
+/**
+ * @summary Start a template in a circle: its pages and checklists, or its board
+ */
+export const startTemplate = async (id: string,
+    template: Template,
+    startTemplateRequest: StartTemplateRequest,
+    params?: StartTemplateParams, options?: Parameters<typeof apiFetch>[1]): Promise<StartedResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<StartedResponse>(getStartTemplateUrl(id,template,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(startTemplateRequest)
+  }
+);}
+
+
+
+
+
+export const getStartTemplateMutationKey = () => ['startTemplate'] as const;
+
+export const getStartTemplateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTemplate>>, TError,StartTemplateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startTemplate>>, TError,StartTemplateMutationVariables, TContext> => {
+
+const mutationKey = getStartTemplateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startTemplate>>, StartTemplateMutationVariables> = (props) => {
+          const {id,template,data,params} = props ?? {};
+
+          return  startTemplate(id,template,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof startTemplate>>>
+    export type StartTemplateMutationBody = StartTemplateRequest
+    export type StartTemplateMutationError = unknown
+    export type StartTemplateMutationVariables = {id: string;template: Template;data: StartTemplateRequest;params?: StartTemplateParams}
+
+    /** @summary Start a template in a circle: its pages and checklists, or its board */
+export const useStartTemplate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTemplate>>, TError,StartTemplateMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startTemplate>>,
+        TError,
+        StartTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartTemplateMutationOptions(options), queryClient);
+    }
+
+export const getReadLineUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/read`
+}
+
+/**
+ * @summary How a line would be read, without saving anything: the things in it, and the pieces of the line each was read from. A long text gives back the days and amounts found in it.
+ */
+export const readLine = async (id: string,
+    readRequest: ReadRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ReadingResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ReadingResponse>(getReadLineUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(readRequest)
+  }
+);}
+
+
+
+
+
+export const getReadLineMutationKey = () => ['readLine'] as const;
+
+export const getReadLineMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readLine>>, TError,ReadLineMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof readLine>>, TError,ReadLineMutationVariables, TContext> => {
+
+const mutationKey = getReadLineMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof readLine>>, ReadLineMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  readLine(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReadLineMutationResult = NonNullable<Awaited<ReturnType<typeof readLine>>>
+    export type ReadLineMutationBody = ReadRequest
+    export type ReadLineMutationError = unknown
+    export type ReadLineMutationVariables = {id: string;data: ReadRequest}
+
+    /** @summary How a line would be read, without saving anything: the things in it, and the pieces of the line each was read from. A long text gives back the days and amounts found in it. */
+export const useReadLine = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readLine>>, TError,ReadLineMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof readLine>>,
+        TError,
+        ReadLineMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReadLineMutationOptions(options), queryClient);
+    }
+
 export const getAddMemberUrl = (id: string,) => {
 
 
@@ -2609,6 +12677,288 @@ export const useAddMember = <TError = unknown,
         TContext
       > => {
       return useMutation(getAddMemberMutationOptions(options), queryClient);
+    }
+
+export const getGetJotsUrl = (id: string,
+    params?: GetJotsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/jots?${stringifiedParams}` : `/v1/circles/${id}/jots`
+}
+
+/**
+ * @summary What you jotted in a circle and what each became, the latest first
+ */
+export const getJots = async (id: string,
+    params?: GetJotsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageJotResponse> => {
+
+  return apiFetch<PageJotResponse>(getGetJotsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJotsInfiniteQueryKey = (id: string,
+    params?: GetJotsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/jots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetJotsQueryKey = (id: string,
+    params?: GetJotsParams,) => {
+    return [
+    `/v1/circles/${id}/jots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetJotsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getJots>>, GetJotsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData, QueryKey, GetJotsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJotsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJots>>, QueryKey, GetJotsParams['cursor']> = ({ signal, pageParam }) => getJots(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData, QueryKey, GetJotsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetJotsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getJots>>>
+export type GetJotsInfiniteQueryError = unknown
+
+
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJotsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getJots>>, GetJotsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetJotsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData, QueryKey, GetJotsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJots>>,
+          TError,
+          Awaited<ReturnType<typeof getJots>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJotsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getJots>>, GetJotsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData, QueryKey, GetJotsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJots>>,
+          TError,
+          Awaited<ReturnType<typeof getJots>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJotsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getJots>>, GetJotsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData, QueryKey, GetJotsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJotsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getJots>>, GetJotsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData, QueryKey, GetJotsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetJotsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetJotsQueryOptions = <TData = Awaited<ReturnType<typeof getJots>>, TError = unknown>(id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJotsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJots>>> = ({ signal }) => getJots(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetJotsQueryResult = NonNullable<Awaited<ReturnType<typeof getJots>>>
+export type GetJotsQueryError = unknown
+
+
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJots<TData = Awaited<ReturnType<typeof getJots>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetJotsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJots>>,
+          TError,
+          Awaited<ReturnType<typeof getJots>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJots<TData = Awaited<ReturnType<typeof getJots>>, TError = unknown>(
+ id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJots>>,
+          TError,
+          Awaited<ReturnType<typeof getJots>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJots<TData = Awaited<ReturnType<typeof getJots>>, TError = unknown>(
+ id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What you jotted in a circle and what each became, the latest first */
+export function useGetJots<TData = Awaited<ReturnType<typeof getJots>>, TError = unknown>(
+ id: string,
+    params?: GetJotsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJots>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetJotsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getJotUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/jots`
+}
+
+/**
+ * @summary Read a line and file everything in it: an event, a reminder, a line on the shopping list, a note. Answers with what was made and where. A code is held back, not filed.
+ */
+export const jot = async (id: string,
+    jotRequest: JotRequest, options?: Parameters<typeof apiFetch>[1]): Promise<JotResponse[]> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<JotResponse[]>(getJotUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(jotRequest)
+  }
+);}
+
+
+
+
+
+export const getJotMutationKey = () => ['jot'] as const;
+
+export const getJotMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof jot>>, TError,JotMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof jot>>, TError,JotMutationVariables, TContext> => {
+
+const mutationKey = getJotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof jot>>, JotMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  jot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JotMutationResult = NonNullable<Awaited<ReturnType<typeof jot>>>
+    export type JotMutationBody = JotRequest
+    export type JotMutationError = unknown
+    export type JotMutationVariables = {id: string;data: JotRequest}
+
+    /** @summary Read a line and file everything in it: an event, a reminder, a line on the shopping list, a note. Answers with what was made and where. A code is held back, not filed. */
+export const useJot = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof jot>>, TError,JotMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof jot>>,
+        TError,
+        JotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getJotMutationOptions(options), queryClient);
     }
 
 export const getGetGuestPassesUrl = (id: string,) => {
@@ -2972,6 +13322,747 @@ export const useAddChecklistItem = <TError = unknown,
       return useMutation(getAddChecklistItemMutationOptions(options), queryClient);
     }
 
+export const getSendChecklistChangesUrl = (id: string,) => {
+
+
+
+
+  return `/v1/checklists/${id}/changes`
+}
+
+/**
+ * @summary Send the changes a phone kept while it had no signal, in order. Each gets its own answer; one that came too late doesn't stop the rest. 200 at most.
+ */
+export const sendChecklistChanges = async (id: string,
+    lateLineChanges: LateLineChanges, options?: Parameters<typeof apiFetch>[1]): Promise<LineAnswers> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<LineAnswers>(getSendChecklistChangesUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(lateLineChanges)
+  }
+);}
+
+
+
+
+
+export const getSendChecklistChangesMutationKey = () => ['sendChecklistChanges'] as const;
+
+export const getSendChecklistChangesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendChecklistChanges>>, TError,SendChecklistChangesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendChecklistChanges>>, TError,SendChecklistChangesMutationVariables, TContext> => {
+
+const mutationKey = getSendChecklistChangesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendChecklistChanges>>, SendChecklistChangesMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendChecklistChanges(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendChecklistChangesMutationResult = NonNullable<Awaited<ReturnType<typeof sendChecklistChanges>>>
+    export type SendChecklistChangesMutationBody = LateLineChanges
+    export type SendChecklistChangesMutationError = unknown
+    export type SendChecklistChangesMutationVariables = {id: string;data: LateLineChanges}
+
+    /** @summary Send the changes a phone kept while it had no signal, in order. Each gets its own answer; one that came too late doesn't stop the rest. 200 at most. */
+export const useSendChecklistChanges = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendChecklistChanges>>, TError,SendChecklistChangesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof sendChecklistChanges>>,
+        TError,
+        SendChecklistChangesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendChecklistChangesMutationOptions(options), queryClient);
+    }
+
+export const getCreateBoardUrl = (params?: CreateBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/boards?${stringifiedParams}` : `/v1/boards`
+}
+
+/**
+ * @summary Start a board from a template that does work
+ */
+export const createBoard = async (newBoardRequest: NewBoardRequest,
+    params?: CreateBoardParams, options?: Parameters<typeof apiFetch>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BoardResponse>(getCreateBoardUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newBoardRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateBoardMutationKey = () => ['createBoard'] as const;
+
+export const getCreateBoardMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBoard>>, TError,CreateBoardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBoard>>, TError,CreateBoardMutationVariables, TContext> => {
+
+const mutationKey = getCreateBoardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBoard>>, CreateBoardMutationVariables> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  createBoard(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBoardMutationResult = NonNullable<Awaited<ReturnType<typeof createBoard>>>
+    export type CreateBoardMutationBody = NewBoardRequest
+    export type CreateBoardMutationError = unknown
+    export type CreateBoardMutationVariables = {data: NewBoardRequest;params?: CreateBoardParams}
+
+    /** @summary Start a board from a template that does work */
+export const useCreateBoard = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBoard>>, TError,CreateBoardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createBoard>>,
+        TError,
+        CreateBoardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateBoardMutationOptions(options), queryClient);
+    }
+
+export const getGetBoardEntriesUrl = (id: string,
+    params?: GetBoardEntriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/boards/${id}/entries?${stringifiedParams}` : `/v1/boards/${id}/entries`
+}
+
+/**
+ * @summary A board's entries a page at a time, newest first, each as this person may see it
+ */
+export const getBoardEntries = async (id: string,
+    params?: GetBoardEntriesParams, options?: Parameters<typeof apiFetch>[1]): Promise<BoardEntriesResponse> => {
+
+  return apiFetch<BoardEntriesResponse>(getGetBoardEntriesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBoardEntriesInfiniteQueryKey = (id: string,
+    params?: GetBoardEntriesParams,) => {
+    return [
+    'infinite', `/v1/boards/${id}/entries`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetBoardEntriesQueryKey = (id: string,
+    params?: GetBoardEntriesParams,) => {
+    return [
+    `/v1/boards/${id}/entries`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBoardEntriesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getBoardEntries>>, GetBoardEntriesParams['cursor']>, TError = unknown>(id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData, QueryKey, GetBoardEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBoardEntriesInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBoardEntries>>, QueryKey, GetBoardEntriesParams['cursor']> = ({ signal, pageParam }) => getBoardEntries(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData, QueryKey, GetBoardEntriesParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBoardEntriesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getBoardEntries>>>
+export type GetBoardEntriesInfiniteQueryError = unknown
+
+
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoardEntries>>, GetBoardEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBoardEntriesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData, QueryKey, GetBoardEntriesParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoardEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getBoardEntries>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoardEntries>>, GetBoardEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData, QueryKey, GetBoardEntriesParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoardEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getBoardEntries>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoardEntries>>, GetBoardEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData, QueryKey, GetBoardEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoardEntries>>, GetBoardEntriesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData, QueryKey, GetBoardEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBoardEntriesInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetBoardEntriesQueryOptions = <TData = Awaited<ReturnType<typeof getBoardEntries>>, TError = unknown>(id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBoardEntriesQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBoardEntries>>> = ({ signal }) => getBoardEntries(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBoardEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof getBoardEntries>>>
+export type GetBoardEntriesQueryError = unknown
+
+
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntries<TData = Awaited<ReturnType<typeof getBoardEntries>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBoardEntriesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoardEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getBoardEntries>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntries<TData = Awaited<ReturnType<typeof getBoardEntries>>, TError = unknown>(
+ id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoardEntries>>,
+          TError,
+          Awaited<ReturnType<typeof getBoardEntries>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntries<TData = Awaited<ReturnType<typeof getBoardEntries>>, TError = unknown>(
+ id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board's entries a page at a time, newest first, each as this person may see it */
+export function useGetBoardEntries<TData = Awaited<ReturnType<typeof getBoardEntries>>, TError = unknown>(
+ id: string,
+    params?: GetBoardEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoardEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBoardEntriesQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddBoardEntryUrl = (id: string,
+    params?: AddBoardEntryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/boards/${id}/entries?${stringifiedParams}` : `/v1/boards/${id}/entries`
+}
+
+/**
+ * @summary Add one entry to a board
+ */
+export const addBoardEntry = async (id: string,
+    newEntryRequest: NewEntryRequest,
+    params?: AddBoardEntryParams, options?: Parameters<typeof apiFetch>[1]): Promise<EntryAddedResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EntryAddedResponse>(getAddBoardEntryUrl(id,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newEntryRequest)
+  }
+);}
+
+
+
+
+
+export const getAddBoardEntryMutationKey = () => ['addBoardEntry'] as const;
+
+export const getAddBoardEntryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addBoardEntry>>, TError,AddBoardEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addBoardEntry>>, TError,AddBoardEntryMutationVariables, TContext> => {
+
+const mutationKey = getAddBoardEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addBoardEntry>>, AddBoardEntryMutationVariables> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  addBoardEntry(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddBoardEntryMutationResult = NonNullable<Awaited<ReturnType<typeof addBoardEntry>>>
+    export type AddBoardEntryMutationBody = NewEntryRequest
+    export type AddBoardEntryMutationError = unknown
+    export type AddBoardEntryMutationVariables = {id: string;data: NewEntryRequest;params?: AddBoardEntryParams}
+
+    /** @summary Add one entry to a board */
+export const useAddBoardEntry = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addBoardEntry>>, TError,AddBoardEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addBoardEntry>>,
+        TError,
+        AddBoardEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddBoardEntryMutationOptions(options), queryClient);
+    }
+
+export const getActOnBoardUrl = (id: string,
+    params?: ActOnBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/boards/${id}/act?${stringifiedParams}` : `/v1/boards/${id}/act`
+}
+
+/**
+ * @summary Do one of the template's own verbs (seal, open, tick) and get the board back
+ */
+export const actOnBoard = async (id: string,
+    actRequest: ActRequest,
+    params?: ActOnBoardParams, options?: Parameters<typeof apiFetch>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BoardResponse>(getActOnBoardUrl(id,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(actRequest)
+  }
+);}
+
+
+
+
+
+export const getActOnBoardMutationKey = () => ['actOnBoard'] as const;
+
+export const getActOnBoardMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnBoard>>, TError,ActOnBoardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnBoard>>, TError,ActOnBoardMutationVariables, TContext> => {
+
+const mutationKey = getActOnBoardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnBoard>>, ActOnBoardMutationVariables> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  actOnBoard(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnBoardMutationResult = NonNullable<Awaited<ReturnType<typeof actOnBoard>>>
+    export type ActOnBoardMutationBody = ActRequest
+    export type ActOnBoardMutationError = unknown
+    export type ActOnBoardMutationVariables = {id: string;data: ActRequest;params?: ActOnBoardParams}
+
+    /** @summary Do one of the template's own verbs (seal, open, tick) and get the board back */
+export const useActOnBoard = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnBoard>>, TError,ActOnBoardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnBoard>>,
+        TError,
+        ActOnBoardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnBoardMutationOptions(options), queryClient);
+    }
+
+export const getCreateAlbumUrl = () => {
+
+
+
+
+  return `/v1/albums`
+}
+
+/**
+ * @summary Start an album: by hand, from a moment, or one that fills itself for a person. Or a folder of files.
+ */
+export const createAlbum = async (newAlbum: NewAlbum, options?: Parameters<typeof apiFetch>[1]): Promise<AlbumResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<AlbumResponse>(getCreateAlbumUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newAlbum)
+  }
+);}
+
+
+
+
+
+export const getCreateAlbumMutationKey = () => ['createAlbum'] as const;
+
+export const getCreateAlbumMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAlbum>>, TError,CreateAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAlbum>>, TError,CreateAlbumMutationVariables, TContext> => {
+
+const mutationKey = getCreateAlbumMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAlbum>>, CreateAlbumMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAlbum(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof createAlbum>>>
+    export type CreateAlbumMutationBody = NewAlbum
+    export type CreateAlbumMutationError = unknown
+    export type CreateAlbumMutationVariables = {data: NewAlbum}
+
+    /** @summary Start an album: by hand, from a moment, or one that fills itself for a person. Or a folder of files. */
+export const useCreateAlbum = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAlbum>>, TError,CreateAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAlbum>>,
+        TError,
+        CreateAlbumMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAlbumMutationOptions(options), queryClient);
+    }
+
+export const getAddToAlbumUrl = (id: string,) => {
+
+
+
+
+  return `/v1/albums/${id}/items`
+}
+
+/**
+ * @summary Put photos, videos or files into an album, many at once. Says how many it could put in.
+ */
+export const addToAlbum = async (id: string,
+    selection: Selection, options?: Parameters<typeof apiFetch>[1]): Promise<SelectResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<SelectResult>(getAddToAlbumUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(selection)
+  }
+);}
+
+
+
+
+
+export const getAddToAlbumMutationKey = () => ['addToAlbum'] as const;
+
+export const getAddToAlbumMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addToAlbum>>, TError,AddToAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addToAlbum>>, TError,AddToAlbumMutationVariables, TContext> => {
+
+const mutationKey = getAddToAlbumMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addToAlbum>>, AddToAlbumMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addToAlbum(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddToAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof addToAlbum>>>
+    export type AddToAlbumMutationBody = Selection
+    export type AddToAlbumMutationError = unknown
+    export type AddToAlbumMutationVariables = {id: string;data: Selection}
+
+    /** @summary Put photos, videos or files into an album, many at once. Says how many it could put in. */
+export const useAddToAlbum = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addToAlbum>>, TError,AddToAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addToAlbum>>,
+        TError,
+        AddToAlbumMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddToAlbumMutationOptions(options), queryClient);
+    }
+
 export const getCreateLocalTokenUrl = () => {
 
 
@@ -3144,6 +14235,397 @@ export const useRequestLocalCode = <TError = unknown,
       return useMutation(getRequestLocalCodeMutationOptions(options), queryClient);
     }
 
+export const getGetVaultItemUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/items/${id}`
+}
+
+/**
+ * @summary An item's clear part and who can use it. Its secret part is handed out by opening it.
+ */
+export const getVaultItem = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultItemResponse> => {
+
+  return apiFetch<VaultItemResponse>(getGetVaultItemUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultItemQueryKey = (id: string,) => {
+    return [
+    `/v1/vault/items/${id}`
+    ] as const;
+    }
+
+
+export const getGetVaultItemQueryOptions = <TData = Awaited<ReturnType<typeof getVaultItem>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItem>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultItemQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultItem>>> = ({ signal }) => getVaultItem(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultItem>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultItemQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultItem>>>
+export type GetVaultItemQueryError = unknown
+
+
+/** @summary An item's clear part and who can use it. Its secret part is handed out by opening it. */
+export function useGetVaultItem<TData = Awaited<ReturnType<typeof getVaultItem>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItem>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultItem>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary An item's clear part and who can use it. Its secret part is handed out by opening it. */
+export function useGetVaultItem<TData = Awaited<ReturnType<typeof getVaultItem>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItem>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultItem>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary An item's clear part and who can use it. Its secret part is handed out by opening it. */
+export function useGetVaultItem<TData = Awaited<ReturnType<typeof getVaultItem>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItem>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary An item's clear part and who can use it. Its secret part is handed out by opening it. */
+export function useGetVaultItem<TData = Awaited<ReturnType<typeof getVaultItem>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItem>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultItemQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeVaultItemUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/items/${id}`
+}
+
+/**
+ * @summary Save a change to an item. It has to be yours, or shared with you to change.
+ */
+export const changeVaultItem = async (id: string,
+    vaultItemChangeRequest: VaultItemChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<VaultItemResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VaultItemResponse>(getChangeVaultItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(vaultItemChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeVaultItemMutationKey = () => ['changeVaultItem'] as const;
+
+export const getChangeVaultItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeVaultItem>>, TError,ChangeVaultItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeVaultItem>>, TError,ChangeVaultItemMutationVariables, TContext> => {
+
+const mutationKey = getChangeVaultItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeVaultItem>>, ChangeVaultItemMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeVaultItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeVaultItemMutationResult = NonNullable<Awaited<ReturnType<typeof changeVaultItem>>>
+    export type ChangeVaultItemMutationBody = VaultItemChangeRequest
+    export type ChangeVaultItemMutationError = unknown
+    export type ChangeVaultItemMutationVariables = {id: string;data: VaultItemChangeRequest}
+
+    /** @summary Save a change to an item. It has to be yours, or shared with you to change. */
+export const useChangeVaultItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeVaultItem>>, TError,ChangeVaultItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeVaultItem>>,
+        TError,
+        ChangeVaultItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeVaultItemMutationOptions(options), queryClient);
+    }
+
+export const getGetReminderUrl = (id: string,
+    params?: GetReminderParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/reminders/${id}?${stringifiedParams}` : `/v1/reminders/${id}`
+}
+
+/**
+ * @summary One reminder: when, who has it, and whether it is done
+ */
+export const getReminder = async (id: string,
+    params?: GetReminderParams, options?: Parameters<typeof apiFetch>[1]): Promise<ReminderResponse> => {
+
+  return apiFetch<ReminderResponse>(getGetReminderUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReminderQueryKey = (id: string,
+    params?: GetReminderParams,) => {
+    return [
+    `/v1/reminders/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetReminderQueryOptions = <TData = Awaited<ReturnType<typeof getReminder>>, TError = unknown>(id: string,
+    params?: GetReminderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReminderQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReminder>>> = ({ signal }) => getReminder(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReminder>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetReminderQueryResult = NonNullable<Awaited<ReturnType<typeof getReminder>>>
+export type GetReminderQueryError = unknown
+
+
+/** @summary One reminder: when, who has it, and whether it is done */
+export function useGetReminder<TData = Awaited<ReturnType<typeof getReminder>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetReminderParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminder>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReminder>>,
+          TError,
+          Awaited<ReturnType<typeof getReminder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One reminder: when, who has it, and whether it is done */
+export function useGetReminder<TData = Awaited<ReturnType<typeof getReminder>>, TError = unknown>(
+ id: string,
+    params?: GetReminderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminder>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReminder>>,
+          TError,
+          Awaited<ReturnType<typeof getReminder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One reminder: when, who has it, and whether it is done */
+export function useGetReminder<TData = Awaited<ReturnType<typeof getReminder>>, TError = unknown>(
+ id: string,
+    params?: GetReminderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One reminder: when, who has it, and whether it is done */
+export function useGetReminder<TData = Awaited<ReturnType<typeof getReminder>>, TError = unknown>(
+ id: string,
+    params?: GetReminderParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetReminderQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeReminderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/reminders/${id}`
+}
+
+/**
+ * @summary Change a reminder. What is left out stays as it is.
+ */
+export const changeReminder = async (id: string,
+    reminderChangeRequest: ReminderChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ReminderResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ReminderResponse>(getChangeReminderUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reminderChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeReminderMutationKey = () => ['changeReminder'] as const;
+
+export const getChangeReminderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeReminder>>, TError,ChangeReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeReminder>>, TError,ChangeReminderMutationVariables, TContext> => {
+
+const mutationKey = getChangeReminderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeReminder>>, ChangeReminderMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeReminder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeReminderMutationResult = NonNullable<Awaited<ReturnType<typeof changeReminder>>>
+    export type ChangeReminderMutationBody = ReminderChangeRequest
+    export type ChangeReminderMutationError = unknown
+    export type ChangeReminderMutationVariables = {id: string;data: ReminderChangeRequest}
+
+    /** @summary Change a reminder. What is left out stays as it is. */
+export const useChangeReminder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeReminder>>, TError,ChangeReminderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeReminder>>,
+        TError,
+        ChangeReminderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeReminderMutationOptions(options), queryClient);
+    }
+
 export const getGetPageUrl = (id: string,) => {
 
 
@@ -3153,7 +14635,7 @@ export const getGetPageUrl = (id: string,) => {
 }
 
 /**
- * @summary One page
+ * @summary One page with its blocks. Ask again with If-None-Match to hear 304 while nothing changed.
  */
 export const getPage = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<PageResponse> => {
 
@@ -3177,7 +14659,7 @@ export const getGetPageQueryKey = (id: string,) => {
     }
 
 
-export const getGetPageQueryOptions = <TData = Awaited<ReturnType<typeof getPage>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getGetPageQueryOptions = <TData = Awaited<ReturnType<typeof getPage>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3196,11 +14678,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetPageQueryResult = NonNullable<Awaited<ReturnType<typeof getPage>>>
-export type GetPageQueryError = unknown
+export type GetPageQueryError = void
 
 
-/** @summary One page */
-export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = unknown>(
+/** @summary One page with its blocks. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = void>(
  id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getPage>>,
@@ -3210,8 +14692,8 @@ export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError =
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/** @summary One page */
-export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = unknown>(
+/** @summary One page with its blocks. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = void>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getPage>>,
@@ -3221,13 +14703,13 @@ export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError =
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/** @summary One page */
-export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = unknown>(
+/** @summary One page with its blocks. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = void>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/** @summary One page */
-export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = unknown>(
+/** @summary One page with its blocks. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = void>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -3254,7 +14736,7 @@ export const getChangePageUrl = (id: string,) => {
 }
 
 /**
- * @summary Change a page's title or its words
+ * @summary Change a page's title or emoji, or all its words at once
  */
 export const changePage = async (id: string,
     pageChangeRequest: PageChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<PageResponse> => {
@@ -3320,7 +14802,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ChangePageMutationError = unknown
     export type ChangePageMutationVariables = {id: string;data: PageChangeRequest}
 
-    /** @summary Change a page's title or its words */
+    /** @summary Change a page's title or emoji, or all its words at once */
 export const useChangePage = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePage>>, TError,ChangePageMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient): UseMutationResult<
@@ -3330,6 +14812,165 @@ export const useChangePage = <TError = unknown,
         TContext
       > => {
       return useMutation(getChangePageMutationOptions(options), queryClient);
+    }
+
+export const getRemoveBlockUrl = (blockId: string,) => {
+
+
+
+
+  return `/v1/page-blocks/${blockId}`
+}
+
+/**
+ * @summary Remove a block. Removing one that is gone is fine.
+ */
+export const removeBlock = async (blockId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveBlockUrl(blockId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveBlockMutationKey = () => ['removeBlock'] as const;
+
+export const getRemoveBlockMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBlock>>, TError,RemoveBlockMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeBlock>>, TError,RemoveBlockMutationVariables, TContext> => {
+
+const mutationKey = getRemoveBlockMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeBlock>>, RemoveBlockMutationVariables> = (props) => {
+          const {blockId} = props ?? {};
+
+          return  removeBlock(blockId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveBlockMutationResult = NonNullable<Awaited<ReturnType<typeof removeBlock>>>
+
+    export type RemoveBlockMutationError = unknown
+    export type RemoveBlockMutationVariables = {blockId: string}
+
+    /** @summary Remove a block. Removing one that is gone is fine. */
+export const useRemoveBlock = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBlock>>, TError,RemoveBlockMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeBlock>>,
+        TError,
+        RemoveBlockMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveBlockMutationOptions(options), queryClient);
+    }
+
+export const getChangeBlockUrl = (blockId: string,) => {
+
+
+
+
+  return `/v1/page-blocks/${blockId}`
+}
+
+/**
+ * @summary Change one block of a page, or move it
+ */
+export const changeBlock = async (blockId: string,
+    blockChangeRequest: BlockChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BlockResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BlockResponse>(getChangeBlockUrl(blockId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(blockChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeBlockMutationKey = () => ['changeBlock'] as const;
+
+export const getChangeBlockMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBlock>>, TError,ChangeBlockMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeBlock>>, TError,ChangeBlockMutationVariables, TContext> => {
+
+const mutationKey = getChangeBlockMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeBlock>>, ChangeBlockMutationVariables> = (props) => {
+          const {blockId,data} = props ?? {};
+
+          return  changeBlock(blockId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeBlockMutationResult = NonNullable<Awaited<ReturnType<typeof changeBlock>>>
+    export type ChangeBlockMutationBody = BlockChangeRequest
+    export type ChangeBlockMutationError = unknown
+    export type ChangeBlockMutationVariables = {blockId: string;data: BlockChangeRequest}
+
+    /** @summary Change one block of a page, or move it */
+export const useChangeBlock = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBlock>>, TError,ChangeBlockMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeBlock>>,
+        TError,
+        ChangeBlockMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeBlockMutationOptions(options), queryClient);
     }
 
 export const getGetPersonUrl = (id: string,) => {
@@ -3592,6 +15233,1174 @@ export const useChangeMember = <TError = unknown,
       return useMutation(getChangeMemberMutationOptions(options), queryClient);
     }
 
+export const getGetLibraryItemUrl = (id: string,
+    params?: GetLibraryItemParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/library/${id}?${stringifiedParams}` : `/v1/library/${id}`
+}
+
+/**
+ * @summary One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from
+ */
+export const getLibraryItem = async (id: string,
+    params?: GetLibraryItemParams, options?: Parameters<typeof apiFetch>[1]): Promise<ItemResponse> => {
+
+  return apiFetch<ItemResponse>(getGetLibraryItemUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryItemQueryKey = (id: string,
+    params?: GetLibraryItemParams,) => {
+    return [
+    `/v1/library/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetLibraryItemQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryItem>>, TError = unknown>(id: string,
+    params?: GetLibraryItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryItem>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryItemQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryItem>>> = ({ signal }) => getLibraryItem(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryItem>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLibraryItemQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryItem>>>
+export type GetLibraryItemQueryError = unknown
+
+
+/** @summary One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from */
+export function useGetLibraryItem<TData = Awaited<ReturnType<typeof getLibraryItem>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetLibraryItemParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryItem>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLibraryItem>>,
+          TError,
+          Awaited<ReturnType<typeof getLibraryItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from */
+export function useGetLibraryItem<TData = Awaited<ReturnType<typeof getLibraryItem>>, TError = unknown>(
+ id: string,
+    params?: GetLibraryItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryItem>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLibraryItem>>,
+          TError,
+          Awaited<ReturnType<typeof getLibraryItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from */
+export function useGetLibraryItem<TData = Awaited<ReturnType<typeof getLibraryItem>>, TError = unknown>(
+ id: string,
+    params?: GetLibraryItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryItem>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from */
+export function useGetLibraryItem<TData = Awaited<ReturnType<typeof getLibraryItem>>, TError = unknown>(
+ id: string,
+    params?: GetLibraryItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLibraryItem>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLibraryItemQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeLibraryItemUrl = (id: string,) => {
+
+
+
+
+  return `/v1/library/${id}`
+}
+
+/**
+ * @summary Change a caption, or when and where it was taken
+ */
+export const changeLibraryItem = async (id: string,
+    itemChange: ItemChange, options?: Parameters<typeof apiFetch>[1]): Promise<ItemResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<ItemResponse>(getChangeLibraryItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(itemChange)
+  }
+);}
+
+
+
+
+
+export const getChangeLibraryItemMutationKey = () => ['changeLibraryItem'] as const;
+
+export const getChangeLibraryItemMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeLibraryItem>>, TError,ChangeLibraryItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeLibraryItem>>, TError,ChangeLibraryItemMutationVariables, TContext> => {
+
+const mutationKey = getChangeLibraryItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeLibraryItem>>, ChangeLibraryItemMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeLibraryItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeLibraryItemMutationResult = NonNullable<Awaited<ReturnType<typeof changeLibraryItem>>>
+    export type ChangeLibraryItemMutationBody = ItemChange
+    export type ChangeLibraryItemMutationError = unknown
+    export type ChangeLibraryItemMutationVariables = {id: string;data: ItemChange}
+
+    /** @summary Change a caption, or when and where it was taken */
+export const useChangeLibraryItem = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeLibraryItem>>, TError,ChangeLibraryItemMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeLibraryItem>>,
+        TError,
+        ChangeLibraryItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeLibraryItemMutationOptions(options), queryClient);
+    }
+
+export const getGetGoalUrl = (id: string,
+    params?: GetGoalParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/goals/${id}?${stringifiedParams}` : `/v1/goals/${id}`
+}
+
+/**
+ * @summary One goal: the ring, the pace, who put in what lately, and each month of a year
+ */
+export const getGoal = async (id: string,
+    params?: GetGoalParams, options?: Parameters<typeof apiFetch>[1]): Promise<GoalResponse> => {
+
+  return apiFetch<GoalResponse>(getGetGoalUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGoalQueryKey = (id: string,
+    params?: GetGoalParams,) => {
+    return [
+    `/v1/goals/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGoalQueryOptions = <TData = Awaited<ReturnType<typeof getGoal>>, TError = unknown>(id: string,
+    params?: GetGoalParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGoalQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoal>>> = ({ signal }) => getGoal(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGoal>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGoalQueryResult = NonNullable<Awaited<ReturnType<typeof getGoal>>>
+export type GetGoalQueryError = unknown
+
+
+/** @summary One goal: the ring, the pace, who put in what lately, and each month of a year */
+export function useGetGoal<TData = Awaited<ReturnType<typeof getGoal>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetGoalParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoal>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoal>>,
+          TError,
+          Awaited<ReturnType<typeof getGoal>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One goal: the ring, the pace, who put in what lately, and each month of a year */
+export function useGetGoal<TData = Awaited<ReturnType<typeof getGoal>>, TError = unknown>(
+ id: string,
+    params?: GetGoalParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoal>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoal>>,
+          TError,
+          Awaited<ReturnType<typeof getGoal>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One goal: the ring, the pace, who put in what lately, and each month of a year */
+export function useGetGoal<TData = Awaited<ReturnType<typeof getGoal>>, TError = unknown>(
+ id: string,
+    params?: GetGoalParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One goal: the ring, the pace, who put in what lately, and each month of a year */
+export function useGetGoal<TData = Awaited<ReturnType<typeof getGoal>>, TError = unknown>(
+ id: string,
+    params?: GetGoalParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoal>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetGoalQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeGoalUrl = (id: string,) => {
+
+
+
+
+  return `/v1/goals/${id}`
+}
+
+/**
+ * @summary Change a goal. What is left out stays as it is.
+ */
+export const changeGoal = async (id: string,
+    goalChangeRequest: GoalChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<GoalResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<GoalResponse>(getChangeGoalUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(goalChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeGoalMutationKey = () => ['changeGoal'] as const;
+
+export const getChangeGoalMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeGoal>>, TError,ChangeGoalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeGoal>>, TError,ChangeGoalMutationVariables, TContext> => {
+
+const mutationKey = getChangeGoalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeGoal>>, ChangeGoalMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeGoal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeGoalMutationResult = NonNullable<Awaited<ReturnType<typeof changeGoal>>>
+    export type ChangeGoalMutationBody = GoalChangeRequest
+    export type ChangeGoalMutationError = unknown
+    export type ChangeGoalMutationVariables = {id: string;data: GoalChangeRequest}
+
+    /** @summary Change a goal. What is left out stays as it is. */
+export const useChangeGoal = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeGoal>>, TError,ChangeGoalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeGoal>>,
+        TError,
+        ChangeGoalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeGoalMutationOptions(options), queryClient);
+    }
+
+export const getGetFolderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/folders/${id}`
+}
+
+/**
+ * @summary A space or folder: its name, who sees it, and how much is in it that you may see
+ */
+export const getFolder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<FolderResponse> => {
+
+  return apiFetch<FolderResponse>(getGetFolderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFolderQueryKey = (id: string,) => {
+    return [
+    `/v1/folders/${id}`
+    ] as const;
+    }
+
+
+export const getGetFolderQueryOptions = <TData = Awaited<ReturnType<typeof getFolder>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFolderQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFolder>>> = ({ signal }) => getFolder(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFolderQueryResult = NonNullable<Awaited<ReturnType<typeof getFolder>>>
+export type GetFolderQueryError = unknown
+
+
+/** @summary A space or folder: its name, who sees it, and how much is in it that you may see */
+export function useGetFolder<TData = Awaited<ReturnType<typeof getFolder>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFolder>>,
+          TError,
+          Awaited<ReturnType<typeof getFolder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A space or folder: its name, who sees it, and how much is in it that you may see */
+export function useGetFolder<TData = Awaited<ReturnType<typeof getFolder>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFolder>>,
+          TError,
+          Awaited<ReturnType<typeof getFolder>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A space or folder: its name, who sees it, and how much is in it that you may see */
+export function useGetFolder<TData = Awaited<ReturnType<typeof getFolder>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A space or folder: its name, who sees it, and how much is in it that you may see */
+export function useGetFolder<TData = Awaited<ReturnType<typeof getFolder>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolder>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFolderQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeFolderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/folders/${id}`
+}
+
+/**
+ * @summary Rename a space or folder, or change its emoji
+ */
+export const changeFolder = async (id: string,
+    folderChangeRequest: FolderChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<FolderResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<FolderResponse>(getChangeFolderUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(folderChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeFolderMutationKey = () => ['changeFolder'] as const;
+
+export const getChangeFolderMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeFolder>>, TError,ChangeFolderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeFolder>>, TError,ChangeFolderMutationVariables, TContext> => {
+
+const mutationKey = getChangeFolderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeFolder>>, ChangeFolderMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeFolder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeFolderMutationResult = NonNullable<Awaited<ReturnType<typeof changeFolder>>>
+    export type ChangeFolderMutationBody = FolderChangeRequest
+    export type ChangeFolderMutationError = unknown
+    export type ChangeFolderMutationVariables = {id: string;data: FolderChangeRequest}
+
+    /** @summary Rename a space or folder, or change its emoji */
+export const useChangeFolder = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeFolder>>, TError,ChangeFolderMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeFolder>>,
+        TError,
+        ChangeFolderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeFolderMutationOptions(options), queryClient);
+    }
+
+export const getGetEventUrl = (id: string,
+    params?: GetEventParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/events/${id}?${stringifiedParams}` : `/v1/events/${id}`
+}
+
+/**
+ * @summary One event: when and where, who is coming and what they answered, and what is linked to it
+ */
+export const getEvent = async (id: string,
+    params?: GetEventParams, options?: Parameters<typeof apiFetch>[1]): Promise<EventResponse> => {
+
+  return apiFetch<EventResponse>(getGetEventUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEventQueryKey = (id: string,
+    params?: GetEventParams,) => {
+    return [
+    `/v1/events/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEventQueryOptions = <TData = Awaited<ReturnType<typeof getEvent>>, TError = unknown>(id: string,
+    params?: GetEventParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEventQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvent>>> = ({ signal }) => getEvent(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEventQueryResult = NonNullable<Awaited<ReturnType<typeof getEvent>>>
+export type GetEventQueryError = unknown
+
+
+/** @summary One event: when and where, who is coming and what they answered, and what is linked to it */
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetEventParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvent>>,
+          TError,
+          Awaited<ReturnType<typeof getEvent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One event: when and where, who is coming and what they answered, and what is linked to it */
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = unknown>(
+ id: string,
+    params?: GetEventParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvent>>,
+          TError,
+          Awaited<ReturnType<typeof getEvent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One event: when and where, who is coming and what they answered, and what is linked to it */
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = unknown>(
+ id: string,
+    params?: GetEventParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One event: when and where, who is coming and what they answered, and what is linked to it */
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = unknown>(
+ id: string,
+    params?: GetEventParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEventQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeEventUrl = (id: string,) => {
+
+
+
+
+  return `/v1/events/${id}`
+}
+
+/**
+ * @summary Change an event. What is left out stays as it is.
+ */
+export const changeEvent = async (id: string,
+    eventChangeRequest: EventChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<EventResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<EventResponse>(getChangeEventUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(eventChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeEventMutationKey = () => ['changeEvent'] as const;
+
+export const getChangeEventMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeEvent>>, TError,ChangeEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeEvent>>, TError,ChangeEventMutationVariables, TContext> => {
+
+const mutationKey = getChangeEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeEvent>>, ChangeEventMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeEventMutationResult = NonNullable<Awaited<ReturnType<typeof changeEvent>>>
+    export type ChangeEventMutationBody = EventChangeRequest
+    export type ChangeEventMutationError = unknown
+    export type ChangeEventMutationVariables = {id: string;data: EventChangeRequest}
+
+    /** @summary Change an event. What is left out stays as it is. */
+export const useChangeEvent = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeEvent>>, TError,ChangeEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeEvent>>,
+        TError,
+        ChangeEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeEventMutationOptions(options), queryClient);
+    }
+
+export const getRemoveEventGuestUrl = (guestId: string,) => {
+
+
+
+
+  return `/v1/event-guests/${guestId}`
+}
+
+/**
+ * @summary Take someone off an event. Taking off someone who is already off is fine.
+ */
+export const removeEventGuest = async (guestId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveEventGuestUrl(guestId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveEventGuestMutationKey = () => ['removeEventGuest'] as const;
+
+export const getRemoveEventGuestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeEventGuest>>, TError,RemoveEventGuestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeEventGuest>>, TError,RemoveEventGuestMutationVariables, TContext> => {
+
+const mutationKey = getRemoveEventGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeEventGuest>>, RemoveEventGuestMutationVariables> = (props) => {
+          const {guestId} = props ?? {};
+
+          return  removeEventGuest(guestId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveEventGuestMutationResult = NonNullable<Awaited<ReturnType<typeof removeEventGuest>>>
+
+    export type RemoveEventGuestMutationError = unknown
+    export type RemoveEventGuestMutationVariables = {guestId: string}
+
+    /** @summary Take someone off an event. Taking off someone who is already off is fine. */
+export const useRemoveEventGuest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeEventGuest>>, TError,RemoveEventGuestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeEventGuest>>,
+        TError,
+        RemoveEventGuestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveEventGuestMutationOptions(options), queryClient);
+    }
+
+export const getChangeEventGuestUrl = (guestId: string,) => {
+
+
+
+
+  return `/v1/event-guests/${guestId}`
+}
+
+/**
+ * @summary Change what someone does at an event or what they answered, one person at a time
+ */
+export const changeEventGuest = async (guestId: string,
+    guestChangeRequest: GuestChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<GuestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<GuestResponse>(getChangeEventGuestUrl(guestId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(guestChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeEventGuestMutationKey = () => ['changeEventGuest'] as const;
+
+export const getChangeEventGuestMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeEventGuest>>, TError,ChangeEventGuestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeEventGuest>>, TError,ChangeEventGuestMutationVariables, TContext> => {
+
+const mutationKey = getChangeEventGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeEventGuest>>, ChangeEventGuestMutationVariables> = (props) => {
+          const {guestId,data} = props ?? {};
+
+          return  changeEventGuest(guestId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeEventGuestMutationResult = NonNullable<Awaited<ReturnType<typeof changeEventGuest>>>
+    export type ChangeEventGuestMutationBody = GuestChangeRequest
+    export type ChangeEventGuestMutationError = unknown
+    export type ChangeEventGuestMutationVariables = {guestId: string;data: GuestChangeRequest}
+
+    /** @summary Change what someone does at an event or what they answered, one person at a time */
+export const useChangeEventGuest = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeEventGuest>>, TError,ChangeEventGuestMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeEventGuest>>,
+        TError,
+        ChangeEventGuestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeEventGuestMutationOptions(options), queryClient);
+    }
+
+export const getGetDocumentUrl = (id: string,
+    params?: GetDocumentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/documents/${id}?${stringifiedParams}` : `/v1/documents/${id}`
+}
+
+/**
+ * @summary One document: what was read from it, the day that matters, a day for a reminder, what it is linked to
+ */
+export const getDocument = async (id: string,
+    params?: GetDocumentParams, options?: Parameters<typeof apiFetch>[1]): Promise<DocumentResponse> => {
+
+  return apiFetch<DocumentResponse>(getGetDocumentUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDocumentQueryKey = (id: string,
+    params?: GetDocumentParams,) => {
+    return [
+    `/v1/documents/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDocumentQueryOptions = <TData = Awaited<ReturnType<typeof getDocument>>, TError = unknown>(id: string,
+    params?: GetDocumentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDocumentQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDocument>>> = ({ signal }) => getDocument(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDocument>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof getDocument>>>
+export type GetDocumentQueryError = unknown
+
+
+/** @summary One document: what was read from it, the day that matters, a day for a reminder, what it is linked to */
+export function useGetDocument<TData = Awaited<ReturnType<typeof getDocument>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetDocumentParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDocument>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDocument>>,
+          TError,
+          Awaited<ReturnType<typeof getDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One document: what was read from it, the day that matters, a day for a reminder, what it is linked to */
+export function useGetDocument<TData = Awaited<ReturnType<typeof getDocument>>, TError = unknown>(
+ id: string,
+    params?: GetDocumentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDocument>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDocument>>,
+          TError,
+          Awaited<ReturnType<typeof getDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One document: what was read from it, the day that matters, a day for a reminder, what it is linked to */
+export function useGetDocument<TData = Awaited<ReturnType<typeof getDocument>>, TError = unknown>(
+ id: string,
+    params?: GetDocumentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One document: what was read from it, the day that matters, a day for a reminder, what it is linked to */
+export function useGetDocument<TData = Awaited<ReturnType<typeof getDocument>>, TError = unknown>(
+ id: string,
+    params?: GetDocumentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDocument>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDocumentQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeDocumentUrl = (id: string,
+    params?: ChangeDocumentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/documents/${id}?${stringifiedParams}` : `/v1/documents/${id}`
+}
+
+/**
+ * @summary Rename a document, say what kind it is, send the words inside it again, or correct the day that matters
+ */
+export const changeDocument = async (id: string,
+    documentChange: DocumentChange,
+    params?: ChangeDocumentParams, options?: Parameters<typeof apiFetch>[1]): Promise<DocumentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<DocumentResponse>(getChangeDocumentUrl(id,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(documentChange)
+  }
+);}
+
+
+
+
+
+export const getChangeDocumentMutationKey = () => ['changeDocument'] as const;
+
+export const getChangeDocumentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeDocument>>, TError,ChangeDocumentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeDocument>>, TError,ChangeDocumentMutationVariables, TContext> => {
+
+const mutationKey = getChangeDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeDocument>>, ChangeDocumentMutationVariables> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  changeDocument(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof changeDocument>>>
+    export type ChangeDocumentMutationBody = DocumentChange
+    export type ChangeDocumentMutationError = unknown
+    export type ChangeDocumentMutationVariables = {id: string;data: DocumentChange;params?: ChangeDocumentParams}
+
+    /** @summary Rename a document, say what kind it is, send the words inside it again, or correct the day that matters */
+export const useChangeDocument = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeDocument>>, TError,ChangeDocumentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeDocument>>,
+        TError,
+        ChangeDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeDocumentMutationOptions(options), queryClient);
+    }
+
 export const getGetCircleUrl = (id: string,) => {
 
 
@@ -3789,7 +16598,7 @@ export const getGetChecklistUrl = (id: string,) => {
 }
 
 /**
- * @summary A list with its lines
+ * @summary A list with its lines. Ask again with If-None-Match to hear 304 while nothing changed.
  */
 export const getChecklist = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<ChecklistResponse> => {
 
@@ -3813,7 +16622,7 @@ export const getGetChecklistQueryKey = (id: string,) => {
     }
 
 
-export const getGetChecklistQueryOptions = <TData = Awaited<ReturnType<typeof getChecklist>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChecklist>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+export const getGetChecklistQueryOptions = <TData = Awaited<ReturnType<typeof getChecklist>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChecklist>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3832,11 +16641,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetChecklistQueryResult = NonNullable<Awaited<ReturnType<typeof getChecklist>>>
-export type GetChecklistQueryError = unknown
+export type GetChecklistQueryError = void
 
 
-/** @summary A list with its lines */
-export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = unknown>(
+/** @summary A list with its lines. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = void>(
  id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChecklist>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getChecklist>>,
@@ -3846,8 +16655,8 @@ export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/** @summary A list with its lines */
-export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = unknown>(
+/** @summary A list with its lines. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = void>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChecklist>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getChecklist>>,
@@ -3857,13 +16666,13 @@ export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>
       >, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/** @summary A list with its lines */
-export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = unknown>(
+/** @summary A list with its lines. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = void>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChecklist>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/** @summary A list with its lines */
-export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = unknown>(
+/** @summary A list with its lines. Ask again with If-None-Match to hear 304 while nothing changed. */
+export function useGetChecklist<TData = Awaited<ReturnType<typeof getChecklist>>, TError = void>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChecklist>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -3890,10 +16699,10 @@ export const getRenameChecklistUrl = (id: string,) => {
 }
 
 /**
- * @summary Rename a list
+ * @summary Rename a list, or change its emoji, its currency or whether it is a shopping list
  */
 export const renameChecklist = async (id: string,
-    renameRequest: RenameRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ChecklistResponse> => {
+    checklistChangeRequest: ChecklistChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<ChecklistResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -3914,7 +16723,7 @@ return apiFetch<ChecklistResponse>(getRenameChecklistUrl(id),
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(renameRequest)
+    body: JSON.stringify(checklistChangeRequest)
   }
 );}
 
@@ -3952,11 +16761,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type RenameChecklistMutationResult = NonNullable<Awaited<ReturnType<typeof renameChecklist>>>
-    export type RenameChecklistMutationBody = RenameRequest
+    export type RenameChecklistMutationBody = ChecklistChangeRequest
     export type RenameChecklistMutationError = unknown
-    export type RenameChecklistMutationVariables = {id: string;data: RenameRequest}
+    export type RenameChecklistMutationVariables = {id: string;data: ChecklistChangeRequest}
 
-    /** @summary Rename a list */
+    /** @summary Rename a list, or change its emoji, its currency or whether it is a shopping list */
 export const useRenameChecklist = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameChecklist>>, TError,RenameChecklistMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient): UseMutationResult<
@@ -4126,6 +16935,1353 @@ export const useChangeChecklistItem = <TError = unknown,
       > => {
       return useMutation(getChangeChecklistItemMutationOptions(options), queryClient);
     }
+
+export const getGetBoardUrl = (id: string,
+    params?: GetBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/boards/${id}?${stringifiedParams}` : `/v1/boards/${id}`
+}
+
+/**
+ * @summary A board: its settings, and what this person sees on it today. The template decides what that is.
+ */
+export const getBoard = async (id: string,
+    params?: GetBoardParams, options?: Parameters<typeof apiFetch>[1]): Promise<BoardResponse> => {
+
+  return apiFetch<BoardResponse>(getGetBoardUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBoardQueryKey = (id: string,
+    params?: GetBoardParams,) => {
+    return [
+    `/v1/boards/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBoardQueryOptions = <TData = Awaited<ReturnType<typeof getBoard>>, TError = unknown>(id: string,
+    params?: GetBoardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoard>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBoardQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBoard>>> = ({ signal }) => getBoard(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBoard>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBoardQueryResult = NonNullable<Awaited<ReturnType<typeof getBoard>>>
+export type GetBoardQueryError = unknown
+
+
+/** @summary A board: its settings, and what this person sees on it today. The template decides what that is. */
+export function useGetBoard<TData = Awaited<ReturnType<typeof getBoard>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBoardParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoard>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoard>>,
+          TError,
+          Awaited<ReturnType<typeof getBoard>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board: its settings, and what this person sees on it today. The template decides what that is. */
+export function useGetBoard<TData = Awaited<ReturnType<typeof getBoard>>, TError = unknown>(
+ id: string,
+    params?: GetBoardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoard>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoard>>,
+          TError,
+          Awaited<ReturnType<typeof getBoard>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board: its settings, and what this person sees on it today. The template decides what that is. */
+export function useGetBoard<TData = Awaited<ReturnType<typeof getBoard>>, TError = unknown>(
+ id: string,
+    params?: GetBoardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoard>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A board: its settings, and what this person sees on it today. The template decides what that is. */
+export function useGetBoard<TData = Awaited<ReturnType<typeof getBoard>>, TError = unknown>(
+ id: string,
+    params?: GetBoardParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoard>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBoardQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeBoardUrl = (id: string,
+    params?: ChangeBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/boards/${id}?${stringifiedParams}` : `/v1/boards/${id}`
+}
+
+/**
+ * @summary Rename a board or change its settings
+ */
+export const changeBoard = async (id: string,
+    boardChangeRequest: BoardChangeRequest,
+    params?: ChangeBoardParams, options?: Parameters<typeof apiFetch>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BoardResponse>(getChangeBoardUrl(id,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeBoardMutationKey = () => ['changeBoard'] as const;
+
+export const getChangeBoardMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBoard>>, TError,ChangeBoardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeBoard>>, TError,ChangeBoardMutationVariables, TContext> => {
+
+const mutationKey = getChangeBoardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeBoard>>, ChangeBoardMutationVariables> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  changeBoard(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeBoardMutationResult = NonNullable<Awaited<ReturnType<typeof changeBoard>>>
+    export type ChangeBoardMutationBody = BoardChangeRequest
+    export type ChangeBoardMutationError = unknown
+    export type ChangeBoardMutationVariables = {id: string;data: BoardChangeRequest;params?: ChangeBoardParams}
+
+    /** @summary Rename a board or change its settings */
+export const useChangeBoard = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBoard>>, TError,ChangeBoardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeBoard>>,
+        TError,
+        ChangeBoardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeBoardMutationOptions(options), queryClient);
+    }
+
+export const getRemoveBoardEntryUrl = (entryId: string,) => {
+
+
+
+
+  return `/v1/board-entries/${entryId}`
+}
+
+/**
+ * @summary Remove one entry of a board. Removing one that is gone is fine.
+ */
+export const removeBoardEntry = async (entryId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveBoardEntryUrl(entryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveBoardEntryMutationKey = () => ['removeBoardEntry'] as const;
+
+export const getRemoveBoardEntryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBoardEntry>>, TError,RemoveBoardEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeBoardEntry>>, TError,RemoveBoardEntryMutationVariables, TContext> => {
+
+const mutationKey = getRemoveBoardEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeBoardEntry>>, RemoveBoardEntryMutationVariables> = (props) => {
+          const {entryId} = props ?? {};
+
+          return  removeBoardEntry(entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveBoardEntryMutationResult = NonNullable<Awaited<ReturnType<typeof removeBoardEntry>>>
+
+    export type RemoveBoardEntryMutationError = unknown
+    export type RemoveBoardEntryMutationVariables = {entryId: string}
+
+    /** @summary Remove one entry of a board. Removing one that is gone is fine. */
+export const useRemoveBoardEntry = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBoardEntry>>, TError,RemoveBoardEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeBoardEntry>>,
+        TError,
+        RemoveBoardEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveBoardEntryMutationOptions(options), queryClient);
+    }
+
+export const getChangeBoardEntryUrl = (entryId: string,
+    params?: ChangeBoardEntryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/board-entries/${entryId}?${stringifiedParams}` : `/v1/board-entries/${entryId}`
+}
+
+/**
+ * @summary Change one entry of a board
+ */
+export const changeBoardEntry = async (entryId: string,
+    entryChangeRequest: EntryChangeRequest,
+    params?: ChangeBoardEntryParams, options?: Parameters<typeof apiFetch>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<BoardResponse>(getChangeBoardEntryUrl(entryId,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(entryChangeRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeBoardEntryMutationKey = () => ['changeBoardEntry'] as const;
+
+export const getChangeBoardEntryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBoardEntry>>, TError,ChangeBoardEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeBoardEntry>>, TError,ChangeBoardEntryMutationVariables, TContext> => {
+
+const mutationKey = getChangeBoardEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeBoardEntry>>, ChangeBoardEntryMutationVariables> = (props) => {
+          const {entryId,data,params} = props ?? {};
+
+          return  changeBoardEntry(entryId,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeBoardEntryMutationResult = NonNullable<Awaited<ReturnType<typeof changeBoardEntry>>>
+    export type ChangeBoardEntryMutationBody = EntryChangeRequest
+    export type ChangeBoardEntryMutationError = unknown
+    export type ChangeBoardEntryMutationVariables = {entryId: string;data: EntryChangeRequest;params?: ChangeBoardEntryParams}
+
+    /** @summary Change one entry of a board */
+export const useChangeBoardEntry = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeBoardEntry>>, TError,ChangeBoardEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeBoardEntry>>,
+        TError,
+        ChangeBoardEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeBoardEntryMutationOptions(options), queryClient);
+    }
+
+export const getGetAlbumUrl = (id: string,) => {
+
+
+
+
+  return `/v1/albums/${id}`
+}
+
+/**
+ * @summary One album, counted for you. What is in it comes from the wall, asked with `album`.
+ */
+export const getAlbum = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<AlbumResponse> => {
+
+  return apiFetch<AlbumResponse>(getGetAlbumUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAlbumQueryKey = (id: string,) => {
+    return [
+    `/v1/albums/${id}`
+    ] as const;
+    }
+
+
+export const getGetAlbumQueryOptions = <TData = Awaited<ReturnType<typeof getAlbum>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbum>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAlbumQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAlbum>>> = ({ signal }) => getAlbum(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlbum>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAlbumQueryResult = NonNullable<Awaited<ReturnType<typeof getAlbum>>>
+export type GetAlbumQueryError = unknown
+
+
+/** @summary One album, counted for you. What is in it comes from the wall, asked with `album`. */
+export function useGetAlbum<TData = Awaited<ReturnType<typeof getAlbum>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbum>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlbum>>,
+          TError,
+          Awaited<ReturnType<typeof getAlbum>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One album, counted for you. What is in it comes from the wall, asked with `album`. */
+export function useGetAlbum<TData = Awaited<ReturnType<typeof getAlbum>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbum>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlbum>>,
+          TError,
+          Awaited<ReturnType<typeof getAlbum>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One album, counted for you. What is in it comes from the wall, asked with `album`. */
+export function useGetAlbum<TData = Awaited<ReturnType<typeof getAlbum>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbum>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary One album, counted for you. What is in it comes from the wall, asked with `album`. */
+export function useGetAlbum<TData = Awaited<ReturnType<typeof getAlbum>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbum>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAlbumQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeAlbumUrl = (id: string,) => {
+
+
+
+
+  return `/v1/albums/${id}`
+}
+
+/**
+ * @summary Rename an album, change the words under it or its cover
+ */
+export const changeAlbum = async (id: string,
+    albumChange: AlbumChange, options?: Parameters<typeof apiFetch>[1]): Promise<AlbumResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<AlbumResponse>(getChangeAlbumUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(albumChange)
+  }
+);}
+
+
+
+
+
+export const getChangeAlbumMutationKey = () => ['changeAlbum'] as const;
+
+export const getChangeAlbumMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAlbum>>, TError,ChangeAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeAlbum>>, TError,ChangeAlbumMutationVariables, TContext> => {
+
+const mutationKey = getChangeAlbumMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeAlbum>>, ChangeAlbumMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeAlbum(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof changeAlbum>>>
+    export type ChangeAlbumMutationBody = AlbumChange
+    export type ChangeAlbumMutationError = unknown
+    export type ChangeAlbumMutationVariables = {id: string;data: AlbumChange}
+
+    /** @summary Rename an album, change the words under it or its cover */
+export const useChangeAlbum = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAlbum>>, TError,ChangeAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeAlbum>>,
+        TError,
+        ChangeAlbumMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeAlbumMutationOptions(options), queryClient);
+    }
+
+export const getGetVaultWaitingUrl = () => {
+
+
+
+
+  return `/v1/vault/waiting`
+}
+
+/**
+ * @summary Everyone who waits for a key to one of your items, with their public key. Two hundred at a time.
+ */
+export const getVaultWaiting = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultWaitingResponse[]> => {
+
+  return apiFetch<VaultWaitingResponse[]>(getGetVaultWaitingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultWaitingQueryKey = () => {
+    return [
+    `/v1/vault/waiting`
+    ] as const;
+    }
+
+
+export const getGetVaultWaitingQueryOptions = <TData = Awaited<ReturnType<typeof getVaultWaiting>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultWaiting>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultWaitingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultWaiting>>> = ({ signal }) => getVaultWaiting({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultWaiting>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultWaitingQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultWaiting>>>
+export type GetVaultWaitingQueryError = unknown
+
+
+/** @summary Everyone who waits for a key to one of your items, with their public key. Two hundred at a time. */
+export function useGetVaultWaiting<TData = Awaited<ReturnType<typeof getVaultWaiting>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultWaiting>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultWaiting>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultWaiting>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Everyone who waits for a key to one of your items, with their public key. Two hundred at a time. */
+export function useGetVaultWaiting<TData = Awaited<ReturnType<typeof getVaultWaiting>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultWaiting>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultWaiting>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultWaiting>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Everyone who waits for a key to one of your items, with their public key. Two hundred at a time. */
+export function useGetVaultWaiting<TData = Awaited<ReturnType<typeof getVaultWaiting>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultWaiting>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Everyone who waits for a key to one of your items, with their public key. Two hundred at a time. */
+export function useGetVaultWaiting<TData = Awaited<ReturnType<typeof getVaultWaiting>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultWaiting>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultWaitingQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVaultRecoveryUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/recoveries/${id}`
+}
+
+/**
+ * @summary A recovery of your own Vault: who has helped, and the shares once two have
+ */
+export const getVaultRecovery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultRecoveryResponse> => {
+
+  return apiFetch<VaultRecoveryResponse>(getGetVaultRecoveryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultRecoveryQueryKey = (id: string,) => {
+    return [
+    `/v1/vault/recoveries/${id}`
+    ] as const;
+    }
+
+
+export const getGetVaultRecoveryQueryOptions = <TData = Awaited<ReturnType<typeof getVaultRecovery>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultRecovery>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultRecoveryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultRecovery>>> = ({ signal }) => getVaultRecovery(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultRecovery>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultRecoveryQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultRecovery>>>
+export type GetVaultRecoveryQueryError = unknown
+
+
+/** @summary A recovery of your own Vault: who has helped, and the shares once two have */
+export function useGetVaultRecovery<TData = Awaited<ReturnType<typeof getVaultRecovery>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultRecovery>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultRecovery>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultRecovery>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A recovery of your own Vault: who has helped, and the shares once two have */
+export function useGetVaultRecovery<TData = Awaited<ReturnType<typeof getVaultRecovery>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultRecovery>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultRecovery>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultRecovery>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A recovery of your own Vault: who has helped, and the shares once two have */
+export function useGetVaultRecovery<TData = Awaited<ReturnType<typeof getVaultRecovery>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultRecovery>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A recovery of your own Vault: who has helped, and the shares once two have */
+export function useGetVaultRecovery<TData = Awaited<ReturnType<typeof getVaultRecovery>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultRecovery>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultRecoveryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCancelVaultRecoveryUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/recoveries/${id}`
+}
+
+/**
+ * @summary Cancel a recovery of your Vault, from any of your phones
+ */
+export const cancelVaultRecovery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getCancelVaultRecoveryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelVaultRecoveryMutationKey = () => ['cancelVaultRecovery'] as const;
+
+export const getCancelVaultRecoveryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelVaultRecovery>>, TError,CancelVaultRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelVaultRecovery>>, TError,CancelVaultRecoveryMutationVariables, TContext> => {
+
+const mutationKey = getCancelVaultRecoveryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelVaultRecovery>>, CancelVaultRecoveryMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelVaultRecovery(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelVaultRecoveryMutationResult = NonNullable<Awaited<ReturnType<typeof cancelVaultRecovery>>>
+
+    export type CancelVaultRecoveryMutationError = unknown
+    export type CancelVaultRecoveryMutationVariables = {id: string}
+
+    /** @summary Cancel a recovery of your Vault, from any of your phones */
+export const useCancelVaultRecovery = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelVaultRecovery>>, TError,CancelVaultRecoveryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelVaultRecovery>>,
+        TError,
+        CancelVaultRecoveryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCancelVaultRecoveryMutationOptions(options), queryClient);
+    }
+
+export const getGetVaultPeopleUrl = () => {
+
+
+
+
+  return `/v1/vault/people`
+}
+
+/**
+ * @summary Everyone in your circles you could name as your trusted person or a helper, by name. As many as your circles hold.
+ */
+export const getVaultPeople = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultPersonResponse[]> => {
+
+  return apiFetch<VaultPersonResponse[]>(getGetVaultPeopleUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultPeopleQueryKey = () => {
+    return [
+    `/v1/vault/people`
+    ] as const;
+    }
+
+
+export const getGetVaultPeopleQueryOptions = <TData = Awaited<ReturnType<typeof getVaultPeople>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultPeople>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultPeopleQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultPeople>>> = ({ signal }) => getVaultPeople({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultPeople>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultPeopleQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultPeople>>>
+export type GetVaultPeopleQueryError = unknown
+
+
+/** @summary Everyone in your circles you could name as your trusted person or a helper, by name. As many as your circles hold. */
+export function useGetVaultPeople<TData = Awaited<ReturnType<typeof getVaultPeople>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultPeople>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultPeople>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultPeople>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Everyone in your circles you could name as your trusted person or a helper, by name. As many as your circles hold. */
+export function useGetVaultPeople<TData = Awaited<ReturnType<typeof getVaultPeople>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultPeople>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultPeople>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultPeople>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Everyone in your circles you could name as your trusted person or a helper, by name. As many as your circles hold. */
+export function useGetVaultPeople<TData = Awaited<ReturnType<typeof getVaultPeople>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultPeople>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Everyone in your circles you could name as your trusted person or a helper, by name. As many as your circles hold. */
+export function useGetVaultPeople<TData = Awaited<ReturnType<typeof getVaultPeople>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultPeople>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultPeopleQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetHelpingUrl = () => {
+
+
+
+
+  return `/v1/vault/helping`
+}
+
+/**
+ * @summary The people who asked you to be their helper, and who of them needs you now. As many as your circles hold.
+ */
+export const getHelping = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultHelpingResponse[]> => {
+
+  return apiFetch<VaultHelpingResponse[]>(getGetHelpingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHelpingQueryKey = () => {
+    return [
+    `/v1/vault/helping`
+    ] as const;
+    }
+
+
+export const getGetHelpingQueryOptions = <TData = Awaited<ReturnType<typeof getHelping>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHelping>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHelpingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHelping>>> = ({ signal }) => getHelping({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHelping>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetHelpingQueryResult = NonNullable<Awaited<ReturnType<typeof getHelping>>>
+export type GetHelpingQueryError = unknown
+
+
+/** @summary The people who asked you to be their helper, and who of them needs you now. As many as your circles hold. */
+export function useGetHelping<TData = Awaited<ReturnType<typeof getHelping>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHelping>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getHelping>>,
+          TError,
+          Awaited<ReturnType<typeof getHelping>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people who asked you to be their helper, and who of them needs you now. As many as your circles hold. */
+export function useGetHelping<TData = Awaited<ReturnType<typeof getHelping>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHelping>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getHelping>>,
+          TError,
+          Awaited<ReturnType<typeof getHelping>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people who asked you to be their helper, and who of them needs you now. As many as your circles hold. */
+export function useGetHelping<TData = Awaited<ReturnType<typeof getHelping>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHelping>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people who asked you to be their helper, and who of them needs you now. As many as your circles hold. */
+export function useGetHelping<TData = Awaited<ReturnType<typeof getHelping>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHelping>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetHelpingQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEntrustedUrl = () => {
+
+
+
+
+  return `/v1/vault/entrusted`
+}
+
+/**
+ * @summary The people who named you as the one who can ask for their Vault. As many as your circles hold.
+ */
+export const getEntrusted = async ( options?: Parameters<typeof apiFetch>[1]): Promise<EntrustedVaultResponse[]> => {
+
+  return apiFetch<EntrustedVaultResponse[]>(getGetEntrustedUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEntrustedQueryKey = () => {
+    return [
+    `/v1/vault/entrusted`
+    ] as const;
+    }
+
+
+export const getGetEntrustedQueryOptions = <TData = Awaited<ReturnType<typeof getEntrusted>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrusted>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEntrustedQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEntrusted>>> = ({ signal }) => getEntrusted({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEntrusted>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEntrustedQueryResult = NonNullable<Awaited<ReturnType<typeof getEntrusted>>>
+export type GetEntrustedQueryError = unknown
+
+
+/** @summary The people who named you as the one who can ask for their Vault. As many as your circles hold. */
+export function useGetEntrusted<TData = Awaited<ReturnType<typeof getEntrusted>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrusted>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEntrusted>>,
+          TError,
+          Awaited<ReturnType<typeof getEntrusted>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people who named you as the one who can ask for their Vault. As many as your circles hold. */
+export function useGetEntrusted<TData = Awaited<ReturnType<typeof getEntrusted>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrusted>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEntrusted>>,
+          TError,
+          Awaited<ReturnType<typeof getEntrusted>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people who named you as the one who can ask for their Vault. As many as your circles hold. */
+export function useGetEntrusted<TData = Awaited<ReturnType<typeof getEntrusted>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrusted>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The people who named you as the one who can ask for their Vault. As many as your circles hold. */
+export function useGetEntrusted<TData = Awaited<ReturnType<typeof getEntrusted>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrusted>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEntrustedQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEntrustedVaultUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/entrusted/${id}`
+}
+
+/**
+ * @summary Someone's emergency access, as the person they trust. What opens is listed only once it is open.
+ */
+export const getEntrustedVault = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EntrustedVaultResponse> => {
+
+  return apiFetch<EntrustedVaultResponse>(getGetEntrustedVaultUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEntrustedVaultQueryKey = (id: string,) => {
+    return [
+    `/v1/vault/entrusted/${id}`
+    ] as const;
+    }
+
+
+export const getGetEntrustedVaultQueryOptions = <TData = Awaited<ReturnType<typeof getEntrustedVault>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrustedVault>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEntrustedVaultQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEntrustedVault>>> = ({ signal }) => getEntrustedVault(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEntrustedVault>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEntrustedVaultQueryResult = NonNullable<Awaited<ReturnType<typeof getEntrustedVault>>>
+export type GetEntrustedVaultQueryError = unknown
+
+
+/** @summary Someone's emergency access, as the person they trust. What opens is listed only once it is open. */
+export function useGetEntrustedVault<TData = Awaited<ReturnType<typeof getEntrustedVault>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrustedVault>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEntrustedVault>>,
+          TError,
+          Awaited<ReturnType<typeof getEntrustedVault>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Someone's emergency access, as the person they trust. What opens is listed only once it is open. */
+export function useGetEntrustedVault<TData = Awaited<ReturnType<typeof getEntrustedVault>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrustedVault>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEntrustedVault>>,
+          TError,
+          Awaited<ReturnType<typeof getEntrustedVault>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Someone's emergency access, as the person they trust. What opens is listed only once it is open. */
+export function useGetEntrustedVault<TData = Awaited<ReturnType<typeof getEntrustedVault>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrustedVault>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Someone's emergency access, as the person they trust. What opens is listed only once it is open. */
+export function useGetEntrustedVault<TData = Awaited<ReturnType<typeof getEntrustedVault>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEntrustedVault>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEntrustedVaultQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVaultAttentionUrl = () => {
+
+
+
+
+  return `/v1/vault/attention`
+}
+
+/**
+ * @summary What in the Vault needs you now: someone asked for your Vault, a recovery is open, someone needs your help
+ */
+export const getVaultAttention = async ( options?: Parameters<typeof apiFetch>[1]): Promise<VaultAttentionResponse> => {
+
+  return apiFetch<VaultAttentionResponse>(getGetVaultAttentionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultAttentionQueryKey = () => {
+    return [
+    `/v1/vault/attention`
+    ] as const;
+    }
+
+
+export const getGetVaultAttentionQueryOptions = <TData = Awaited<ReturnType<typeof getVaultAttention>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultAttention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultAttentionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultAttention>>> = ({ signal }) => getVaultAttention({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultAttention>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultAttentionQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultAttention>>>
+export type GetVaultAttentionQueryError = unknown
+
+
+/** @summary What in the Vault needs you now: someone asked for your Vault, a recovery is open, someone needs your help */
+export function useGetVaultAttention<TData = Awaited<ReturnType<typeof getVaultAttention>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultAttention>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultAttention>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultAttention>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What in the Vault needs you now: someone asked for your Vault, a recovery is open, someone needs your help */
+export function useGetVaultAttention<TData = Awaited<ReturnType<typeof getVaultAttention>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultAttention>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultAttention>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultAttention>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What in the Vault needs you now: someone asked for your Vault, a recovery is open, someone needs your help */
+export function useGetVaultAttention<TData = Awaited<ReturnType<typeof getVaultAttention>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultAttention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What in the Vault needs you now: someone asked for your Vault, a recovery is open, someone needs your help */
+export function useGetVaultAttention<TData = Awaited<ReturnType<typeof getVaultAttention>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultAttention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultAttentionQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetThingUrl = (id: string,) => {
 
@@ -4675,6 +18831,107 @@ export function useGetOverview<TData = Awaited<ReturnType<typeof getOverview>>, 
 
 
 
+export const getGetMomentUrl = (id: string,) => {
+
+
+
+
+  return `/v1/library/${id}/moment`
+}
+
+/**
+ * @summary The moment a photo belongs to: what was taken that day at that place, by whom
+ */
+export const getMoment = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<MomentResponse> => {
+
+  return apiFetch<MomentResponse>(getGetMomentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMomentQueryKey = (id: string,) => {
+    return [
+    `/v1/library/${id}/moment`
+    ] as const;
+    }
+
+
+export const getGetMomentQueryOptions = <TData = Awaited<ReturnType<typeof getMoment>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoment>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMomentQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMoment>>> = ({ signal }) => getMoment(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMoment>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMomentQueryResult = NonNullable<Awaited<ReturnType<typeof getMoment>>>
+export type GetMomentQueryError = unknown
+
+
+/** @summary The moment a photo belongs to: what was taken that day at that place, by whom */
+export function useGetMoment<TData = Awaited<ReturnType<typeof getMoment>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoment>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMoment>>,
+          TError,
+          Awaited<ReturnType<typeof getMoment>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The moment a photo belongs to: what was taken that day at that place, by whom */
+export function useGetMoment<TData = Awaited<ReturnType<typeof getMoment>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoment>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMoment>>,
+          TError,
+          Awaited<ReturnType<typeof getMoment>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The moment a photo belongs to: what was taken that day at that place, by whom */
+export function useGetMoment<TData = Awaited<ReturnType<typeof getMoment>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoment>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The moment a photo belongs to: what was taken that day at that place, by whom */
+export function useGetMoment<TData = Awaited<ReturnType<typeof getMoment>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMoment>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMomentQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetGuestPassUrl = (id: string,) => {
 
 
@@ -4848,6 +19105,714 @@ export const useEndGuestPass = <TError = unknown,
       return useMutation(getEndGuestPassMutationOptions(options), queryClient);
     }
 
+export const getGetFolderItemsUrl = (id: string,
+    params?: GetFolderItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/folders/${id}/items?${stringifiedParams}` : `/v1/folders/${id}/items`
+}
+
+/**
+ * @summary What is in a space or folder that you may see, in the order people gave it
+ */
+export const getFolderItems = async (id: string,
+    params?: GetFolderItemsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageNoteItem> => {
+
+  return apiFetch<PageNoteItem>(getGetFolderItemsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFolderItemsInfiniteQueryKey = (id: string,
+    params?: GetFolderItemsParams,) => {
+    return [
+    'infinite', `/v1/folders/${id}/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetFolderItemsQueryKey = (id: string,
+    params?: GetFolderItemsParams,) => {
+    return [
+    `/v1/folders/${id}/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFolderItemsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getFolderItems>>, GetFolderItemsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData, QueryKey, GetFolderItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFolderItemsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFolderItems>>, QueryKey, GetFolderItemsParams['cursor']> = ({ signal, pageParam }) => getFolderItems(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData, QueryKey, GetFolderItemsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFolderItemsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getFolderItems>>>
+export type GetFolderItemsInfiniteQueryError = unknown
+
+
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFolderItems>>, GetFolderItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetFolderItemsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData, QueryKey, GetFolderItemsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFolderItems>>,
+          TError,
+          Awaited<ReturnType<typeof getFolderItems>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFolderItems>>, GetFolderItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData, QueryKey, GetFolderItemsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFolderItems>>,
+          TError,
+          Awaited<ReturnType<typeof getFolderItems>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFolderItems>>, GetFolderItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData, QueryKey, GetFolderItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFolderItems>>, GetFolderItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData, QueryKey, GetFolderItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFolderItemsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetFolderItemsQueryOptions = <TData = Awaited<ReturnType<typeof getFolderItems>>, TError = unknown>(id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFolderItemsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFolderItems>>> = ({ signal }) => getFolderItems(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFolderItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getFolderItems>>>
+export type GetFolderItemsQueryError = unknown
+
+
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItems<TData = Awaited<ReturnType<typeof getFolderItems>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetFolderItemsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFolderItems>>,
+          TError,
+          Awaited<ReturnType<typeof getFolderItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItems<TData = Awaited<ReturnType<typeof getFolderItems>>, TError = unknown>(
+ id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFolderItems>>,
+          TError,
+          Awaited<ReturnType<typeof getFolderItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItems<TData = Awaited<ReturnType<typeof getFolderItems>>, TError = unknown>(
+ id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What is in a space or folder that you may see, in the order people gave it */
+export function useGetFolderItems<TData = Awaited<ReturnType<typeof getFolderItems>>, TError = unknown>(
+ id: string,
+    params?: GetFolderItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFolderItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFolderItemsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWidgetsUrl = (id: string,
+    params?: GetWidgetsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/widgets?${stringifiedParams}` : `/v1/circles/${id}/widgets`
+}
+
+/**
+ * @summary What the widgets, the pinned note and the Lock Screen show: chips of what is added most (eight at most), the shopping list, the list in use, what is next today, how many jotted today
+ */
+export const getWidgets = async (id: string,
+    params?: GetWidgetsParams, options?: Parameters<typeof apiFetch>[1]): Promise<WidgetsResponse> => {
+
+  return apiFetch<WidgetsResponse>(getGetWidgetsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWidgetsQueryKey = (id: string,
+    params?: GetWidgetsParams,) => {
+    return [
+    `/v1/circles/${id}/widgets`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWidgetsQueryOptions = <TData = Awaited<ReturnType<typeof getWidgets>>, TError = unknown>(id: string,
+    params?: GetWidgetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWidgets>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWidgetsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWidgets>>> = ({ signal }) => getWidgets(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWidgets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWidgetsQueryResult = NonNullable<Awaited<ReturnType<typeof getWidgets>>>
+export type GetWidgetsQueryError = unknown
+
+
+/** @summary What the widgets, the pinned note and the Lock Screen show: chips of what is added most (eight at most), the shopping list, the list in use, what is next today, how many jotted today */
+export function useGetWidgets<TData = Awaited<ReturnType<typeof getWidgets>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetWidgetsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWidgets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWidgets>>,
+          TError,
+          Awaited<ReturnType<typeof getWidgets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the widgets, the pinned note and the Lock Screen show: chips of what is added most (eight at most), the shopping list, the list in use, what is next today, how many jotted today */
+export function useGetWidgets<TData = Awaited<ReturnType<typeof getWidgets>>, TError = unknown>(
+ id: string,
+    params?: GetWidgetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWidgets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWidgets>>,
+          TError,
+          Awaited<ReturnType<typeof getWidgets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the widgets, the pinned note and the Lock Screen show: chips of what is added most (eight at most), the shopping list, the list in use, what is next today, how many jotted today */
+export function useGetWidgets<TData = Awaited<ReturnType<typeof getWidgets>>, TError = unknown>(
+ id: string,
+    params?: GetWidgetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWidgets>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the widgets, the pinned note and the Lock Screen show: chips of what is added most (eight at most), the shopping list, the list in use, what is next today, how many jotted today */
+export function useGetWidgets<TData = Awaited<ReturnType<typeof getWidgets>>, TError = unknown>(
+ id: string,
+    params?: GetWidgetsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWidgets>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWidgetsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVaultHomeUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/vault`
+}
+
+/**
+ * @summary The Vault's home in a circle: six drawers with their counts, what needs a look, what others shared with you
+ */
+export const getVaultHome = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultHomeResponse> => {
+
+  return apiFetch<VaultHomeResponse>(getGetVaultHomeUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultHomeQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/vault`
+    ] as const;
+    }
+
+
+export const getGetVaultHomeQueryOptions = <TData = Awaited<ReturnType<typeof getVaultHome>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHome>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultHomeQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultHome>>> = ({ signal }) => getVaultHome(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultHome>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultHomeQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultHome>>>
+export type GetVaultHomeQueryError = unknown
+
+
+/** @summary The Vault's home in a circle: six drawers with their counts, what needs a look, what others shared with you */
+export function useGetVaultHome<TData = Awaited<ReturnType<typeof getVaultHome>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHome>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultHome>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultHome>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault's home in a circle: six drawers with their counts, what needs a look, what others shared with you */
+export function useGetVaultHome<TData = Awaited<ReturnType<typeof getVaultHome>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHome>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultHome>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultHome>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault's home in a circle: six drawers with their counts, what needs a look, what others shared with you */
+export function useGetVaultHome<TData = Awaited<ReturnType<typeof getVaultHome>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHome>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault's home in a circle: six drawers with their counts, what needs a look, what others shared with you */
+export function useGetVaultHome<TData = Awaited<ReturnType<typeof getVaultHome>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultHome>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultHomeQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVaultItemsUrl = (id: string,
+    params?: GetVaultItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/vault/items?${stringifiedParams}` : `/v1/circles/${id}/vault/items`
+}
+
+/**
+ * @summary The Vault items in a circle you can see, last changed first
+ */
+export const getVaultItems = async (id: string,
+    params?: GetVaultItemsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageVaultItemRowResponse> => {
+
+  return apiFetch<PageVaultItemRowResponse>(getGetVaultItemsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultItemsInfiniteQueryKey = (id: string,
+    params?: GetVaultItemsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/vault/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetVaultItemsQueryKey = (id: string,
+    params?: GetVaultItemsParams,) => {
+    return [
+    `/v1/circles/${id}/vault/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetVaultItemsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getVaultItems>>, GetVaultItemsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData, QueryKey, GetVaultItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultItemsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultItems>>, QueryKey, GetVaultItemsParams['cursor']> = ({ signal, pageParam }) => getVaultItems(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData, QueryKey, GetVaultItemsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultItemsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultItems>>>
+export type GetVaultItemsInfiniteQueryError = unknown
+
+
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getVaultItems>>, GetVaultItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetVaultItemsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData, QueryKey, GetVaultItemsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultItems>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getVaultItems>>, GetVaultItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData, QueryKey, GetVaultItemsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultItems>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getVaultItems>>, GetVaultItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData, QueryKey, GetVaultItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItemsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getVaultItems>>, GetVaultItemsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData, QueryKey, GetVaultItemsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultItemsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetVaultItemsQueryOptions = <TData = Awaited<ReturnType<typeof getVaultItems>>, TError = unknown>(id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultItemsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultItems>>> = ({ signal }) => getVaultItems(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultItems>>>
+export type GetVaultItemsQueryError = unknown
+
+
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItems<TData = Awaited<ReturnType<typeof getVaultItems>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetVaultItemsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItems<TData = Awaited<ReturnType<typeof getVaultItems>>, TError = unknown>(
+ id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultItems>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItems<TData = Awaited<ReturnType<typeof getVaultItems>>, TError = unknown>(
+ id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Vault items in a circle you can see, last changed first */
+export function useGetVaultItems<TData = Awaited<ReturnType<typeof getVaultItems>>, TError = unknown>(
+ id: string,
+    params?: GetVaultItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultItems>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultItemsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetVaultKeysUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/vault-keys`
+}
+
+/**
+ * @summary The public keys of the people in a circle who have a Vault, and who can't be shared with yet. Thirty at most.
+ */
+export const getVaultKeys = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<VaultKeysResponse> => {
+
+  return apiFetch<VaultKeysResponse>(getGetVaultKeysUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVaultKeysQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/vault-keys`
+    ] as const;
+    }
+
+
+export const getGetVaultKeysQueryOptions = <TData = Awaited<ReturnType<typeof getVaultKeys>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultKeys>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVaultKeysQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVaultKeys>>> = ({ signal }) => getVaultKeys(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVaultKeys>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVaultKeysQueryResult = NonNullable<Awaited<ReturnType<typeof getVaultKeys>>>
+export type GetVaultKeysQueryError = unknown
+
+
+/** @summary The public keys of the people in a circle who have a Vault, and who can't be shared with yet. Thirty at most. */
+export function useGetVaultKeys<TData = Awaited<ReturnType<typeof getVaultKeys>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultKeys>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultKeys>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultKeys>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The public keys of the people in a circle who have a Vault, and who can't be shared with yet. Thirty at most. */
+export function useGetVaultKeys<TData = Awaited<ReturnType<typeof getVaultKeys>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultKeys>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVaultKeys>>,
+          TError,
+          Awaited<ReturnType<typeof getVaultKeys>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The public keys of the people in a circle who have a Vault, and who can't be shared with yet. Thirty at most. */
+export function useGetVaultKeys<TData = Awaited<ReturnType<typeof getVaultKeys>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultKeys>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The public keys of the people in a circle who have a Vault, and who can't be shared with yet. Thirty at most. */
+export function useGetVaultKeys<TData = Awaited<ReturnType<typeof getVaultKeys>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVaultKeys>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVaultKeysQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetTodayUrl = (id: string,
     params?: GetTodayParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -4964,6 +19929,208 @@ export function useGetToday<TData = Awaited<ReturnType<typeof getToday>>, TError
 
 
 
+export const getGetTemplatesUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/templates`
+}
+
+/**
+ * @summary The gallery for a circle: its own kind's templates first, then the rest. 67 cards, always all of them.
+ */
+export const getTemplates = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<TemplateGalleryResponse> => {
+
+  return apiFetch<TemplateGalleryResponse>(getGetTemplatesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplatesQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/templates`
+    ] as const;
+    }
+
+
+export const getGetTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof getTemplates>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplatesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplates>>> = ({ signal }) => getTemplates(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplates>>>
+export type GetTemplatesQueryError = unknown
+
+
+/** @summary The gallery for a circle: its own kind's templates first, then the rest. 67 cards, always all of them. */
+export function useGetTemplates<TData = Awaited<ReturnType<typeof getTemplates>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplates>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTemplates>>,
+          TError,
+          Awaited<ReturnType<typeof getTemplates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The gallery for a circle: its own kind's templates first, then the rest. 67 cards, always all of them. */
+export function useGetTemplates<TData = Awaited<ReturnType<typeof getTemplates>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplates>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTemplates>>,
+          TError,
+          Awaited<ReturnType<typeof getTemplates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The gallery for a circle: its own kind's templates first, then the rest. 67 cards, always all of them. */
+export function useGetTemplates<TData = Awaited<ReturnType<typeof getTemplates>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The gallery for a circle: its own kind's templates first, then the rest. 67 cards, always all of them. */
+export function useGetTemplates<TData = Awaited<ReturnType<typeof getTemplates>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplates>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetTemplatesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStorageUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/storage`
+}
+
+/**
+ * @summary How much a circle keeps: by photos, videos and files, and by person
+ */
+export const getStorage = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<StorageResponse> => {
+
+  return apiFetch<StorageResponse>(getGetStorageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStorageQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/storage`
+    ] as const;
+    }
+
+
+export const getGetStorageQueryOptions = <TData = Awaited<ReturnType<typeof getStorage>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStorageQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStorage>>> = ({ signal }) => getStorage(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStorage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStorageQueryResult = NonNullable<Awaited<ReturnType<typeof getStorage>>>
+export type GetStorageQueryError = unknown
+
+
+/** @summary How much a circle keeps: by photos, videos and files, and by person */
+export function useGetStorage<TData = Awaited<ReturnType<typeof getStorage>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStorage>>,
+          TError,
+          Awaited<ReturnType<typeof getStorage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary How much a circle keeps: by photos, videos and files, and by person */
+export function useGetStorage<TData = Awaited<ReturnType<typeof getStorage>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStorage>>,
+          TError,
+          Awaited<ReturnType<typeof getStorage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary How much a circle keeps: by photos, videos and files, and by person */
+export function useGetStorage<TData = Awaited<ReturnType<typeof getStorage>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary How much a circle keeps: by photos, videos and files, and by person */
+export function useGetStorage<TData = Awaited<ReturnType<typeof getStorage>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStorage>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStorageQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getSearchCircleUrl = (id: string,
     params?: SearchCircleParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -5068,6 +20235,433 @@ export function useSearchCircle<TData = Awaited<ReturnType<typeof searchCircle>>
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSearchCircleQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetRemindersUrl = (id: string,
+    params?: GetRemindersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/reminders?${stringifiedParams}` : `/v1/circles/${id}/reminders`
+}
+
+/**
+ * @summary The Reminders screen: yours by day, what you gave to others, and the ones that wait for a place. Five hundred open reminders at most.
+ */
+export const getReminders = async (id: string,
+    params?: GetRemindersParams, options?: Parameters<typeof apiFetch>[1]): Promise<RemindersResponse> => {
+
+  return apiFetch<RemindersResponse>(getGetRemindersUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRemindersQueryKey = (id: string,
+    params?: GetRemindersParams,) => {
+    return [
+    `/v1/circles/${id}/reminders`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRemindersQueryOptions = <TData = Awaited<ReturnType<typeof getReminders>>, TError = unknown>(id: string,
+    params?: GetRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminders>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRemindersQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReminders>>> = ({ signal }) => getReminders(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReminders>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRemindersQueryResult = NonNullable<Awaited<ReturnType<typeof getReminders>>>
+export type GetRemindersQueryError = unknown
+
+
+/** @summary The Reminders screen: yours by day, what you gave to others, and the ones that wait for a place. Five hundred open reminders at most. */
+export function useGetReminders<TData = Awaited<ReturnType<typeof getReminders>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetRemindersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminders>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReminders>>,
+          TError,
+          Awaited<ReturnType<typeof getReminders>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Reminders screen: yours by day, what you gave to others, and the ones that wait for a place. Five hundred open reminders at most. */
+export function useGetReminders<TData = Awaited<ReturnType<typeof getReminders>>, TError = unknown>(
+ id: string,
+    params?: GetRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminders>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getReminders>>,
+          TError,
+          Awaited<ReturnType<typeof getReminders>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Reminders screen: yours by day, what you gave to others, and the ones that wait for a place. Five hundred open reminders at most. */
+export function useGetReminders<TData = Awaited<ReturnType<typeof getReminders>>, TError = unknown>(
+ id: string,
+    params?: GetRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminders>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The Reminders screen: yours by day, what you gave to others, and the ones that wait for a place. Five hundred open reminders at most. */
+export function useGetReminders<TData = Awaited<ReturnType<typeof getReminders>>, TError = unknown>(
+ id: string,
+    params?: GetRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReminders>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRemindersQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetDoneRemindersUrl = (id: string,
+    params?: GetDoneRemindersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/reminders/done?${stringifiedParams}` : `/v1/circles/${id}/reminders/done`
+}
+
+/**
+ * @summary What was ticked in a circle, last ticked first
+ */
+export const getDoneReminders = async (id: string,
+    params?: GetDoneRemindersParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageDoneResponse> => {
+
+  return apiFetch<PageDoneResponse>(getGetDoneRemindersUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDoneRemindersInfiniteQueryKey = (id: string,
+    params?: GetDoneRemindersParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/reminders/done`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetDoneRemindersQueryKey = (id: string,
+    params?: GetDoneRemindersParams,) => {
+    return [
+    `/v1/circles/${id}/reminders/done`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDoneRemindersInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getDoneReminders>>, GetDoneRemindersParams['cursor']>, TError = unknown>(id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData, QueryKey, GetDoneRemindersParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDoneRemindersInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDoneReminders>>, QueryKey, GetDoneRemindersParams['cursor']> = ({ signal, pageParam }) => getDoneReminders(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData, QueryKey, GetDoneRemindersParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDoneRemindersInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getDoneReminders>>>
+export type GetDoneRemindersInfiniteQueryError = unknown
+
+
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneRemindersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getDoneReminders>>, GetDoneRemindersParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetDoneRemindersParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData, QueryKey, GetDoneRemindersParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDoneReminders>>,
+          TError,
+          Awaited<ReturnType<typeof getDoneReminders>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneRemindersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getDoneReminders>>, GetDoneRemindersParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData, QueryKey, GetDoneRemindersParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDoneReminders>>,
+          TError,
+          Awaited<ReturnType<typeof getDoneReminders>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneRemindersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getDoneReminders>>, GetDoneRemindersParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData, QueryKey, GetDoneRemindersParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneRemindersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getDoneReminders>>, GetDoneRemindersParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData, QueryKey, GetDoneRemindersParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDoneRemindersInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetDoneRemindersQueryOptions = <TData = Awaited<ReturnType<typeof getDoneReminders>>, TError = unknown>(id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDoneRemindersQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDoneReminders>>> = ({ signal }) => getDoneReminders(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDoneRemindersQueryResult = NonNullable<Awaited<ReturnType<typeof getDoneReminders>>>
+export type GetDoneRemindersQueryError = unknown
+
+
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneReminders<TData = Awaited<ReturnType<typeof getDoneReminders>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetDoneRemindersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDoneReminders>>,
+          TError,
+          Awaited<ReturnType<typeof getDoneReminders>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneReminders<TData = Awaited<ReturnType<typeof getDoneReminders>>, TError = unknown>(
+ id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDoneReminders>>,
+          TError,
+          Awaited<ReturnType<typeof getDoneReminders>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneReminders<TData = Awaited<ReturnType<typeof getDoneReminders>>, TError = unknown>(
+ id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What was ticked in a circle, last ticked first */
+export function useGetDoneReminders<TData = Awaited<ReturnType<typeof getDoneReminders>>, TError = unknown>(
+ id: string,
+    params?: GetDoneRemindersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDoneReminders>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDoneRemindersQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPlanUrl = (id: string,
+    params?: GetPlanParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/plan?${stringifiedParams}` : `/v1/circles/${id}/plan`
+}
+
+/**
+ * @summary The day's list from one day on (events with a time, jobs with a tick, what other places bring), the dots of that week, and what is still open from before. Sixty-two days, five hundred events and five hundred reminders at most.
+ */
+export const getPlan = async (id: string,
+    params?: GetPlanParams, options?: Parameters<typeof apiFetch>[1]): Promise<PlanResponse> => {
+
+  return apiFetch<PlanResponse>(getGetPlanUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlanQueryKey = (id: string,
+    params?: GetPlanParams,) => {
+    return [
+    `/v1/circles/${id}/plan`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPlanQueryOptions = <TData = Awaited<ReturnType<typeof getPlan>>, TError = unknown>(id: string,
+    params?: GetPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlanQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlan>>> = ({ signal }) => getPlan(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getPlan>>>
+export type GetPlanQueryError = unknown
+
+
+/** @summary The day's list from one day on (events with a time, jobs with a tick, what other places bring), the dots of that week, and what is still open from before. Sixty-two days, five hundred events and five hundred reminders at most. */
+export function useGetPlan<TData = Awaited<ReturnType<typeof getPlan>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetPlanParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlan>>,
+          TError,
+          Awaited<ReturnType<typeof getPlan>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The day's list from one day on (events with a time, jobs with a tick, what other places bring), the dots of that week, and what is still open from before. Sixty-two days, five hundred events and five hundred reminders at most. */
+export function useGetPlan<TData = Awaited<ReturnType<typeof getPlan>>, TError = unknown>(
+ id: string,
+    params?: GetPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlan>>,
+          TError,
+          Awaited<ReturnType<typeof getPlan>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The day's list from one day on (events with a time, jobs with a tick, what other places bring), the dots of that week, and what is still open from before. Sixty-two days, five hundred events and five hundred reminders at most. */
+export function useGetPlan<TData = Awaited<ReturnType<typeof getPlan>>, TError = unknown>(
+ id: string,
+    params?: GetPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The day's list from one day on (events with a time, jobs with a tick, what other places bring), the dots of that week, and what is still open from before. Sixty-two days, five hundred events and five hundred reminders at most. */
+export function useGetPlan<TData = Awaited<ReturnType<typeof getPlan>>, TError = unknown>(
+ id: string,
+    params?: GetPlanParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPlanQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -5275,6 +20869,1538 @@ export function useGetPages<TData = Awaited<ReturnType<typeof getPages>>, TError
 
 
 
+export const getGetNotesUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/notes`
+}
+
+/**
+ * @summary The home of Notes: the circle's spaces with their counts, your pins, and what changed lately
+ */
+export const getNotes = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<NotesHome> => {
+
+  return apiFetch<NotesHome>(getGetNotesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotesQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/notes`
+    ] as const;
+    }
+
+
+export const getGetNotesQueryOptions = <TData = Awaited<ReturnType<typeof getNotes>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotes>>> = ({ signal }) => getNotes(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetNotesQueryResult = NonNullable<Awaited<ReturnType<typeof getNotes>>>
+export type GetNotesQueryError = unknown
+
+
+/** @summary The home of Notes: the circle's spaces with their counts, your pins, and what changed lately */
+export function useGetNotes<TData = Awaited<ReturnType<typeof getNotes>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getNotes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The home of Notes: the circle's spaces with their counts, your pins, and what changed lately */
+export function useGetNotes<TData = Awaited<ReturnType<typeof getNotes>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getNotes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The home of Notes: the circle's spaces with their counts, your pins, and what changed lately */
+export function useGetNotes<TData = Awaited<ReturnType<typeof getNotes>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The home of Notes: the circle's spaces with their counts, your pins, and what changed lately */
+export function useGetNotes<TData = Awaited<ReturnType<typeof getNotes>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetNotesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetUnfiledNotesUrl = (id: string,
+    params?: GetUnfiledNotesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/notes/unfiled?${stringifiedParams}` : `/v1/circles/${id}/notes/unfiled`
+}
+
+/**
+ * @summary The pages and lists that aren't filed in any folder you may see, last changed first
+ */
+export const getUnfiledNotes = async (id: string,
+    params?: GetUnfiledNotesParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageNoteItem> => {
+
+  return apiFetch<PageNoteItem>(getGetUnfiledNotesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUnfiledNotesInfiniteQueryKey = (id: string,
+    params?: GetUnfiledNotesParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/notes/unfiled`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetUnfiledNotesQueryKey = (id: string,
+    params?: GetUnfiledNotesParams,) => {
+    return [
+    `/v1/circles/${id}/notes/unfiled`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetUnfiledNotesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getUnfiledNotes>>, GetUnfiledNotesParams['cursor']>, TError = unknown>(id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData, QueryKey, GetUnfiledNotesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUnfiledNotesInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUnfiledNotes>>, QueryKey, GetUnfiledNotesParams['cursor']> = ({ signal, pageParam }) => getUnfiledNotes(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData, QueryKey, GetUnfiledNotesParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetUnfiledNotesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getUnfiledNotes>>>
+export type GetUnfiledNotesInfiniteQueryError = unknown
+
+
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getUnfiledNotes>>, GetUnfiledNotesParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetUnfiledNotesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData, QueryKey, GetUnfiledNotesParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUnfiledNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getUnfiledNotes>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getUnfiledNotes>>, GetUnfiledNotesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData, QueryKey, GetUnfiledNotesParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUnfiledNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getUnfiledNotes>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getUnfiledNotes>>, GetUnfiledNotesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData, QueryKey, GetUnfiledNotesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getUnfiledNotes>>, GetUnfiledNotesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData, QueryKey, GetUnfiledNotesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetUnfiledNotesInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetUnfiledNotesQueryOptions = <TData = Awaited<ReturnType<typeof getUnfiledNotes>>, TError = unknown>(id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUnfiledNotesQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUnfiledNotes>>> = ({ signal }) => getUnfiledNotes(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetUnfiledNotesQueryResult = NonNullable<Awaited<ReturnType<typeof getUnfiledNotes>>>
+export type GetUnfiledNotesQueryError = unknown
+
+
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotes<TData = Awaited<ReturnType<typeof getUnfiledNotes>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetUnfiledNotesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUnfiledNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getUnfiledNotes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotes<TData = Awaited<ReturnType<typeof getUnfiledNotes>>, TError = unknown>(
+ id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUnfiledNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getUnfiledNotes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotes<TData = Awaited<ReturnType<typeof getUnfiledNotes>>, TError = unknown>(
+ id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The pages and lists that aren't filed in any folder you may see, last changed first */
+export function useGetUnfiledNotes<TData = Awaited<ReturnType<typeof getUnfiledNotes>>, TError = unknown>(
+ id: string,
+    params?: GetUnfiledNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnfiledNotes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetUnfiledNotesQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMonthUrl = (id: string,
+    params?: GetMonthParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/month?${stringifiedParams}` : `/v1/circles/${id}/month`
+}
+
+/**
+ * @summary A month as whole weeks (forty-two days at most), each day with a dot per person who has something on it
+ */
+export const getMonth = async (id: string,
+    params?: GetMonthParams, options?: Parameters<typeof apiFetch>[1]): Promise<MonthResponse> => {
+
+  return apiFetch<MonthResponse>(getGetMonthUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonthQueryKey = (id: string,
+    params?: GetMonthParams,) => {
+    return [
+    `/v1/circles/${id}/month`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMonthQueryOptions = <TData = Awaited<ReturnType<typeof getMonth>>, TError = unknown>(id: string,
+    params?: GetMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMonth>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonthQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonth>>> = ({ signal }) => getMonth(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMonthQueryResult = NonNullable<Awaited<ReturnType<typeof getMonth>>>
+export type GetMonthQueryError = unknown
+
+
+/** @summary A month as whole weeks (forty-two days at most), each day with a dot per person who has something on it */
+export function useGetMonth<TData = Awaited<ReturnType<typeof getMonth>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetMonthParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMonth>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMonth>>,
+          TError,
+          Awaited<ReturnType<typeof getMonth>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A month as whole weeks (forty-two days at most), each day with a dot per person who has something on it */
+export function useGetMonth<TData = Awaited<ReturnType<typeof getMonth>>, TError = unknown>(
+ id: string,
+    params?: GetMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMonth>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMonth>>,
+          TError,
+          Awaited<ReturnType<typeof getMonth>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A month as whole weeks (forty-two days at most), each day with a dot per person who has something on it */
+export function useGetMonth<TData = Awaited<ReturnType<typeof getMonth>>, TError = unknown>(
+ id: string,
+    params?: GetMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMonth>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary A month as whole weeks (forty-two days at most), each day with a dot per person who has something on it */
+export function useGetMonth<TData = Awaited<ReturnType<typeof getMonth>>, TError = unknown>(
+ id: string,
+    params?: GetMonthParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMonth>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMonthQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetLinkableUrl = (id: string,
+    params?: GetLinkableParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/linkable?${stringifiedParams}` : `/v1/circles/${id}/linkable`
+}
+
+/**
+ * @summary What can be put on a page as a live block: the circle's things you may see, by kind and words
+ */
+export const getLinkable = async (id: string,
+    params?: GetLinkableParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageThingBrief> => {
+
+  return apiFetch<PageThingBrief>(getGetLinkableUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLinkableInfiniteQueryKey = (id: string,
+    params?: GetLinkableParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/linkable`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetLinkableQueryKey = (id: string,
+    params?: GetLinkableParams,) => {
+    return [
+    `/v1/circles/${id}/linkable`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetLinkableInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getLinkable>>, GetLinkableParams['cursor']>, TError = unknown>(id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData, QueryKey, GetLinkableParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLinkableInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLinkable>>, QueryKey, GetLinkableParams['cursor']> = ({ signal, pageParam }) => getLinkable(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData, QueryKey, GetLinkableParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLinkableInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getLinkable>>>
+export type GetLinkableInfiniteQueryError = unknown
+
+
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkableInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLinkable>>, GetLinkableParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetLinkableParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData, QueryKey, GetLinkableParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLinkable>>,
+          TError,
+          Awaited<ReturnType<typeof getLinkable>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkableInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLinkable>>, GetLinkableParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData, QueryKey, GetLinkableParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLinkable>>,
+          TError,
+          Awaited<ReturnType<typeof getLinkable>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkableInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLinkable>>, GetLinkableParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData, QueryKey, GetLinkableParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkableInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getLinkable>>, GetLinkableParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData, QueryKey, GetLinkableParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLinkableInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetLinkableQueryOptions = <TData = Awaited<ReturnType<typeof getLinkable>>, TError = unknown>(id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLinkableQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLinkable>>> = ({ signal }) => getLinkable(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLinkableQueryResult = NonNullable<Awaited<ReturnType<typeof getLinkable>>>
+export type GetLinkableQueryError = unknown
+
+
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkable<TData = Awaited<ReturnType<typeof getLinkable>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetLinkableParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLinkable>>,
+          TError,
+          Awaited<ReturnType<typeof getLinkable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkable<TData = Awaited<ReturnType<typeof getLinkable>>, TError = unknown>(
+ id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLinkable>>,
+          TError,
+          Awaited<ReturnType<typeof getLinkable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkable<TData = Awaited<ReturnType<typeof getLinkable>>, TError = unknown>(
+ id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What can be put on a page as a live block: the circle's things you may see, by kind and words */
+export function useGetLinkable<TData = Awaited<ReturnType<typeof getLinkable>>, TError = unknown>(
+ id: string,
+    params?: GetLinkableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLinkable>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLinkableQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWallUrl = (id: string,
+    params?: GetWallParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/library?${stringifiedParams}` : `/v1/circles/${id}/library`
+}
+
+/**
+ * @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to
+ */
+export const getWall = async (id: string,
+    params?: GetWallParams, options?: Parameters<typeof apiFetch>[1]): Promise<WallResponse> => {
+
+  return apiFetch<WallResponse>(getGetWallUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWallInfiniteQueryKey = (id: string,
+    params?: GetWallParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/library`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetWallQueryKey = (id: string,
+    params?: GetWallParams,) => {
+    return [
+    `/v1/circles/${id}/library`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWallInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getWall>>, GetWallParams['cursor']>, TError = unknown>(id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData, QueryKey, GetWallParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWallInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWall>>, QueryKey, GetWallParams['cursor']> = ({ signal, pageParam }) => getWall(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData, QueryKey, GetWallParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWallInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getWall>>>
+export type GetWallInfiniteQueryError = unknown
+
+
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWallInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getWall>>, GetWallParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetWallParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData, QueryKey, GetWallParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWall>>,
+          TError,
+          Awaited<ReturnType<typeof getWall>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWallInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getWall>>, GetWallParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData, QueryKey, GetWallParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWall>>,
+          TError,
+          Awaited<ReturnType<typeof getWall>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWallInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getWall>>, GetWallParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData, QueryKey, GetWallParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWallInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getWall>>, GetWallParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData, QueryKey, GetWallParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWallInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetWallQueryOptions = <TData = Awaited<ReturnType<typeof getWall>>, TError = unknown>(id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWallQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWall>>> = ({ signal }) => getWall(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWallQueryResult = NonNullable<Awaited<ReturnType<typeof getWall>>>
+export type GetWallQueryError = unknown
+
+
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWall<TData = Awaited<ReturnType<typeof getWall>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetWallParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWall>>,
+          TError,
+          Awaited<ReturnType<typeof getWall>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWall<TData = Awaited<ReturnType<typeof getWall>>, TError = unknown>(
+ id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWall>>,
+          TError,
+          Awaited<ReturnType<typeof getWall>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWall<TData = Awaited<ReturnType<typeof getWall>>, TError = unknown>(
+ id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The wall: every photo and video you may see, the newest taken first, with the moments they belong to */
+export function useGetWall<TData = Awaited<ReturnType<typeof getWall>>, TError = unknown>(
+ id: string,
+    params?: GetWallParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWall>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWallQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTimelineUrl = (id: string,
+    params?: GetTimelineParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/library/timeline?${stringifiedParams}` : `/v1/circles/${id}/library/timeline`
+}
+
+/**
+ * @summary The years and months of the wall with their counts, and one year's months with their newest pictures. Takes the wall's narrowing.
+ */
+export const getTimeline = async (id: string,
+    params?: GetTimelineParams, options?: Parameters<typeof apiFetch>[1]): Promise<TimelineResponse> => {
+
+  return apiFetch<TimelineResponse>(getGetTimelineUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTimelineQueryKey = (id: string,
+    params?: GetTimelineParams,) => {
+    return [
+    `/v1/circles/${id}/library/timeline`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTimelineQueryOptions = <TData = Awaited<ReturnType<typeof getTimeline>>, TError = unknown>(id: string,
+    params?: GetTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTimeline>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTimelineQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTimeline>>> = ({ signal }) => getTimeline(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTimeline>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetTimelineQueryResult = NonNullable<Awaited<ReturnType<typeof getTimeline>>>
+export type GetTimelineQueryError = unknown
+
+
+/** @summary The years and months of the wall with their counts, and one year's months with their newest pictures. Takes the wall's narrowing. */
+export function useGetTimeline<TData = Awaited<ReturnType<typeof getTimeline>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetTimelineParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTimeline>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTimeline>>,
+          TError,
+          Awaited<ReturnType<typeof getTimeline>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The years and months of the wall with their counts, and one year's months with their newest pictures. Takes the wall's narrowing. */
+export function useGetTimeline<TData = Awaited<ReturnType<typeof getTimeline>>, TError = unknown>(
+ id: string,
+    params?: GetTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTimeline>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTimeline>>,
+          TError,
+          Awaited<ReturnType<typeof getTimeline>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The years and months of the wall with their counts, and one year's months with their newest pictures. Takes the wall's narrowing. */
+export function useGetTimeline<TData = Awaited<ReturnType<typeof getTimeline>>, TError = unknown>(
+ id: string,
+    params?: GetTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTimeline>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The years and months of the wall with their counts, and one year's months with their newest pictures. Takes the wall's narrowing. */
+export function useGetTimeline<TData = Awaited<ReturnType<typeof getTimeline>>, TError = unknown>(
+ id: string,
+    params?: GetTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTimeline>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetTimelineQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPlacesUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/library/places`
+}
+
+/**
+ * @summary The places photos were taken at, each with its count and a cover. Five hundred at most.
+ */
+export const getPlaces = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<PlacesResponse> => {
+
+  return apiFetch<PlacesResponse>(getGetPlacesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlacesQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/library/places`
+    ] as const;
+    }
+
+
+export const getGetPlacesQueryOptions = <TData = Awaited<ReturnType<typeof getPlaces>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaces>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlacesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlaces>>> = ({ signal }) => getPlaces(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlaces>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlacesQueryResult = NonNullable<Awaited<ReturnType<typeof getPlaces>>>
+export type GetPlacesQueryError = unknown
+
+
+/** @summary The places photos were taken at, each with its count and a cover. Five hundred at most. */
+export function useGetPlaces<TData = Awaited<ReturnType<typeof getPlaces>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaces>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlaces>>,
+          TError,
+          Awaited<ReturnType<typeof getPlaces>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The places photos were taken at, each with its count and a cover. Five hundred at most. */
+export function useGetPlaces<TData = Awaited<ReturnType<typeof getPlaces>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaces>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlaces>>,
+          TError,
+          Awaited<ReturnType<typeof getPlaces>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The places photos were taken at, each with its count and a cover. Five hundred at most. */
+export function useGetPlaces<TData = Awaited<ReturnType<typeof getPlaces>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaces>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The places photos were taken at, each with its count and a cover. Five hundred at most. */
+export function useGetPlaces<TData = Awaited<ReturnType<typeof getPlaces>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaces>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPlacesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetLensesUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/library/lenses`
+}
+
+/**
+ * @summary What the chips above the wall lead to: how many albums, places and files, and the people who are in photos
+ */
+export const getLenses = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<LensesResponse> => {
+
+  return apiFetch<LensesResponse>(getGetLensesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLensesQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/library/lenses`
+    ] as const;
+    }
+
+
+export const getGetLensesQueryOptions = <TData = Awaited<ReturnType<typeof getLenses>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLenses>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLensesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLenses>>> = ({ signal }) => getLenses(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLenses>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLensesQueryResult = NonNullable<Awaited<ReturnType<typeof getLenses>>>
+export type GetLensesQueryError = unknown
+
+
+/** @summary What the chips above the wall lead to: how many albums, places and files, and the people who are in photos */
+export function useGetLenses<TData = Awaited<ReturnType<typeof getLenses>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLenses>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLenses>>,
+          TError,
+          Awaited<ReturnType<typeof getLenses>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the chips above the wall lead to: how many albums, places and files, and the people who are in photos */
+export function useGetLenses<TData = Awaited<ReturnType<typeof getLenses>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLenses>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLenses>>,
+          TError,
+          Awaited<ReturnType<typeof getLenses>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the chips above the wall lead to: how many albums, places and files, and the people who are in photos */
+export function useGetLenses<TData = Awaited<ReturnType<typeof getLenses>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLenses>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What the chips above the wall lead to: how many albums, places and files, and the people who are in photos */
+export function useGetLenses<TData = Awaited<ReturnType<typeof getLenses>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLenses>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLensesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGoalsUrl = (id: string,
+    params?: GetGoalsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/goals?${stringifiedParams}` : `/v1/circles/${id}/goals`
+}
+
+/**
+ * @summary The goals of a circle you can see, each with its ring and its line. A hundred at most.
+ */
+export const getGoals = async (id: string,
+    params?: GetGoalsParams, options?: Parameters<typeof apiFetch>[1]): Promise<GoalRowResponse[]> => {
+
+  return apiFetch<GoalRowResponse[]>(getGetGoalsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGoalsQueryKey = (id: string,
+    params?: GetGoalsParams,) => {
+    return [
+    `/v1/circles/${id}/goals`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGoalsQueryOptions = <TData = Awaited<ReturnType<typeof getGoals>>, TError = unknown>(id: string,
+    params?: GetGoalsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoals>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGoalsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoals>>> = ({ signal }) => getGoals(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGoals>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetGoalsQueryResult = NonNullable<Awaited<ReturnType<typeof getGoals>>>
+export type GetGoalsQueryError = unknown
+
+
+/** @summary The goals of a circle you can see, each with its ring and its line. A hundred at most. */
+export function useGetGoals<TData = Awaited<ReturnType<typeof getGoals>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetGoalsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoals>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoals>>,
+          TError,
+          Awaited<ReturnType<typeof getGoals>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The goals of a circle you can see, each with its ring and its line. A hundred at most. */
+export function useGetGoals<TData = Awaited<ReturnType<typeof getGoals>>, TError = unknown>(
+ id: string,
+    params?: GetGoalsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoals>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGoals>>,
+          TError,
+          Awaited<ReturnType<typeof getGoals>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The goals of a circle you can see, each with its ring and its line. A hundred at most. */
+export function useGetGoals<TData = Awaited<ReturnType<typeof getGoals>>, TError = unknown>(
+ id: string,
+    params?: GetGoalsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoals>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The goals of a circle you can see, each with its ring and its line. A hundred at most. */
+export function useGetGoals<TData = Awaited<ReturnType<typeof getGoals>>, TError = unknown>(
+ id: string,
+    params?: GetGoalsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGoals>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetGoalsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFilesUrl = (id: string,
+    params?: GetFilesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/files?${stringifiedParams}` : `/v1/circles/${id}/files`
+}
+
+/**
+ * @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder.
+ */
+export const getFiles = async (id: string,
+    params?: GetFilesParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageDocumentCard> => {
+
+  return apiFetch<PageDocumentCard>(getGetFilesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFilesInfiniteQueryKey = (id: string,
+    params?: GetFilesParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/files`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetFilesQueryKey = (id: string,
+    params?: GetFilesParams,) => {
+    return [
+    `/v1/circles/${id}/files`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFilesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getFiles>>, GetFilesParams['cursor']>, TError = unknown>(id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData, QueryKey, GetFilesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFilesInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFiles>>, QueryKey, GetFilesParams['cursor']> = ({ signal, pageParam }) => getFiles(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData, QueryKey, GetFilesParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFilesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getFiles>>>
+export type GetFilesInfiniteQueryError = unknown
+
+
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFilesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFiles>>, GetFilesParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetFilesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData, QueryKey, GetFilesParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFiles>>,
+          TError,
+          Awaited<ReturnType<typeof getFiles>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFilesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFiles>>, GetFilesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData, QueryKey, GetFilesParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFiles>>,
+          TError,
+          Awaited<ReturnType<typeof getFiles>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFilesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFiles>>, GetFilesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData, QueryKey, GetFilesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFilesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getFiles>>, GetFilesParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData, QueryKey, GetFilesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFilesInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetFilesQueryOptions = <TData = Awaited<ReturnType<typeof getFiles>>, TError = unknown>(id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFilesQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFiles>>> = ({ signal }) => getFiles(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFilesQueryResult = NonNullable<Awaited<ReturnType<typeof getFiles>>>
+export type GetFilesQueryError = unknown
+
+
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFiles<TData = Awaited<ReturnType<typeof getFiles>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetFilesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFiles>>,
+          TError,
+          Awaited<ReturnType<typeof getFiles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFiles<TData = Awaited<ReturnType<typeof getFiles>>, TError = unknown>(
+ id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFiles>>,
+          TError,
+          Awaited<ReturnType<typeof getFiles>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFiles<TData = Awaited<ReturnType<typeof getFiles>>, TError = unknown>(
+ id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder. */
+export function useGetFiles<TData = Awaited<ReturnType<typeof getFiles>>, TError = unknown>(
+ id: string,
+    params?: GetFilesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFiles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFilesQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFilesSummaryUrl = (id: string,) => {
+
+
+
+
+  return `/v1/circles/${id}/files/summary`
+}
+
+/**
+ * @summary What stands above the list of files: how many there are, of which kinds, and the folders
+ */
+export const getFilesSummary = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<FilesSummary> => {
+
+  return apiFetch<FilesSummary>(getGetFilesSummaryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFilesSummaryQueryKey = (id: string,) => {
+    return [
+    `/v1/circles/${id}/files/summary`
+    ] as const;
+    }
+
+
+export const getGetFilesSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getFilesSummary>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFilesSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFilesSummaryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFilesSummary>>> = ({ signal }) => getFilesSummary(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFilesSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFilesSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getFilesSummary>>>
+export type GetFilesSummaryQueryError = unknown
+
+
+/** @summary What stands above the list of files: how many there are, of which kinds, and the folders */
+export function useGetFilesSummary<TData = Awaited<ReturnType<typeof getFilesSummary>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFilesSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFilesSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getFilesSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What stands above the list of files: how many there are, of which kinds, and the folders */
+export function useGetFilesSummary<TData = Awaited<ReturnType<typeof getFilesSummary>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFilesSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFilesSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getFilesSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What stands above the list of files: how many there are, of which kinds, and the folders */
+export function useGetFilesSummary<TData = Awaited<ReturnType<typeof getFilesSummary>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFilesSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary What stands above the list of files: how many there are, of which kinds, and the folders */
+export function useGetFilesSummary<TData = Awaited<ReturnType<typeof getFilesSummary>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFilesSummary>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFilesSummaryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetChecklistsUrl = (id: string,
     params?: GetChecklistsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -5470,6 +22596,758 @@ export function useGetChecklists<TData = Awaited<ReturnType<typeof getChecklists
 
 
 
+export const getGetBoardsUrl = (id: string,
+    params?: GetBoardsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/boards?${stringifiedParams}` : `/v1/circles/${id}/boards`
+}
+
+/**
+ * @summary The boards in a circle you can see, last changed first. With a template, only its boards.
+ */
+export const getBoards = async (id: string,
+    params?: GetBoardsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageBoardCard> => {
+
+  return apiFetch<PageBoardCard>(getGetBoardsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBoardsInfiniteQueryKey = (id: string,
+    params?: GetBoardsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/boards`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetBoardsQueryKey = (id: string,
+    params?: GetBoardsParams,) => {
+    return [
+    `/v1/circles/${id}/boards`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBoardsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getBoards>>, GetBoardsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData, QueryKey, GetBoardsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBoardsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBoards>>, QueryKey, GetBoardsParams['cursor']> = ({ signal, pageParam }) => getBoards(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData, QueryKey, GetBoardsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBoardsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getBoards>>>
+export type GetBoardsInfiniteQueryError = unknown
+
+
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoardsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoards>>, GetBoardsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBoardsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData, QueryKey, GetBoardsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoards>>,
+          TError,
+          Awaited<ReturnType<typeof getBoards>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoardsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoards>>, GetBoardsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData, QueryKey, GetBoardsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoards>>,
+          TError,
+          Awaited<ReturnType<typeof getBoards>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoardsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoards>>, GetBoardsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData, QueryKey, GetBoardsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoardsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getBoards>>, GetBoardsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData, QueryKey, GetBoardsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBoardsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetBoardsQueryOptions = <TData = Awaited<ReturnType<typeof getBoards>>, TError = unknown>(id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBoardsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBoards>>> = ({ signal }) => getBoards(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBoardsQueryResult = NonNullable<Awaited<ReturnType<typeof getBoards>>>
+export type GetBoardsQueryError = unknown
+
+
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoards<TData = Awaited<ReturnType<typeof getBoards>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetBoardsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoards>>,
+          TError,
+          Awaited<ReturnType<typeof getBoards>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoards<TData = Awaited<ReturnType<typeof getBoards>>, TError = unknown>(
+ id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBoards>>,
+          TError,
+          Awaited<ReturnType<typeof getBoards>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoards<TData = Awaited<ReturnType<typeof getBoards>>, TError = unknown>(
+ id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The boards in a circle you can see, last changed first. With a template, only its boards. */
+export function useGetBoards<TData = Awaited<ReturnType<typeof getBoards>>, TError = unknown>(
+ id: string,
+    params?: GetBoardsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBoards>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBoardsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAlbumsUrl = (id: string,
+    params?: GetAlbumsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/circles/${id}/albums?${stringifiedParams}` : `/v1/circles/${id}/albums`
+}
+
+/**
+ * @summary The albums in a circle you can see, last changed first
+ */
+export const getAlbums = async (id: string,
+    params?: GetAlbumsParams, options?: Parameters<typeof apiFetch>[1]): Promise<PageAlbumResponse> => {
+
+  return apiFetch<PageAlbumResponse>(getGetAlbumsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAlbumsInfiniteQueryKey = (id: string,
+    params?: GetAlbumsParams,) => {
+    return [
+    'infinite', `/v1/circles/${id}/albums`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+export const getGetAlbumsQueryKey = (id: string,
+    params?: GetAlbumsParams,) => {
+    return [
+    `/v1/circles/${id}/albums`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAlbumsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getAlbums>>, GetAlbumsParams['cursor']>, TError = unknown>(id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData, QueryKey, GetAlbumsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAlbumsInfiniteQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAlbums>>, QueryKey, GetAlbumsParams['cursor']> = ({ signal, pageParam }) => getAlbums(id,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData, QueryKey, GetAlbumsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAlbumsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getAlbums>>>
+export type GetAlbumsInfiniteQueryError = unknown
+
+
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbumsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getAlbums>>, GetAlbumsParams['cursor']>, TError = unknown>(
+ id: string,
+    params: undefined |  GetAlbumsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData, QueryKey, GetAlbumsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlbums>>,
+          TError,
+          Awaited<ReturnType<typeof getAlbums>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbumsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getAlbums>>, GetAlbumsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData, QueryKey, GetAlbumsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlbums>>,
+          TError,
+          Awaited<ReturnType<typeof getAlbums>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbumsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getAlbums>>, GetAlbumsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData, QueryKey, GetAlbumsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbumsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getAlbums>>, GetAlbumsParams['cursor']>, TError = unknown>(
+ id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData, QueryKey, GetAlbumsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAlbumsInfiniteQueryOptions(id,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetAlbumsQueryOptions = <TData = Awaited<ReturnType<typeof getAlbums>>, TError = unknown>(id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAlbumsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAlbums>>> = ({ signal }) => getAlbums(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAlbumsQueryResult = NonNullable<Awaited<ReturnType<typeof getAlbums>>>
+export type GetAlbumsQueryError = unknown
+
+
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbums<TData = Awaited<ReturnType<typeof getAlbums>>, TError = unknown>(
+ id: string,
+    params: undefined |  GetAlbumsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlbums>>,
+          TError,
+          Awaited<ReturnType<typeof getAlbums>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbums<TData = Awaited<ReturnType<typeof getAlbums>>, TError = unknown>(
+ id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlbums>>,
+          TError,
+          Awaited<ReturnType<typeof getAlbums>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbums<TData = Awaited<ReturnType<typeof getAlbums>>, TError = unknown>(
+ id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary The albums in a circle you can see, last changed first */
+export function useGetAlbums<TData = Awaited<ReturnType<typeof getAlbums>>, TError = unknown>(
+ id: string,
+    params?: GetAlbumsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlbums>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAlbumsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRemoveVaultHelperUrl = (id: string,) => {
+
+
+
+
+  return `/v1/vault/helpers/${id}`
+}
+
+/**
+ * @summary Take a helper off your list. Their share is thrown away.
+ */
+export const removeVaultHelper = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveVaultHelperUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveVaultHelperMutationKey = () => ['removeVaultHelper'] as const;
+
+export const getRemoveVaultHelperMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeVaultHelper>>, TError,RemoveVaultHelperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeVaultHelper>>, TError,RemoveVaultHelperMutationVariables, TContext> => {
+
+const mutationKey = getRemoveVaultHelperMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeVaultHelper>>, RemoveVaultHelperMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeVaultHelper(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveVaultHelperMutationResult = NonNullable<Awaited<ReturnType<typeof removeVaultHelper>>>
+
+    export type RemoveVaultHelperMutationError = unknown
+    export type RemoveVaultHelperMutationVariables = {id: string}
+
+    /** @summary Take a helper off your list. Their share is thrown away. */
+export const useRemoveVaultHelper = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeVaultHelper>>, TError,RemoveVaultHelperMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeVaultHelper>>,
+        TError,
+        RemoveVaultHelperMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveVaultHelperMutationOptions(options), queryClient);
+    }
+
+export const getRemoveLibraryCommentUrl = (commentId: string,) => {
+
+
+
+
+  return `/v1/library/comments/${commentId}`
+}
+
+/**
+ * @summary Remove a comment: your own, or one under your photo. Removing one that is gone is fine.
+ */
+export const removeLibraryComment = async (commentId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveLibraryCommentUrl(commentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveLibraryCommentMutationKey = () => ['removeLibraryComment'] as const;
+
+export const getRemoveLibraryCommentMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeLibraryComment>>, TError,RemoveLibraryCommentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeLibraryComment>>, TError,RemoveLibraryCommentMutationVariables, TContext> => {
+
+const mutationKey = getRemoveLibraryCommentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeLibraryComment>>, RemoveLibraryCommentMutationVariables> = (props) => {
+          const {commentId} = props ?? {};
+
+          return  removeLibraryComment(commentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveLibraryCommentMutationResult = NonNullable<Awaited<ReturnType<typeof removeLibraryComment>>>
+
+    export type RemoveLibraryCommentMutationError = unknown
+    export type RemoveLibraryCommentMutationVariables = {commentId: string}
+
+    /** @summary Remove a comment: your own, or one under your photo. Removing one that is gone is fine. */
+export const useRemoveLibraryComment = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeLibraryComment>>, TError,RemoveLibraryCommentMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeLibraryComment>>,
+        TError,
+        RemoveLibraryCommentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveLibraryCommentMutationOptions(options), queryClient);
+    }
+
+export const getUndoJotUrl = (jotId: string,) => {
+
+
+
+
+  return `/v1/jots/${jotId}`
+}
+
+/**
+ * @summary Undo a jot: what it made is removed. For a code that was held back: forget it (after the phone kept it in the Vault, or because it isn't wanted). Undoing what is gone is fine.
+ */
+export const undoJot = async (jotId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getUndoJotUrl(jotId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUndoJotMutationKey = () => ['undoJot'] as const;
+
+export const getUndoJotMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoJot>>, TError,UndoJotMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoJot>>, TError,UndoJotMutationVariables, TContext> => {
+
+const mutationKey = getUndoJotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoJot>>, UndoJotMutationVariables> = (props) => {
+          const {jotId} = props ?? {};
+
+          return  undoJot(jotId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoJotMutationResult = NonNullable<Awaited<ReturnType<typeof undoJot>>>
+
+    export type UndoJotMutationError = unknown
+    export type UndoJotMutationVariables = {jotId: string}
+
+    /** @summary Undo a jot: what it made is removed. For a code that was held back: forget it (after the phone kept it in the Vault, or because it isn't wanted). Undoing what is gone is fine. */
+export const useUndoJot = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoJot>>, TError,UndoJotMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof undoJot>>,
+        TError,
+        UndoJotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUndoJotMutationOptions(options), queryClient);
+    }
+
+export const getRemoveGuestPassCardUrl = (id: string,
+    cardId: string,) => {
+
+
+
+
+  return `/v1/guest-passes/${id}/cards/${cardId}`
+}
+
+/**
+ * @summary Take a sealed card off a pass
+ */
+export const removeGuestPassCard = async (id: string,
+    cardId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveGuestPassCardUrl(id,cardId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveGuestPassCardMutationKey = () => ['removeGuestPassCard'] as const;
+
+export const getRemoveGuestPassCardMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeGuestPassCard>>, TError,RemoveGuestPassCardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeGuestPassCard>>, TError,RemoveGuestPassCardMutationVariables, TContext> => {
+
+const mutationKey = getRemoveGuestPassCardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeGuestPassCard>>, RemoveGuestPassCardMutationVariables> = (props) => {
+          const {id,cardId} = props ?? {};
+
+          return  removeGuestPassCard(id,cardId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveGuestPassCardMutationResult = NonNullable<Awaited<ReturnType<typeof removeGuestPassCard>>>
+
+    export type RemoveGuestPassCardMutationError = unknown
+    export type RemoveGuestPassCardMutationVariables = {id: string;cardId: string}
+
+    /** @summary Take a sealed card off a pass */
+export const useRemoveGuestPassCard = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeGuestPassCard>>, TError,RemoveGuestPassCardMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeGuestPassCard>>,
+        TError,
+        RemoveGuestPassCardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveGuestPassCardMutationOptions(options), queryClient);
+    }
+
+export const getRemoveGoalEntryUrl = (entryId: string,) => {
+
+
+
+
+  return `/v1/goal-entries/${entryId}`
+}
+
+/**
+ * @summary Take an entry back. Removing one that is gone is fine.
+ */
+export const removeGoalEntry = async (entryId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveGoalEntryUrl(entryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveGoalEntryMutationKey = () => ['removeGoalEntry'] as const;
+
+export const getRemoveGoalEntryMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeGoalEntry>>, TError,RemoveGoalEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeGoalEntry>>, TError,RemoveGoalEntryMutationVariables, TContext> => {
+
+const mutationKey = getRemoveGoalEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeGoalEntry>>, RemoveGoalEntryMutationVariables> = (props) => {
+          const {entryId} = props ?? {};
+
+          return  removeGoalEntry(entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveGoalEntryMutationResult = NonNullable<Awaited<ReturnType<typeof removeGoalEntry>>>
+
+    export type RemoveGoalEntryMutationError = unknown
+    export type RemoveGoalEntryMutationVariables = {entryId: string}
+
+    /** @summary Take an entry back. Removing one that is gone is fine. */
+export const useRemoveGoalEntry = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeGoalEntry>>, TError,RemoveGoalEntryMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeGoalEntry>>,
+        TError,
+        RemoveGoalEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveGoalEntryMutationOptions(options), queryClient);
+    }
+
 export const getClearDoneItemsUrl = (id: string,) => {
 
 
@@ -5479,7 +23357,7 @@ export const getClearDoneItemsUrl = (id: string,) => {
 }
 
 /**
- * @summary Clear the ticked lines of a list
+ * @summary Clear the ticked lines of a list. A line that repeats stays, to come back.
  */
 export const clearDoneItems = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<ChecklistResponse> => {
 
@@ -5530,7 +23408,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ClearDoneItemsMutationError = unknown
     export type ClearDoneItemsMutationVariables = {id: string}
 
-    /** @summary Clear the ticked lines of a list */
+    /** @summary Clear the ticked lines of a list. A line that repeats stays, to come back. */
 export const useClearDoneItems = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearDoneItems>>, TError,ClearDoneItemsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient): UseMutationResult<
@@ -5540,4 +23418,78 @@ export const useClearDoneItems = <TError = unknown,
         TContext
       > => {
       return useMutation(getClearDoneItemsMutationOptions(options), queryClient);
+    }
+
+export const getRemoveFromAlbumUrl = (id: string,
+    itemId: string,) => {
+
+
+
+
+  return `/v1/albums/${id}/items/${itemId}`
+}
+
+/**
+ * @summary Take one thing out of an album. The thing itself stays.
+ */
+export const removeFromAlbum = async (id: string,
+    itemId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRemoveFromAlbumUrl(id,itemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveFromAlbumMutationKey = () => ['removeFromAlbum'] as const;
+
+export const getRemoveFromAlbumMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFromAlbum>>, TError,RemoveFromAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFromAlbum>>, TError,RemoveFromAlbumMutationVariables, TContext> => {
+
+const mutationKey = getRemoveFromAlbumMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFromAlbum>>, RemoveFromAlbumMutationVariables> = (props) => {
+          const {id,itemId} = props ?? {};
+
+          return  removeFromAlbum(id,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveFromAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof removeFromAlbum>>>
+
+    export type RemoveFromAlbumMutationError = unknown
+    export type RemoveFromAlbumMutationVariables = {id: string;itemId: string}
+
+    /** @summary Take one thing out of an album. The thing itself stays. */
+export const useRemoveFromAlbum = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFromAlbum>>, TError,RemoveFromAlbumMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeFromAlbum>>,
+        TError,
+        RemoveFromAlbumMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveFromAlbumMutationOptions(options), queryClient);
     }
