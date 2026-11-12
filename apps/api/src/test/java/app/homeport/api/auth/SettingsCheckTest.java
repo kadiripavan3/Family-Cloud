@@ -34,6 +34,20 @@ class SettingsCheckTest {
     }
 
     @Test
+    void theLinkWithJourneyNeedsToKnowWhereJourneyIs() {
+        assertThatThrownBy(() -> SettingsCheck.check(firstDeploy().withProperty("homeport.journey.mode", "http")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("JOURNEY_API_URL")
+                .hasMessageContaining("HOMEPORT_JOURNEY_MODE=off");
+        assertThatCode(() -> SettingsCheck.check(firstDeploy()
+                        .withProperty("homeport.journey.mode", "http")
+                        .withProperty("homeport.journey.http.url", "https://api.journey.example")))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> SettingsCheck.check(firstDeploy().withProperty("homeport.journey.mode", "off")))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void everythingThatIsMissingIsNamedInOneList() {
         MockEnvironment nothingSet = new MockEnvironment()
                 .withProperty("homeport.auth.mode", "supabase")

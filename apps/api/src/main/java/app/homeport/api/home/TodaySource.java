@@ -52,8 +52,13 @@ public interface TodaySource {
      * own Today is mostly these.
      */
     record TodayCard(
+            @Schema(
+                    nullable = true,
+                    description =
+                            "Null for a card about something that isn't a thing here: someone's journey in Journey")
             UUID thingId,
-            ThingKind kind,
+
+            @Schema(nullable = true) ThingKind kind,
 
             @Schema(description = "A word the app can pick a look by: the template's code for a board, else the kind")
             String look,

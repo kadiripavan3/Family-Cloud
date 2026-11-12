@@ -320,6 +320,30 @@ public class LibraryStore {
     }
 
     /**
+     * The viewer's own photos and videos (the ones they own in this circle) taken between two moments, the
+     * oldest first: where the original of a picture that comes home from Journey is looked for.
+     */
+    public List<Item> ownTakenBetween(UUID circleId, UUID me, UUID mine, Instant from, Instant to, int limit) {
+        // The wall's index is by the clock where a photo was taken, which is never more than a day away from
+        // the moment itself: the wide range finds the rows, the exact one decides.
+        return jdbc.sql(ITEM + """
+             where i.circle_id = :circle and t.owner_id = :mine and i.kind in ('photo', 'video')
+               and i.taken_local between (cast(:from as timestamptz) at time zone 'UTC') - interval '1 day'
+                                     and (cast(:to as timestamptz) at time zone 'UTC') + interval '1 day'
+               and i.taken_at between cast(:from as timestamptz) and cast(:to as timestamptz)
+             order by i.taken_at, i.thing_id limit :limit
+            """)
+                .param("circle", circleId)
+                .param("me", me)
+                .param("mine", mine)
+                .param("from", Sql.timestamp(from))
+                .param("to", Sql.timestamp(to))
+                .param("limit", limit)
+                .query(LibraryStore::item)
+                .list();
+    }
+
+    /**
      * What stands next to one item in the wall's order under the same filter: a few taken after it (the nearest
      * first) or a few taken before it (the nearest first).
      */

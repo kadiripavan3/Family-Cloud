@@ -37,6 +37,9 @@
     "name" : "goals",
     "description" : "Goals: a target, a ring, and who put in what"
   }, {
+    "name" : "goodnights",
+    "description" : "Goodnight from far away: a clip for the circle, never part of a journey"
+  }, {
     "name" : "files",
     "description" : "Scans and documents, and what was read inside them"
   }, {
@@ -82,6 +85,12 @@
     "name" : "reminders",
     "description" : "Reminders: yours, the ones you gave to someone, and whose turn it is"
   }, {
+    "name" : "journey",
+    "description" : "With Journey: one account, keeping a journey, Journey at home"
+  }, {
+    "name" : "journey-drafts",
+    "description" : "Tell it as a journey: a draft from the Library, and the check before it leaves home"
+  }, {
     "name" : "me",
     "description" : "The signed-in person and their profile"
   }, {
@@ -96,6 +105,9 @@
   }, {
     "name" : "vault items",
     "description" : "Passwords, cards, IDs, Wi‑Fi, door codes and secrets, scrambled on the phone before they arrive"
+  }, {
+    "name" : "trips",
+    "description" : "A trip, start to finish: planned here, told in Journey, kept as a book"
   }, {
     "name" : "circles",
     "description" : "Circles and the people in them"
@@ -477,6 +489,106 @@
         "tags" : [ "vault emergency" ],
         "summary" : "Switch emergency access off. Nothing more opens to anyone.",
         "operationId" : "switchOffEmergency",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/trips/{id}" : {
+      "get" : {
+        "tags" : [ "trips" ],
+        "summary" : "A trip: its stage, what is filed in it, the journey it becomes or became, its book and what it cost. The id is its folder's.",
+        "operationId" : "getTrip",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TripResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "trips" ],
+        "summary" : "Give a folder its dates (it is a trip from then on), or change them. Only what you send changes.",
+        "operationId" : "saveTrip",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TripRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TripResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "trips" ],
+        "summary" : "The folder stops being a trip. The folder and everything in it stay.",
+        "operationId" : "removeTrip",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
         "responses" : {
           "204" : {
             "description" : "No Content"
@@ -1035,6 +1147,70 @@
         }
       }
     },
+    "/v1/journey/drafts/{id}/check" : {
+      "get" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "Before it leaves home: what a journey would show, what is left out and why, and what to look at twice",
+        "operationId" : "checkJourneyDraft",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LeavingCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "Turn a switch of \"Before it leaves home\", switch single photos back on, or choose what the journey starts as. Only what you send changes.",
+        "operationId" : "changeJourneyDraftCheck",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LeavingCheckRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LeavingCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/jots/{jotId}/move" : {
       "put" : {
         "tags" : [ "jot" ],
@@ -1118,6 +1294,77 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CircleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/goodnights/{id}/love" : {
+      "put" : {
+        "tags" : [ "goodnights" ],
+        "summary" : "Give a goodnight a heart",
+        "operationId" : "loveGoodnight",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "as",
+          "in" : "query",
+          "description" : "A child or someone else without a phone the heart is from. Left out: yourself.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoodnightResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "goodnights" ],
+        "summary" : "Take that heart back",
+        "operationId" : "unloveGoodnight",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "as",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoodnightResponse"
                 }
               }
             }
@@ -1247,6 +1494,163 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/journey/settings" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "Where home is (photos taken there stay home when a journey is told) and when bedtime is (a goodnight waits until then)",
+        "operationId" : "getHomeSettings",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HomeSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "journey" ],
+        "summary" : "Say where home is, or when bedtime is. Only what you send changes. For the people who run the circle.",
+        "operationId" : "changeHomeSettings",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HomeSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HomeSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/journey/entries/{entryId}/love" : {
+      "put" : {
+        "tags" : [ "journey" ],
+        "summary" : "Give a heart at home to the latest entry of someone who is away. It stays here: Journey is not told.",
+        "operationId" : "loveJourneyEntry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "entryId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "as",
+          "in" : "query",
+          "description" : "A child or someone else without a phone the heart is from. Left out: yourself.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AwayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "journey" ],
+        "summary" : "Take that heart back",
+        "operationId" : "unloveJourneyEntry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "entryId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "as",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AwayResponse"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1688,6 +2092,52 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/VaultEmergencyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/trips/{id}/journey" : {
+      "post" : {
+        "tags" : [ "trips" ],
+        "summary" : "The trip becomes a journey: Journey is told its title, its first day and who writes in it. A trip becomes a journey once.",
+        "operationId" : "startTripJourney",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TripJourneyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TripResponse"
                 }
               }
             }
@@ -2638,6 +3088,102 @@
         }
       }
     },
+    "/v1/journey/keeps" : {
+      "post" : {
+        "tags" : [ "journey" ],
+        "summary" : "Keep a journey, or bring home what was added to one you kept. Answers at once with a job; ask the job how far it is.",
+        "operationId" : "keepJourney",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/KeepJourneyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyJobResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/drafts" : {
+      "post" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "Draft a journey from a moment or an album: its photos sorted into days, a title, a first line for each day. Nothing is sent.",
+        "operationId" : "draftJourney",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewJourneyDraftRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyDraftResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/drafts/{id}/post" : {
+      "post" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "Create the journey: send what the check lets through to Journey. Answers at once with a job; ask the job how far it is.",
+        "operationId" : "postJourneyDraft",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PostJourneyDraftRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyJobResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/guest-passes/{id}/cards" : {
       "post" : {
         "tags" : [ "guest passes" ],
@@ -2669,6 +3215,35 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GuestPassResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/goodnights" : {
+      "post" : {
+        "tags" : [ "goodnights" ],
+        "summary" : "Send a goodnight to a circle, or one back in answer. It is shared with the circle and never goes to Journey.",
+        "operationId" : "sendGoodnight",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewGoodnightRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoodnightResponse"
                 }
               }
             }
@@ -4716,6 +5291,89 @@
         }
       }
     },
+    "/v1/journey/drafts/{id}" : {
+      "get" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "A draft of a journey. It is its writer's alone.",
+        "operationId" : "getJourneyDraft",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyDraftResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "Throw a draft away. Nothing of it ever left.",
+        "operationId" : "deleteJourneyDraft",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "journey-drafts" ],
+        "summary" : "Change a draft: its title, a day's first line, which day a photo is in, what is dropped",
+        "operationId" : "changeJourneyDraft",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JourneyDraftChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyDraftResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/goals/{id}" : {
       "get" : {
         "tags" : [ "goals" ],
@@ -6081,6 +6739,221 @@
         }
       }
     },
+    "/v1/journey/me" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "What the switch between the two apps shows: whether you have a Journey profile, its name, picture and counts",
+        "operationId" : "getJourneySwitch",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppSwitchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/kept/{id}" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "One kept journey: its numbers, its book and its album",
+        "operationId" : "getKeptJourney",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KeptResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "journey" ],
+        "summary" : "Forget that a journey was kept. Its page, album and photos stay; each is deleted like any other thing.",
+        "operationId" : "stopKeepingJourney",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/journey/journeys" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "Your own journeys in Journey, active and completed, newest first",
+        "operationId" : "getMyJourneys",
+        "parameters" : [ {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageJourneyBrief"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/journeys/{journeyId}/keep-options" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "What \"Keep this journey\" shows: the journey, how many of its photos are in your Library already, where it would be kept",
+        "operationId" : "getKeepOptions",
+        "parameters" : [ {
+          "name" : "journeyId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "circleId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KeepOptions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/jobs/{id}" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "How far keeping a journey, or sending a draft, has got",
+        "operationId" : "getJourneyJob",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyJobResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/circles" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "For Journey: the circles you are in and who is in them. Nothing of what a circle keeps. As many as you are in.",
+        "operationId" : "getCirclesForJourney",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CircleForJourney"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/journey/books/{id}" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "A kept journey laid out as a book: its numbers, then each day with its words and photos, read from its page as it stands. The id is the page's.",
+        "operationId" : "getJourneyBook",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneyBookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/guest-passes/{id}" : {
       "get" : {
         "tags" : [ "guest passes" ],
@@ -6124,6 +6997,34 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/goodnights/{id}" : {
+      "get" : {
+        "tags" : [ "goodnights" ],
+        "summary" : "One goodnight: the clip, who sent it from where, who loved it",
+        "operationId" : "getGoodnight",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoodnightResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6333,6 +7234,46 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/VaultKeysResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/trips" : {
+      "get" : {
+        "tags" : [ "trips" ],
+        "summary" : "The trips of a circle that you may see: the folders that were given dates. Fifty at most.",
+        "operationId" : "getTrips",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TripBrief"
+                  }
                 }
               }
             }
@@ -7208,6 +8149,160 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/LensesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/journey/routes" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "The routes of the kept journeys you may see, for the Places map. Fifty journeys at most.",
+        "operationId" : "getJourneyRoutes",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/JourneyRouteResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/journey/kept" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "The journeys kept in a circle that you may see, the last kept first",
+        "operationId" : "getKeptJourneys",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageKeptResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/journey/at-home" : {
+      "get" : {
+        "tags" : [ "journey" ],
+        "summary" : "Who of the circle is away on a journey you may see, a day from a kept journey of an earlier year, and the goodnights that wait for bedtime",
+        "operationId" : "getJourneyAtHome",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AtHomeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/goodnights" : {
+      "get" : {
+        "tags" : [ "goodnights" ],
+        "summary" : "The goodnights of a circle that you may see, the newest first",
+        "operationId" : "getGoodnights",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageGoodnightResponse"
                 }
               }
             }
@@ -8426,6 +9521,586 @@
         },
         "required" : [ "askedAt", "items", "noteMine", "openedAt", "opensAt", "refusedAt", "state", "trusted", "waitHours" ]
       },
+      "TripRequest" : {
+        "type" : "object",
+        "properties" : {
+          "startsOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Its first day. Needed the first time."
+          },
+          "endsOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Its last day. Needed the first time."
+          },
+          "budgetSheetId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The sheet that is its budget. Left out: the first sheet filed in it."
+          }
+        }
+      },
+      "AudienceChip" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "For some people: who, besides its owner",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "description" : "The first names of people it is hidden from today",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "BroughtHome" : {
+        "type" : "object",
+        "properties" : {
+          "matched" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many photos and clips were in your Library already"
+          },
+          "brought" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many were brought in from Journey, at the size Journey has"
+          },
+          "leftInJourney" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many Journey couldn't hand over"
+          }
+        }
+      },
+      "Did" : {
+        "type" : "string",
+        "enum" : [ "added", "ticked" ]
+      },
+      "JourneyBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/JourneyStatus"
+          },
+          "visibility" : {
+            "$ref" : "#/components/schemas/JourneyVisibility"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "lastDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The day of its last entry"
+          },
+          "targetDays" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a challenge: how many days it runs"
+          },
+          "latestNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The day or part number of its latest entry; 0 before the first"
+          },
+          "progressLabel" : {
+            "type" : "string",
+            "description" : "Ready to show: Day 6 of 9, Day 14, Part 5"
+          },
+          "days" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "From its first day to its last entry, counting both"
+          },
+          "entries" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "photos" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Null where Journey doesn't count them in a list"
+          },
+          "clips" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "places" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "followers" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "owner" : {
+            "$ref" : "#/components/schemas/JourneyPerson"
+          },
+          "authors" : {
+            "type" : "array",
+            "description" : "Everyone who writes in it, the owner first",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyPerson"
+            }
+          },
+          "mine" : {
+            "type" : "boolean",
+            "description" : "True when the person asking writes in it"
+          },
+          "closingNote" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastEntryAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "openUrl" : {
+            "type" : "string",
+            "description" : "Opens it in the Journey app"
+          }
+        }
+      },
+      "JourneyPerson" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "JourneyStats" : {
+        "type" : "object",
+        "properties" : {
+          "days" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "entries" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "clips" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "places" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "followers" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "JourneyStatus" : {
+        "type" : "string",
+        "enum" : [ "active", "paused", "completed" ]
+      },
+      "JourneyVisibility" : {
+        "type" : "string",
+        "enum" : [ "public", "unlisted", "private" ]
+      },
+      "KeptResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "journeyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "byline" : {
+            "type" : "string",
+            "description" : "Who told it: Nora and Alex"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "pageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Its book: a page in Notes. Null when you can't see it, or none was kept."
+          },
+          "albumId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Its album in the Library. Null when you can't see it, or none was kept."
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/JourneyStatus"
+          },
+          "visibility" : {
+            "$ref" : "#/components/schemas/JourneyVisibility"
+          },
+          "stats" : {
+            "$ref" : "#/components/schemas/JourneyStats",
+            "description" : "Journey's own numbers, as they stood when it was last asked"
+          },
+          "originals" : {
+            "$ref" : "#/components/schemas/BroughtHome"
+          },
+          "startsOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "endsOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "keptAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "syncedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "openUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "keptBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean",
+            "description" : "True when you kept it: you can bring what is new, or stop keeping it"
+          }
+        },
+        "required" : [ "albumId", "byline", "circleId", "coverUrl", "endsOn", "id", "journeyId", "keptAt", "keptBy", "mine", "openUrl", "originals", "pageId", "startsOn", "stats", "status", "syncedAt", "title", "visibility" ]
+      },
+      "ListHand" : {
+        "type" : "object",
+        "properties" : {
+          "who" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "did" : {
+            "$ref" : "#/components/schemas/Did"
+          },
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "NoteItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done, €12,400"
+          },
+          "editedBy" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PersonBrief",
+            "description" : "For a page or a list: who changed it last"
+          },
+          "editedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "left" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a list: how many lines are left, of those you may see"
+          },
+          "done" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a list: how many lines are ticked"
+          },
+          "here" : {
+            "type" : "array",
+            "description" : "For a list: who else is in it right now",
+            "items" : {
+              "$ref" : "#/components/schemas/ListHand"
+            }
+          },
+          "folders" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a folder: how many folders are inside it that you may see"
+          },
+          "pages" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a folder: how many pages and lists are inside it that you may see"
+          },
+          "pinned" : {
+            "type" : "boolean",
+            "description" : "True when you pinned it"
+          }
+        }
+      },
+      "PersonBrief" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "Place" : {
+        "type" : "string",
+        "enum" : [ "plan", "notes", "library", "money", "vault" ]
+      },
+      "ThingKind" : {
+        "type" : "string",
+        "enum" : [ "page", "checklist", "photo", "video", "document", "album", "folder", "board", "vault_item", "event", "reminder", "goal", "bill", "sheet", "split", "goodnight" ]
+      },
+      "TripBecomes" : {
+        "type" : "object",
+        "properties" : {
+          "on" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it becomes a journey: its first day"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "What is set up: the title"
+          },
+          "coAuthors" : {
+            "type" : "array",
+            "description" : "The other adults of the circle: they would write in it too",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "route" : {
+            "type" : "array",
+            "description" : "The places the plan names, in the order its pages name them. They stay here: Journey is told the title and the dates.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "canBecome" : {
+            "type" : "boolean",
+            "description" : "True when you can make it a journey now"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why not, when you can't: a sentence"
+          }
+        }
+      },
+      "TripJourney" : {
+        "type" : "object",
+        "properties" : {
+          "journeyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "openUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "journey" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/JourneyBrief",
+            "description" : "How it stands in Journey now, when Journey could be asked and lets you see it"
+          }
+        }
+      },
+      "TripMoney" : {
+        "type" : "object",
+        "properties" : {
+          "sheetId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "plannedCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What the budget planned, in cents"
+          },
+          "paidCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "What was paid, in cents"
+          },
+          "currency" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TripResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "space" : {
+            "type" : [ "string", "null" ],
+            "description" : "The space it is in: Trips"
+          },
+          "startsOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endsOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "stage" : {
+            "$ref" : "#/components/schemas/TripStage",
+            "description" : "Where it stands on the day asked about: plan, go or keep"
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "What is filed in it that you may see, in its order. Fifty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/NoteItem"
+            }
+          },
+          "becomes" : {
+            "description" : "While it hasn't become a journey: what would be set up",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TripBecomes"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "journey" : {
+            "description" : "The journey it became",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TripJourney"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "book" : {
+            "description" : "The journey, kept as a book, when you may see it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/KeptResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "money" : {
+            "description" : "Its budget's totals, when it has a sheet you may see",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TripMoney"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "becomes", "book", "canEdit", "chip", "circleId", "emoji", "endsOn", "id", "items", "journey", "mine", "money", "space", "stage", "startsOn", "title" ]
+      },
+      "TripStage" : {
+        "type" : "string",
+        "enum" : [ "plan", "go", "keep" ]
+      },
       "FilingRequest" : {
         "type" : "object",
         "properties" : {
@@ -8601,14 +10276,6 @@
         "type" : "string",
         "enum" : [ "family", "couple", "flat", "crew", "solo" ]
       },
-      "Place" : {
-        "type" : "string",
-        "enum" : [ "plan", "notes", "library", "money", "vault" ]
-      },
-      "ThingKind" : {
-        "type" : "string",
-        "enum" : [ "page", "checklist", "photo", "video", "document", "album", "folder", "board", "vault_item", "event", "reminder", "goal", "bill", "sheet", "split" ]
-      },
       "AboutRequest" : {
         "type" : "object",
         "properties" : {
@@ -8621,28 +10288,6 @@
           }
         },
         "required" : [ "memberIds" ]
-      },
-      "AudienceChip" : {
-        "type" : "object",
-        "properties" : {
-          "audience" : {
-            "$ref" : "#/components/schemas/Audience"
-          },
-          "people" : {
-            "type" : "array",
-            "description" : "For some people: who, besides its owner",
-            "items" : {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }
-          },
-          "hiddenFrom" : {
-            "type" : "array",
-            "description" : "The first names of people it is hidden from today",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }
       },
       "ExpenseResponse" : {
         "type" : "object",
@@ -8752,21 +10397,6 @@
           }
         },
         "required" : [ "amountCents", "createdAt", "from", "id", "paidOn", "to" ]
-      },
-      "PersonBrief" : {
-        "type" : "object",
-        "properties" : {
-          "memberId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "avatarUrl" : {
-            "type" : [ "string", "null" ]
-          }
-        }
       },
       "ShareMode" : {
         "type" : "string",
@@ -9382,6 +11012,210 @@
         },
         "required" : [ "authorizationCode" ]
       },
+      "LeavingCheckRequest" : {
+        "type" : "object",
+        "properties" : {
+          "leaveOutChildren" : {
+            "type" : "boolean",
+            "description" : "Leave out photos and videos that are about a child"
+          },
+          "townOnly" : {
+            "type" : "boolean",
+            "description" : "Show the town, not the spot"
+          },
+          "skipHome" : {
+            "type" : "boolean",
+            "description" : "Skip what was taken at home"
+          },
+          "visibility" : {
+            "$ref" : "#/components/schemas/JourneyVisibility",
+            "description" : "What the journey starts as in Journey: private, unlisted or public"
+          },
+          "backOn" : {
+            "type" : "array",
+            "description" : "Things to send after all, although a rule left them out",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          },
+          "backOff" : {
+            "type" : "array",
+            "description" : "Things to leave to the rules again",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        }
+      },
+      "ChildrenSwitch" : {
+        "type" : "object",
+        "properties" : {
+          "on" : {
+            "type" : "boolean"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many photos and videos in the draft are about a child"
+          },
+          "of" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Out of how many in the draft"
+          },
+          "names" : {
+            "type" : "array",
+            "description" : "The children they are about: Mia, Leo",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "HomeSwitch" : {
+        "type" : "object",
+        "properties" : {
+          "on" : {
+            "type" : "boolean"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many were taken at home"
+          },
+          "homeKnown" : {
+            "type" : "boolean",
+            "description" : "False when the circle hasn't said where home is: nothing can be recognised as taken there"
+          }
+        }
+      },
+      "LeavingCheckItem" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "goes" : {
+            "type" : "boolean"
+          },
+          "leftOut" : {
+            "type" : "array",
+            "description" : "Why it stays home: child, home, dropped, not_a_photo, too_long",
+            "items" : {
+              "$ref" : "#/components/schemas/LeftOut"
+            }
+          },
+          "flags" : {
+            "type" : "array",
+            "description" : "What to look at twice: only_you, hidden, someone_elses",
+            "items" : {
+              "$ref" : "#/components/schemas/LeavingFlag"
+            }
+          },
+          "backOn" : {
+            "type" : "boolean",
+            "description" : "True when you switched this one back on"
+          }
+        }
+      },
+      "LeavingCheckResponse" : {
+        "type" : "object",
+        "properties" : {
+          "draftId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "children" : {
+            "$ref" : "#/components/schemas/ChildrenSwitch"
+          },
+          "town" : {
+            "$ref" : "#/components/schemas/TownSwitch"
+          },
+          "home" : {
+            "$ref" : "#/components/schemas/HomeSwitch"
+          },
+          "onlyPhotosAndVideos" : {
+            "type" : "boolean",
+            "description" : "Files, bills and the Vault never go to Journey. This switch can't be turned."
+          },
+          "tooLong" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Videos longer than Journey takes (60 seconds): they stay"
+          },
+          "flags" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LeavingFlagCount"
+            }
+          },
+          "visibility" : {
+            "$ref" : "#/components/schemas/JourneyVisibility"
+          },
+          "photosGoing" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many photos would go"
+          },
+          "clipsGoing" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LeavingCheckItem"
+            }
+          }
+        },
+        "required" : [ "children", "clipsGoing", "draftId", "flags", "home", "items", "onlyPhotosAndVideos", "photosGoing", "tooLong", "town", "visibility" ]
+      },
+      "LeavingFlag" : {
+        "type" : "string",
+        "enum" : [ "only_you", "hidden", "someone_elses" ]
+      },
+      "LeavingFlagCount" : {
+        "type" : "object",
+        "properties" : {
+          "flag" : {
+            "$ref" : "#/components/schemas/LeavingFlag"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "LeftOut" : {
+        "type" : "string",
+        "enum" : [ "child", "home", "dropped", "not_a_photo", "too_long" ]
+      },
+      "TownSwitch" : {
+        "type" : "object",
+        "properties" : {
+          "on" : {
+            "type" : "boolean"
+          },
+          "shows" : {
+            "type" : [ "string", "null" ],
+            "description" : "The name a day would carry: Lake Bled"
+          }
+        }
+      },
       "MoveRequest" : {
         "type" : "object",
         "properties" : {
@@ -9471,6 +11305,153 @@
       "JotSource" : {
         "type" : "string",
         "enum" : [ "app", "widget", "notification", "voice", "share", "lock_screen" ]
+      },
+      "GoodnightResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleName" : {
+            "type" : "string",
+            "description" : "The circle it is for, by name: Only for The Linds"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "from" : {
+            "description" : "Who sent it. Null when they have left the circle.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "clip" : {
+            "$ref" : "#/components/schemas/MediaResponse",
+            "description" : "The clip: fileUrl plays it, durationSeconds is its length"
+          },
+          "posterUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "A still to show before it plays"
+          },
+          "recordedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "recordedLocal" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The clock where it was recorded: 19:10 in Reine"
+          },
+          "place" : {
+            "type" : [ "string", "null" ]
+          },
+          "dayLabel" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where the sender's journey stood: Day 6"
+          },
+          "forDay" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day at home it is meant for"
+          },
+          "showFrom" : {
+            "type" : "string",
+            "description" : "From when it is shown at home on that day: the circle's bedtime",
+            "example" : "20:00"
+          },
+          "replyTo" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The goodnight this one answers"
+          },
+          "replies" : {
+            "type" : "array",
+            "description" : "The goodnights sent back to this one that you may see, oldest first",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "lovedBy" : {
+            "type" : "array",
+            "description" : "Who gave it a heart",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "loved" : {
+            "type" : "boolean",
+            "description" : "True when you gave it a heart"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "circleName", "clip", "dayLabel", "forDay", "from", "id", "loved", "lovedBy", "mine", "place", "posterUrl", "recordedAt", "recordedLocal", "replies", "replyTo", "showFrom", "title" ]
+      },
+      "MediaKind" : {
+        "type" : "string",
+        "enum" : [ "photo", "video", "file", "audio" ]
+      },
+      "MediaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MediaKind"
+          },
+          "url" : {
+            "type" : "string",
+            "description" : "A picture: the photo itself, or null for a file with no picture"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The same picture, small, for lists and grids"
+          },
+          "fileUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a video, a document or a recording: the file itself"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "width" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "height" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "durationSeconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "bytes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "bytes", "contentType", "durationSeconds", "fileName", "fileUrl", "height", "id", "kind", "thumbUrl", "url", "width" ]
       },
       "Answer" : {
         "type" : "string",
@@ -9718,6 +11699,136 @@
         },
         "required" : [ "id", "title" ]
       },
+      "HomeSettingsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "homeLat" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "homeLng" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
+          },
+          "removeHome" : {
+            "type" : "boolean",
+            "description" : "True to forget where home is"
+          },
+          "homeRadiusM" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 5000,
+            "minimum" : 25
+          },
+          "bedtime" : {
+            "type" : "string",
+            "description" : "When a goodnight is shown at home",
+            "example" : "20:00"
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "The clock home keeps, as the phone names it: Europe/Ljubljana",
+            "maxLength" : 64,
+            "minLength" : 0
+          }
+        }
+      },
+      "HomeSettingsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "homeLat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "description" : "Where home is. Null until someone says."
+          },
+          "homeLng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "homeRadiusM" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How far around that point still counts as home, in metres"
+          },
+          "bedtime" : {
+            "type" : "string",
+            "description" : "When a goodnight is shown at home: 20:00 unless someone changes it",
+            "example" : "20:00"
+          },
+          "timeZone" : {
+            "type" : [ "string", "null" ],
+            "description" : "The clock home keeps, such as Europe/Ljubljana. Null until someone says."
+          },
+          "canChange" : {
+            "type" : "boolean",
+            "description" : "True when you may change these: you run the circle"
+          }
+        },
+        "required" : [ "bedtime", "canChange", "circleId", "homeLat", "homeLng", "homeRadiusM", "timeZone" ]
+      },
+      "AwayEntry" : {
+        "type" : "object",
+        "properties" : {
+          "entryId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "Day 6"
+          },
+          "place" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Its title, or how its words begin"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "lovedBy" : {
+            "type" : "array",
+            "description" : "Who at home gave it a heart",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "loved" : {
+            "type" : "boolean",
+            "description" : "True when you did"
+          }
+        }
+      },
+      "AwayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "who" : {
+            "$ref" : "#/components/schemas/PersonBrief",
+            "description" : "Who is away: someone of this circle"
+          },
+          "journey" : {
+            "$ref" : "#/components/schemas/JourneyBrief"
+          },
+          "newCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many entries are new to you"
+          },
+          "latest" : {
+            "$ref" : "#/components/schemas/AwayEntry"
+          }
+        },
+        "required" : [ "journey", "latest", "newCount", "who" ]
+      },
       "CodesGo" : {
         "type" : "string",
         "enum" : [ "ask", "vault", "note" ]
@@ -9923,10 +12034,6 @@
         },
         "required" : [ "aisles", "breadcrumb", "canEdit", "chip", "circleId", "currency", "done", "editedAt", "editedBy", "emoji", "folderId", "here", "id", "items", "left", "mine", "pinned", "sections", "showTicked", "suggestions", "sumCents", "sumDoneCents", "title", "updatedAt", "version" ]
       },
-      "Did" : {
-        "type" : "string",
-        "enum" : [ "added", "ticked" ]
-      },
       "ItemResponse" : {
         "type" : "object",
         "properties" : {
@@ -10003,21 +12110,6 @@
           }
         },
         "required" : [ "addedAt", "addedBy", "amountCents", "assignedTo", "done", "doneAt", "doneBy", "hiddenFrom", "id", "note", "repeats", "section", "text" ]
-      },
-      "ListHand" : {
-        "type" : "object",
-        "properties" : {
-          "who" : {
-            "$ref" : "#/components/schemas/PersonBrief"
-          },
-          "did" : {
-            "$ref" : "#/components/schemas/Did"
-          },
-          "at" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        }
       },
       "ListSection" : {
         "type" : "object",
@@ -10691,6 +12783,20 @@
           }
         },
         "required" : [ "askedAt", "id", "items", "note", "openedAt", "opensAt", "owner", "refusedAt", "state", "waitHours" ]
+      },
+      "TripJourneyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "visibility" : {
+            "$ref" : "#/components/schemas/JourneyVisibility",
+            "description" : "What the journey starts as in Journey. Left out: private."
+          }
+        },
+        "required" : [ "clientId" ]
       },
       "NewSplitRequest" : {
         "type" : "object",
@@ -11551,57 +13657,6 @@
           }
         },
         "required" : [ "clientId", "mediaId" ]
-      },
-      "MediaKind" : {
-        "type" : "string",
-        "enum" : [ "photo", "video", "file", "audio" ]
-      },
-      "MediaResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "kind" : {
-            "$ref" : "#/components/schemas/MediaKind"
-          },
-          "url" : {
-            "type" : "string",
-            "description" : "A picture: the photo itself, or null for a file with no picture"
-          },
-          "thumbUrl" : {
-            "type" : [ "string", "null" ],
-            "description" : "The same picture, small, for lists and grids"
-          },
-          "fileUrl" : {
-            "type" : [ "string", "null" ],
-            "description" : "For a video, a document or a recording: the file itself"
-          },
-          "fileName" : {
-            "type" : [ "string", "null" ]
-          },
-          "contentType" : {
-            "type" : "string"
-          },
-          "width" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "height" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "durationSeconds" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "bytes" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          }
-        },
-        "required" : [ "bytes", "contentType", "durationSeconds", "fileName", "fileUrl", "height", "id", "kind", "thumbUrl", "url", "width" ]
       },
       "RowCardResponse" : {
         "type" : "object",
@@ -12718,6 +14773,282 @@
           }
         }
       },
+      "KeepJourneyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "journeyId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "book" : {
+            "type" : "boolean",
+            "description" : "The story, as a book: one page in Notes. Left out: yes."
+          },
+          "originals" : {
+            "type" : "boolean",
+            "description" : "The originals: its photos and clips in the Library, in an album. Left out: yes."
+          },
+          "route" : {
+            "type" : "boolean",
+            "description" : "The route: where each entry was, on what is kept. Left out: yes."
+          },
+          "words" : {
+            "type" : "boolean",
+            "description" : "Comments and likes, kept with each day. Left out: no."
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder to file the book in. Left out: not filed."
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Who can see it. Left out: everyone in the circle, or what the circle starts things as for a private journey."
+          },
+          "tripId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "A trip (its folder) this journey belongs to: the trip then shows the book"
+          }
+        },
+        "required" : [ "circleId", "clientId", "journeyId" ]
+      },
+      "JourneyJobKind" : {
+        "type" : "string",
+        "enum" : [ "keep", "post" ]
+      },
+      "JourneyJobResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/JourneyJobKind"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/JourneyJobStatus"
+          },
+          "step" : {
+            "type" : "string",
+            "description" : "What it is doing, in a few words: Bringing photos home"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "problem" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a job that failed: why, in a sentence"
+          },
+          "subjectId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "What it is about: the kept journey, or the draft"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "done", "id", "kind", "problem", "status", "step", "subjectId", "total", "updatedAt" ]
+      },
+      "JourneyJobStatus" : {
+        "type" : "string",
+        "enum" : [ "waiting", "running", "done", "failed" ]
+      },
+      "NewJourneyDraftRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "momentOf" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "A photo or video: its moment, and the days next to it that have photos too, become the draft"
+          },
+          "albumId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Or an album: its photos and videos become the draft"
+          }
+        },
+        "required" : [ "circleId", "clientId" ]
+      },
+      "JourneyDraftDay" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Its place among the days that have something: 1, 2, 3"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The day's first line. Change it as you like."
+          },
+          "place" : {
+            "type" : [ "string", "null" ]
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many photos are in the day, not counting dropped ones"
+          },
+          "clips" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyDraftItem"
+            }
+          }
+        }
+      },
+      "JourneyDraftItem" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "durationSeconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "dropped" : {
+            "type" : "boolean",
+            "description" : "True when you took it out of the draft"
+          }
+        }
+      },
+      "JourneyDraftResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "from" : {
+            "$ref" : "#/components/schemas/JourneyDraftSource"
+          },
+          "days" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyDraftDay"
+            }
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "clips" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/JourneyDraftStatus"
+          },
+          "visibility" : {
+            "$ref" : "#/components/schemas/JourneyVisibility"
+          },
+          "journeyId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Once it has been sent: the journey it became"
+          },
+          "openUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "Opens that journey in the Journey app"
+          },
+          "job" : {
+            "description" : "How sending it is going, once that was asked for",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/JourneyJobResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "circleId", "clips", "days", "from", "id", "job", "journeyId", "openUrl", "photos", "status", "title", "updatedAt", "visibility" ]
+      },
+      "JourneyDraftSource" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "description" : "moment or album"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Saturday at the lake"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "daysAround" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "For a moment: how many days next to it joined the draft"
+          }
+        }
+      },
+      "JourneyDraftStatus" : {
+        "type" : "string",
+        "enum" : [ "draft", "posting", "posted", "failed" ]
+      },
+      "PostJourneyDraftRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "clientId" ]
+      },
       "NewGuestPassCardRequest" : {
         "type" : "object",
         "properties" : {
@@ -12851,6 +15182,66 @@
           }
         },
         "required" : [ "id", "kind", "title" ]
+      },
+      "NewGoodnightRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "mediaId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The clip: an upload of kind video"
+          },
+          "posterMediaId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "A still to show before it plays: an upload of kind photo"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "recordedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it was recorded, with the offset of the clock there: 2026-11-11T19:10:00+01:00"
+          },
+          "forDay" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day at home it is meant for. Left out: the day it was recorded."
+          },
+          "place" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "dayLabel" : {
+            "type" : "string",
+            "description" : "Where the sender's journey stands: Day 6",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "journeyId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The journey the sender is on, as Journey names it"
+          },
+          "replyTo" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The goodnight this one answers, when it is one sent back"
+          }
+        },
+        "required" : [ "circleId", "clientId", "mediaId" ]
       },
       "GoalSource" : {
         "type" : "string",
@@ -15206,6 +17597,83 @@
           }
         }
       },
+      "JourneyDraftChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 1
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "New first lines for days of the draft",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyDraftDayRequest"
+            },
+            "maxItems" : 400,
+            "minItems" : 0
+          },
+          "move" : {
+            "type" : "array",
+            "description" : "Photos to put on another day",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyDraftMoveRequest"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          },
+          "drop" : {
+            "type" : "array",
+            "description" : "Photos to take out of the draft",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          },
+          "restore" : {
+            "type" : "array",
+            "description" : "Dropped photos to put back",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        }
+      },
+      "JourneyDraftDayRequest" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "line" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "day" ]
+      },
+      "JourneyDraftMoveRequest" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "day", "itemId" ]
+      },
       "GoalChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -16408,6 +18876,297 @@
         },
         "required" : [ "items", "nextCursor" ]
       },
+      "AppSwitchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "mode" : {
+            "$ref" : "#/components/schemas/JourneyMode"
+          },
+          "available" : {
+            "type" : "boolean",
+            "description" : "False when this app runs without Journey: show nothing of it"
+          },
+          "signedInAs" : {
+            "type" : "string",
+            "description" : "The name you are signed in with, in both apps"
+          },
+          "journey" : {
+            "description" : "Your Journey profile. Null when you have none yet, or Journey couldn't be asked.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Traveller"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why Journey couldn't be asked just now, when it couldn't"
+          },
+          "notYet" : {
+            "type" : "array",
+            "description" : "What Journey doesn't offer this app yet, each with a sentence to show where it matters",
+            "items" : {
+              "$ref" : "#/components/schemas/NotYet"
+            }
+          }
+        },
+        "required" : [ "available", "journey", "mode", "notYet", "note", "signedInAs" ]
+      },
+      "JourneyMode" : {
+        "type" : "string",
+        "enum" : [ "http", "local", "off" ]
+      },
+      "NotYet" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "description" : "originals, clips, co_authors, not_followed"
+          },
+          "says" : {
+            "type" : "string",
+            "description" : "A sentence for the screen"
+          }
+        }
+      },
+      "Traveller" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "journeys" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "followers" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "following" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "openUrl" : {
+            "type" : "string",
+            "description" : "Opens their profile in the Journey app"
+          }
+        }
+      },
+      "PageJourneyBrief" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyBrief"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        }
+      },
+      "KeepIn" : {
+        "type" : "object",
+        "properties" : {
+          "folderId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        }
+      },
+      "KeepOptions" : {
+        "type" : "object",
+        "properties" : {
+          "journey" : {
+            "$ref" : "#/components/schemas/JourneyBrief"
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "clips" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "inLibrary" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many of them are in your Library already, as the originals from your phone. Null when that can't be told (see originalsNote)."
+          },
+          "originalsNote" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why originals can't be matched, when they can't: a sentence"
+          },
+          "clipsNote" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why clips stay in Journey, when they do: a sentence"
+          },
+          "keepIn" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/KeepIn",
+            "description" : "Where the book would be filed: the circle's Trips space, when you can put things there"
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Who would see it, unless you choose otherwise"
+          },
+          "keptId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Set when you kept this journey here before: keeping again brings what is new"
+          },
+          "pageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        }
+      },
+      "CircleForJourney" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/CircleKind"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "The people in it who sign in themselves, by the id they sign in with (the same in Journey)",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyMember"
+            }
+          },
+          "goodnightAt" : {
+            "type" : [ "string", "null" ],
+            "description" : "When someone away could record a goodnight for home: set when the circle has children",
+            "example" : "20:00"
+          },
+          "timeZone" : {
+            "type" : [ "string", "null" ],
+            "description" : "The clock that time is on, when the circle has said: Europe/Ljubljana"
+          }
+        }
+      },
+      "JourneyMember" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "JourneyBookDay" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "Day 1"
+          },
+          "place" : {
+            "type" : [ "string", "null" ]
+          },
+          "words" : {
+            "type" : "array",
+            "description" : "The day's words, one for each block of text under its heading",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "photos" : {
+            "type" : "array",
+            "description" : "The photos that stand in the page under this day",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyBookPhoto"
+            }
+          },
+          "shots" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many photos and clips the day has in all"
+          },
+          "more" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them are not in the page: they are in the album"
+          }
+        }
+      },
+      "JourneyBookPhoto" : {
+        "type" : "object",
+        "properties" : {
+          "blockId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "url" : {
+            "type" : "string"
+          },
+          "thumbUrl" : {
+            "type" : "string"
+          },
+          "caption" : {
+            "type" : "string"
+          }
+        }
+      },
+      "JourneyBookResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kept" : {
+            "$ref" : "#/components/schemas/KeptResponse"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "days" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyBookDay"
+            }
+          },
+          "job" : {
+            "description" : "The last time you asked for it to be kept, and how that went",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/JourneyJobResponse"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "canEdit", "chip", "days", "job", "kept" ]
+      },
       "JoinPreview" : {
         "type" : "object",
         "properties" : {
@@ -16445,88 +19204,6 @@
           }
         },
         "required" : [ "items", "nextCursor" ]
-      },
-      "NoteItem" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "kind" : {
-            "$ref" : "#/components/schemas/ThingKind"
-          },
-          "place" : {
-            "$ref" : "#/components/schemas/Place"
-          },
-          "title" : {
-            "type" : "string"
-          },
-          "emoji" : {
-            "type" : "string"
-          },
-          "updatedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "mine" : {
-            "type" : "boolean"
-          },
-          "canEdit" : {
-            "type" : "boolean"
-          },
-          "chip" : {
-            "$ref" : "#/components/schemas/AudienceChip"
-          },
-          "glance" : {
-            "type" : [ "string", "null" ],
-            "description" : "Where it stands, in a few words: 4 of 9 done, €12,400"
-          },
-          "editedBy" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/PersonBrief",
-            "description" : "For a page or a list: who changed it last"
-          },
-          "editedAt" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
-          "left" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "For a list: how many lines are left, of those you may see"
-          },
-          "done" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "For a list: how many lines are ticked"
-          },
-          "here" : {
-            "type" : "array",
-            "description" : "For a list: who else is in it right now",
-            "items" : {
-              "$ref" : "#/components/schemas/ListHand"
-            }
-          },
-          "folders" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "For a folder: how many folders are inside it that you may see"
-          },
-          "pages" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "For a folder: how many pages and lists are inside it that you may see"
-          },
-          "pinned" : {
-            "type" : "boolean",
-            "description" : "True when you pinned it"
-          }
-        }
       },
       "PageNoteItem" : {
         "type" : "object",
@@ -16796,6 +19473,29 @@
         },
         "required" : [ "people", "without" ]
       },
+      "TripBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "startsOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endsOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "stage" : {
+            "$ref" : "#/components/schemas/TripStage"
+          }
+        }
+      },
       "FreshCard" : {
         "type" : "object",
         "properties" : {
@@ -16825,10 +19525,12 @@
         "type" : "object",
         "properties" : {
           "thingId" : {
-            "type" : "string",
-            "format" : "uuid"
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Null for a card about something that isn't a thing here: someone's journey in Journey"
           },
           "kind" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/ThingKind"
           },
           "look" : {
@@ -18136,6 +20838,140 @@
           }
         }
       },
+      "JourneyRoutePoint" : {
+        "type" : "object",
+        "properties" : {
+          "lat" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "lng" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "place" : {
+            "type" : [ "string", "null" ]
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "JourneyRouteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "keptId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "pageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "points" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyRoutePoint"
+            }
+          }
+        },
+        "required" : [ "keptId", "pageId", "points", "title" ]
+      },
+      "PageKeptResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/KeptResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "AtHomeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "available" : {
+            "type" : "boolean",
+            "description" : "False when this app runs without Journey"
+          },
+          "away" : {
+            "type" : "array",
+            "description" : "People of the circle who are on a journey you may see in Journey. Five at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/AwayResponse"
+            }
+          },
+          "onThisDay" : {
+            "type" : "array",
+            "description" : "Days from kept journeys that fell on this day in earlier years. Six at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyPastDay"
+            }
+          },
+          "goodnights" : {
+            "type" : "array",
+            "description" : "Goodnights meant for this day. Show them from bedtime on.",
+            "items" : {
+              "$ref" : "#/components/schemas/GoodnightResponse"
+            }
+          },
+          "bedtime" : {
+            "type" : "string",
+            "description" : "The circle's bedtime",
+            "example" : "20:00"
+          }
+        },
+        "required" : [ "available", "away", "bedtime", "goodnights", "onThisDay" ]
+      },
+      "JourneyPastDay" : {
+        "type" : "object",
+        "properties" : {
+          "yearsAgo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "Day 22"
+          },
+          "place" : {
+            "type" : [ "string", "null" ]
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "keptId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "pageId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The book it is in"
+          }
+        }
+      },
       "PageJotResponse" : {
         "type" : "object",
         "properties" : {
@@ -18143,6 +20979,22 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/JotResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "PageGoodnightResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GoodnightResponse"
             }
           },
           "nextCursor" : {

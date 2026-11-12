@@ -40,6 +40,23 @@ class LocalModeGuardTest {
     }
 
     @Test
+    void theStandInForJourneyNeedsTheLocalProfileAndItsSwitchKnowsThreeWords() {
+        MockEnvironment sample = new MockEnvironment().withProperty("homeport.journey.mode", "local");
+        assertThatThrownBy(() -> LocalModeGuard.check(sample))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("homeport.journey.mode=local");
+        for (String real : new String[] {"http", "off"}) {
+            MockEnvironment connected = new MockEnvironment().withProperty("homeport.journey.mode", real);
+            assertThatCode(() -> LocalModeGuard.check(connected)).doesNotThrowAnyException();
+        }
+        MockEnvironment typo = new MockEnvironment().withProperty("homeport.journey.mode", "on");
+        typo.setActiveProfiles("local");
+        assertThatThrownBy(() -> LocalModeGuard.check(typo))
+                .hasMessageContaining("homeport.journey.mode=on")
+                .hasMessageContaining("http, off, local");
+    }
+
+    @Test
     void theSameSettingsAreFineOnADevelopersComputerAndInTests() {
         MockEnvironment local = new MockEnvironment().withProperty("homeport.auth.mode", "local");
         local.setActiveProfiles("local");
