@@ -69,18 +69,17 @@ class LocalModeGuardTest {
 
     @Test
     void aSwitchSetToAWordNobodyKnowsStopsTheApiFromStartingAndSaysWhatItCanBe() {
-        MockEnvironment typo = new MockEnvironment().withProperty("homeport.video.mode", "muxx");
+        MockEnvironment typo = new MockEnvironment().withProperty("homeport.push.mode", "exp");
         typo.setActiveProfiles("local");
         assertThatThrownBy(() -> LocalModeGuard.check(typo))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("homeport.video.mode=muxx")
-                .hasMessageContaining("mux, off, local");
+                .hasMessageContaining("homeport.push.mode=exp")
+                .hasMessageContaining("expo, off, local");
         // Switched off is a word it knows, with or without the local profile.
         MockEnvironment later = new MockEnvironment()
-                .withProperty("homeport.video.mode", "off")
                 .withProperty("homeport.push.mode", "off")
                 .withProperty("homeport.email.mode", "off")
-                .withProperty("homeport.moderation.mode", "off");
+                .withProperty("homeport.journey.mode", "off");
         assertThatCode(() -> LocalModeGuard.check(later)).doesNotThrowAnyException();
     }
 }

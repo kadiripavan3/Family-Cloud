@@ -177,7 +177,23 @@ Also set `HOMEPORT_CONTACT_EMAIL` (shown on the contact page). The privacy and t
 
 ## 9. The link with Journey
 
-Homeport's side of Keep, Tell and "On a journey" is built against a stand-in. What Journey's own API and app need before the real link can be switched on, and the settings that then connect the two, are in [docs/10-journey-changes.md](10-journey-changes.md). Those changes are made in the Journey repository, with your go-ahead.
+Homeport's side of Keep, Tell and "On a journey" is built against a stand-in. What Journey's own API and app need before the real link can be switched on is in [docs/10-journey-changes.md](10-journey-changes.md). Those changes are made in the Journey repository, with your go-ahead.
+
+**None of this was run against the real Journey.** The code that asks Journey's API (`HttpJourney`) is tested against a small fake that answers as Journey's description says. The first time the two real APIs talk, expect small fixes; tell me what you see.
+
+The API runs without Journey until you say otherwise: with nothing set, the switch is `off`, every Journey part of the app is absent, and nothing is asked of Journey. To connect the two, once both APIs use the same Supabase project (step 1):
+
+| Value | Where it goes | Name |
+|---|---|---|
+| The word `http` | `[env]` in `fly.toml` | `HOMEPORT_JOURNEY_MODE` |
+| The address of Journey's API, no slash at the end (such as `https://api.yourjourney.com`) | `[env]` in `fly.toml` | `JOURNEY_API_URL` |
+| How "Open in Journey" links start. Leave it unset: it is `journey://`, the scheme Journey's app answers to today. | `[env]` in `fly.toml` | `JOURNEY_OPEN` |
+
+None of the three is a secret. Homeport has no key to Journey: it asks as the signed-in person, with that person's own sign-in, so Journey's rules decide every answer.
+
+With `HOMEPORT_JOURNEY_MODE = "http"` and no `JOURNEY_API_URL`, the API doesn't start and the list in `fly logs` says so (step 3). To go back, remove the line (or set it to `off`) and deploy: what was kept from Journey stays in Homeport as ordinary pages and photos, and the Journey cards, "Keep" and "Tell" disappear from the app.
+
+**Check:** in the app, "One account with Journey" on the You tab shows your Journey name, picture and counts. Keep one short journey: its book appears in Notes and its photos in the Library. If Journey can't be reached, Today still opens, without the Journey cards.
 
 ## 10. Sentry: what breaks
 
@@ -220,6 +236,9 @@ When an account exists and you want me to check it from a session like this one,
 | `HOMEPORT_EMAIL_FROM` | 7 | no |
 | `HOMEPORT_CONTACT_EMAIL` | 8 | no |
 | `HOMEPORT_IOS_APP_ID`, `HOMEPORT_ANDROID_PACKAGE`, `HOMEPORT_ANDROID_FINGERPRINTS` | 8 | no |
+| `HOMEPORT_JOURNEY_MODE` (`http` once Journey is ready; unset or `off` until then) | 9 | no |
+| `JOURNEY_API_URL` (needed with `http`) | 9 | no |
+| `JOURNEY_OPEN` (leave unset: `journey://`) | 9 | no |
 | `HOMEPORT_EXPORT_MAX_BYTES` (how much one export may hold; 2 GB unless set) | | no |
 
 **The app (build settings: environment variables of the Expo project. All but one end up inside the app, so they may not be secrets)**

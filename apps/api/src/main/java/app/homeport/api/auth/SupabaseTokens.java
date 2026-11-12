@@ -27,7 +27,7 @@ final class SupabaseTokens {
     static JwtDecoder decoder(AuthProperties.Supabase supabase) {
         if (supabase == null || supabase.url() == null || supabase.url().isBlank()) {
             throw new IllegalStateException(
-                    "homeport.auth.mode is 'supabase' but the project's address is missing. Set SUPABASE_URL (see docs/08-connect-services.md).");
+                    "homeport.auth.mode is 'supabase' but the project's address is missing. Set SUPABASE_URL (see docs/09-connect-services.md, step 1).");
         }
         String issuer = supabase.url().trim().replaceAll("/+$", "") + "/auth/v1";
         NimbusJwtDecoder decoder;
