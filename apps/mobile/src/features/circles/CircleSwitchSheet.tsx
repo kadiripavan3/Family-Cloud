@@ -6,8 +6,7 @@ import { View } from 'react-native';
 
 import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
-import { type CircleResponse, createCircle, useGetToday } from '@/api/generated/homeport';
-import { today } from '@/lib/dates';
+import { type CircleResponse, createCircle, useGetCircleSwitcher } from '@/api/generated/homeport';
 import { newClientId } from '@/lib/ids';
 import { layout, radius, useTheme } from '@/theme';
 import { Emoji } from '@/ui/Emoji';
@@ -23,7 +22,9 @@ import { circleLine } from './members';
 /**
  * 3.2 Your circles: the sheet behind the round button in Home's search pill. The circles the person shares
  * with others, a tick on the one they are in; "Just me", their circle of one (made the first time it is
- * chosen); and the way to a new circle.
+ * chosen); and the way to a new circle. Each circle's line is the API's ("Friends · 5 people · you're owed
+ * €64": every place adds its own few words), and so is the count under "Just me"; until they arrive, a line
+ * says what the phone knows already.
  */
 export function CircleSwitchSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { colors } = useTheme();
@@ -32,8 +33,11 @@ export function CircleSwitchSheet({ visible, onClose }: { visible: boolean; onCl
   const circles = useCircles();
   const current = useCircle();
   const switchTo = useSwitchCircle();
-  // How many things only this person can see, in all their circles: Today counts them.
-  const onlyYou = useGetToday(current.id, { day: today() }, { query: { enabled: visible } }).data?.onlyYou;
+  // Each circle's line, and how many things only this person can see in all their circles. Asked for afresh
+  // each time the sheet opens: a circle made a moment ago has its line, and a debt settled meanwhile is gone from one.
+  const switcher = useGetCircleSwitcher({ query: { enabled: visible, staleTime: 0 } }).data;
+  const onlyYou = switcher?.onlyYou;
+  const lineOf = (circle: CircleResponse) => switcher?.circles.find((one) => one.id === circle.id)?.line ?? circleLine(circle);
 
   const shared = circles.filter((circle) => circle.kind !== 'solo');
   const solo = circles.find((circle) => circle.kind === 'solo');
@@ -56,7 +60,7 @@ export function CircleSwitchSheet({ visible, onClose }: { visible: boolean; onCl
     <Sheet visible={visible} onClose={onClose} title={words.circles.yours.title}>
       {shared.map((circle) => {
         const on = circle.id === current.id;
-        const line = circleLine(circle);
+        const line = lineOf(circle);
         return (
           <Tap
             key={circle.id}
@@ -73,7 +77,8 @@ export function CircleSwitchSheet({ visible, onClose }: { visible: boolean; onCl
               <Txt variant="item" weight={800} numberOfLines={1}>
                 {circle.name}
               </Txt>
-              <Txt variant="footnote" color="muted" numberOfLines={1}>
+              {/* The API's line can be long ("… · you're owed €64"): it runs on to a second line before it is cut. */}
+              <Txt variant="footnote" color="muted" numberOfLines={2}>
                 {line}
               </Txt>
             </View>

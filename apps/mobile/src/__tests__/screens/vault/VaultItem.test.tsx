@@ -17,6 +17,8 @@ jest.mock('expo-crypto', () => jest.requireActual('@/test/vaultReference').expoC
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(async () => true), getStringAsync: jest.fn(async () => '') }));
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ id: mockId }), useFocusEffect: jest.fn() }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
+// "Ask to see it", under an item that can't be opened, is Activity's own piece and has its own test.
+jest.mock('@/features/activity/AskToSee', () => ({ AskToSee: () => null }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds, useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/vault/keeper', () => new Proxy({}, { get: (_, name: string) => (...given: unknown[]) => (mockKeeper as unknown as Record<string, (...given: unknown[]) => unknown>)[name]?.(...given) }));
 jest.mock('@/api/generated/homeport', () => ({

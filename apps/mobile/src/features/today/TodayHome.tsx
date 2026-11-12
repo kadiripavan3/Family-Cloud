@@ -9,7 +9,6 @@ import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { RunningLow } from '@/features/flat/RunningLow';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
-import { PayBillButton } from '@/features/money/PayBill';
 import { useNotice } from '@/features/plan/Notice';
 import { TodayTick } from '@/features/plan/TodayTick';
 import { kindOf } from '@/features/things/kinds';
@@ -33,7 +32,9 @@ import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
 import { partsOf, stillOn } from './about';
+import { hasLineButton, LineButton } from './LineButton';
 import { newThingHref } from './newThings';
+import { RepeatMark } from './RepeatMark';
 import { SplitButton } from './SplitButton';
 import { CardLine, HeadlineCard, PictureCard } from './TodayCards';
 import { FrontWords, TodayLine } from './TodayLine';
@@ -157,8 +158,8 @@ function Summary({ data, progress, emoji }: { data: TodayResponse; progress: num
 /**
  * One thing of the day: what stands in front (a time, a day or an amount; a tick; or its kind's icon), its
  * title and a line, and whose it is. A line about shared costs has its button at the end instead
- * (`SplitButton`), once the split has said there is something to remind of or to settle; a bill's line ends
- * in Money's "Pay".
+ * (`SplitButton`), once the split has said there is something to remind of or to settle; a line the API
+ * gives a button (a bill's "Pay") ends in that (`LineButton`), and one that repeats in the repeat mark.
  */
 function DayRow({ item, first, two, say }: { item: TodayItem; first: boolean; two: boolean; say: (text: string) => void }) {
   const { colors } = useTheme();
@@ -187,20 +188,21 @@ function DayRow({ item, first, two, say }: { item: TodayItem; first: boolean; tw
     </View>
   ) : null;
   const split = item.kind === 'split' && item.thingId ? item.thingId : null;
-  const bill = item.kind === 'bill' && item.thingId ? item.thingId : null;
+  // A line the API gives a button ends in it, in the API's own word ("Pay" on a bill): see `LineButton`.
+  const pressed = hasLineButton(item);
   return (
     <TodayLine
       first={first}
       front={front}
       // (A line with a button beside it has less room: its title may take a second line.)
-      lines={split || bill ? 2 : 1}
+      lines={split || pressed ? 2 : 1}
       title={item.title ?? ''}
       note={item.note}
       spoken={words.common.spoken([ticks ? (ticked ? words.today.done : words.today.notDone) : (item.lead ?? ''), item.title, item.note])}
       onPress={() => open({ kind: item.kind, id: item.thingId })}
-      end={split || bill ? undefined : faces}
-      // A bill's line ends in "Pay": Money's own button, which marks the person's share as paid or opens the payee's page.
-      button={split ? <SplitButton splitId={split} title={item.title ?? ''} two={two} say={say} fallback={faces} /> : bill ? <PayBillButton billId={bill} title={item.title ?? ''} /> : undefined}
+      // With nothing else to end in, a line that comes round again ends in the repeat mark.
+      end={split || pressed ? undefined : (faces ?? <RepeatMark item={item} />)}
+      button={split ? <SplitButton splitId={split} title={item.title ?? ''} two={two} say={say} fallback={faces} /> : pressed ? <LineButton item={item} /> : undefined}
     />
   );
 }

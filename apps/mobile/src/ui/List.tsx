@@ -5,6 +5,8 @@ import { ActivityIndicator, RefreshControl, View } from 'react-native';
 import { useTheme } from '@/theme';
 import { words } from '@/words';
 
+import { useWhileInFront } from './useWhileInFront';
+
 type Props<T> = {
   data: readonly T[];
   /** One row. Keep it cheap: rows are reused as the list scrolls. */
@@ -45,10 +47,12 @@ type Props<T> = {
 
 /**
  * Every list that can grow long is drawn with this: only the rows on screen exist, however many there are,
- * and the next page is fetched as the end comes near.
+ * and the next page is fetched as the end comes near. While another screen covers it, it keeps the rows it
+ * had (`useWhileInFront`).
  */
-export function List<T>({ data, row, keyOf, typeOf, sticky, header, footer, empty, onEnd, onStart, loadingMore, refreshing, onRefresh, columns, bottom = 40, top = 0, startAt, onTop, listRef }: Props<T>) {
+export function List<T>({ data: rows, row, keyOf, typeOf, sticky, header, footer, empty, onEnd, onStart, loadingMore, refreshing, onRefresh, columns, bottom = 40, top = 0, startAt, onTop, listRef }: Props<T>) {
   const { colors } = useTheme();
+  const data = useWhileInFront(rows);
   const stuck = sticky ? data.flatMap((item, index) => (sticky(item) ? [index] : [])) : undefined;
   // For `onTop`: the list itself is asked which row is first on screen, each time it has scrolled a little.
   const list = useRef<FlashListRef<T> | null>(null);

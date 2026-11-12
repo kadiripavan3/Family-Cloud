@@ -613,7 +613,8 @@ async function newFamily(ctx) {
 
   await step('log-out', async () => {
     await R('button', { name: /^Export and leaving/ }).click();
-    await T(/^Exporting everything and leaving a circle arrive later/).waitFor();
+    // (The page itself is walked with what ties the places together, in 09-ties.js.)
+    await R('heading', { name: 'Your things stay yours' }).waitFor();
     await shot('leaving');
     await R('button', { name: 'Log out' }).click();
     await T('Get started').waitFor({ timeout: 20000 });
@@ -732,9 +733,10 @@ async function otherKinds(ctx) {
     await R('button', { name: 'Just me. Change circle' }).waitFor({ timeout: 20000 });
     // All four are hers now, each with its kind; the circle of one is the row with the lock.
     await R('button', { name: 'Just me. Change circle' }).click();
-    await R('button', { name: 'Kai and Lea. Couple · Just you' }).waitFor();
-    await R('button', { name: 'Trubarjeva 9. Housemates · Just you' }).waitFor();
-    await R('button', { name: 'Lisbon crew. Friends · Just you' }).waitFor();
+    // (Each line is the API's: the kind, the people, and what a place adds to it.)
+    await R('button', { name: /^Kai and Lea\. Couple · 1 person/ }).waitFor();
+    await R('button', { name: /^Trubarjeva 9\. Housemates · 1 person/ }).waitFor();
+    await R('button', { name: /^Lisbon crew\. Friends · 1 person/ }).waitFor();
     await shot('circle-switch-kinds');
     // A thing made in a circle of equals starts as shared with it.
     await R('button', { name: /^Lisbon crew\./ }).click();
@@ -777,8 +779,9 @@ async function sampleCircles(ctx) {
 
   await step('circle-switch', async () => {
     await R('button', { name: 'The Linds. Change circle' }).click();
-    await R('button', { name: 'The Linds. Family · 4 people and Biscuit. You are here' }).waitFor();
-    await R('button', { name: 'Nora and Alex. Couple · 2 people' }).waitFor();
+    // (Each line is the API's, and may end in what a place adds to it: "· you're owed €64".)
+    await R('button', { name: /^The Linds\. Family · 4 people and Biscuit.*\. You are here$/ }).waitFor();
+    await R('button', { name: /^Nora and Alex\. Couple · 2 people/ }).waitFor();
     await T(/things? only you can see$/).waitFor();
     await shot('circle-switch');
     // Another circle is another Home. While its Today is on its way, grey shapes in the layout that is coming.
@@ -787,7 +790,7 @@ async function sampleCircles(ctx) {
       if (slow) await new Promise((later) => setTimeout(later, 2500));
       await route.continue().catch(() => undefined);
     });
-    await R('button', { name: 'Lisbon crew. Friends · 5 people' }).click();
+    await R('button', { name: /^Lisbon crew\. Friends · 5 people/ }).click();
     await R('button', { name: 'Lisbon crew. Change circle' }).waitFor();
     await L('Loading').waitFor();
     await shot('loading');

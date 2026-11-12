@@ -1,13 +1,14 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 import type { BottomTabBarProps } from 'expo-router/tabs';
 
-import { useGetMe } from '@/api/generated/homeport';
-import { loaded, me, nora } from '@/test/samples';
+import { useGetMe, useGetUnreadActivity } from '@/api/generated/homeport';
+import { linds, loaded, me, nora, pending } from '@/test/samples';
 
 import { TabBar } from '../TabBar';
 
 jest.mock('@/features/today/PlusSheet', () => ({ PlusSheet: ({ visible }: { visible: boolean }) => mockSheet(visible) }));
-jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetUnreadActivity: jest.fn() }));
+jest.mock('@/features/circles/current', () => ({ useCircleIfAny: () => mockLinds }));
 jest.mock('expo-blur', () => ({ BlurView: () => null }));
 
 function mockSheet(visible: boolean) {
@@ -22,6 +23,8 @@ const TABS = [
   ['you', 'You'],
 ] as const;
 const navigateToTab = jest.fn();
+const mockLinds = linds;
+const unread = jest.mocked(useGetUnreadActivity) as unknown as jest.Mock;
 
 /** The bar as the tabs layout draws it, with one tab open. */
 function bar(open: number) {
@@ -35,6 +38,7 @@ describe('the tab bar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (jest.mocked(useGetMe) as unknown as jest.Mock).mockReturnValue(loaded(me()));
+    unread.mockReturnValue(loaded({ fresh: 0, asks: 0 }));
   });
 
   it('has Home, People, the + button, Activity and You, in that order, and says which one is open', async () => {
@@ -61,6 +65,26 @@ describe('the tab bar', () => {
     // A sheet over the tab that is open: the tab underneath stays where it was.
     expect(screen.getByText('the sheet of things to add')).toBeOnTheScreen();
     expect(navigateToTab).not.toHaveBeenCalled();
+  });
+
+  it('puts a dot on Activity while something in the current circle is new, and says so to a screen reader', async () => {
+    unread.mockReturnValue(loaded({ fresh: 2, asks: 1 }));
+    const view = await render(bar(0));
+    // One small question a minute, about the circle the person is in.
+    expect(unread).toHaveBeenCalledWith('c-linds', { query: { enabled: true, refetchInterval: 60_000 } });
+    expect(screen.getByTestId('activity-dot')).toBeOnTheScreen();
+    expect(screen.getByRole('tab', { name: 'Activity, something new' })).toBeOnTheScreen();
+    // Seen: the dot goes.
+    unread.mockReturnValue(loaded({ fresh: 0, asks: 1 }));
+    await view.rerender(bar(0));
+    expect(screen.queryByTestId('activity-dot')).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Activity' })).toBeOnTheScreen();
+  });
+
+  it('draws no dot while it does not know', async () => {
+    unread.mockReturnValue(pending());
+    await render(bar(0));
+    expect(screen.queryByTestId('activity-dot')).toBeNull();
   });
 
   it("draws the You tab as the person's own picture: their photo, or their initials until they have one", async () => {

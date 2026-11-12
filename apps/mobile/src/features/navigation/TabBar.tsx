@@ -5,6 +5,7 @@ import { type ReactNode, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useGetMe } from '@/api/generated/homeport';
+import { useActivityNews } from '@/features/activity/useActivityNews';
 import { PlusSheet } from '@/features/today/PlusSheet';
 import { radius, useTheme } from '@/theme';
 import { Avatar } from '@/ui/Avatar';
@@ -26,6 +27,8 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
   const { colors, scheme, shadow } = useTheme();
   const profile = useGetMe().data?.profile;
   const [adding, setAdding] = useState(false);
+  // The dot on Activity: something in the current circle is new since it was last opened.
+  const news = useActivityNews();
 
   const tab = (routeIndex: number) => {
     const route = state.routes[routeIndex];
@@ -38,7 +41,7 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
         key={route.key}
         accessibilityRole="tab"
         accessibilityState={{ selected: focused }}
-        accessibilityLabel={label}
+        accessibilityLabel={route.name === 'activity' && news ? words.activity.tabWithNews(label) : label}
         onPress={() => {
           if (!focused) navigateToTab(route.key);
         }}
@@ -52,6 +55,7 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
         ) : (
           ICONS[route.name]?.(color)
         )}
+        {route.name === 'activity' && news ? <View testID="activity-dot" style={{ position: 'absolute', top: 6, right: 17, width: 9, height: 9, borderRadius: radius.pill, backgroundColor: colors.like, borderWidth: 2, borderColor: colors.surface }} /> : null}
         <Txt variant="micro" weight={700} style={{ color }}>{label}</Txt>
       </Pressable>
     );

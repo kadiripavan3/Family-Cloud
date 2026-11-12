@@ -1,19 +1,20 @@
 import { render, screen } from '@testing-library/react-native';
 
-import Activity from '@/app/(app)/(tabs)/activity';
+import { NotBuiltYet } from '@/features/states/NotBuiltYet';
 import { onPhone } from '@/test/phone';
-
-const mockRouter = { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 
 const NOT_BUILT = "This part of Homeport isn't built yet. It's on its way.";
 
-describe('the screens that are still to be built', () => {
-  beforeEach(() => jest.clearAllMocks());
+describe('a screen that is still to be built', () => {
+  it('says which screen it is and that it is on its way', async () => {
+    await render(onPhone(<NotBuiltYet title="Export the Vault" />));
+    expect(screen.getByRole('header', { name: 'Export the Vault' })).toBeOnTheScreen();
+    expect(screen.getByText(NOT_BUILT)).toBeOnTheScreen();
+  });
 
-  it('Activity says which tab it is and that it is on its way', async () => {
-    await render(onPhone(<Activity />));
-    expect(screen.getByRole('header', { name: 'Activity' })).toBeOnTheScreen();
+  it('stands in for a part of a screen the same way', async () => {
+    await render(onPhone(<NotBuiltYet title="Money" part />));
+    expect(screen.getByRole('header', { name: 'Money' })).toBeOnTheScreen();
     expect(screen.getByText(NOT_BUILT)).toBeOnTheScreen();
   });
 });
