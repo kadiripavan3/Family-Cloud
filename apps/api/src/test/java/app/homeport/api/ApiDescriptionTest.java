@@ -90,6 +90,8 @@ class ApiDescriptionTest extends ApiTest {
         join(nora, circle, alex);
         String child = addMember(nora, circle, "Mia", "child");
         String page = page(nora, circle, "Gift list", "me");
+        String list = privateThing(nora, "/v1/checklists", circle, "Gift ideas");
+        String folder = privateThing(nora, "/v1/folders", circle, "Nora's work");
         String pass = JsonPath.read(
                 send(
                         HttpMethod.POST,
@@ -104,8 +106,8 @@ class ApiDescriptionTest extends ApiTest {
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = List.of(circle, child, page, pass);
-        List<String> forAlex = List.of(page);
+        List<String> forStranger = List.of(circle, child, page, pass, list, folder);
+        List<String> forAlex = List.of(page, list, folder);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {
@@ -134,7 +136,24 @@ class ApiDescriptionTest extends ApiTest {
     private static String label(String id, String circle, String child, String page, String pass) {
         return id.equals(circle)
                 ? "a circle's id"
-                : id.equals(child) ? "a member's id" : id.equals(page) ? "a page's id" : "a guest pass's id";
+                : id.equals(child)
+                        ? "a member's id"
+                        : id.equals(page)
+                                ? "a page's id"
+                                : id.equals(pass) ? "a guest pass's id" : "the id of a list or a folder";
+    }
+
+    /** Makes something only its maker can see, of the kind this route makes. Returns its id. */
+    private String privateThing(String token, String route, String circle, String title) throws Exception {
+        return JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        route,
+                        token,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"%s\",\"audience\":\"me\"}"
+                                .formatted(id(), circle, title),
+                        201),
+                "$.id");
     }
 
     /** True when the route answers with something: neither "not found" nor "forbidden". */

@@ -56,7 +56,10 @@ public class SeedWorld {
 
     /** A sample person who can sign in with this email address and the test code. */
     public UUID person(String key, String email) {
-        return people.computeIfAbsent(key, k -> users.idFor(email));
+        // Asked for every time the sample data is made: the id belongs to the sign-in as it is now.
+        UUID id = users.idFor(email);
+        people.put(key, id);
+        return id;
     }
 
     /** The user id of a sample person. */

@@ -12,7 +12,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ThingKind {
     PAGE(Place.NOTES),
-    CHECKLIST(Place.NOTES);
+    CHECKLIST(Place.NOTES),
+    /** A space or a folder in Notes: a space is a folder at the top. */
+    FOLDER(Place.NOTES);
 
     private final Place place;
 
