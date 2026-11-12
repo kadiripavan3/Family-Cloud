@@ -72,6 +72,8 @@
   "jest": {
     "preset": "jest-expo",
     "testTimeout": 15000,
+    "maxWorkers": "50%",
+    "workerIdleMemoryLimit": "800MB",
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/dist/"
