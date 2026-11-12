@@ -1,12 +1,11 @@
 {
-  "phase": "Design draft · build plan for your go-ahead",
+  "phase": "Building · milestone 1 of 11",
   "updated": "2026-11-12",
-  "summary": "The design draft has 125 screens in 19 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). **The build plan is written and waits for your go-ahead**: eleven milestones, built the way Journey was, with every screen listed against its milestone and how it is tested. 118 of the 125 screens can be tested end to end here in a browser; the rest need a real phone or live in Journey's code. Nothing is built yet.",
+  "summary": "You said go on 12 Nov: every milestone, on the plan's defaults, under the name **Homeport**. The build has started. The API's spine is done and tested (circles, members, the one sharing rule, pages, lists, guest passes); the app's foundation runs; the six places are being built side by side. This page is updated at the end of each milestone.",
   "next": [
-    "Read [the build plan](#build) and say go. It starts on six defaults, listed under *Calls I need from you*; tell me any you want different. The two that shape the most: children as profiles only, and reading text by rules instead of an AI service.",
-    "Read *Where the build can't match the screen* in the plan: twelve places where a phone or a missing service means the app will do a little less than the drawing. Better you hear it now.",
-    "Still open from before: the newest screen groups (17 *For couples*, 18 *For housemates*, 19 *For friends*), the names behind the **Name** switch, and the questions under *What it does*. None of them blocks the first milestone.",
-    "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude). Your first three are answered by groups 14 to 16 but stay open until then."
+    "Nothing is needed from you while the build runs. Each milestone ends with a short report in the chat and an update here.",
+    "When it is done you get one list of every open question, in one place.",
+    "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude). Your first three are answered by screen groups 14 to 16 but stay open until then."
   ],
   "open": [
     {
@@ -23,7 +22,7 @@
     },
     {
       "q": "The name",
-      "a": "My pick is Porchlight. Hearth would have been perfect and is taken by a family organiser. None of the names has had a trademark, store or domain check yet."
+      "a": "You chose **Homeport** on 12 Nov. It has had a web search, not a legal check: no family app by that name turned up, and US trademark listings show several HOMEPORT marks, one of them live and one applied for in June 2026 for other software. Have it checked properly, and decide the domain, before the stores. It is one setting if it has to change."
     },
     {
       "q": "How private is private?",
@@ -51,6 +50,10 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-12",
+      "text": "**The build has started**, on your go-ahead. The app is called **Homeport** everywhere. Done so far: the API's spine (79 tests, among them every way to reach a thing agreeing on who may see it) and the app's foundation from Journey's (225 tests, a walk-through in light and dark)."
+    },
     {
       "date": "2026-11-12",
       "text": "**The build plan** is written: a new page in this hub and `docs/06-build-plan.md`. Eleven milestones in Journey's way of working (everything on one computer first, real services last), what “done” means for each, how it is tested, six calls for you with the default I'll build, twelve places where the build can't match the drawing, and all 125 screens with their milestone and test level. The hub's build now fails if that list and the screens ever disagree."

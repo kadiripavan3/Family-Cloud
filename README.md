@@ -1,8 +1,8 @@
-# Family Cloud
+# Homeport
 
-Working title. One private place for what a family, or a group of friends, keeps together: notes, photos and videos, the calendar, bills and budgets, goals, and the passwords everyone needs. The sister app of [Journey](https://github.com/kadiripavan3/Journey): one owner, one account, one design system.
+First called Family Cloud; the repository keeps that name. One private place for what a family, or a group of friends, keeps together: notes, photos and videos, the calendar, bills and budgets, goals, and the passwords everyone needs. The sister app of [Journey](https://github.com/kadiripavan3/Journey): one owner, one account, one design system.
 
-**Status:** the design draft is drawn and the build plan is written. Nothing is built yet.
+**Status:** being built, milestone by milestone, from the build plan. The hub says which milestone is done.
 
 **The hub** (screens, name, the link with Journey, requirements, tech and costs): https://claude.ai/artifact/Nj763e9HKBijnmANPhLLTA
 
