@@ -1,12 +1,18 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'orval';
-
-// The lists that come in pages (items + nextCursor). Each gets a hook that loads page after page.
-// Add an operation's id here when the API gets a list with a cursor.
-const PAGED = ['getPages', 'getChecklists'];
 
 // The API's own description, or another one named by OPENAPI (`OPENAPI=some.json npm run api:generate`), for
 // trying the app against a description that is not the API's yet.
 const description = process.env.OPENAPI || '../api/openapi.json';
+
+// The lists that come in pages (items + nextCursor) each get a hook that loads page after page. They are read
+// from the description itself: every operation that takes a `cursor`. Nothing to add by hand.
+type Operation = { operationId?: string; parameters?: { name?: string }[] };
+const api = JSON.parse(readFileSync(description, 'utf8')) as { paths: Record<string, Record<string, Operation>> };
+const PAGED = Object.values(api.paths)
+  .flatMap((path) => Object.values(path))
+  .filter((operation) => (operation.parameters ?? []).some((parameter) => parameter.name === 'cursor'))
+  .flatMap((operation) => (operation.operationId ? [operation.operationId] : []));
 
 // Generates the app's typed API client from the API's description.
 // Run `npm run api:generate` after apps/api/openapi.json changes.

@@ -6,6 +6,7 @@ import app.homeport.api.circle.MemberStore.MemberRow;
 import app.homeport.api.common.Keyset;
 import app.homeport.api.home.SearchSource.Found;
 import app.homeport.api.home.TodaySource.FreshCard;
+import app.homeport.api.home.TodaySource.TodayCard;
 import app.homeport.api.home.TodaySource.TodayItem;
 import app.homeport.api.thing.Place;
 import app.homeport.api.thing.ThingService;
@@ -39,6 +40,10 @@ public class HomeService {
             int done,
 
             List<TodayItem> items,
+
+            @Schema(description = "Cards above the day's list, from each place that has one for today")
+            List<TodayCard> cards,
+
             List<FreshCard> fresh,
 
             @Schema(description = "How many things in all your circles only you can see")
@@ -82,14 +87,26 @@ public class HomeService {
         LocalDate on = day == null ? LocalDate.now() : day;
         List<TodayItem> items = new ArrayList<>();
         List<FreshCard> fresh = new ArrayList<>();
+        List<TodayCard> cards = new ArrayList<>();
         for (TodaySource source : todaySources) {
             items.addAll(source.today(me, circleId, on));
             fresh.addAll(source.fresh(me, circleId));
+            cards.addAll(source.cards(me, circleId, on));
         }
         items.sort(Comparator.comparingInt(TodayItem::minute).thenComparing(TodayItem::title));
         int done =
                 (int) items.stream().filter(i -> Boolean.TRUE.equals(i.done())).count();
-        return new TodayResponse(on, items.size() - done, done, items, oncePerTitle(fresh), thingStore.onlyMine(me));
+        return new TodayResponse(
+                on,
+                items.size() - done,
+                done,
+                items,
+                cards.stream()
+                        .sorted(Comparator.comparingInt(TodayCard::order))
+                        .limit(8)
+                        .toList(),
+                oncePerTitle(fresh),
+                thingStore.onlyMine(me));
     }
 
     /**

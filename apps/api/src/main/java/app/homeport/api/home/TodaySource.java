@@ -46,8 +46,42 @@ public interface TodaySource {
             @Schema(nullable = true, description = "A small label on the picture: 19 new")
             String pill) {}
 
+    /**
+     * A card at the top of Today that is more than a line in the day's list: whose turn it is to choose
+     * tonight, a date both said yes to, what the kitty holds, the question of the week. A kind of circle's
+     * own Today is mostly these.
+     */
+    record TodayCard(
+            UUID thingId,
+            ThingKind kind,
+
+            @Schema(description = "A word the app can pick a look by: the template's code for a board, else the kind")
+            String look,
+
+            @Schema(description = "A 3D emoji for the card") String emoji,
+            String title,
+
+            @Schema(description = "The line under the title")
+            String line,
+
+            @Schema(nullable = true, description = "A number or a few words shown large: €64, 3 sleeps")
+            String figure,
+
+            @Schema(nullable = true) String imageUrl,
+
+            @Schema(nullable = true, description = "What its button says, when it has one: Shake, Answer, Settle up")
+            String action,
+
+            @Schema(description = "Sorts the cards: lower comes first")
+            int order) {}
+
     /** What is on for this person in this circle on this day, in any order. */
     default List<TodayItem> today(UUID me, UUID circleId, LocalDate day) {
+        return List.of();
+    }
+
+    /** The cards this place puts at the top of Today for this person, a handful at most. */
+    default List<TodayCard> cards(UUID me, UUID circleId, LocalDate day) {
         return List.of();
     }
 

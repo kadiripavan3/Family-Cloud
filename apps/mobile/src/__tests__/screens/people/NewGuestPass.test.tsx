@@ -48,7 +48,7 @@ describe('4.5 Guest pass: making one', () => {
   });
 
   it('gives a pass for a person, a time and chosen things, and shows the pass', async () => {
-    jest.mocked(createGuestPass).mockResolvedValue({ id: 'g-1', circleId: 'c-linds', guestName: 'Ines, the sitter', startsAt: '', endsAt: '', url: '', code: '4821', running: true, opened: false, things: [] });
+    jest.mocked(createGuestPass).mockResolvedValue({ id: 'g-1', circleId: 'c-linds', guestName: 'Ines, the sitter', startsAt: '', endsAt: '', url: '', code: '4821', running: true, opened: false, things: [], cards: [], keyForMaker: null });
     await render(inApp(<NewGuestPass />));
     const user = userEvent.setup();
     await user.type(screen.getByLabelText('Who is it for?'), 'Ines, the sitter');

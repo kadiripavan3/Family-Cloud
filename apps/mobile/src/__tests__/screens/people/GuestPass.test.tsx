@@ -44,6 +44,8 @@ const pass = (over: Partial<GuestPassResponse> = {}): GuestPassResponse => ({
     { id: BABYSITTER, kind: 'page', title: 'Babysitter notes' },
     { id: 'bbbbbbbb-1111-4111-8111-111111111111', kind: 'checklist', title: 'Emergency numbers' },
   ],
+  cards: [],
+  keyForMaker: null,
   ...over,
 });
 

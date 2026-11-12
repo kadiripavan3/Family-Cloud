@@ -86,11 +86,11 @@ export function thing(over: Partial<ThingBrief> = {}): ThingBrief {
 }
 
 export function page(over: Partial<PageResponse> = {}): PageResponse {
-  return { id: '11111111-1111-4111-8111-111111111111', circleId: 'c-linds', title: 'Wi‑Fi and smart home', body: 'Network: Lind-Home', updatedAt: '2026-11-11T09:00:00Z', mine: true, canEdit: true, chip: onlyMe, ...over };
+  return { id: '11111111-1111-4111-8111-111111111111', circleId: 'c-linds', title: 'Wi‑Fi and smart home', body: 'Network: Lind-Home', updatedAt: '2026-11-11T09:00:00Z', mine: true, canEdit: true, chip: onlyMe, emoji: '', version: 'v1', editedBy: null, editedAt: null, folderId: null, breadcrumb: [], pinned: false, blocks: [], ...over };
 }
 
 export function item(over: Partial<ItemResponse> = {}): ItemResponse {
-  return { id: 'i-1', text: 'Milk, 2 litres', note: '', section: '', amountCents: null, done: false, doneAt: null, doneBy: null, assignedTo: null, addedBy: null, ...over };
+  return { id: 'i-1', text: 'Milk, 2 litres', note: '', section: '', amountCents: null, done: false, doneAt: null, doneBy: null, assignedTo: null, addedBy: null, addedAt: '2026-11-11T09:00:00Z', repeats: null, hiddenFrom: [], ...over };
 }
 
 export function checklist(over: Partial<ChecklistResponse> = {}): ChecklistResponse {
@@ -105,6 +105,21 @@ export function checklist(over: Partial<ChecklistResponse> = {}): ChecklistRespo
     chip: everyone,
     left: items.filter((one) => !one.done).length,
     done: items.filter((one) => one.done).length,
+    emoji: '',
+    currency: 'EUR',
+    aisles: false,
+    version: 'v1',
+    sumCents: null,
+    sumDoneCents: null,
+    sections: [],
+    here: [],
+    suggestions: [],
+    showTicked: true,
+    pinned: false,
+    folderId: null,
+    breadcrumb: [],
+    editedBy: null,
+    editedAt: null,
     ...over,
     items,
   };
@@ -143,5 +158,5 @@ export const hiddenFromMia = audience({
 });
 
 export function todayAnswer(over: Partial<TodayResponse> = {}): TodayResponse {
-  return { day: '2026-11-11', left: 0, done: 0, items: [], fresh: [], onlyYou: 0, ...over };
+  return { day: '2026-11-11', left: 0, done: 0, items: [], cards: [], fresh: [], onlyYou: 0, ...over };
 }

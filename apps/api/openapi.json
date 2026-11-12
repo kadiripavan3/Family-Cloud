@@ -16821,6 +16821,49 @@
           }
         }
       },
+      "TodayCard" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "look" : {
+            "type" : "string",
+            "description" : "A word the app can pick a look by: the template's code for a board, else the kind"
+          },
+          "emoji" : {
+            "type" : "string",
+            "description" : "A 3D emoji for the card"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The line under the title"
+          },
+          "figure" : {
+            "type" : [ "string", "null" ],
+            "description" : "A number or a few words shown large: €64, 3 sleeps"
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "action" : {
+            "type" : [ "string", "null" ],
+            "description" : "What its button says, when it has one: Shake, Answer, Settle up"
+          },
+          "order" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sorts the cards: lower comes first"
+          }
+        }
+      },
       "TodayItem" : {
         "type" : "object",
         "properties" : {
@@ -16883,6 +16926,13 @@
               "$ref" : "#/components/schemas/TodayItem"
             }
           },
+          "cards" : {
+            "type" : "array",
+            "description" : "Cards above the day's list, from each place that has one for today",
+            "items" : {
+              "$ref" : "#/components/schemas/TodayCard"
+            }
+          },
           "fresh" : {
             "type" : "array",
             "items" : {
@@ -16895,7 +16945,7 @@
             "description" : "How many things in all your circles only you can see"
           }
         },
-        "required" : [ "day", "done", "fresh", "items", "left", "onlyYou" ]
+        "required" : [ "cards", "day", "done", "fresh", "items", "left", "onlyYou" ]
       },
       "GroupCount" : {
         "type" : "object",
