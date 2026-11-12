@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Bell, Check, Copy, LayoutGrid, type LucideIcon, Mail, Mic, Share as ShareIcon, Sparkle } from 'lucide-react-native';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,7 +10,7 @@ import { messageFor } from '@/api/fetcher';
 import { type CodesGo, getGetJotWaysQueryKey, saveJotWays, type TimedAs, useGetChecklists, useGetJotWays, type WaysRequest, type WaysResponse } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
 import { LaterSheet } from '@/features/jot/LaterSheet';
-import { turnOffPinnedNote, turnOnPinnedNote } from '@/features/jot/pinned/service';
+import { ensurePinnedNote, turnOffPinnedNote, turnOnPinnedNote } from '@/features/jot/pinned/service';
 import { pushSupport } from '@/features/notifications/support';
 import { PageProblem } from '@/features/states/PageProblem';
 import { loadState } from '@/lib/loading';
@@ -61,6 +61,11 @@ function Loaded({ ways }: { ways: WaysResponse }) {
   const [choosing, setChoosing] = useState<Choosing>(null);
   const [copied, setCopied] = useState(false);
   const lists = useGetChecklists(circle.id, { limit: 50 }, { query: { enabled: choosing === 'buy' } });
+
+  // The account says the note is on and this phone hasn't got it yet (a new phone): it goes up, without asking anything.
+  useEffect(() => {
+    if (ways.pinnedNote) void ensurePinnedNote({ circleId: circle.id, circleName: circle.name });
+  }, [ways.pinnedNote, circle.id, circle.name]);
 
   const save = useMutation({
     mutationFn: (change: WaysRequest) => saveJotWays(circle.id, change),

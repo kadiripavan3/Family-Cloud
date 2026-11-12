@@ -125,6 +125,17 @@ export async function turnOnPinnedNote(pinned: Pinned): Promise<PinnedAnswer> {
   }
 }
 
+/**
+ * The account says the note is on, and this phone hasn't got it: a new phone, or the person signed in
+ * again. It goes up without asking anything, and only when the phone already allows notifications; the
+ * phone's own question is only ever shown after a press on the switch.
+ */
+export async function ensurePinnedNote(pinned: Pinned): Promise<boolean> {
+  if (pushSupport() !== 'ready' || (await pinnedHere()) || !(await pushAllowed())) return false;
+  await keep.set(KEY, JSON.stringify(pinned));
+  return postPinnedNote().catch(() => false);
+}
+
 /** Switches the note off on this phone: it is taken down, the morning's is cancelled, and nothing runs for it any more. */
 export async function turnOffPinnedNote(): Promise<void> {
   await keep.remove(KEY);

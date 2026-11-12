@@ -15,7 +15,7 @@ jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(() => Promise.resol
 jest.mock('@/features/circles/current', () => ({ useCircle: () => jest.requireActual<typeof import('@/test/samples')>('@/test/samples').linds }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/features/notifications/support', () => ({ pushSupport: jest.fn() }));
-jest.mock('@/features/jot/pinned/service', () => ({ turnOnPinnedNote: jest.fn(), turnOffPinnedNote: jest.fn() }));
+jest.mock('@/features/jot/pinned/service', () => ({ turnOnPinnedNote: jest.fn(), turnOffPinnedNote: jest.fn(), ensurePinnedNote: jest.fn() }));
 jest.mock('@/api/generated/homeport', () => ({ useGetJotWays: jest.fn(), useGetChecklists: jest.fn(), saveJotWays: jest.fn(), getGetJotWaysQueryKey: (id: string) => [`/v1/circles/${id}/jot-ways`] }));
 
 const show = (answer = ways()) => jest.mocked(useGetJotWays).mockReturnValue(loaded(answer) as unknown as ReturnType<typeof useGetJotWays>);

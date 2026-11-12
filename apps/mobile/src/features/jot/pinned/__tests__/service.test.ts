@@ -134,6 +134,19 @@ describe('switching the pinned note on', () => {
     expect(posted(notifications)[0]!.content.body).toBe('Type a line here, or tap to open the jot bar.');
   });
 
+  it("puts the note up on a phone that hasn't got it yet when the account says it is on, without asking anything", async () => {
+    const fresh = world({ os: 'android' });
+    expect(await fresh.service.ensurePinnedNote(linds)).toBe(true);
+    expect(fresh.asked).not.toHaveBeenCalled();
+    expect(fresh.notifications.scheduleNotificationAsync).toHaveBeenCalled();
+    // Already up on this phone: nothing is posted again. Not allowed by the phone: nothing is asked.
+    expect(await fresh.service.ensurePinnedNote(linds)).toBe(false);
+    const no = world({ os: 'ios', phone: 'off' });
+    expect(await no.service.ensurePinnedNote(linds)).toBe(false);
+    expect(no.kept.size).toBe(0);
+    expect(no.asked).not.toHaveBeenCalled();
+  });
+
   it('switches off: the note comes down, the morning is cancelled, the task stops, and the phone forgets', async () => {
     const { service, notifications, kept } = world({ os: 'android', kept: noteOn() });
     await service.turnOffPinnedNote();
@@ -236,6 +249,15 @@ describe('keeping the note there', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(listeners).toHaveLength(1);
     expect(notifications.registerTaskAsync).toHaveBeenCalledWith('homeport.jot.pinned');
+  });
+
+  it('takes the note down when the person signs out', async () => {
+    const { notifications, kept } = world({ os: 'android', kept: noteOn() });
+    jest.requireActual<typeof import('../early')>('../early');
+    const { runBeforeSignOut } = jest.requireActual<typeof import('@/auth/beforeSignOut')>('@/auth/beforeSignOut');
+    await runBeforeSignOut();
+    expect(kept.has('homeport.jot.pinned')).toBe(false);
+    expect(notifications.dismissNotificationAsync).toHaveBeenCalledWith('jot.pinned');
   });
 
   it('does nothing at all in a browser when the code loads', () => {

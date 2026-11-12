@@ -17,7 +17,7 @@ jest.mock('@/features/circles/current', () => ({ useCircle: () => jest.requireAc
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/lib/ids', () => ({ newClientId: () => `client-${(mockIds += 1)}` }));
 jest.mock('@/features/notifications/support', () => ({ pushSupport: jest.fn() }));
-jest.mock('@/features/jot/pinned/service', () => ({ turnOnPinnedNote: jest.fn(), turnOffPinnedNote: jest.fn() }));
+jest.mock('@/features/jot/pinned/service', () => ({ turnOnPinnedNote: jest.fn(), turnOffPinnedNote: jest.fn(), ensurePinnedNote: jest.fn() }));
 jest.mock('@/api/generated/homeport', () => ({ useGetJots: jest.fn(), useGetJotWays: jest.fn(), jot: jest.fn(), undoJot: jest.fn(), moveJot: jest.fn(), saveJotWays: jest.fn(), getGetJotWaysQueryKey: (id: string) => [`/v1/circles/${id}/jot-ways`] }));
 
 const at = (hours: number, minutes: number) => {

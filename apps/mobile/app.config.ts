@@ -14,6 +14,7 @@ const SHARED_PAGES = ['/join/'];
  * | `EXPO_PUBLIC_LINK_HOST` | Shared links (`https://<host>/join/…`) open the app: the build claims that address. |
  * | `GOOGLE_SERVICES_JSON` | Notifications on Android: the path of the `google-services.json` file (an EAS file variable). |
  * | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | Crash reports with readable stack traces: the build uploads its source maps to Sentry. All three, or nothing. |
+ * | `JOT_NATIVE=1` | Jot outside the app: the widgets, the Lock Screen and the list's Live Activity on an iPhone; the widgets, the quick-settings tile and the long press on the icon on Android (native/jot, added by the two plugins in `plugins/`). Written, and not yet run on a phone: see native/jot/README.md before switching it on. |
  */
 export default ({ config }: ConfigContext): ExpoConfig => {
   const setting = (name: string) => process.env[name]?.trim() || undefined;
@@ -23,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     .replace(/\/.*$/, '')
     .toLowerCase();
   const googleServices = setting('GOOGLE_SERVICES_JSON');
+  const jotNative = setting('JOT_NATIVE') === '1';
   const sentry = setting('SENTRY_ORG') && setting('SENTRY_PROJECT') && setting('SENTRY_AUTH_TOKEN') ? { organization: setting('SENTRY_ORG'), project: setting('SENTRY_PROJECT') } : null;
 
   return {
@@ -52,6 +54,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // Uploads the build's source maps and debug files, so a crash report shows the app's own code.
       // The token is read from the build's environment by Sentry's build step; it is never written down here.
       ...(sentry ? ([['@sentry/react-native/expo', sentry]] satisfies ExpoConfig['plugins']) : []),
+      // Jot's native parts are added during prebuild, and only for a build that asks for them.
+      ...(jotNative ? ['./plugins/withJotIos', './plugins/withJotAndroid'] : []),
     ],
   };
 };

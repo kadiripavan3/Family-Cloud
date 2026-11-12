@@ -1,10 +1,12 @@
 import { AppState } from 'react-native';
 
+import { beforeSignOut } from '@/auth/beforeSignOut';
 import { loadNotifications } from '@/features/notifications/device';
 import { pushSupport } from '@/features/notifications/support';
 
+import { fillOutside, forgetOutside, startOutside } from '../outside';
 import { type Answer, TASK } from './note';
-import { answerPinnedNote, bringBackPinnedNote, pinnedHere } from './service';
+import { answerPinnedNote, bringBackPinnedNote, pinnedHere, turnOffPinnedNote } from './service';
 
 /**
  * What the pinned note needs from the moment the app's code loads, before any screen: imported first by
@@ -29,6 +31,13 @@ export function startPinnedNote(): boolean {
   } catch {
     // Without the task the note still works while the app is open or in the background.
   }
+  // Android's widgets start the app's code unseen too, for a chip or a tick.
+  startOutside();
+  // Signing out takes the note down and empties what the widgets were left: nothing of the person stays outside the app.
+  beforeSignOut(async () => {
+    await turnOffPinnedNote();
+    await forgetOutside();
+  });
   void (async () => {
     const Notifications = await loadNotifications();
     Notifications.addNotificationResponseReceivedListener((answer) => void answerPinnedNote(answer));
@@ -36,7 +45,10 @@ export function startPinnedNote(): boolean {
     const first = Notifications.getLastNotificationResponse();
     if (first) void answerPinnedNote(first);
     AppState.addEventListener('change', (state) => {
-      if (state === 'active') void bringBackPinnedNote();
+      if (state !== 'active') return;
+      void bringBackPinnedNote();
+      // The widgets and the Lock Screen get what to show each time the app comes to the front.
+      void fillOutside();
     });
     if (await pinnedHere()) await Notifications.registerTaskAsync(TASK).catch(() => undefined);
   })().catch(() => undefined);

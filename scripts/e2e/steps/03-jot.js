@@ -21,6 +21,14 @@ exports.run = async function run(ctx) {
 
   await ctx.signIn('nora@example.com');
 
+  // What this walk adds to the sample family is taken back at its end (through the API), so the next run, in
+  // the other colour scheme, finds the family as the sample data left it.
+  const nora = (await ctx.api(null, 'POST', '/local-auth/token', { email: 'nora@example.com', code: ctx.CODE })).accessToken;
+  const linds = (await ctx.api(nora, 'GET', '/v1/circles')).find((circle) => circle.name === 'The Linds').id;
+  const jotsNow = async () => (await ctx.api(nora, 'GET', `/v1/circles/${linds}/jots?limit=100`)).items;
+  const before = new Set((await jotsNow()).map((jot) => jot.id));
+  const made = { event: null, ticked: null };
+
   await step('jot-bar', async () => {
     // What the widget's line, the tile and the long press open: the app, straight onto the bar.
     await page.goto(WEB_URL + '/jot');
@@ -165,6 +173,7 @@ exports.run = async function run(ctx) {
     // It is an event now, made through Plan's API, and opens as one.
     await R('button', { name: /^Class 4B is going to the Postojna caves\. Event/ }).click();
     await page.waitForURL(/\/event\/[0-9a-f-]{36}/);
+    made.event = page.url().match(/\/event\/([0-9a-f-]{36})/)[1];
     await T('Class 4B is going to the Postojna caves').waitFor();
     await page.goBack();
     await T(/^On a phone, any app's share button hands the letter over/).waitFor();
@@ -185,6 +194,7 @@ exports.run = async function run(ctx) {
     // A circle ticks, and the line stays where it was.
     const line = page.getByRole('checkbox').first();
     const name = await line.getAttribute('aria-label');
+    made.ticked = (await ctx.api(nora, 'GET', `/v1/circles/${linds}/widgets`)).shopping.lines.find((one) => one.text === name).id;
     await line.click();
     await R('checkbox', { name, checked: true }).waitFor();
     await page.getByText(`${before} left`).last().waitFor();
@@ -237,6 +247,13 @@ exports.run = async function run(ctx) {
     await back();
     await R('button', { name: 'Close', exact: true }).click();
     await page.getByRole('tab', { name: 'Home' }).last().waitFor();
+  });
+
+  await step('jot-tidy', async () => {
+    // Everything jotted in this walk is undone, the event from the letter is deleted, the line is unticked.
+    for (const jot of await jotsNow()) if (!before.has(jot.id)) await ctx.api(nora, 'DELETE', `/v1/jots/${jot.id}`);
+    if (made.event) await ctx.api(nora, 'DELETE', `/v1/things/${made.event}`);
+    if (made.ticked) await ctx.api(nora, 'PATCH', `/v1/checklist-items/${made.ticked}`, { done: false });
   });
 
   await ctx.signOut();

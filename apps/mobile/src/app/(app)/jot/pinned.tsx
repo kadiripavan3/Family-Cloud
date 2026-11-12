@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ChevronDown, ChevronUp, type LucideIcon, Moon, Pencil, Send, Sun, Wifi } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, TextInput, View } from 'react-native';
 
 import { useCache } from '@/api/cache';
@@ -12,7 +12,7 @@ import { KIND_ICONS } from '@/features/jot/kinds';
 import { NoteCard, NoteHead, NoteLine } from '@/features/jot/Note';
 import { OnPhoto, OnPhotoNote } from '@/features/jot/OnPhoto';
 import { phoneDay } from '@/features/jot/phone';
-import { turnOffPinnedNote, turnOnPinnedNote } from '@/features/jot/pinned/service';
+import { ensurePinnedNote, turnOffPinnedNote, turnOnPinnedNote } from '@/features/jot/pinned/service';
 import { batches, todaysJots } from '@/features/jot/today';
 import { useJotting } from '@/features/jot/useJotting';
 import { pushSupport } from '@/features/notifications/support';
@@ -69,6 +69,11 @@ function Note({ ways, lines }: { ways: WaysResponse; lines: ReturnType<typeof ba
   /** What came of switching the real note on, on this phone. */
   const [blocked, setBlocked] = useState(false);
   const clientId = useRef(newClientId());
+
+  // The account says the note is on and this phone hasn't got it yet (a new phone): it goes up, without asking anything.
+  useEffect(() => {
+    if (ways.pinnedNote) void ensurePinnedNote({ circleId: circle.id, circleName: circle.name });
+  }, [ways.pinnedNote, circle.id, circle.name]);
 
   const typed = text.trim();
   const add = () => {
