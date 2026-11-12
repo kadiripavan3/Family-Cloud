@@ -498,6 +498,7 @@ public class ActivityService {
             case BILL -> "Bill";
             case SHEET -> "Sheet";
             case SPLIT -> "Shared costs";
+            case GOODNIGHT -> "Goodnight";
         };
     }
 

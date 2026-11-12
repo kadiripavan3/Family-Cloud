@@ -216,14 +216,52 @@ class ApiDescriptionTest extends ApiTest {
                         "{\"clientId\":\"%s\",\"scope\":\"mine\"}".formatted(id()),
                         201),
                 "$.id");
+        // With Journey: a goodnight Nora narrowed to herself, and a draft of a journey, which is its writer's alone.
+        String nightClip = send(
+                HttpMethod.POST, "/v1/media/uploads", nora, "{\"kind\":\"video\",\"contentType\":\"video/mp4\"}", 200);
+        send(nightClip, "video/mp4", "goodnight".getBytes());
+        send(
+                HttpMethod.POST,
+                "/v1/media/uploads/" + JsonPath.<String>read(nightClip, "$.mediaId") + "/complete",
+                nora,
+                null,
+                204);
+        String goodnight = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/goodnights",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"mediaId\":\"%s\"}"
+                                .formatted(id(), circle, JsonPath.<String>read(nightClip, "$.mediaId")),
+                        201),
+                "$.id");
+        send(HttpMethod.PUT, "/v1/things/" + goodnight + "/audience", nora, "{\"audience\":\"me\"}", 200);
+        String draft = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/journey/drafts",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"momentOf\":\"%s\"}"
+                                .formatted(id(), circle, library.get(0)),
+                        201),
+                "$.id");
+        // A folder of hers that is a trip.
+        send(
+                HttpMethod.PUT,
+                "/v1/trips/" + folder,
+                nora,
+                "{\"startsOn\":\"2027-04-03\",\"endsOn\":\"2027-04-17\"}",
+                200);
 
         List<String> forStranger = new ArrayList<>(List.of(
                 circle, child, page, pass, album, list, folder, board, vaultItem, event, reminder, goal, jot, bill,
                 sheet, split, export));
         forStranger.addAll(library);
+        forStranger.addAll(List.of(goodnight, draft));
         List<String> forAlex = new ArrayList<>(List.of(
                 page, album, list, folder, board, vaultItem, event, reminder, goal, jot, bill, sheet, split, export));
         forAlex.addAll(library);
+        forAlex.addAll(List.of(goodnight, draft));
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {

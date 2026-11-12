@@ -30,6 +30,7 @@ public class LocalModeGuard implements ApplicationListener<ApplicationEnvironmen
 
     /** Every switch and the words it understands. A word it doesn't know is a typing mistake, not "off". */
     private static final Map<String, List<String>> MODES = Map.of(
+            "homeport.journey.mode", List.of("http", "off", "local"),
             "homeport.auth.mode", List.of("supabase", "local"),
             "homeport.media.mode", List.of("r2", "local"),
             "homeport.video.mode", List.of("mux", "off", "local"),
@@ -78,6 +79,9 @@ public class LocalModeGuard implements ApplicationListener<ApplicationEnvironmen
         }
         if ("local".equals(environment.getProperty("homeport.email.mode"))) {
             on.add("homeport.email.mode=local (emails are only written to the log)");
+        }
+        if ("local".equals(environment.getProperty("homeport.journey.mode"))) {
+            on.add("homeport.journey.mode=local (sample journeys stand in for Journey; nothing is asked of it)");
         }
         if (!on.isEmpty()) {
             throw new IllegalStateException(

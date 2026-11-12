@@ -61,6 +61,14 @@ final class SettingsCheck {
             need(env, missing, "homeport.apple.client-id", "APPLE_CLIENT_ID", or);
             need(env, missing, "homeport.apple.private-key", "APPLE_PRIVATE_KEY", or);
         }
+        if ("http".equals(env.getProperty("homeport.journey.mode"))) {
+            need(
+                    env,
+                    missing,
+                    "homeport.journey.http.url",
+                    "JOURNEY_API_URL",
+                    "the link with Journey, or HOMEPORT_JOURNEY_MODE=off");
+        }
         String address = env.getProperty("homeport.public-url", "").trim();
         if (!address.startsWith("https://")) {
             missing.add("HOMEPORT_PUBLIC_URL: the https address people reach the API at (step 3). Links in emails and"
