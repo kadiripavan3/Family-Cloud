@@ -98,10 +98,19 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
      * An id in the address that isn't an id ({@code /v1/sheets/nothing-here}) names nothing, so the answer is
      * the same as for an id nobody has: not found. A word in the question part that can't be read
      * ({@code ?limit=many}) stays what it is, a request we couldn't read.
+     *
+     * <p>A word from a fixed set is neither: {@code /templates/teleporter/start} and {@code ?place=attic} are
+     * answered in the set's own sentence ("That isn't a template we have."), written where the set is defined.
      */
     @Override
     protected ResponseEntity<Object> handleTypeMismatch(
             TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        for (Throwable cause = ex.getCause(); cause != null; cause = cause.getCause()) {
+            if (cause instanceof ApiProblem problem) {
+                return ResponseEntity.status(problem.status())
+                        .body(problem(problem.status(), problem.code(), problem.getMessage()));
+            }
+        }
         if (ex instanceof MethodArgumentTypeMismatchException mismatch
                 && mismatch.getParameter().hasParameterAnnotation(PathVariable.class)) {
             return handleExceptionInternal(ex, null, headers, HttpStatus.NOT_FOUND, request);
