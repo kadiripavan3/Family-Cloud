@@ -13,6 +13,9 @@ const KINDS: Record<string, { name: string; a: string }> = {
   file: { name: 'File', a: 'a file' },
   document: { name: 'Document', a: 'a document' },
   album: { name: 'Album', a: 'an album' },
+  folder: { name: 'Folder', a: 'a folder' },
+  board: { name: 'Template page', a: 'a page made from a template' },
+  split: { name: 'Split', a: 'a split of costs' },
   moment: { name: 'Moment', a: 'a moment' },
   bill: { name: 'Bill', a: 'a bill' },
   sheet: { name: 'Sheet', a: 'a sheet' },
@@ -25,6 +28,8 @@ export const things = {
   /** What a kind of thing is called: `name` on its own ("Page"), `a` in a sentence ("a page"). */
   kind: (kind: string | null | undefined) => KINDS[kind ?? ''] ?? { name: 'Thing', a: 'a thing' },
   untitled: 'Untitled',
+  /** What a thing is called in a list: its title, or, for a photo or a video that has none, what it is. */
+  titleOr: (title: string | null | undefined, kind: string | null | undefined) => title?.trim() || (kind === 'photo' || kind === 'video' ? (KINDS[kind]?.name ?? 'Untitled') : 'Untitled'),
 
   /** A row in a list, for a screen reader: its title, what kind it is, where it stands. */
   row: (title: string, kind: string, line: string | null | undefined) => [title, kind, line].filter(Boolean).join('. '),
@@ -51,6 +56,9 @@ export const things = {
     body: 'Words',
     bodyPlaceholder: 'Write something',
     edited: (ago: string) => `Edited ${ago}`,
+    editedBy: (name: string, ago: string) => `Edited by ${name} · ${ago}`,
+    /** Under a page that is made of parts, for someone who may edit it. */
+    partsLater: 'This page is made of parts: headings, lists, things from other places. Changing its parts arrives with Notes; its title can be changed here.',
     viewOnly: 'You can read this page, but not change it.',
     delete: 'Delete page',
     deleteAsk: { title: 'Delete this page?', body: 'It is gone for everyone it was shared with. This can’t be undone.', confirm: 'Delete page' },

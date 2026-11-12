@@ -59,8 +59,62 @@ describe('a page', () => {
     await user.type(screen.getByLabelText('Words'), '\nThe router is in the hallway.');
     await user.press(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(mockCache.pageSaved).toHaveBeenCalledWith(saved));
-    expect(changePage).toHaveBeenCalledWith(mockId, { title: 'Wi‑Fi and smart home', body: 'Network: Lind-Home\nThe router is in the hallway.' });
+    // Only what changed is sent: a change of words leaves the title out, and the other way round.
+    expect(changePage).toHaveBeenCalledWith(mockId, { body: 'Network: Lind-Home\nThe router is in the hallway.' });
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();
+  });
+
+  it('sends a new title without the words, so a page made of parts keeps its parts', async () => {
+    jest.mocked(changePage).mockResolvedValue(page({ title: 'Wi‑Fi' }));
+    await render(inApp(<Page />));
+    const user = userEvent.setup();
+    await user.clear(screen.getByLabelText('Title'));
+    await user.type(screen.getByLabelText('Title'), 'Wi‑Fi');
+    await user.press(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(changePage).toHaveBeenCalledWith(mockId, { title: 'Wi‑Fi' }));
+  });
+
+  it('says who edited it last and which folders it is in, when the API says so', async () => {
+    asked.mockReturnValue(loaded(page({ editedBy: { memberId: 'm-alex', name: 'Alex Strand', avatarUrl: null }, editedAt: justNow, breadcrumb: [{ id: 'f-1', title: 'Kids', emoji: '' }, { id: 'f-2', title: 'Birthdays', emoji: '' }] })));
+    await render(inApp(<Page />));
+    expect(screen.getByText('Edited by Alex · just now')).toBeOnTheScreen();
+    expect(screen.getByText('Kids / Birthdays')).toBeOnTheScreen();
+  });
+
+  it('draws a page made of parts part by part: headings, words, and each thing it holds as it stands now', async () => {
+    const prep = thing({ id: '22222222-2222-4222-8222-222222222222', kind: 'checklist', title: 'Party prep', glance: '4 of 9 done' });
+    const budget = thing({ id: '33333333-3333-4333-8333-333333333333', kind: 'sheet', place: 'money', title: 'Party budget', glance: '€180 of €250' });
+    const cake = thing({ id: '44444444-4444-4444-8444-444444444444', kind: 'reminder', place: 'plan', title: 'Order the cake', glance: 'Fri' });
+    const block = { id: 'b-1', kind: 'live' as const, text: '', marks: [], thing: null, checklist: null, unseen: false, media: null, lat: null, lng: null, updatedAt: justNow };
+    asked.mockReturnValue(
+      loaded(
+        page({
+          body: 'The party\nAt home, 8 children.',
+          blocks: [
+            { ...block, id: 'b-0', kind: 'heading', text: 'The party' },
+            { ...block, id: 'b-1', kind: 'paragraph', text: 'At home, 8 children.' },
+            { ...block, id: 'b-2', thing: budget },
+            { ...block, id: 'b-3', kind: 'checklist', thing: prep },
+            // Something the reader may not see is left out, without a word.
+            { ...block, id: 'b-4', unseen: true },
+          ],
+        }),
+      ),
+    );
+    // What is linked and already on the page is not listed twice.
+    links.mockReturnValue(loaded([prep, cake]));
+    await render(inApp(<Page />));
+    expect(screen.getByText('The party')).toBeOnTheScreen();
+    expect(screen.getByText('At home, 8 children.')).toBeOnTheScreen();
+    expect(screen.getAllByRole('button', { name: 'Party prep. List. 4 of 9 done' })).toHaveLength(1);
+    expect(screen.getByText('Linked')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Order the cake. Reminder. Fri' })).toBeOnTheScreen();
+    // Its parts are changed in Notes; here the words are not one box to type over.
+    expect(screen.queryByLabelText('Words')).toBeNull();
+    expect(screen.getByLabelText('Title')).toBeOnTheScreen();
+    expect(screen.getByText(/^This page is made of parts/)).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Party budget. Sheet. €180 of €250' }));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'sheet', id: budget.id } });
   });
 
   it('asks before leaving with something typed and not saved', async () => {

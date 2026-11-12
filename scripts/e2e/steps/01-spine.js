@@ -740,11 +740,22 @@ async function sampleCircles(ctx) {
 
   await step('home', async () => {
     await ctx.signIn('nora@example.com');
-    // Home opens on her first circle, the family, on Today.
+    // Home opens on her first circle, the family, on Today: the summary with its ring, the day's list (a
+    // time, a tick or an amount in front of each), and what is new.
     await R('button', { name: 'The Linds. Change circle' }).waitFor();
+    await T(/^\d+ things? left today · \d+ done$/).waitFor();
+    await R('button', { name: '15:30. Dentist · Mia. Alex is taking her' }).waitFor();
+    await R('button', { name: 'Not done yet. Take the bins out. Tonight · your turn' }).waitFor();
+    await R('button', { name: '€84. Electricity. Due tomorrow · split with Alex' }).waitFor();
     await T('New in the library').waitFor();
-    await R('button', { name: /^Emergency numbers\./ }).waitFor();
+    await R('button', { name: /^Saturday at Lake Bled\. 19 new\./ }).waitFor();
     await shot('home');
+    // Something on Today opens by its kind. A bill's own screen arrives with Money; until then it says so.
+    await R('button', { name: '€84. Electricity. Due tomorrow · split with Alex' }).click();
+    await R('heading', { name: 'Electricity' }).waitFor();
+    await T(/^This is a bill\. It opens here once Money is built/).waitFor();
+    await shot('thing-to-come');
+    await R('button', { name: 'Back' }).click();
   });
 
   await step('circle-switch', async () => {
@@ -766,6 +777,7 @@ async function sampleCircles(ctx) {
     slow = false;
     await L('Loading').waitFor({ state: 'detached' });
     await page.unroute('**/today**', { behavior: 'ignoreErrors' });
+    await shot('home-crew');
     // It stays the current one on every tab.
     await R('tab', { name: 'People' }).click();
     await T('Friends · since February 2025', { exact: false }).waitFor();
@@ -776,24 +788,32 @@ async function sampleCircles(ctx) {
   });
 
   await step('search', async () => {
-    // One search across the circle. Words inside a page count, and are shown under its title.
+    // One search across the circle and every place in it. "passport" finds the ID in the Vault, the scan in
+    // the Library, the page that mentions it and the reminder to renew it.
     await R('button', { name: 'Find anything' }).click();
     await T('One search across every place').waitFor();
-    await L('Search The Linds').fill('alex');
-    await T('Notes', { exact: true }).waitFor();
-    await R('button', { name: /^Gift list for Alex\. Page/ }).waitFor();
-    await R('button', { name: /^Emergency numbers\. Page\. “/ }).waitFor();
+    await L('Search The Linds').fill('passport');
+    await R('button', { name: /^Nora's passport\. Vault item/ }).waitFor();
+    await R('button', { name: /^Passport scan, Alex\. Document/ }).waitFor();
+    await R('button', { name: /^Renew Mia's passport\. Reminder/ }).waitFor();
+    // Words found inside a page stand under its title.
+    await R('button', { name: /^What to bring to Norway\. Page\. “.*passports/ }).waitFor();
     await shot('search');
     // The chips narrow it to one place.
     await R('button', { name: 'Library', exact: true }).click();
-    await T('Nothing found for “alex”').waitFor();
+    await R('button', { name: /^Nora's passport\./ }).waitFor({ state: 'detached' });
+    await R('button', { name: /^Passport scan, Alex\. Document/ }).waitFor();
     await R('button', { name: 'Everything' }).click();
+    await L('Search The Linds').fill('unicorns');
+    await T('Nothing found for “unicorns”').waitFor();
     await L('Search The Linds').fill('router');
     await R('button', { name: /^Wi‑Fi and smart home\. Page\. “/ }).click();
   });
 
   await step('audience', async () => {
-    // The page it found, and the one sheet behind its chip.
+    // The page it found: where it is, who edited it, and the one sheet behind its chip.
+    await T('Home / House manual').waitFor();
+    await T(/^Edited by Alex · /).waitFor();
     await R('button', { name: 'Seen by: Alex, Mia and you. Change who can see this' }).click();
     await T('Who can see this?').waitFor();
     await T('“Wi‑Fi and smart home”, a page in The Linds').waitFor();
@@ -812,7 +832,7 @@ async function sampleCircles(ctx) {
   await step('people', async () => {
     await R('tab', { name: 'People' }).click();
     await R('heading', { name: 'People' }).waitFor();
-    await T('Family · since March 2024', { exact: false }).waitFor();
+    await T(/^Family · since March 2024 · \d+ photos, \d+ notes and \d+ passwords shared here\.$/).waitFor();
     await T('Owner', { exact: true }).waitFor();
     await R('button', { name: /^Alex Strand\. Adult\./ }).waitFor();
     await R('button', { name: /^Mia\. Child, \d+/ }).waitFor();
@@ -827,7 +847,10 @@ async function sampleCircles(ctx) {
     await T(/^Birthday /).waitFor();
     await T('Shoes 33').waitFor();
     await T('Swims on Thursdays').waitFor();
+    // What is coming up for her, from Plan; and what is kept for her, her photos as one row.
+    await R('button', { name: /^Dentist · Mia\. Event\./ }).waitFor();
     await T('Kept for Mia').waitFor();
+    await R('button', { name: /^\d+ photos of Mia\./ }).waitFor();
     await R('button', { name: /^Mia's 10th birthday\. Page/ }).waitFor();
     await shot('person');
   });
@@ -838,7 +861,19 @@ async function sampleCircles(ctx) {
     await R('button', { name: 'Seen by: Not Mia. Change who can see this' }).waitFor();
     await T(/^Hidden from Mia until \d+ December/).waitFor();
     await T('Not in their search, their Activity or their calendar. It opens to them the morning after.').waitFor();
+    // The page is made of parts: its headings, and each thing it holds as it stands now.
+    await T('Gift ideas', { exact: true }).first().waitFor();
+    await T('The party', { exact: true }).waitFor();
+    await R('button', { name: 'Party budget. Sheet. €180 of €250' }).waitFor();
+    await R('button', { name: /^Party prep\. List\. \d of 9 done/ }).waitFor();
     await shot('surprise');
+    // One of them is a list: it opens as one, with its amounts at the right.
+    await R('button', { name: /^Gift ideas\. List/ }).click();
+    await R('checkbox', { name: 'Roller skates, size 33', checked: true }).waitFor();
+    await T('€45', { exact: true }).waitFor();
+    await T('Alex bought them').waitFor();
+    await shot('checklist-gifts');
+    await R('button', { name: 'Back' }).click();
     await R('button', { name: 'Back' }).click();
     await R('button', { name: 'Back' }).click();
   });
@@ -897,7 +932,7 @@ async function sampleCircles(ctx) {
     // Home opens on the place its address names.
     await page.goto(`${WEB_URL}/?place=vault`);
     await R('tab', { name: 'Vault', selected: true }).waitFor({ timeout: 20000 });
-    // A thing of a kind whose screen isn't built yet lands on a page that says so, when it is there...
+    // The address of a thing that isn't there says so...
     ctx.expectNotFound = true;
     await page.goto(`${WEB_URL}/sheet/00000000-0000-4000-8000-000000000000`);
     await R('heading', { name: "This isn't available" }).waitFor({ timeout: 20000 });

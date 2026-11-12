@@ -27,16 +27,18 @@ import { Sk } from '@/ui/Skeleton';
 import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
+import { stillOn } from './about';
 import { newThingHref } from './newThings';
+import { TodayCards } from './TodayCards';
 
 /** How many of the day's things the summary names before it counts the rest. */
 const NAMED = 2;
 
 /**
  * 3.1 Today, the place Home opens on: what is on, what is due and what is new in the current circle, across
- * every place. A summary card with its ring, the day's list, and what is new as a rail of cards. Every place
- * brings its own things to these through the API; this draws them all the same way and opens each by its
- * kind. With nothing at all it is the brand-new circle's page (13.3): three ways to put the first thing in.
+ * every place. A summary card with its ring, the cards of the circle's own templates (`TodayCards`), the
+ * day's list, and what is new as a rail of cards. Every place brings its own things to these through the
+ * API; this draws them all the same way and opens each by its kind. With nothing at all it is the brand-new circle's page (13.3): three ways to put the first thing in.
  */
 export function TodayHome() {
   const { colors } = useTheme();
@@ -48,23 +50,25 @@ export function TodayHome() {
   if (load.error) return <Problem message={messageFor(load.error)} onRetry={load.retry} retrying={load.retrying} />;
   if (!data) return load.offline ? <Loading offline /> : <TodaySkeleton />;
 
-  const nothing = data.items.length === 0 && data.fresh.length === 0;
+  const nothing = data.items.length === 0 && data.fresh.length === 0 && data.cards.length === 0;
   return (
     <ScrollView
       contentContainerStyle={{ paddingBottom: TAB_BAR_ROOM }}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={asked.isRefetching} onRefresh={() => void asked.refetch()} tintColor={colors.muted} />}>
-      {nothing ? <BrandNew circle={circle} /> : <Day data={data} />}
+      {nothing ? <BrandNew circle={circle} /> : <Day data={data} circle={circle} />}
     </ScrollView>
   );
 }
 
-/** The day itself: the summary card, the list, and what is new. */
-function Day({ data }: { data: TodayResponse }) {
+/** The day itself: the summary card, the cards of the circle's own templates, the list, and what is new. */
+function Day({ data, circle }: { data: TodayResponse; circle: CircleResponse }) {
   const { colors } = useTheme();
   const router = useRouter();
   const all = data.left + data.done;
-  const titles = data.items.map((item) => item.title ?? '').filter(Boolean);
+  // What the day is about: what is still on, or, on a day with nothing in the list, its first cards.
+  const about = data.items.length ? stillOn(data.items) : data.cards;
+  const titles = about.map((one) => one.title ?? '').filter(Boolean);
   return (
     <>
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 18, marginHorizontal: layout.barGutter, paddingVertical: 16, paddingLeft: 18, paddingRight: 16 }}>
@@ -76,8 +80,10 @@ function Day({ data }: { data: TodayResponse }) {
             {words.today.summary.counts(data.left, data.done)}
           </Txt>
         </View>
-        <Ring progress={all === 0 ? 0 : data.done / all} emoji="📅" />
+        <Ring progress={all === 0 ? 0 : data.done / all} emoji={words.today.summary.emoji[circle.kind]} />
       </Card>
+
+      <TodayCards cards={data.cards} />
 
       {data.items.length ? (
         <Card style={{ marginTop: 14, marginHorizontal: layout.barGutter, borderRadius: radius.card, overflow: 'hidden' }}>

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
-import { changePage, deleteThing, type PageResponse, useGetAudience, useGetLinks, useGetPage } from '@/api/generated/homeport';
+import { type BlockResponse, changePage, deleteThing, type PageResponse, useGetAudience, useGetLinks, useGetPage } from '@/api/generated/homeport';
 import { useLeave } from '@/features/navigation/useLeave';
 import { useUnsaved } from '@/features/navigation/useUnsaved';
 import { AudienceChip } from '@/features/sharing/AudienceChip';
@@ -16,7 +16,7 @@ import { ThingRow } from '@/features/things/ThingRow';
 import { formatDayLong, timeAgo } from '@/lib/dates';
 import { loadState } from '@/lib/loading';
 import { firstName } from '@/lib/names';
-import { layout, useTheme } from '@/theme';
+import { layout, radius, useTheme } from '@/theme';
 import { AppBar, BarLink } from '@/ui/AppBar';
 import { AvoidKeyboard } from '@/ui/AvoidKeyboard';
 import { ConfirmSheet } from '@/ui/ConfirmSheet';
@@ -84,10 +84,15 @@ function Loaded({ page }: { page: PageResponse }) {
   const audience = useGetAudience(page.id, { query: { enabled: hiddenFrom.length > 0 } }).data;
   const hidden = audience?.people.filter((person) => person.hidden) ?? [];
   const through = hidden.length > 0 && hidden.every((person) => person.hiddenThrough && person.hiddenThrough === hidden[0]!.hiddenThrough) ? hidden[0]!.hiddenThrough! : null;
-  const links = useGetLinks(page.id).data ?? [];
+  // A page of plain words is typed into as a whole. One made of parts (headings, a list, an event from Plan)
+  // is drawn part by part, each thing as it stands now; changing its parts arrives with Notes.
+  const inParts = page.blocks.some((block) => block.kind !== 'paragraph');
+  const links = (useGetLinks(page.id).data ?? []).filter((thing) => !page.blocks.some((block) => block.thing?.id === thing.id));
+  const where = page.breadcrumb.map((folder) => folder.title).filter(Boolean);
 
   const save = useMutation({
-    mutationFn: () => changePage(page.id, { title: title.trim(), body }),
+    // Only what was changed is sent: a page's words take the place of its text, so they stay out of a change of title.
+    mutationFn: () => changePage(page.id, { ...(title.trim() === page.title ? null : { title: title.trim() }), ...(body === page.body ? null : { body }) }),
     onSuccess: async (saved) => {
       setDraft(null);
       await cache.pageSaved(saved);
@@ -108,6 +113,13 @@ function Loaded({ page }: { page: PageResponse }) {
   return (
     <AvoidKeyboard style={{ flex: 1 }}>
       <AppBar
+        center={
+          where.length ? (
+            <Txt variant="small" color="muted" numberOfLines={1}>
+              {where.join(' / ')}
+            </Txt>
+          ) : undefined
+        }
         trailing={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <AudienceChip thing={page} />
@@ -125,7 +137,7 @@ function Loaded({ page }: { page: PageResponse }) {
             </Txt>
           )}
           <Txt variant="footnote" color="muted" style={{ marginTop: 6, marginBottom: 14 }}>
-            {words.things.page.edited(timeAgo(page.updatedAt))}
+            {page.editedBy?.name ? words.things.page.editedBy(firstName(page.editedBy.name), timeAgo(page.editedAt ?? page.updatedAt)) : words.things.page.edited(timeAgo(page.updatedAt))}
           </Txt>
         </View>
 
@@ -135,16 +147,24 @@ function Loaded({ page }: { page: PageResponse }) {
           </NoteBox>
         ) : null}
 
+        {inParts ? (
+          <Parts blocks={page.blocks} />
+        ) : (
+          <View style={{ paddingHorizontal: layout.rowGutter }}>
+            {page.canEdit ? <GrowingInput label={words.things.page.body} variant="body" placeholder={words.things.page.bodyPlaceholder} value={body} onChangeText={(next) => write({ body: next })} maxLength={100000} minHeight={160} /> : <Txt selectable>{page.body}</Txt>}
+          </View>
+        )}
         <View style={{ paddingHorizontal: layout.rowGutter }}>
           {page.canEdit ? (
-            <GrowingInput label={words.things.page.body} variant="body" placeholder={words.things.page.bodyPlaceholder} value={body} onChangeText={(next) => write({ body: next })} maxLength={100000} minHeight={160} />
-          ) : (
-            <>
-              <Txt selectable>{page.body}</Txt>
+            inParts ? (
               <Txt variant="footnote" color="muted" style={{ marginTop: 18 }}>
-                {words.things.page.viewOnly}
+                {words.things.page.partsLater}
               </Txt>
-            </>
+            ) : null
+          ) : (
+            <Txt variant="footnote" color="muted" style={{ marginTop: 18 }}>
+              {words.things.page.viewOnly}
+            </Txt>
           )}
           {save.isError ? (
             <Txt variant="caption" color="danger" accessibilityLiveRegion="polite" style={{ marginTop: 10 }}>
@@ -189,5 +209,55 @@ function Loaded({ page }: { page: PageResponse }) {
       />
       <ConfirmSheet visible={unsaved.asking} onClose={unsaved.stay} title={words.things.discard.title} body={words.things.discard.body} confirm={words.things.discard.confirm} cancel={words.things.discard.cancel} onConfirm={unsaved.leave} />
     </AvoidKeyboard>
+  );
+}
+
+/** Blocks of a page that stand next to each other and are drawn together: the things in one group, anything else on its own. */
+function runsOf(blocks: readonly BlockResponse[]): BlockResponse[][] {
+  const runs: BlockResponse[][] = [];
+  for (const block of blocks) {
+    const last = runs[runs.length - 1];
+    if (block.thing && last?.[0]?.thing) last.push(block);
+    else runs.push([block]);
+  }
+  return runs;
+}
+
+/**
+ * A page made of parts, read part by part: a heading as a small label, words as words, and each thing the
+ * page holds (a list, an event, a sheet) as a row that says where it stands and opens it. A part the reader
+ * may not see, and the kinds that arrive with Notes (a photo, a file, a place), are left out.
+ */
+function Parts({ blocks }: { blocks: readonly BlockResponse[] }) {
+  const { colors } = useTheme();
+  return (
+    <>
+      {runsOf(blocks).map((run) => {
+        const block = run[0]!;
+        if (block.thing) {
+          return (
+            <RowGroup key={block.id}>
+              {run.map((one, index) => (one.thing ? <ThingRow key={one.id} look="grouped" first={index === 0} thing={one.thing} /> : null))}
+            </RowGroup>
+          );
+        }
+        if (block.kind === 'heading') {
+          return (
+            <GroupLabel key={block.id} style={{ marginHorizontal: layout.gutter }}>
+              {block.text}
+            </GroupLabel>
+          );
+        }
+        if ((block.kind !== 'paragraph' && block.kind !== 'bullet') || !block.text) return null;
+        return (
+          <View key={block.id} style={{ flexDirection: 'row', gap: 10, marginTop: 8, paddingHorizontal: layout.rowGutter }}>
+            {block.kind === 'bullet' ? <View style={{ width: 5, height: 5, marginTop: 9, borderRadius: radius.pill, backgroundColor: colors.text }} /> : null}
+            <Txt selectable style={{ flex: 1 }}>
+              {block.text}
+            </Txt>
+          </View>
+        );
+      })}
+    </>
   );
 }

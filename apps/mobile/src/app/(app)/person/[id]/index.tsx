@@ -11,6 +11,7 @@ import { changeMember, type CircleResponse, type MemberResponse, type PersonPage
 import { uploadPhoto } from '@/api/upload';
 import { useCircles } from '@/features/circles/current';
 import { pickSquarePhoto } from '@/features/media/pick';
+import { placeHref } from '@/features/home/places';
 import { useLeave } from '@/features/navigation/useLeave';
 import { FactsSheet } from '@/features/people/FactsSheet';
 import { PageProblem } from '@/features/states/PageProblem';
@@ -122,6 +123,10 @@ function Loaded({ data }: { data: PersonPageResponse }) {
     },
   });
 
+  // What Plan keeps about them is what is coming up; their photos and videos are one row; the rest is kept for them.
+  const coming = kept.filter((thing) => thing.place === 'plan');
+  const photos = kept.filter((thing) => thing.kind === 'photo' || thing.kind === 'video');
+  const rest = kept.filter((thing) => thing.place !== 'plan' && thing.kind !== 'photo' && thing.kind !== 'video');
   const birthday = member.birthday ? nextBirthday(member.birthday) : null;
   // A plan that is hidden from them today is theirs to be surprised by.
   const hiddenPlan = kept.some((thing) => thing.chip?.hiddenFrom?.includes(name));
@@ -173,16 +178,28 @@ function Loaded({ data }: { data: PersonPageResponse }) {
         </View>
 
         <GroupLabel style={{ marginHorizontal: layout.gutter }}>{says.comingUp}</GroupLabel>
-        <Txt variant="callout" color="muted" style={{ marginHorizontal: layout.gutter }}>
-          {says.comingUpEmpty}
-        </Txt>
-
-        <GroupLabel style={{ marginHorizontal: layout.gutter }}>{member.you ? says.keptYou : says.kept(name)}</GroupLabel>
-        {kept.length ? (
+        {coming.length ? (
           <RowGroup>
-            {kept.map((thing, index) => (
+            {coming.map((thing, index) => (
               <ThingRow key={thing.id} look="grouped" first={index === 0} thing={thing} />
             ))}
+          </RowGroup>
+        ) : (
+          <Txt variant="callout" color="muted" style={{ marginHorizontal: layout.gutter }}>
+            {says.comingUpEmpty(name)}
+          </Txt>
+        )}
+
+        <GroupLabel style={{ marginHorizontal: layout.gutter }}>{member.you ? says.keptYou : says.kept(name)}</GroupLabel>
+        {rest.length || photos.length ? (
+          <RowGroup>
+            {rest.map((thing, index) => (
+              <ThingRow key={thing.id} look="grouped" first={index === 0} thing={thing} />
+            ))}
+            {/* Their photos and videos are one row, as in the drawing; the Library is where they are looked through. */}
+            {photos.length ? (
+              <ThingRow look="grouped" first={rest.length === 0} thing={{ kind: 'album', title: says.photos(photos.length, name), glance: says.photosNote }} onPress={() => router.navigate(placeHref('library'))} />
+            ) : null}
           </RowGroup>
         ) : (
           <Txt variant="callout" color="muted" style={{ marginHorizontal: layout.gutter }}>

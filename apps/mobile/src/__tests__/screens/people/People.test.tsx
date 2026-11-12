@@ -79,10 +79,19 @@ describe('4.1 People', () => {
     expect(screen.getByRole('button', { name: /^Alex Strand/ })).toBeOnTheScreen();
   });
 
-  it('says so when nothing is shared in a circle yet', async () => {
-    jest.mocked(useCircle).mockReturnValue(coupleCircle);
+  it('counts the three the drawing names, however many kinds of thing a circle shares', async () => {
+    jest.mocked(useCircle).mockReturnValue(circle({ shared: { goal: 5, reminder: 6, album: 3, document: 8, bill: 18, photo: 86, checklist: 4, video: 4, vault_item: 6, folder: 16, split: 1, sheet: 5, page: 25, event: 7, board: 10 } }));
     await render(inApp(<People />));
+    expect(screen.getByText('Family · since March 2024 · 90 photos, 39 notes and 6 passwords shared here.')).toBeOnTheScreen();
+  });
+
+  it('says so when nothing is shared in a circle yet, and counts things when none is a photo, a note or a password', async () => {
+    jest.mocked(useCircle).mockReturnValue(coupleCircle);
+    const view = await render(inApp(<People />));
     expect(screen.getByText('Couple · since March 2024 · nothing shared here yet.')).toBeOnTheScreen();
+    jest.mocked(useCircle).mockReturnValue({ ...coupleCircle, shared: { bill: 2, event: 1 } });
+    await view.rerender(inApp(<People />));
+    expect(screen.getByText('Couple · since March 2024 · 3 things shared here.')).toBeOnTheScreen();
   });
 });
 

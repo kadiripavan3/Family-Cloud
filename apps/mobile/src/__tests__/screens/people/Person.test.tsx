@@ -10,7 +10,7 @@ import { toISODate } from '@/lib/dates';
 import { inApp } from '@/test/phone';
 import { alex, biscuit, circle, crewCircle, failed, linds, loaded, me, mia, notMia, pending, thing } from '@/test/samples';
 
-const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
+const mockRouter = { push: jest.fn(), navigate: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
 const mockCache = { memberSaved: jest.fn(() => Promise.resolve()), memberRemoved: jest.fn(() => Promise.resolve()) };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ id: 'm-mia' }) }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
@@ -59,12 +59,28 @@ describe("4.2 A person's page", () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'page', id: plan.id } });
   });
 
-  it('says quietly that what is coming up arrives with Plan, and when nothing is kept', async () => {
+  it('says quietly when nothing is coming up, and when nothing is kept', async () => {
     asked.mockReturnValue(loaded({ member: mia, kept: [] }));
     await render(inApp(<Person />));
     expect(screen.getByText('Coming up')).toBeOnTheScreen();
-    expect(screen.getByText('Nothing yet. Events and reminders about them show here once Plan is built.')).toBeOnTheScreen();
+    expect(screen.getByText('Nothing coming up for Mia. Events and reminders about them show here.')).toBeOnTheScreen();
     expect(screen.getByText('Nothing yet. Whatever is kept about Mia and shared with you shows here.')).toBeOnTheScreen();
+  });
+
+  it("puts what Plan keeps about them under Coming up, and their photos in one row that leads to the Library", async () => {
+    const dentist = thing({ id: '44444444-4444-4444-8444-444444444444', kind: 'event', place: 'plan', title: 'Dentist · Mia', glance: 'Today 15:30' });
+    const photos = [1, 2, 3].map((n) => thing({ id: `5555555${n}-5555-4555-8555-555555555555`, kind: 'photo', place: 'library', title: '', glance: 'Sat 7 Nov · Lake Bled' }));
+    asked.mockReturnValue(loaded({ member: miaSoon, kept: [dentist, plan, ...photos] }));
+    await render(inApp(<Person />));
+    const rows = screen.getAllByRole('button').map((one) => one.props.accessibilityLabel as string);
+    // The event stands before what is kept, and the three photos are one row.
+    expect(rows.indexOf('Dentist · Mia. Event. Today 15:30')).toBeGreaterThan(-1);
+    expect(rows.indexOf('Dentist · Mia. Event. Today 15:30')).toBeLessThan(rows.indexOf("Mia's 10th birthday. Page"));
+    expect(rows.filter((row) => /Photo/.test(row))).toEqual([]);
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: '3 photos of Mia. Album. In the Library' }));
+    expect(mockRouter.navigate).toHaveBeenCalledWith({ pathname: '/', params: { place: 'library' } });
+    expect(screen.queryByText(/^Nothing coming up/)).toBeNull();
   });
 
   it('changes the facts: take one away, add one, save', async () => {
