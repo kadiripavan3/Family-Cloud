@@ -195,7 +195,7 @@ exports.run = async function run(ctx) {
     // Who said it, the words, and a clip of it: a picked sound file stands in for the microphone.
     await R('button', { name: 'Mia', exact: true }).click();
     const [sounds] = await Promise.all([page.waitForEvent('filechooser'), R('button', { name: 'Add a recording' }).click()]);
-    await sounds.setFiles(soundFile(ctx.out, 'said-clip', 6));
+    await sounds.setFiles(soundFile('said-clip', 6));
     await T('Recording attached · 0:06').waitFor();
     await L('What did they just say?').fill('This walk-through is taking ages.');
     await shot('said-add');
@@ -281,33 +281,44 @@ exports.run = async function run(ctx) {
     // It waits its turn; "Send it now" makes it this week's question, with the link that is hers alone.
     await R('button', { name: new RegExp(`^What was your first bicycle like\\? \\(${tag}\\)\\. Nora's question · goes out on `) }).click();
     await R('button', { name: 'Send it now' }).click();
-    await R('button', { name: 'Send it to Astrid' }).waitFor({ timeout: 20000 });
+    // It is out: this week's question, or, when another went out on the same day (an earlier run), one of
+    // those still waiting for an answer, which opens to the same link.
+    const sendIt = R('button', { name: 'Send it to Astrid' });
+    const sent = R('button', { name: new RegExp(`^What was your first bicycle like\\? \\(${tag}\\)\\. Sent on `) });
+    await sendIt.or(sent).first().waitFor({ timeout: 20000 });
+    const thisWeeks = await sendIt.isVisible().catch(() => false);
+    if (!thisWeeks) await sent.click();
+    await sendIt.waitFor();
     await T(/\/s\//).waitFor();
     await shot('stories-waiting');
     // A browser has no share sheet: the link is there to copy.
-    await R('button', { name: 'Send it to Astrid' }).click();
+    await sendIt.click();
     await T('This browser has no share sheet. Copy the link and send it yourself.').waitFor();
     await R('button', { name: 'Copy the link' }).click();
     await R('button', { name: 'Copied' }).waitFor();
 
     // Her page, opened as someone with no account: the question, and one button to talk. A sound file answers.
     const stories = await sampleBoard('stories');
-    const link = stories.view.thisWeek.link;
-    if (stories.view.thisWeek.text !== question || !link) throw new Error('the question that was sent is not this week\'s, or has no link');
-    await ctx.webPage(link, question, 'stories-her-page');
-    await ctx.webPage(link, 'Thank you', 'stories-her-thanks', async (web) => {
+    const asked = [stories.view.thisWeek, ...stories.view.unanswered].find((one) => one && one.text === question);
+    if (!asked || !asked.link) throw new Error('the question that was sent has no link');
+    await ctx.webPage(asked.link, question, 'stories-her-page');
+    await ctx.webPage(asked.link, 'Thank you', 'stories-her-thanks', async (web) => {
       await web.getByText(question).first().waitFor();
-      await web.locator('#file').setInputFiles(soundFile(ctx.out, 'astrid-answer', 8));
+      await web.locator('#file').setInputFiles(soundFile('astrid-answer', 8));
     });
 
     // Back in the app the answer is there, in her voice.
     await page.goto(`${WEB_URL}/board/${stories.id}`);
-    await R('button', { name: `Play the answer to: ${question}` }).waitFor({ timeout: 20000 });
-    await T(/^Astrid answered (just now|\d+ min ago), by talking\.$/).waitFor();
-    await R('button', { name: `Play the answer to: ${question}` }).click();
+    const play = R('button', { name: `Play the answer to: ${question}` });
+    const told = R('button', { name: new RegExp(`^What was your first bicycle like\\? \\(${tag}\\)\\. `) });
+    await play.or(told).first().waitFor({ timeout: 20000 });
+    if (thisWeeks) await T(/^Astrid answered (just now|\d+ min ago), by talking\.$/).waitFor();
+    else await told.click();
+    await play.click();
     await R('button', { name: `Stop. Play the answer to: ${question}` }).waitFor();
     await shot('stories-answered');
     await R('button', { name: `Stop. Play the answer to: ${question}` }).click();
+    if (!thisWeeks) await closeSheet(ctx);
   });
 
   await step('good-jar', async () => {
@@ -372,8 +383,10 @@ exports.run = async function run(ctx) {
     await openFromGallery(/^The doorframe\. Does work/, /^The doorframe\. Mia \d+/);
     await R('heading', { name: 'The doorframe' }).waitFor({ timeout: 20000 });
     // The ruler with every mark, a card for each child, and the lines the API words.
-    await T(/^138 Mia · \w+ \d\d$/).waitFor();
-    await T(/^105 Leo · \w+ \d\d$/).waitFor();
+    await T('138', { exact: true }).waitFor();
+    await T(/^Mia · \w+ \d\d$/).first().waitFor();
+    await T('105', { exact: true }).waitFor();
+    await T(/^Leo · \w+ \d\d$/).first().waitFor();
     await T('138 cm').waitFor();
     await T('119 cm').waitFor();
     await T("Up to Grandma Astrid's shoulder").waitFor();
@@ -386,7 +399,7 @@ exports.run = async function run(ctx) {
     await shot('doorframe-add');
     await R('button', { name: 'Mark it' }).click();
     await T('120.1 cm').waitFor({ timeout: 20000 });
-    await T(/^120\.1 Leo · \w+ \d\d$/).waitFor();
+    await T('120.1', { exact: true }).waitFor();
     await shot('doorframe-added');
   });
 

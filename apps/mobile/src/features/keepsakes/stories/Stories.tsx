@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, Link2, MessageCirclePlus, Play, Route, Send } from 'lucide-react-native';
+import { ChevronRight, Clock as ClockIcon, Link2, MessageCirclePlus, Play, Route, Send } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { Share, View } from 'react-native';
 
@@ -83,9 +83,7 @@ export function Stories({ board }: BoardScreenProps<StoriesView, StoriesSettings
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6, marginBottom: 2 }}>
                 <PlayButton look="round" media={week.recording} label={say.play(week.text)} />
                 <Wave />
-                <Txt variant="footnote" weight={700}>
-                  {words.templates.sound.clock(week.recording.seconds ?? 0)}
-                </Txt>
+                <Clock seconds={week.recording.seconds} />
               </View>
               <Txt variant="footnote" color="muted">
                 {say.answered(teller, week.answeredAt ? timeAgo(week.answeredAt) : null)}
@@ -118,7 +116,7 @@ export function Stories({ board }: BoardScreenProps<StoriesView, StoriesSettings
           title={one.text}
           line={say.waitingLine(one.askedBy?.name ?? null, formatWeekdayLong(one.goesOut))}
           leading={<Avatar uri={one.askedBy?.avatarUrl} name={one.askedBy?.name ?? ''} size={44} />}
-          trailing={<Clock size={18} color={colors.muted} />}
+          trailing={<ClockIcon size={18} color={colors.muted} />}
           onPress={() => setOpenId(one.id)}
         />
       ))}
@@ -142,6 +140,16 @@ function Wave() {
         <View key={index} style={{ width: 3, height: `${tall}%`, borderRadius: radius.pill, backgroundColor: colors.accentText }} />
       ))}
     </View>
+  );
+}
+
+/** How long a recording is, beside its wave. Nothing for one whose length nobody measured (an answer sent as a file). */
+function Clock({ seconds }: { seconds: number | null }) {
+  if (seconds === null) return null;
+  return (
+    <Txt variant="footnote" weight={700}>
+      {words.templates.sound.clock(seconds)}
+    </Txt>
   );
 }
 
@@ -230,9 +238,7 @@ function StorySheet({ board, question, teller, onClose }: { board: Told; questio
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <PlayButton look="round" media={question.recording} label={say.play(question.text)} />
               <Wave />
-              <Txt variant="footnote" weight={700}>
-                {words.templates.sound.clock(question.recording.seconds ?? 0)}
-              </Txt>
+              <Clock seconds={question.recording.seconds} />
             </View>
           ) : null}
           {question.answered ? (

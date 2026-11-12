@@ -81,7 +81,7 @@ export function OpenWhen({ board }: BoardScreenProps<OpenWhenView, OpenWhenSetti
               title={say.envelope(one.when)}
               line={one.opened ? openedLine(one, reader, view.youAreTheReader) : say.sealedLine({ voice: one.hasVoice, forward: one.forwardOn !== null }, view.youAreTheReader ? null : reader)}
               lineTone={one.opened ? 'ok' : 'muted'}
-              trailing={one.opened ? <MailOpen size={18} color={colors.muted} /> : <Lock size={18} color={colors.muted} />}
+              trailing={one.opened ? <Mail size={18} color={colors.muted} /> : <Lock size={18} color={colors.muted} />}
               onPress={() => setOpenId(one.id)}
             />
           ))}

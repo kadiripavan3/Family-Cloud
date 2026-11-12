@@ -177,7 +177,8 @@ export const keepsakes = {
     storyLine: (seconds: number | null, typed: boolean, photos: number) => {
       const length = seconds === null ? null : seconds < 60 ? `${seconds} s` : seconds % 60 === 0 ? `${seconds / 60} min` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
       const kept = [typed ? 'typed out' : null, photos ? `with ${plural(photos, 'photo')}` : null].filter(Boolean).join(', ');
-      return [length, kept].filter(Boolean).join(' · ');
+      // An answer whose length nobody measured, with nothing added to it yet, is still a story that was told.
+      return [length, kept].filter(Boolean).join(' · ') || 'Told by talking';
     },
     /** Under a question that hasn't gone out: "Mia's question · goes out on Sunday". */
     waitingLine: (asker: string | null, weekday: string) => [asker ? `${of(asker)} question` : null, `goes out on ${weekday}`].filter(Boolean).join(' · '),
@@ -251,8 +252,8 @@ export const keepsakes = {
   // 15.7 The doorframe
   doorframe: {
     ruler: 'The marks on the doorframe',
-    /** After the bold height on the ruler: " Mia · Nov 26". */
-    markLine: (name: string, when: string) => ` ${name} · ${when}`,
+    /** Beside the bold height on the ruler: "Mia · Nov 26". */
+    markLine: (name: string, when: string) => `${name} · ${when}`,
     markSpoken: (name: string, cm: string, day: string) => `${name}, ${cm} cm, ${day}`,
     cm: (height: string) => `${height} cm`,
     empty: { title: 'No marks yet', body: 'Stand someone against the door, make the pencil mark, and add it here. Each mark keeps its date.' },

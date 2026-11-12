@@ -32,8 +32,9 @@ describe('15.7 The doorframe', () => {
     expect(screen.getByRole('header', { name: 'The doorframe' })).toBeOnTheScreen();
     expect(screen.getByLabelText(`Mia, 138 cm, ${formatDayLong('2026-11-02')}`)).toBeOnTheScreen();
     expect(screen.getByLabelText(`Leo, 105 cm, ${formatDayLong('2024-09-15')}`)).toBeOnTheScreen();
-    expect(screen.getByText(/^138 Mia · Nov 26$/)).toBeOnTheScreen();
-    expect(screen.getByText(/^112 Leo · Sep 25$/)).toBeOnTheScreen();
+    expect(screen.getByText('138')).toBeOnTheScreen();
+    expect(screen.getByText('Mia · Nov 26')).toBeOnTheScreen();
+    expect(screen.getByText('Leo · Sep 25')).toBeOnTheScreen();
     expect(screen.getByText('138 cm')).toBeOnTheScreen();
     expect(screen.getByText('119 cm')).toBeOnTheScreen();
     // The API's own sentences.

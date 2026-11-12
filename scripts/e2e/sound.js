@@ -2,10 +2,12 @@
 // instead. This writes a short, quiet tone as a WAV file (the simplest sound file there is) and returns
 // where it is.
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
-/** Writes `seconds` of a soft tone to `<dir>/<name>.wav` and returns the file's path. */
-function soundFile(dir, name = 'recording', seconds = 2) {
+/** Writes `seconds` of a soft tone to a file called `<name>.wav` among the machine's temporary files, and returns its path. */
+function soundFile(name = 'recording', seconds = 2) {
+  const dir = path.join(os.tmpdir(), 'homeport-walkthrough');
   const rate = 8000;
   const samples = rate * seconds;
   const data = Buffer.alloc(samples * 2);

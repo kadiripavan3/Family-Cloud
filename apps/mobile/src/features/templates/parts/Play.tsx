@@ -78,9 +78,11 @@ export function PlayButton({ media, label, look = 'icon' }: Props) {
       ) : look === 'chip' ? (
         <Tap accessibilityRole="button" accessibilityLabel={spoken} hitSlop={9} onPress={press} scaleTo={0.94} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 26, paddingLeft: 7, paddingRight: 9, borderRadius: radius.pill, backgroundColor: colors.fill }}>
           <Icon size={10} color={colors.text} fill={colors.text} />
-          <Txt variant="small" weight={700}>
-            {words.templates.sound.clock(media.seconds ?? 0)}
-          </Txt>
+          {media.seconds === null ? null : (
+            <Txt variant="small" weight={700}>
+              {words.templates.sound.clock(media.seconds)}
+            </Txt>
+          )}
         </Tap>
       ) : (
         <Tap accessibilityRole="button" accessibilityLabel={spoken} hitSlop={15} onPress={press}>

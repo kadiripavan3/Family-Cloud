@@ -289,7 +289,7 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'Add to the capsule' }).click();
     await R('radio', { name: 'Voice' }).click();
     const [sounds] = await Promise.all([page.waitForEvent('filechooser'), R('button', { name: 'Add a recording' }).click()]);
-    await sounds.setFiles(soundFile(ctx.out, 'capsule-message', 3));
+    await sounds.setFiles(soundFile('capsule-message', 3));
     await T('Recording attached · 0:03').waitFor();
     await R('button', { name: 'Seal it in' }).click();
     await R('button', { name: /^A voice message from Nora\. 3 s\. Sealed$/ }).waitFor({ timeout: 20000 });

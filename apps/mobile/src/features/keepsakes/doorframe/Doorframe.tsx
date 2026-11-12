@@ -33,6 +33,8 @@ const say = words.keepsakes.doorframe;
 /** The ruler as drawn: 500 points tall, a 40-point bar with a tick every centimetre and a longer line at each mark. */
 const RULER = 500;
 const LABEL = 18;
+/** How wide a mark's line and words may be together: the ruler's column and the gap before the cards. */
+const LABELS = 170;
 const RULER_EMOJI = '📏';
 
 /** The colour that tells one child's marks from another's: their own tint in the circle. */
@@ -70,8 +72,8 @@ export function Doorframe({ board }: BoardScreenProps<DoorframeView, DoorframeSe
           <EmptyState emoji={RULER_EMOJI} title={say.empty.title} body={say.empty.body} />
         </View>
       ) : (
-        <View style={{ flexDirection: 'row', gap: 14, marginTop: 6, marginHorizontal: layout.rowGutter }}>
-          <View accessibilityRole="list" accessibilityLabel={say.ruler} style={{ width: 150, height: RULER }}>
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 6, marginHorizontal: layout.rowGutter }}>
+          <View accessibilityRole="list" accessibilityLabel={say.ruler} style={{ width: LABELS - 12, height: RULER }}>
             <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 40, borderRadius: radius.tile, overflow: 'hidden', backgroundColor: colors.fill }}>
               {Array.from({ length: Math.floor(centimetres) + 1 }, (_, index) => (
                 <View key={index} style={{ position: 'absolute', left: 0, right: 0, bottom: (index / centimetres) * RULER, height: 1.5, backgroundColor: colors.lineStrong }} />
@@ -81,15 +83,19 @@ export function Doorframe({ board }: BoardScreenProps<DoorframeView, DoorframeSe
               const who = mark.person?.name ?? '';
               const up = placeOf(mark.heightMm, window) * RULER;
               return (
-                <View key={mark.id} accessible accessibilityLabel={say.markSpoken(who, inCm(mark.heightMm), formatDayLong(mark.day))} style={{ position: 'absolute', left: 0, bottom: up - 9, height: 18, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                // A long label (a height with a half centimetre) may use the gap before the cards and no more: the end of
+                // its date is cut with three dots sooner than hidden under a card. The number itself is never cut.
+                <View key={mark.id} accessible accessibilityLabel={say.markSpoken(who, inCm(mark.heightMm), formatDayLong(mark.day))} style={{ position: 'absolute', left: 0, width: LABELS, bottom: up - 9, height: 18, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 52, height: 3.5, borderRadius: radius.pill, backgroundColor: tintOf(colors, memberOf(mark.person?.memberId)) }} />
                   {worded.has(mark.id) ? (
-                    <Txt variant="tiny" weight={600} color="muted" numberOfLines={1}>
-                      <Txt variant="callout" weight={800}>
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Txt variant="callout" weight={800} numberOfLines={1} style={{ flexShrink: 0 }}>
                         {inCm(mark.heightMm)}
                       </Txt>
-                      {say.markLine(who, formatMonthAndYear(mark.day))}
-                    </Txt>
+                      <Txt variant="tiny" weight={600} color="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
+                        {say.markLine(who, formatMonthAndYear(mark.day))}
+                      </Txt>
+                    </View>
                   ) : null}
                 </View>
               );
