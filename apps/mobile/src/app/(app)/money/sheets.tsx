@@ -9,6 +9,7 @@ import { useCircle } from '@/features/circles/current';
 import { Amount, SheetTile } from '@/features/money/parts';
 import { cellHeadline } from '@/features/money/sheet/cells';
 import { TemplateGrid } from '@/features/money/sheet/Templates';
+import { useWhileInFront } from '@/features/money/useWhileInFront';
 import { AudienceChip } from '@/features/sharing/AudienceChip';
 import { PageProblem } from '@/features/states/PageProblem';
 import { thingHref, useOpenThing } from '@/features/things/open';
@@ -38,7 +39,7 @@ export default function Sheets() {
   const circle = useCircle();
   const sheets = useGetSheetsInfinite(circle.id, undefined, { query: paged });
   const load = loadState(sheets);
-  const list = rows(sheets.data);
+  const list = rows(useWhileInFront(sheets.data));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

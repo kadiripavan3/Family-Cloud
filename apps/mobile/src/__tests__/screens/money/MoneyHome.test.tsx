@@ -102,7 +102,7 @@ describe('8.1 Money', () => {
     expect(screen.getByRole('button', { name: '€13 you owe Lea' })).toBeOnTheScreen();
     asked.mockReturnValue(loaded(moneyAnswer({ owing: [] })));
     await view.rerender(onPhone(<MoneyHome />));
-    expect(screen.getByRole('button', { name: '€0 owed between you' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '€0 owed to anyone' })).toBeOnTheScreen();
   });
 
   it('says which bills are left out of the sums when they are kept in another currency', async () => {

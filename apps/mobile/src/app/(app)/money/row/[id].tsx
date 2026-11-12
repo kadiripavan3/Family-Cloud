@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, ArrowRight, ScanLine, X } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, ScanLine, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -233,7 +233,7 @@ function Step({ back, label, spoken, onPress }: { back?: boolean; label?: string
       <Txt variant="callout" weight={700} numberOfLines={1} style={{ flexShrink: 1 }}>
         {label}
       </Txt>
-      {back ? null : <ArrowRight size={16} color={colors.text} />}
+      {back ? null : <ChevronRight size={16} color={colors.text} />}
     </Tap>
   );
 }

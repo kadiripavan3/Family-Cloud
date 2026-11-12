@@ -119,7 +119,8 @@ function Figure({ value, label, divider, onPress }: { value: string; label: stri
       <Txt variant="item" weight={800} numberOfLines={1} style={FIGURES}>
         {value}
       </Txt>
-      <Txt variant="tiny" weight={600} color="muted" numberOfLines={1}>
+      {/* Two lines for a long name: "Alexandra owes you" is worth more whole than cut short. */}
+      <Txt variant="tiny" weight={600} color="muted" numberOfLines={2}>
         {label}
       </Txt>
     </Tap>

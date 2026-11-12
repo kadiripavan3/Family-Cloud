@@ -10,7 +10,7 @@ import { budget2026, onThe12th, sheet, SHEET_ID, sheetBrief, templates } from '@
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
 const mockCache = { sheetMade: jest.fn(() => Promise.resolve()) };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useIsFocused: () => true }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds, useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));

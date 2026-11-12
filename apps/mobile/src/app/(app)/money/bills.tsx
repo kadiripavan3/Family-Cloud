@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { type BillRowResponse, type BillShow, useGetBillsInfinite, useGetMoney } from '@/api/generated/homeport';
 import { more, paged } from '@/api/pages';
 import { BillRow } from '@/features/money/BillRow';
+import { useWhileInFront } from '@/features/money/useWhileInFront';
 import { FIGURES } from '@/features/money/parts';
 import { useCircle } from '@/features/circles/current';
 import { PageProblem } from '@/features/states/PageProblem';
@@ -43,7 +44,7 @@ export default function Bills() {
   const sums = useGetMoney(circle.id, { day: today() }, { query: { enabled: show === 'subscriptions' } });
   const load = loadState(bills);
   // The same bill is in the list of paid ones once for each time it was paid, so a row is known by its bill and its day.
-  const rows = bills.data?.pages.flatMap((page) => page.items);
+  const rows = useWhileInFront(bills.data)?.pages.flatMap((page) => page.items);
   const nothing = (
     <View style={{ paddingTop: 70 }}>
       <EmptyState emoji="🧾" title={words.money.bills.empty[show].title} body={words.money.bills.empty[show].body} />

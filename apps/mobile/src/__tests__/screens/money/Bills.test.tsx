@@ -10,7 +10,7 @@ import { BILL_ID, billRow, moneyAnswer, netflix, onThe12th, rent } from '@/test/
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true), canDismiss: jest.fn(() => false) };
 let mockParams: { show?: string } = {};
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => mockParams, useIsFocused: () => true }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds }));
 jest.mock('@/api/generated/homeport', () => ({ useGetBillsInfinite: jest.fn(), useGetMoney: jest.fn() }));
 // The real list draws only the rows a phone's screen has room for; in a test every row is drawn.

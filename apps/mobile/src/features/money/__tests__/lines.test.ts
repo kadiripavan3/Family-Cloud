@@ -10,6 +10,12 @@ describe('a bill as a line in a list', () => {
     expect(billLine(billRow({ dueOn: '2026-11-12' }), '2026-11-12')).toEqual({ text: 'Today · split with Alex', soon: true });
   });
 
+  it('tells someone who pays no part of it who does', () => {
+    const nora = { memberId: 'm-nora', name: 'Nora', avatarUrl: null };
+    expect(billLine(billRow({ myShareCents: null, splitWith: [nora, alexBrief] }), '2026-11-12').text).toBe('Tomorrow · split between Nora and Alex');
+    expect(billLine(billRow({ myShareCents: null, splitWith: [nora] }), '2026-11-12').text).toBe('Tomorrow · Nora pays it');
+  });
+
   it('says how it gets paid, or where its login is, when nobody shares it', () => {
     expect(billLine(billRow({ dueOn: '2026-11-16', splitWith: [], pays: 'standing_order' }), '2026-11-12')).toEqual({ text: 'Mon 16 Nov · standing order', soon: false });
     expect(billLine(billRow({ dueOn: '2026-11-20', splitWith: [], pays: 'direct_debit', hasLogin: true }), '2026-11-12').text).toBe('Fri 20 Nov · login in the Vault');
@@ -51,6 +57,13 @@ describe('who pays a bill', () => {
     expect(whoPays(three)).toEqual({ title: 'Split with Alex and Kai', note: '€28.07 each · 1 of 3 have paid' });
     expect(whoPays(bill({ shares: [share({ cents: 8420 })] }))).toEqual({ title: 'You pay all of it', note: 'Nothing is paid yet' });
     expect(whoPays(bill({ shares: [share({ person: alexBrief, cents: 8420, you: false, paid: true })], myShare: null }))).toEqual({ title: 'Alex pays all of it', note: 'All of it is paid' });
+  });
+});
+
+describe('who pays a bill, for someone who pays no part of it', () => {
+  it('names the people who split it', () => {
+    const theirs = bill({ shares: [share({ you: false }), share({ person: alexBrief, paid: true, you: false })], myShare: null });
+    expect(whoPays(theirs)).toEqual({ title: 'Split between Nora and Alex', note: '€42.10 each · 1 of 2 have paid' });
   });
 });
 

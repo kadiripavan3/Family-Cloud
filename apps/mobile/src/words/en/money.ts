@@ -37,7 +37,7 @@ export const money = {
     /** Under the third number: the largest amount someone owes the person reading, or that they owe someone, from the circle's splits. */
     owesYou: (name: string) => `${name} owes you`,
     youOwe: (name: string) => `you owe ${name}`,
-    nobodyOwes: 'owed between you',
+    nobodyOwes: 'owed to anyone',
     dueSoon: 'Due soon',
     nothingDue: 'Nothing is due. Add a bill with the + button.',
     sheets: 'Sheets',
@@ -54,6 +54,9 @@ export const money = {
     /** A bill that should have been paid by now. `day` is "Mon 9 Nov". */
     late: (day: string) => `Was due ${day}`,
     splitWith: (names: readonly string[]) => `split with ${formatList(names)}`,
+    /** For someone who sees a bill they pay no part of: who does. */
+    splitBetween: (names: readonly string[]) => `split between ${formatList(names)}`,
+    paidBy: (name: string) => `${name} pays it`,
     login: 'login in the Vault',
     standingOrder: 'standing order',
     directDebit: 'direct debit',
@@ -102,6 +105,8 @@ export const money = {
     split: {
       /** `ratio` is "50/50" for two people, null when it doesn't say much. */
       title: (ratio: string | null, names: readonly string[]) => (ratio ? `Split ${ratio} with ${formatList(names)}` : `Split with ${formatList(names)}`),
+      /** For someone who pays no part of it. */
+      between: (names: readonly string[]) => `Split between ${formatList(names)}`,
       allYours: 'You pay all of it',
       allTheirs: (name: string) => `${name} pays all of it`,
       each: (amount: string) => `${amount} each`,

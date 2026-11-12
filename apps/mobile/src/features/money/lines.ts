@@ -17,7 +17,12 @@ export function briefOf(member: MemberResponse): PersonBrief {
 
 /** What a bill's line says after its day: who it is split with, where its login is, or how it gets paid. */
 function about(bill: BillRowResponse): string | null {
-  if (bill.splitWith.length) return words.money.row.splitWith(bill.splitWith.map((person) => firstName(person.name)));
+  if (bill.splitWith.length) {
+    const names = bill.splitWith.map((person) => firstName(person.name));
+    // Someone who sees a bill they pay no part of is told who does.
+    if (bill.myShareCents === null) return names.length === 1 ? words.money.row.paidBy(names[0]!) : words.money.row.splitBetween(names);
+    return words.money.row.splitWith(names);
+  }
   if (bill.hasLogin) return words.money.row.login;
   if (bill.pays === 'standing_order') return words.money.row.standingOrder;
   if (bill.pays === 'direct_debit') return words.money.row.directDebit;
@@ -75,7 +80,7 @@ export function whoPays(bill: BillResponse): { title: string; note: string } {
     const title = !only || only.you ? words.money.bill.split.allYours : words.money.bill.split.allTheirs(firstName(only.person.name));
     return { title, note: only?.paid ? words.money.bill.split.allPaid : words.money.bill.split.nothingPaid };
   }
-  const title = words.money.bill.split.title(mine ? ratio(bill.shares) : null, names.length ? names : bill.shares.map((share) => firstName(share.person.name)));
+  const title = mine ? words.money.bill.split.title(ratio(bill.shares), names) : words.money.bill.split.between(names);
   const amount = even(bill.shares) ? words.money.bill.split.each(formatMoneyExact(bill.shares[0]!.cents, bill.currency)) : mine ? words.money.bill.split.yours(formatMoneyExact(mine.cents, bill.currency)) : null;
   const paid = bill.shares.filter((share) => share.paid).length;
   const standing =

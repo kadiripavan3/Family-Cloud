@@ -88,7 +88,7 @@ Milestone 5, Money: bills, sheets, the loan planner and splitting costs. Every a
 | 8.8 Template: loan planner | `/money/loan` | The savings plan has no such screen yet: its template starts as its sheet. |
 | 8.9 Splitting with friends | `/split/<id>`, `/money/splits` | |
 
-A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out).
+A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out). Its lists read their rows through `useWhileInFront`: a list that another screen covers keeps the rows it had until it is looked at again, because in a browser the list trips ("not enough layouts") when a row goes while it is covered, as when a sheet opened from it is deleted.
 
 Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs (Money, and Bill and Sheet among the things the + sheet opens, no longer are): five of Home's six places (all but Today), Activity, eight of the ten things the + sheet opens, "Storage and backup" (`/settings/storage`), and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 

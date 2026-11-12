@@ -25,11 +25,22 @@ exports.run = async function run(ctx) {
     if (!response.ok()) throw new Error(`${method} ${response.url()} gave ${response.status()}`);
     return response;
   };
+  /** Waits until a box holds these words. (What a box shows follows the API's answer by a moment: looking once would be too early now and then.) */
+  const holds = async (label, value, why, exact = true) => {
+    for (let tries = 0; tries < 50; tries += 1) {
+      if ((await L(label, { exact }).inputValue()) === value) return;
+      await page.waitForTimeout(100);
+    }
+    throw new Error(why);
+  };
+  /** Waits until no sheet is on the screen any more, not even one that is sliding away. */
+  const sheetGone = () => page.waitForFunction(() => !document.querySelector('[aria-modal="true"]'));
   /** Closes the sheet that is open by pressing beside it. */
   const closeSheet = async () => page.getByRole('button', { name: 'Close', exact: true }).last().click({ position: { x: 20, y: 20 } });
   /** Types into a box of a row's card and leaves it, which is when the app saves the cell. */
   const typeIn = async (label, value) => {
     // (A box that shows money as "€2,350.00" holds plain digits once it is tapped: tap first, then type over them.)
+    await sheetGone();
     await L(label, { exact: true }).click();
     await L(label, { exact: true }).fill(value);
     await sent('PATCH', /^\/v1\/sheet-rows\/[^/]+$/, () => L(label, { exact: true }).press('Tab'));
@@ -168,13 +179,13 @@ exports.run = async function run(ctx) {
     await sent('POST', /^\/v1\/bills\/read$/, () => R('button', { name: 'Read it' }).click());
     // What was read, each with the line it came from.
     await T('Is this right?').waitFor();
-    if ((await L('Who to pay', { exact: true }).inputValue()) !== 'Komunala Ljubljana') throw new Error('the payee was not read off the first line');
+    await holds('Who to pay', 'Komunala Ljubljana', 'the payee was not read off the first line');
     await T('Read from “Komunala Ljubljana d.o.o.”').waitFor();
-    if ((await L('Amount', { exact: true }).inputValue()) !== '€48.09') throw new Error('the amount was not read');
+    await holds('Amount', '€48.09', 'the amount was not read');
     await T('Read from “Za plačilo: 48,09 EUR”').waitFor();
     await R('button', { name: /^Due: 27 Nov( \d{4})?\. Change$/ }).waitFor();
     await T('Read from “Rok plačila: 27.11.2026”').waitFor();
-    if ((await L('Reference', { exact: true }).inputValue()) !== 'SI12 9087 6543 2101') throw new Error('the reference was not read');
+    await holds('Reference', 'SI12 9087 6543 2101', 'the reference was not read');
     // A utility comes every month: that was read too. Splitting it is hers to say.
     await R('checkbox', { name: 'Comes every month', checked: true }).waitFor();
     await R('checkbox', { name: 'Split with Alex', checked: false }).click();
@@ -271,8 +282,8 @@ exports.run = async function run(ctx) {
     await R('heading', { name: 'Row 3 of 6' }).waitFor();
     await T('Norway budget').waitFor();
     // Every column is a box of its own kind, with the note and the papers under them.
-    if ((await L('Item', { exact: true }).inputValue()) !== 'Cabins, 9 nights') throw new Error('the text cell does not hold its words');
-    if ((await L('Cost', { exact: true }).inputValue()) !== '€2,350.00') throw new Error('the money cell is not written as money');
+    await holds('Item', 'Cabins, 9 nights', 'the text cell does not hold its words');
+    await holds('Cost', '€2,350.00', 'the money cell is not written as money');
     await R('button', { name: 'Who: Alex. Change' }).waitFor();
     await R('button', { name: /^Due: 15 Jan( \d{4})?\. Change$/ }).waitFor();
     await R('switch', { name: 'Paid', checked: false }).waitFor();
@@ -284,7 +295,7 @@ exports.run = async function run(ctx) {
 
     // Two cells changed, each in its own way: money is typed, a tick is a switch.
     await typeIn('Cost', '2400');
-    if ((await L('Cost', { exact: true }).inputValue()) !== '€2,400.00') throw new Error('the changed amount is not shown as money');
+    await holds('Cost', '€2,400.00', 'the changed amount is not shown as money');
     await sent('PATCH', /^\/v1\/sheet-rows\/[^/]+$/, () => R('switch', { name: 'Paid' }).click());
     await R('switch', { name: 'Paid', checked: true }).waitFor();
     await T('Yes', { exact: true }).waitFor();
@@ -400,7 +411,7 @@ exports.run = async function run(ctx) {
     // A tile opens its formula: chips, the same as a sentence, and its answer.
     await R('button', { name: 'Still to pay: €5,140. Change this tile' }).click();
     await L('Name of the tile').waitFor();
-    if ((await L('Name of the tile').inputValue()) !== 'Still to pay') throw new Error('the builder did not open on the tile');
+    await holds('Name of the tile', 'Still to pay', 'the builder did not open on the tile', false);
     await T('Everything in Cost, minus the Cost of rows where Paid is ticked.').waitFor();
     await T('€5,140.00').waitFor();
     await T('changes as rows change').waitFor();
@@ -675,6 +686,9 @@ exports.run = async function run(ctx) {
     await R('heading', { name: `Coffee run ${tag}` }).waitFor();
     await T('Nothing added yet').waitFor();
     await T("You're even").waitFor();
+    // (The sheet she named it in is still sliding away, quicker than a person could go on. In a browser a sheet
+    // keeps the keyboard to itself until it is gone, so what is typed next would be lost.)
+    await sheetGone();
     await R('button', { name: 'Scan', exact: true }).click();
     await T('What does it say?').waitFor();
     await L('The lines on the paper').fill(['Pastelaria Santo António', '2 pastel de nata 3,60', '1 galão 1,90', 'Total 5,50 EUR'].join('\n'));
@@ -720,12 +734,15 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'Seen by: Only you. Change who can see this' }).waitFor();
     secretId = page.url().split('/sheet/')[1].split(/[?#]/)[0];
 
-    // A second person joins The Linds with the link its owner has (through the API), and opens Money.
+    // A second person joins The Linds with the link its owner has, and opens Money.
     ines = await ctx.second('Ines Demo');
     const code = (await ctx.api(nora, 'GET', `/v1/circles/${linds.id}`)).joinUrl.split('/').pop();
-    const joined = await ctx.api(ines.token, 'PUT', `/v1/join/${code}`);
-    inesMember = joined.myMemberId;
-    await ines.page.goto(`${WEB_URL}/?place=money`);
+    await ines.page.goto(`${WEB_URL}/join/${code}`);
+    await ines.R('heading', { name: 'Join The Linds?' }).waitFor({ timeout: 20000 });
+    await ines.R('button', { name: 'Join', exact: true }).click();
+    await ines.R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });
+    inesMember = (await ctx.api(ines.token, 'GET', '/v1/circles')).find((circle) => circle.id === linds.id).myMemberId;
+    await ines.R('tab', { name: 'Money' }).click();
     await ines.T('Due soon').waitFor({ timeout: 20000 });
     // She can't find Nora's sheet: not on Money, not among the sheets, not in search, not by its address.
     await ines.R('button', { name: 'Norway budget. Trip' }).waitFor();
