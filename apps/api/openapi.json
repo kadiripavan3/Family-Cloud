@@ -19,11 +19,8 @@
     "name" : "checklists",
     "description" : "Lists you tick, changed one line at a time"
   }, {
-    "name" : "me",
-    "description" : "The signed-in person and their profile"
-  }, {
-    "name" : "local-auth",
-    "description" : "Test sign-in. Exists only in local mode."
+    "name" : "jot",
+    "description" : "One line that takes anything: read it, file it, undo it, move it"
   }, {
     "name" : "things",
     "description" : "What every kind of thing shares: who can see it"
@@ -33,6 +30,24 @@
   }, {
     "name" : "media",
     "description" : "Uploading photos, videos, documents and recordings"
+  }, {
+    "name" : "reminders",
+    "description" : "Reminders: yours, the ones you gave to someone, and whose turn it is"
+  }, {
+    "name" : "plan",
+    "description" : "The calendar: one list for the day, and the month at a glance"
+  }, {
+    "name" : "goals",
+    "description" : "Goals: a target, a ring, and who put in what"
+  }, {
+    "name" : "me",
+    "description" : "The signed-in person and their profile"
+  }, {
+    "name" : "local-auth",
+    "description" : "Test sign-in. Exists only in local mode."
+  }, {
+    "name" : "events",
+    "description" : "Events: when, where and who is coming"
   }, {
     "name" : "pages",
     "description" : "Pages of words"
@@ -188,6 +203,44 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/reminders/{id}/done" : {
+      "put" : {
+        "tags" : [ "reminders" ],
+        "summary" : "Tick a reminder or take the tick away. One that repeats moves to its next day; one that takes turns goes to the next person.",
+        "operationId" : "tickReminder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TickRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -357,6 +410,44 @@
         }
       }
     },
+    "/v1/jots/{jotId}/move" : {
+      "put" : {
+        "tags" : [ "jot" ],
+        "summary" : "Move a jot to another kind or another list: what it made is removed and its words are filed again. Also how a held-back code becomes just a note.",
+        "operationId" : "moveJot",
+        "parameters" : [ {
+          "name" : "jotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MoveRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/join/{code}" : {
       "get" : {
         "tags" : [ "circles" ],
@@ -409,6 +500,196 @@
         }
       }
     },
+    "/v1/events/{id}/answer" : {
+      "put" : {
+        "tags" : [ "events" ],
+        "summary" : "Say going, maybe or can't for yourself. Anyone who can see an event may.",
+        "operationId" : "answerEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AnswerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/shopping-list" : {
+      "put" : {
+        "tags" : [ "jot" ],
+        "summary" : "Mark a checklist as the circle's shopping list: what reads like shopping lands in it",
+        "operationId" : "markShoppingList",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ListRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ListBriefResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/list-in-use" : {
+      "put" : {
+        "tags" : [ "jot" ],
+        "summary" : "Say which list you are using right now (at the shop). It shows on the Lock Screen of everyone who may see it, for eight hours.",
+        "operationId" : "useList",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ListRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "jot" ],
+        "summary" : "Say you are done with the list you were using",
+        "operationId" : "stopUsingList",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/jot-ways" : {
+      "get" : {
+        "tags" : [ "jot" ],
+        "summary" : "The ways in you switched on, and where your jots go in this circle when it isn't obvious",
+        "operationId" : "getJotWays",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WaysResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "jot" ],
+        "summary" : "Change the ways in and where jots go. What is left out stays.",
+        "operationId" : "saveJotWays",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WaysRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WaysResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/join-link" : {
       "put" : {
         "tags" : [ "circles" ],
@@ -433,6 +714,56 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/reminders" : {
+      "post" : {
+        "tags" : [ "reminders" ],
+        "summary" : "Write down something to do",
+        "operationId" : "createReminder",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewReminderRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reminders/{id}/nudge" : {
+      "post" : {
+        "tags" : [ "reminders" ],
+        "summary" : "A gentle push to whoever has a reminder you made. Once an hour at most.",
+        "operationId" : "nudgeReminder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -516,6 +847,181 @@
         }
       }
     },
+    "/v1/goals" : {
+      "post" : {
+        "tags" : [ "goals" ],
+        "summary" : "Start a goal",
+        "operationId" : "createGoal",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewGoalRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoalResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/goals/{id}/entries" : {
+      "get" : {
+        "tags" : [ "goals" ],
+        "summary" : "Who put what into a goal, the latest first",
+        "operationId" : "getGoalEntries",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageEntryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "goals" ],
+        "summary" : "Put something into a goal: Add money",
+        "operationId" : "addGoalEntry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EntryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events" : {
+      "post" : {
+        "tags" : [ "events" ],
+        "summary" : "Put an event on the calendar",
+        "operationId" : "createEvent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewEventRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/{id}/guests" : {
+      "post" : {
+        "tags" : [ "events" ],
+        "summary" : "Put someone on an event: one of the circle, or a name",
+        "operationId" : "addEventGuest",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewGuestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuestResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles" : {
       "get" : {
         "tags" : [ "circles" ],
@@ -565,6 +1071,44 @@
         }
       }
     },
+    "/v1/circles/{id}/read" : {
+      "post" : {
+        "tags" : [ "jot" ],
+        "summary" : "How a line would be read, without saving anything: the things in it, and the pieces of the line each was read from. A long text gives back the days and amounts found in it.",
+        "operationId" : "readLine",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReadRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReadingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/members" : {
       "post" : {
         "tags" : [ "circles" ],
@@ -596,6 +1140,97 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/jots" : {
+      "get" : {
+        "tags" : [ "jot" ],
+        "summary" : "What you jotted in a circle and what each became, the latest first",
+        "operationId" : "getJots",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for words like tomorrow",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageJotResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "jot" ],
+        "summary" : "Read a line and file everything in it: an event, a reminder, a line on the shopping list, a note. Answers with what was made and where. A code is held back, not filed.",
+        "operationId" : "jot",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JotRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/JotResponse"
+                  }
                 }
               }
             }
@@ -790,6 +1425,79 @@
         "security" : [ ]
       }
     },
+    "/v1/reminders/{id}" : {
+      "get" : {
+        "tags" : [ "reminders" ],
+        "summary" : "One reminder: when, who has it, and whether it is done",
+        "operationId" : "getReminder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "reminders" ],
+        "summary" : "Change a reminder. What is left out stays as it is.",
+        "operationId" : "changeReminder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReminderChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/pages/{id}" : {
       "get" : {
         "tags" : [ "pages" ],
@@ -930,6 +1638,218 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/goals/{id}" : {
+      "get" : {
+        "tags" : [ "goals" ],
+        "summary" : "One goal: the ring, the pace, who put in what lately, and each month of a year",
+        "operationId" : "getGoal",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "description" : "The year the twelve months are of. Left out: this year.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoalResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "goals" ],
+        "summary" : "Change a goal. What is left out stays as it is.",
+        "operationId" : "changeGoal",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GoalChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GoalResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/{id}" : {
+      "get" : {
+        "tags" : [ "events" ],
+        "summary" : "One event: when and where, who is coming and what they answered, and what is linked to it",
+        "operationId" : "getEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone, for the next time it comes round",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "events" ],
+        "summary" : "Change an event. What is left out stays as it is.",
+        "operationId" : "changeEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EventChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/event-guests/{guestId}" : {
+      "delete" : {
+        "tags" : [ "events" ],
+        "summary" : "Take someone off an event. Taking off someone who is already off is fine.",
+        "operationId" : "removeEventGuest",
+        "parameters" : [ {
+          "name" : "guestId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "events" ],
+        "summary" : "Change what someone does at an event or what they answered, one person at a time",
+        "operationId" : "changeEventGuest",
+        "parameters" : [ {
+          "name" : "guestId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GuestChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GuestResponse"
                 }
               }
             }
@@ -1276,6 +2196,51 @@
         }
       }
     },
+    "/v1/circles/{id}/widgets" : {
+      "get" : {
+        "tags" : [ "jot" ],
+        "summary" : "What the widgets, the pinned note and the Lock Screen show: chips of what is added most (eight at most), the shopping list, the list in use, what is next today, how many jotted today",
+        "operationId" : "getWidgets",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "timeZone",
+          "in" : "query",
+          "description" : "The time zone of the phone, such as Europe/Ljubljana",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WidgetsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/today" : {
       "get" : {
         "tags" : [ "home" ],
@@ -1356,6 +2321,141 @@
         }
       }
     },
+    "/v1/circles/{id}/reminders" : {
+      "get" : {
+        "tags" : [ "reminders" ],
+        "summary" : "The Reminders screen: yours by day, what you gave to others, and the ones that wait for a place. Five hundred open reminders at most.",
+        "operationId" : "getReminders",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RemindersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/reminders/done" : {
+      "get" : {
+        "tags" : [ "reminders" ],
+        "summary" : "What was ticked in a circle, last ticked first",
+        "operationId" : "getDoneReminders",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageDoneResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/plan" : {
+      "get" : {
+        "tags" : [ "plan" ],
+        "summary" : "The day's list from one day on (events with a time, jobs with a tick, what other places bring), the dots of that week, and what is still open from before. Sixty-two days, five hundred events and five hundred reminders at most.",
+        "operationId" : "getPlan",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The first day. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "days",
+          "in" : "query",
+          "description" : "How many days from there. Left out: 7.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "member",
+          "in" : "query",
+          "description" : "Only what concerns this person of the circle",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/pages" : {
       "get" : {
         "tags" : [ "pages" ],
@@ -1392,6 +2492,92 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PagePageRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/month" : {
+      "get" : {
+        "tags" : [ "plan" ],
+        "summary" : "A month as whole weeks (forty-two days at most), each day with a dot per person who has something on it",
+        "operationId" : "getMonth",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "description" : "The month, as 2026-11. This month when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "2026-11"
+        }, {
+          "name" : "member",
+          "in" : "query",
+          "description" : "Only what concerns this person of the circle",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MonthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/goals" : {
+      "get" : {
+        "tags" : [ "goals" ],
+        "summary" : "The goals of a circle you can see, each with its ring and its line. A hundred at most.",
+        "operationId" : "getGoals",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GoalRowResponse"
+                  }
                 }
               }
             }
@@ -1438,6 +2624,48 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/jots/{jotId}" : {
+      "delete" : {
+        "tags" : [ "jot" ],
+        "summary" : "Undo a jot: what it made is removed. For a code that was held back: forget it (after the phone kept it in the Vault, or because it isn't wanted). Undoing what is gone is fine.",
+        "operationId" : "undoJot",
+        "parameters" : [ {
+          "name" : "jotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/goal-entries/{entryId}" : {
+      "delete" : {
+        "tags" : [ "goals" ],
+        "summary" : "Take an entry back. Removing one that is gone is fine.",
+        "operationId" : "removeGoalEntry",
+        "parameters" : [ {
+          "name" : "entryId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1628,7 +2856,7 @@
       },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page", "checklist" ]
+        "enum" : [ "page", "checklist", "event", "reminder", "goal" ]
       },
       "AboutRequest" : {
         "type" : "object",
@@ -1642,6 +2870,287 @@
           }
         },
         "required" : [ "memberIds" ]
+      },
+      "TickRequest" : {
+        "type" : "object",
+        "properties" : {
+          "done" : {
+            "type" : "boolean",
+            "description" : "True to tick it, false to take the tick away"
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The due day you were looking at. A tick that already arrived for it changes nothing, so sending this twice ticks once."
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the phone. One that repeats is next due after it."
+          }
+        },
+        "required" : [ "done" ]
+      },
+      "AudienceChip" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "For some people: who, besides its owner",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "description" : "The first names of people it is hidden from today",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "NoteIcon" : {
+        "type" : "string",
+        "enum" : [ "none", "repeat", "pin", "bell", "clip" ]
+      },
+      "PersonBrief" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PlaceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "words" : {
+            "type" : "string",
+            "description" : "The place in words: the post office"
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "radiusM" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How near counts, in metres"
+          }
+        },
+        "required" : [ "lat", "lng", "radiusM", "words" ]
+      },
+      "ReminderResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "dueOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "dueTime" : {
+            "type" : [ "string", "null" ],
+            "example" : "19:00"
+          },
+          "timeZone" : {
+            "type" : "string"
+          },
+          "dueAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The moment it is due. Null without a day."
+          },
+          "remindMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "A push this many minutes before it is due; 0 for when it is due"
+          },
+          "repeat" : {
+            "description" : "Null: it is done once",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RepeatResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "takesTurns" : {
+            "type" : "boolean"
+          },
+          "turn" : {
+            "description" : "Whose turn it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "then" : {
+            "description" : "Whose turn it is after that",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "givenTo" : {
+            "type" : "array",
+            "description" : "Who it is given to, in the order they take turns. Empty: whoever made it does it.",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "askedBy" : {
+            "description" : "Who made it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "place" : {
+            "description" : "For one that waits for a place. The phone watches the place.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PlaceResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many stars doing it earns"
+          },
+          "done" : {
+            "type" : "boolean",
+            "description" : "Done for good, or, for one that repeats, ticked for the day asked about"
+          },
+          "doneAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "doneBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "tickedDueOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The due day the last tick was for: send it back to take the tick away"
+          },
+          "yours" : {
+            "type" : "boolean",
+            "description" : "True when it is the signed-in person's to do now"
+          },
+          "asked" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person made it and someone else has it now"
+          },
+          "canTick" : {
+            "type" : "boolean"
+          },
+          "canNudge" : {
+            "type" : "boolean",
+            "description" : "True when a nudge can be sent now"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "The small line under the title: 19:00 · Tue and Fri · takes turns"
+          },
+          "noteIcon" : {
+            "$ref" : "#/components/schemas/NoteIcon"
+          },
+          "attached" : {
+            "type" : "array",
+            "description" : "The titles of what is linked to it",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "asked", "askedBy", "attached", "canEdit", "canNudge", "canTick", "chip", "circleId", "createdAt", "done", "doneAt", "doneBy", "dueAt", "dueOn", "dueTime", "givenTo", "id", "mine", "note", "noteIcon", "notes", "place", "remindMinutes", "repeat", "stars", "takesTurns", "then", "tickedDueOn", "timeZone", "title", "turn", "updatedAt", "yours" ]
+      },
+      "RepeatResponse" : {
+        "type" : "object",
+        "properties" : {
+          "unit" : {
+            "$ref" : "#/components/schemas/Unit"
+          },
+          "every" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "days" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Weekday"
+            }
+          },
+          "until" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "In a few words: Thursdays, Tue and Fri, Weekdays, Every month"
+          }
+        },
+        "required" : [ "days", "every", "label", "unit", "until" ]
+      },
+      "Unit" : {
+        "type" : "string",
+        "enum" : [ "day", "week", "month", "year" ]
+      },
+      "Weekday" : {
+        "type" : "string",
+        "enum" : [ "mon", "tue", "wed", "thu", "fri", "sat", "sun" ]
       },
       "CircleResponse" : {
         "type" : "object",
@@ -1877,6 +3386,561 @@
         },
         "required" : [ "authorizationCode" ]
       },
+      "MoveRequest" : {
+        "type" : "object",
+        "properties" : {
+          "to" : {
+            "$ref" : "#/components/schemas/ReadAs",
+            "description" : "What it becomes: an event, a reminder, a line of a list, or a note"
+          },
+          "listId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "For a list: which one. Left out: the shopping list."
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "timeZone" : {
+            "type" : "string"
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          }
+        },
+        "required" : [ "to" ]
+      },
+      "ReadAs" : {
+        "type" : "string",
+        "enum" : [ "event", "reminder", "list_item", "note", "code" ]
+      },
+      "JotResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "batchId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The same for everything that came from one line"
+          },
+          "words" : {
+            "type" : "string"
+          },
+          "source" : {
+            "$ref" : "#/components/schemas/JotSource"
+          },
+          "became" : {
+            "$ref" : "#/components/schemas/ReadAs",
+            "description" : "What it became. code: it was held back and hasn't been kept anywhere yet."
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "where" : {
+            "type" : "string",
+            "description" : "Where it went, in a few words: Groceries, Reminder · tomorrow 9:00, Asked Alex · today 18:00"
+          },
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The event, reminder or page it made, or the list it went to"
+          },
+          "thingKind" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ThingKind"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "itemId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For a line of a list: the line"
+          },
+          "gone" : {
+            "type" : "boolean",
+            "description" : "True when what it made isn't there any more, or isn't shared with you any more"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "batchId", "became", "createdAt", "gone", "id", "itemId", "source", "thingId", "thingKind", "title", "where", "words" ]
+      },
+      "JotSource" : {
+        "type" : "string",
+        "enum" : [ "app", "widget", "notification", "voice", "share", "lock_screen" ]
+      },
+      "Answer" : {
+        "type" : "string",
+        "enum" : [ "going", "maybe", "cant" ]
+      },
+      "AnswerRequest" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "$ref" : "#/components/schemas/Answer"
+          }
+        },
+        "required" : [ "answer" ]
+      },
+      "EventResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it starts, on the calendar where it happens"
+          },
+          "time" : {
+            "type" : [ "string", "null" ],
+            "description" : "Null: all day",
+            "example" : "15:30"
+          },
+          "endDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endTime" : {
+            "type" : [ "string", "null" ],
+            "description" : "Null: all day, or no end said",
+            "example" : "16:15"
+          },
+          "allDay" : {
+            "type" : "boolean"
+          },
+          "timeZone" : {
+            "type" : "string"
+          },
+          "startsAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The moment it starts. Null for all day."
+          },
+          "endsAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "place" : {
+            "type" : "string",
+            "description" : "Where, in words: At home, Trubarjeva 12"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "remindMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "A push this many minutes before it starts. Null: none."
+          },
+          "remindLabel" : {
+            "type" : [ "string", "null" ],
+            "description" : "1 hour before"
+          },
+          "repeat" : {
+            "description" : "Null: it happens once",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RepeatResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "nextDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "For one that repeats: the next day it happens, counted from the day asked about"
+          },
+          "guests" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GuestResponse"
+            }
+          },
+          "myAnswer" : {
+            "description" : "What the signed-in person answered",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Answer"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "going" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "maybe" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cant" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unanswered" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many haven't answered"
+          },
+          "links" : {
+            "type" : "array",
+            "description" : "What was linked to it: its checklist, its budget, its album",
+            "items" : {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "allDay", "canEdit", "cant", "chip", "circleId", "coverUrl", "day", "endDay", "endTime", "endsAt", "going", "guests", "id", "links", "maybe", "mine", "myAnswer", "nextDay", "notes", "place", "remindLabel", "remindMinutes", "repeat", "startsAt", "time", "timeZone", "title", "unanswered", "updatedAt" ]
+      },
+      "GuestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "memberId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Their place in the circle. Null for someone from outside it."
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "part" : {
+            "type" : "string",
+            "description" : "What they do there, after their name: is taking her, drives. Empty for most."
+          },
+          "answer" : {
+            "description" : "Null: hasn't answered",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Answer"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "True for the signed-in person"
+          }
+        },
+        "required" : [ "answer", "avatarUrl", "id", "memberId", "name", "part", "you" ]
+      },
+      "ThingBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done"
+          }
+        }
+      },
+      "ListRequest" : {
+        "type" : "object",
+        "properties" : {
+          "listId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "listId" ]
+      },
+      "ListBriefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "title" ]
+      },
+      "CodesGo" : {
+        "type" : "string",
+        "enum" : [ "ask", "vault", "note" ]
+      },
+      "TimedAs" : {
+        "type" : "string",
+        "enum" : [ "reminder", "event" ]
+      },
+      "WaysRequest" : {
+        "type" : "object",
+        "properties" : {
+          "pinnedNote" : {
+            "type" : "boolean"
+          },
+          "voice" : {
+            "type" : "boolean"
+          },
+          "share" : {
+            "type" : "boolean"
+          },
+          "timedAs" : {
+            "$ref" : "#/components/schemas/TimedAs"
+          },
+          "codes" : {
+            "$ref" : "#/components/schemas/CodesGo"
+          },
+          "buyListId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The list your shopping goes to in this circle"
+          },
+          "useCirclesList" : {
+            "type" : "boolean",
+            "description" : "True: back to the circle's own shopping list"
+          }
+        }
+      },
+      "WaysResponse" : {
+        "type" : "object",
+        "properties" : {
+          "pinnedNote" : {
+            "type" : "boolean",
+            "description" : "A line to type in, pinned in the notifications"
+          },
+          "voice" : {
+            "type" : "boolean"
+          },
+          "share" : {
+            "type" : "boolean",
+            "description" : "Share from any app"
+          },
+          "timedAs" : {
+            "$ref" : "#/components/schemas/TimedAs",
+            "description" : "What a jot with a day or a time becomes when the words don't say"
+          },
+          "codes" : {
+            "$ref" : "#/components/schemas/CodesGo",
+            "description" : "What happens to a jot that looks like a code or a password"
+          },
+          "buyList" : {
+            "$ref" : "#/components/schemas/ListBriefResponse",
+            "description" : "Where something to buy goes: your own choice, else the circle's list, else a list that will be made"
+          },
+          "buyListIsYours" : {
+            "type" : "boolean",
+            "description" : "True when that is your own choice and not the circle's list"
+          },
+          "forwardAddress" : {
+            "type" : [ "string", "null" ],
+            "description" : "The address to forward email to. Null until receiving email is connected."
+          }
+        },
+        "required" : [ "buyList", "buyListIsYours", "codes", "forwardAddress", "pinnedNote", "share", "timedAs", "voice" ]
+      },
+      "NewReminderRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Left out: no day. It waits for a place, or for some time."
+          },
+          "dueTime" : {
+            "type" : "string",
+            "description" : "Left out: any time that day",
+            "example" : "19:00"
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "The time zone of the phone, such as Europe/Ljubljana",
+            "minLength" : 1
+          },
+          "remindMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Push this many minutes before it is due. Left out: when it is due.",
+            "maximum" : 40320,
+            "minimum" : 0
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Recurrence"
+          },
+          "givenTo" : {
+            "type" : "array",
+            "description" : "Who it is given to, in the order they take turns. Giving it shows it to them.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "takesTurns" : {
+            "type" : "boolean",
+            "description" : "True: one of them has it at a time, and each tick hands it on"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/PlaceRequest"
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many stars doing it earns",
+            "maximum" : 20,
+            "minimum" : 0
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Whose page it shows on",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          }
+        },
+        "required" : [ "circleId", "clientId", "timeZone", "title" ]
+      },
+      "PlaceRequest" : {
+        "type" : "object",
+        "properties" : {
+          "words" : {
+            "type" : "string",
+            "description" : "The place in words: the post office",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "lat" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "lng" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
+          },
+          "radiusM" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How near counts, in metres. Left out: 200.",
+            "maximum" : 5000,
+            "minimum" : 50
+          }
+        },
+        "required" : [ "words" ]
+      },
+      "Recurrence" : {
+        "type" : "object",
+        "properties" : {
+          "unit" : {
+            "$ref" : "#/components/schemas/Unit"
+          },
+          "every" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Every how many days, weeks, months or years. Left out: every one."
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "For weeks: on which days. Left out: the day of the week it starts on.",
+            "items" : {
+              "$ref" : "#/components/schemas/Weekday"
+            },
+            "uniqueItems" : true
+          },
+          "until" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The last day it may happen on. Left out: it goes on."
+          }
+        },
+        "required" : [ "unit" ]
+      },
       "NewPageRequest" : {
         "type" : "object",
         "properties" : {
@@ -1904,28 +3968,6 @@
           }
         },
         "required" : [ "circleId", "clientId" ]
-      },
-      "AudienceChip" : {
-        "type" : "object",
-        "properties" : {
-          "audience" : {
-            "$ref" : "#/components/schemas/Audience"
-          },
-          "people" : {
-            "type" : "array",
-            "description" : "For some people: who, besides its owner",
-            "items" : {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }
-          },
-          "hiddenFrom" : {
-            "type" : "array",
-            "description" : "The first names of people it is hidden from today",
-            "items" : {
-              "type" : "string"
-            }
-          }
-        }
       },
       "PageResponse" : {
         "type" : "object",
@@ -1959,21 +4001,6 @@
           }
         },
         "required" : [ "body", "canEdit", "chip", "circleId", "id", "mine", "title", "updatedAt" ]
-      },
-      "PersonBrief" : {
-        "type" : "object",
-        "properties" : {
-          "memberId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "avatarUrl" : {
-            "type" : [ "string", "null" ]
-          }
-        }
       },
       "MediaKind" : {
         "type" : "string",
@@ -2027,6 +4054,559 @@
         },
         "required" : [ "headers", "mediaId", "method", "uploadUrl" ]
       },
+      "GoalSource" : {
+        "type" : "string",
+        "enum" : [ "sheet", "journey" ]
+      },
+      "GoalUnit" : {
+        "type" : "string",
+        "enum" : [ "money", "count" ]
+      },
+      "HowFar" : {
+        "type" : "string",
+        "enum" : [ "number", "ticks", "source" ]
+      },
+      "NewGoalRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "blurb" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 16,
+            "minLength" : 0
+          },
+          "coverMediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "unit" : {
+            "$ref" : "#/components/schemas/GoalUnit",
+            "description" : "Left out: a plain number"
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "For money. Left out: EUR.",
+            "pattern" : "[A-Z]{3}"
+          },
+          "unitWords" : {
+            "type" : "string",
+            "description" : "What is counted, when it isn't money: books, stars",
+            "maxLength" : 20,
+            "minLength" : 0
+          },
+          "target" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "In the goal's unit: cents for money. Not needed for a goal that counts ticks.",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          },
+          "current" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What there is already, put in as a first entry",
+            "maximum" : 100000000000,
+            "minimum" : -100000000000
+          },
+          "how" : {
+            "$ref" : "#/components/schemas/HowFar",
+            "description" : "Left out: a number, or elsewhere when a source is named"
+          },
+          "startDay" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "When it began. Left out: today."
+          },
+          "targetDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "source" : {
+            "$ref" : "#/components/schemas/SourceRequest"
+          },
+          "steps" : {
+            "type" : "array",
+            "description" : "Steps to start with: they become a checklist linked to the goal",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 300,
+              "minLength" : 0
+            },
+            "maxItems" : 100,
+            "minItems" : 0
+          },
+          "stepsListId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Or a checklist that is there already"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the phone"
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          }
+        },
+        "required" : [ "circleId", "clientId", "title" ]
+      },
+      "SourceRequest" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/GoalSource"
+          },
+          "ref" : {
+            "type" : "string",
+            "description" : "Where the number is, as the place that owns it names it",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "words" : {
+            "type" : "string",
+            "description" : "What to call it until that place can be read: “Saved” in Norway budget",
+            "maxLength" : 120,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "kind", "ref" ]
+      },
+      "EntryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "by" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "amount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "In the goal's unit: cents for money. Below zero when something was taken out."
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "Alex added €150"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "amount", "by", "day", "id", "line", "note" ]
+      },
+      "GoalPaceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "percent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How far, 0 to 100: what the ring shows"
+          },
+          "toGo" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reached" : {
+            "type" : "boolean"
+          },
+          "onTrack" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "With a day to be done by: whether the pace so far gets there. Null without one."
+          },
+          "paceLine" : {
+            "type" : "string",
+            "description" : "On track: €120 a week gets there. Empty when there is nothing to say."
+          },
+          "toGoLine" : {
+            "type" : "string",
+            "description" : "€2,400 to go"
+          },
+          "timeLine" : {
+            "type" : [ "string", "null" ],
+            "description" : "20 weeks left. Null without a day to be done by."
+          }
+        },
+        "required" : [ "onTrack", "paceLine", "percent", "reached", "timeLine", "toGo", "toGoLine" ]
+      },
+      "GoalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "blurb" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "unit" : {
+            "$ref" : "#/components/schemas/GoalUnit"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "unitWords" : {
+            "type" : "string",
+            "description" : "What is counted, when it isn't money: books, stars"
+          },
+          "target" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "In the goal's unit: cents for money"
+          },
+          "current" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currentLabel" : {
+            "type" : "string",
+            "description" : "How far, in words: €5,600"
+          },
+          "targetLabel" : {
+            "type" : "string",
+            "description" : "The target, in words: €8,000"
+          },
+          "how" : {
+            "$ref" : "#/components/schemas/HowFar"
+          },
+          "startDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "byLabel" : {
+            "type" : [ "string", "null" ],
+            "description" : "by March 2027"
+          },
+          "amountLine" : {
+            "type" : "string",
+            "description" : "€5,600 of €8,000"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The line under the name in a list: €5,600 of €8,000 · on track for March"
+          },
+          "pace" : {
+            "$ref" : "#/components/schemas/GoalPaceResponse"
+          },
+          "people" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "cheer" : {
+            "type" : "string",
+            "description" : "All four chip in. Empty when nobody has yet."
+          },
+          "source" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SourceResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "steps" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/StepsResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The year the twelve months are of"
+          },
+          "months" : {
+            "type" : "array",
+            "description" : "What was put in during each month of that year, January first",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "recent" : {
+            "type" : "array",
+            "description" : "The last few times something was put in",
+            "items" : {
+              "$ref" : "#/components/schemas/EntryResponse"
+            }
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "amountLine", "blurb", "byLabel", "canEdit", "cheer", "chip", "circleId", "coverUrl", "currency", "current", "currentLabel", "emoji", "how", "id", "line", "mine", "months", "pace", "people", "recent", "source", "startDay", "steps", "target", "targetDay", "targetLabel", "title", "unit", "unitWords", "updatedAt", "year" ]
+      },
+      "SourceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "$ref" : "#/components/schemas/GoalSource"
+          },
+          "ref" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "Reads “Saved” in Norway budget"
+          },
+          "live" : {
+            "type" : "boolean",
+            "description" : "False while that place can't be read: the goal then shows what was put in by hand"
+          }
+        },
+        "required" : [ "kind", "line", "live", "ref" ]
+      },
+      "StepsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "listId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "done", "left", "listId", "title" ]
+      },
+      "NewEntryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "amount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "In the goal's unit: cents for money. Below zero to take something out.",
+            "maximum" : 100000000000,
+            "minimum" : -100000000000
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "A few words: payday, from her pocket money",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Left out: today"
+          },
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Who put it in, when not you: a child's pocket money"
+          }
+        },
+        "required" : [ "amount", "clientId" ]
+      },
+      "GuestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Someone of the circle. Leave out for a name from outside it."
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "part" : {
+            "type" : "string",
+            "description" : "What they do there, after their name: is taking her, drives",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "answer" : {
+            "$ref" : "#/components/schemas/Answer"
+          }
+        }
+      },
+      "NewEventRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "time" : {
+            "type" : "string",
+            "description" : "Left out: all day",
+            "example" : "15:30"
+          },
+          "endDay" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Left out: the day it starts"
+          },
+          "endTime" : {
+            "type" : "string",
+            "example" : "16:15"
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "The time zone of the phone, such as Europe/Ljubljana",
+            "minLength" : 1
+          },
+          "place" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "coverMediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "remindMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Push this many minutes before it starts. Left out: no push.",
+            "maximum" : 40320,
+            "minimum" : 0
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Recurrence"
+          },
+          "guests" : {
+            "type" : "array",
+            "description" : "Who is coming. The first one of the circle is who it is for.",
+            "items" : {
+              "$ref" : "#/components/schemas/GuestRequest"
+            },
+            "maxItems" : 100,
+            "minItems" : 0
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Whose page it shows on",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          }
+        },
+        "required" : [ "circleId", "clientId", "day", "timeZone", "title" ]
+      },
+      "NewGuestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "part" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "answer" : {
+            "$ref" : "#/components/schemas/Answer"
+          }
+        },
+        "required" : [ "clientId" ]
+      },
       "NewCircleRequest" : {
         "type" : "object",
         "properties" : {
@@ -2044,6 +4624,266 @@
           }
         },
         "required" : [ "clientId", "kind", "name" ]
+      },
+      "ReadRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 20000,
+            "minLength" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the phone. The API's own day in that time zone when left out."
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "The time zone of the phone, such as Europe/Ljubljana"
+          }
+        },
+        "required" : [ "text" ]
+      },
+      "CodeKind" : {
+        "type" : "string",
+        "enum" : [ "code", "password", "iban", "card" ]
+      },
+      "FoundAmountResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "around" : {
+            "type" : "string"
+          },
+          "start" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "end" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "around", "cents", "currency", "end", "start" ]
+      },
+      "FoundDateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "time" : {
+            "type" : [ "string", "null" ],
+            "example" : "08:00"
+          },
+          "deadline" : {
+            "type" : "boolean"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "around" : {
+            "type" : "string"
+          },
+          "start" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "end" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "around", "day", "deadline", "end", "start", "time", "title" ]
+      },
+      "PersonRole" : {
+        "type" : "string",
+        "enum" : [ "for", "given_to", "with", "about" ]
+      },
+      "PieceKind" : {
+        "type" : "string",
+        "enum" : [ "day", "time", "person", "remind", "repeat", "list", "amount", "code" ]
+      },
+      "PlaceSuggestionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "words" : {
+            "type" : "string",
+            "description" : "Barber Miha"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "Barber Miha, from last time"
+          }
+        },
+        "required" : [ "label", "words" ]
+      },
+      "ReadItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "as" : {
+            "$ref" : "#/components/schemas/ReadAs"
+          },
+          "words" : {
+            "type" : "string",
+            "description" : "The part of the line this was read from"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "day" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "time" : {
+            "type" : [ "string", "null" ],
+            "example" : "10:00"
+          },
+          "endTime" : {
+            "type" : [ "string", "null" ],
+            "example" : "10:30"
+          },
+          "whenLabel" : {
+            "type" : [ "string", "null" ],
+            "description" : "Sat 14 Nov · 10:00 to 10:30"
+          },
+          "whenNear" : {
+            "type" : [ "string", "null" ],
+            "description" : "The short way to say when, for a chip: today 18:00, tomorrow 9:00"
+          },
+          "person" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "personRole" : {
+            "description" : "What the name means: for them, given to them, with them, about them",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonRole"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "personLabel" : {
+            "type" : [ "string", "null" ],
+            "description" : "For Leo"
+          },
+          "remindMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "remindLabel" : {
+            "type" : [ "string", "null" ],
+            "description" : "1 hour before"
+          },
+          "repeat" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RepeatResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "list" : {
+            "description" : "For a line of a list: the list it would go to",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ListBriefResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "quantity" : {
+            "type" : [ "string", "null" ],
+            "description" : "How many: 2, 500 g"
+          },
+          "code" : {
+            "description" : "For something held back: what kind of secret it looks like",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeKind"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "place" : {
+            "description" : "For an event: where the last one like it was",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PlaceSuggestionResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pieces" : {
+            "type" : "array",
+            "description" : "How it was read: the pieces of the line that were used and what each became",
+            "items" : {
+              "$ref" : "#/components/schemas/ReadPieceResponse"
+            }
+          }
+        },
+        "required" : [ "as", "code", "day", "endTime", "list", "person", "personLabel", "personRole", "pieces", "place", "quantity", "remindLabel", "remindMinutes", "repeat", "time", "title", "whenLabel", "whenNear", "words" ]
+      },
+      "ReadPieceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Where the piece starts in the text that was sent"
+          },
+          "end" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Where it ends: the place just after its last letter"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "what" : {
+            "$ref" : "#/components/schemas/PieceKind"
+          },
+          "became" : {
+            "type" : "string",
+            "description" : "What it became, in words: Sat 14 Nov, For Leo, 1 hour before"
+          }
+        },
+        "required" : [ "became", "end", "start", "text", "what" ]
+      },
+      "ReadingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "letter" : {
+            "type" : "boolean",
+            "description" : "True for a long text: nothing is read as a line, the days and amounts found are suggestions"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReadItemResponse"
+            }
+          },
+          "dates" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FoundDateResponse"
+            }
+          },
+          "amounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FoundAmountResponse"
+            }
+          }
+        },
+        "required" : [ "amounts", "dates", "items", "letter" ]
       },
       "NewMemberRequest" : {
         "type" : "object",
@@ -2085,6 +4925,38 @@
           }
         },
         "required" : [ "clientId", "name" ]
+      },
+      "JotRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the phone"
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "The time zone of the phone, such as Europe/Ljubljana"
+          },
+          "source" : {
+            "$ref" : "#/components/schemas/JotSource",
+            "description" : "Where it came from. Left out: the app."
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Who sees what it makes. Left out: what the circle's kind starts things as."
+          }
+        },
+        "required" : [ "clientId", "text" ]
       },
       "NewGuestPassRequest" : {
         "type" : "object",
@@ -2398,6 +5270,79 @@
         },
         "required" : [ "email" ]
       },
+      "ReminderChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "dueOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "With a day, the day and the time change together"
+          },
+          "dueTime" : {
+            "type" : "string",
+            "example" : "19:00"
+          },
+          "timeZone" : {
+            "type" : "string"
+          },
+          "removeDue" : {
+            "type" : "boolean",
+            "description" : "True: no day any more (and it stops repeating)"
+          },
+          "remindMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 40320,
+            "minimum" : 0
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Recurrence"
+          },
+          "stopRepeating" : {
+            "type" : "boolean"
+          },
+          "givenTo" : {
+            "type" : "array",
+            "description" : "Everyone it is given to, in order. An empty list takes it back.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "takesTurns" : {
+            "type" : "boolean"
+          },
+          "turn" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Whose turn it is now: one of the people it is given to"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/PlaceRequest"
+          },
+          "removePlace" : {
+            "type" : "boolean"
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 20,
+            "minimum" : 0
+          }
+        }
+      },
       "PageChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -2460,6 +5405,157 @@
             "type" : "boolean"
           },
           "seesPages" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "GoalChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "blurb" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 16,
+            "minLength" : 0
+          },
+          "coverMediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "removeCover" : {
+            "type" : "boolean"
+          },
+          "unitWords" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          },
+          "target" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          },
+          "how" : {
+            "$ref" : "#/components/schemas/HowFar"
+          },
+          "startDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "targetDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "removeTargetDay" : {
+            "type" : "boolean"
+          },
+          "source" : {
+            "$ref" : "#/components/schemas/SourceRequest"
+          },
+          "removeSource" : {
+            "type" : "boolean"
+          },
+          "stepsListId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the phone"
+          }
+        }
+      },
+      "EventChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "With a day, the whole of when it is changes: day, time, end and time zone together"
+          },
+          "time" : {
+            "type" : "string",
+            "description" : "With a day and no time: all day",
+            "example" : "15:30"
+          },
+          "endDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endTime" : {
+            "type" : "string",
+            "example" : "16:15"
+          },
+          "timeZone" : {
+            "type" : "string"
+          },
+          "place" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          },
+          "coverMediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "removeCover" : {
+            "type" : "boolean"
+          },
+          "remindMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 40320,
+            "minimum" : 0
+          },
+          "stopReminding" : {
+            "type" : "boolean"
+          },
+          "repeat" : {
+            "$ref" : "#/components/schemas/Recurrence"
+          },
+          "stopRepeating" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "GuestChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 1
+          },
+          "part" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "answer" : {
+            "$ref" : "#/components/schemas/Answer"
+          },
+          "removeAnswer" : {
             "type" : "boolean"
           }
         }
@@ -2545,45 +5641,6 @@
           }
         }
       },
-      "ThingBrief" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "kind" : {
-            "$ref" : "#/components/schemas/ThingKind"
-          },
-          "place" : {
-            "$ref" : "#/components/schemas/Place"
-          },
-          "title" : {
-            "type" : "string"
-          },
-          "updatedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "mine" : {
-            "type" : "boolean"
-          },
-          "canEdit" : {
-            "type" : "boolean"
-          },
-          "chip" : {
-            "$ref" : "#/components/schemas/AudienceChip"
-          },
-          "glance" : {
-            "type" : [ "string", "null" ],
-            "description" : "Where it stands, in a few words: 4 of 9 done"
-          }
-        }
-      },
       "PersonPageResponse" : {
         "type" : "object",
         "properties" : {
@@ -2642,6 +5699,158 @@
             "type" : "boolean"
           }
         }
+      },
+      "PageEntryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EntryResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "ListInUseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "list" : {
+            "$ref" : "#/components/schemas/WidgetListResponse"
+          },
+          "by" : {
+            "$ref" : "#/components/schemas/PersonBrief",
+            "description" : "Who is using it"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "since" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "by", "list", "since", "you" ]
+      },
+      "NextLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "lead" : {
+            "type" : [ "string", "null" ],
+            "description" : "15:30, €84"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "done" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "For something that can be ticked: false. Null otherwise."
+          }
+        },
+        "required" : [ "done", "kind", "lead", "note", "thingId", "title" ]
+      },
+      "WidgetLineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "done" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "done", "id", "text" ]
+      },
+      "WidgetListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lines" : {
+            "type" : "array",
+            "description" : "Its first lines: what is left first, then what was ticked",
+            "items" : {
+              "$ref" : "#/components/schemas/WidgetLineResponse"
+            }
+          }
+        },
+        "required" : [ "done", "id", "left", "lines", "title" ]
+      },
+      "WidgetsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "chips" : {
+            "type" : "array",
+            "description" : "What this circle puts on lists most, for one-tap adding: Milk, Eggs, Bread",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "shopping" : {
+            "description" : "The shopping list. Null when there is none yet.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WidgetListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "inUse" : {
+            "description" : "The list someone is using right now, for the Lock Screen",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ListInUseResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "next" : {
+            "type" : "array",
+            "description" : "What is next today: three lines at most",
+            "items" : {
+              "$ref" : "#/components/schemas/NextLineResponse"
+            }
+          },
+          "addedToday" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things you jotted today"
+          }
+        },
+        "required" : [ "addedToday", "chips", "day", "inUse", "next", "shopping" ]
       },
       "FreshCard" : {
         "type" : "object",
@@ -2771,6 +5980,304 @@
         },
         "required" : [ "hits", "words" ]
       },
+      "DayGroupResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "reminders" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReminderResponse"
+            }
+          }
+        },
+        "required" : [ "day", "reminders" ]
+      },
+      "RemindersResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "yoursCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many are yours to do, with the ones that wait for a place"
+          },
+          "askedCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many you gave to someone else that aren't done"
+          },
+          "yours" : {
+            "type" : "array",
+            "description" : "Yours, by day. What is overdue stands under today; no day comes last.",
+            "items" : {
+              "$ref" : "#/components/schemas/DayGroupResponse"
+            }
+          },
+          "asked" : {
+            "type" : "array",
+            "description" : "What you gave to someone else, with what they did today",
+            "items" : {
+              "$ref" : "#/components/schemas/ReminderResponse"
+            }
+          },
+          "places" : {
+            "type" : "array",
+            "description" : "Yours and asked that wait for a place instead of a time",
+            "items" : {
+              "$ref" : "#/components/schemas/ReminderResponse"
+            }
+          }
+        },
+        "required" : [ "asked", "askedCount", "day", "places", "yours", "yoursCount" ]
+      },
+      "DoneResponse" : {
+        "type" : "object",
+        "properties" : {
+          "tickId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "reminderId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "doneAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "doneBy" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "doneFor" : {
+            "description" : "Whose job it was",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "dueOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "stars" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "doneAt", "doneBy", "doneFor", "dueOn", "mine", "reminderId", "stars", "tickId", "title" ]
+      },
+      "PageDoneResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DoneResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "DayDotsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "dots" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DotResponse"
+            }
+          }
+        },
+        "required" : [ "day", "dots" ]
+      },
+      "DotResponse" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "tint" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "memberId", "tint" ]
+      },
+      "PlanDayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "entries" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PlanEntryResponse"
+            }
+          }
+        },
+        "required" : [ "day", "entries" ]
+      },
+      "PlanEntryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The thing behind the line"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "lead" : {
+            "type" : [ "string", "null" ],
+            "description" : "What stands in front: 15:30, All day, €84. Null for a job with only a tick."
+          },
+          "leadEnd" : {
+            "type" : [ "string", "null" ],
+            "description" : "The small time under it: when it ends"
+          },
+          "done" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "For something that can be ticked: whether it is. Null otherwise."
+          },
+          "canTick" : {
+            "type" : "boolean",
+            "description" : "True when the signed-in person may tick it here. Send the line's day as dueOn."
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "The small line under the title: Weekdays · Alex drives"
+          },
+          "noteIcon" : {
+            "$ref" : "#/components/schemas/NoteIcon"
+          },
+          "whose" : {
+            "description" : "Whose it is, for the coloured dot. Null: everyone's.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WhoseResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "avatarUrls" : {
+            "type" : "array",
+            "description" : "The faces next to it, three at most",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "minute" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sorts the day: minutes since midnight, or 1440 for something with no time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "description" : "Null for a line another place brought",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AudienceChip"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "avatarUrls", "canEdit", "canTick", "chip", "day", "done", "kind", "lead", "leadEnd", "mine", "minute", "note", "noteIcon", "thingId", "title", "whose" ]
+      },
+      "PlanResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "week" : {
+            "type" : "array",
+            "description" : "The week the day is in, Monday first, with a dot per person who has something",
+            "items" : {
+              "$ref" : "#/components/schemas/DayDotsResponse"
+            }
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "The day asked for and the days after it, each with its lines in order of time",
+            "items" : {
+              "$ref" : "#/components/schemas/PlanDayResponse"
+            }
+          },
+          "overdue" : {
+            "type" : "array",
+            "description" : "Reminders that were due before that day and are still open, each on the day it was due. They are still to do: when the day asked for is today, they belong on top.",
+            "items" : {
+              "$ref" : "#/components/schemas/PlanEntryResponse"
+            }
+          }
+        },
+        "required" : [ "day", "days", "overdue", "week" ]
+      },
+      "WhoseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "tint" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "memberId", "name", "tint" ]
+      },
       "PagePageRow" : {
         "type" : "object",
         "properties" : {
@@ -2815,6 +6322,126 @@
             "$ref" : "#/components/schemas/AudienceChip"
           }
         }
+      },
+      "MonthDayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "inMonth" : {
+            "type" : "boolean",
+            "description" : "False for the days of the months before and after that fill the grid"
+          },
+          "dots" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DotResponse"
+            }
+          }
+        },
+        "required" : [ "day", "dots", "inMonth" ]
+      },
+      "MonthResponse" : {
+        "type" : "object",
+        "properties" : {
+          "month" : {
+            "type" : "string",
+            "example" : "2026-11"
+          },
+          "days" : {
+            "type" : "array",
+            "description" : "Whole weeks, Monday first, that hold the month",
+            "items" : {
+              "$ref" : "#/components/schemas/MonthDayResponse"
+            }
+          }
+        },
+        "required" : [ "days", "month" ]
+      },
+      "PageJotResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JotResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
+      },
+      "GoalRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "percent" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How far, 0 to 100: what the ring shows"
+          },
+          "line" : {
+            "type" : "string",
+            "description" : "The line under the name: €5,600 of €8,000 · on track for March"
+          },
+          "reached" : {
+            "type" : "boolean"
+          },
+          "source" : {
+            "description" : "Where it reads its number, when not by hand",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/GoalSource"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who put something in, whoever began first coming first",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "cheer" : {
+            "type" : "string",
+            "description" : "All four chip in. Empty when nobody has yet."
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "cheer", "chip", "circleId", "coverUrl", "emoji", "id", "line", "mine", "people", "percent", "reached", "source", "title", "updatedAt" ]
       },
       "ChecklistRow" : {
         "type" : "object",

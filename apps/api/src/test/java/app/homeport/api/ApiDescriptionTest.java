@@ -101,11 +101,26 @@ class ApiDescriptionTest extends ApiTest {
                 "$.id");
         String code = JsonPath.<String>read(fetch("/v1/circles/" + circle, nora), "$.joinUrl")
                 .replaceFirst(".*/", "");
+        // Plan: an event, a reminder and a goal that are Nora's alone, and something she jotted.
+        String made = "{\"clientId\":\"%s\",\"circleId\":\"" + circle
+                + "\",\"title\":\"Hers\",\"day\":\"2026-11-11\",\"timeZone\":\"UTC\",\"target\":5}";
+        String event = JsonPath.read(send(HttpMethod.POST, "/v1/events", nora, made.formatted(id()), 201), "$.id");
+        String reminder =
+                JsonPath.read(send(HttpMethod.POST, "/v1/reminders", nora, made.formatted(id()), 201), "$.id");
+        String goal = JsonPath.read(send(HttpMethod.POST, "/v1/goals", nora, made.formatted(id()), 201), "$.id");
+        String jot = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/circles/" + circle + "/jots",
+                        nora,
+                        "{\"clientId\":\"%s\",\"text\":\"Gate code 4471\"}".formatted(id()),
+                        201),
+                "$[0].id");
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = List.of(circle, child, page, pass);
-        List<String> forAlex = List.of(page);
+        List<String> forStranger = List.of(circle, child, page, pass, event, reminder, goal, jot);
+        List<String> forAlex = List.of(page, event, reminder, goal, jot);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {
@@ -114,7 +129,16 @@ class ApiDescriptionTest extends ApiTest {
             String path = name.substring(4);
             for (String id : forStranger) {
                 if (answers(path.replace("{id}", id), stranger)) {
-                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass));
+                    gaveAway.add("a stranger: " + path + " with "
+                            + (id.equals(event)
+                                    ? "an event's id"
+                                    : id.equals(reminder)
+                                            ? "a reminder's id"
+                                            : id.equals(goal)
+                                                    ? "a goal's id"
+                                                    : id.equals(jot)
+                                                            ? "a jot's id"
+                                                            : label(id, circle, child, page, pass)));
                 }
             }
             for (String id : forAlex) {
