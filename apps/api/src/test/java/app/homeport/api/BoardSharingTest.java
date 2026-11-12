@@ -163,9 +163,9 @@ class BoardSharingTest extends BoardTest {
         String nora = person("Nora");
         String circle = circle(nora, "family", "The Linds");
 
-        assertThat(newBoard(nora, circle, "whose_turn", null, null, 409))
+        assertThat(newBoard(nora, circle, "date_ideas", null, null, 409))
                 .contains("coming_soon")
-                .contains("“Whose turn?” is coming with the next update");
+                .contains("“Date ideas” is coming with the next update");
         assertThat(newBoard(nora, circle, "house_manual", null, null, 400)).contains("starts as pages and lists");
         assertThat(newBoard(nora, circle, "teleporter", null, null, 400)).contains("That isn't a template we have");
         assertThat(newBoard(nora, circle, "time_capsule", null, null, 400)).contains("Choose the day it opens");

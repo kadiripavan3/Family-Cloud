@@ -66,8 +66,9 @@ class BoardSeedTest extends ApiTest {
         String alex = signIn("alex@example.com");
         String circle = JsonPath.<List<String>>read(fetch("/v1/circles", nora), "$[?(@.name == 'The Linds')].id")
                 .get(0);
+        // Ten of them are these; the seven fair-and-fun ones have a test of their own (FunSeedTest).
         assertThat(JsonPath.<Integer>read(fetch("/v1/circles/" + circle + "/boards", nora), "$.items.length()"))
-                .isEqualTo(10);
+                .isEqualTo(17);
 
         // 5.7 This week's meals: 29 ingredients, six at home, 23 going to Groceries.
         String meals = boardOf(nora, circle, "meal_plan");
