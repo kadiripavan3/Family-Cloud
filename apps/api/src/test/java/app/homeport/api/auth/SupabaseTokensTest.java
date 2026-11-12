@@ -58,7 +58,7 @@ class SupabaseTokensTest {
     void aSignedInPersonsTokenPassesAndSaysWhoTheyAre() throws Exception {
         UUID person = UUID.randomUUID();
         Jwt token = decoder().decode(signed(key, claims -> claims.subject(person.toString())));
-        assertThat(CurrentUser.from(token)).isEqualTo(new CurrentUser(person, "maya@example.com"));
+        assertThat(CurrentUser.from(token)).isEqualTo(new CurrentUser(person, "maya@example.com", token.getIssuedAt()));
     }
 
     @Test
