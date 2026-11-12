@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  NEVER RUN. What the widget extension may share with the app: the App Group's folder, and through the same
+  group the keychain item with the sign-in. plugins/withJotIos.js writes the group's name in the place of
+  __APP_GROUP__ and gives the app itself the same group.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>__APP_GROUP__</string>
+  </array>
+</dict>
+</plist>

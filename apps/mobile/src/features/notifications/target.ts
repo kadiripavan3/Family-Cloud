@@ -4,11 +4,12 @@ import type { Href } from 'expo-router';
 export const FALLBACK: Href = '/activity';
 
 /**
- * The screens a notification may open, by the path the API sends with it. Only the tabs so far: a screen
+ * The screens a notification may open, by the path the API sends with it. The tabs, and the jot bar (a tap
+ * on the pinned note, which the phone itself posts). A screen
  * that a notification is about (a bill, an album, a job) gets a line here when it is built, with a check
  * that its id looks like an id.
  */
-const SCREENS: Record<string, Href> = { '/activity': '/activity', '/people': '/people', '/you': '/you' };
+const SCREENS: Record<string, Href> = { '/activity': '/activity', '/people': '/people', '/you': '/you', '/jot': '/jot' };
 
 /**
  * Where a notification opens the app. The API sends a path with each push; only the screens named here are
