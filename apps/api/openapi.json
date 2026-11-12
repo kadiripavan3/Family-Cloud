@@ -1161,6 +1161,32 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "events" ],
+        "summary" : "Take your own answer back: you haven't answered again. Taking back what isn't there is fine.",
+        "operationId" : "unanswerEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/circles/{id}/shopping-list" : {
@@ -3499,7 +3525,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/NewEntryRequest"
+                "$ref" : "#/components/schemas/NewBoardEntryRequest"
               }
             }
           },
@@ -3604,7 +3630,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ReadRequest"
+                "$ref" : "#/components/schemas/ReadBillRequest"
               }
             }
           },
@@ -4672,7 +4698,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ItemResponse"
+                  "$ref" : "#/components/schemas/LibraryItemResponse"
                 }
               }
             }
@@ -4708,7 +4734,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ItemResponse"
+                  "$ref" : "#/components/schemas/LibraryItemResponse"
                 }
               }
             }
@@ -14436,6 +14462,27 @@
         },
         "required" : [ "circleId", "clientId", "template" ]
       },
+      "NewBoardEntryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string",
+            "description" : "The template's word for what is added: meal, letter, mark",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "fields" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What the template takes for this kind. See x-board-templates."
+          }
+        },
+        "required" : [ "clientId", "kind" ]
+      },
       "EntryAddedResponse" : {
         "type" : "object",
         "properties" : {
@@ -14465,6 +14512,30 @@
           }
         },
         "required" : [ "verb" ]
+      },
+      "BillShareRequest" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "parts" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Their part of the whole: 1 and 1 is half each. Left out: 1.",
+            "maximum" : 1000000,
+            "minimum" : 1
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Or their exact amount in cents. Then everyone needs one, and they must add up to the bill.",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          }
+        },
+        "required" : [ "memberId" ]
       },
       "NewBillRequest" : {
         "type" : "object",
@@ -14563,13 +14634,35 @@
             "type" : "array",
             "description" : "Who pays. Left out: you pay all of it.",
             "items" : {
-              "$ref" : "#/components/schemas/ShareRequest"
+              "$ref" : "#/components/schemas/BillShareRequest"
             },
             "maxItems" : 30,
             "minItems" : 0
           }
         },
         "required" : [ "amountCents", "circleId", "clientId", "dueOn" ]
+      },
+      "ReadBillRequest" : {
+        "type" : "object",
+        "properties" : {
+          "lines" : {
+            "type" : "array",
+            "description" : "The lines of text the phone read off the photo or the PDF, top to bottom",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 500,
+              "minLength" : 0
+            },
+            "maxItems" : 400,
+            "minItems" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for a due date written without its year. The API's own day when left out."
+          }
+        },
+        "required" : [ "lines" ]
       },
       "BillReadingResponse" : {
         "type" : "object",
@@ -15310,6 +15403,117 @@
           }
         }
       },
+      "AlbumBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        }
+      },
+      "LibraryItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "item" : {
+            "$ref" : "#/components/schemas/ItemRow"
+          },
+          "largeUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "Its picture at full size"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "bytes" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How much is kept for it, in bytes"
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "country" : {
+            "type" : [ "string", "null" ]
+          },
+          "addedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Who is in it, as tagged by hand",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "albums" : {
+            "type" : "array",
+            "description" : "The albums it is in that you may see",
+            "items" : {
+              "$ref" : "#/components/schemas/AlbumBrief"
+            }
+          },
+          "loves" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lovedBy" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "comments" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "neighbours" : {
+            "$ref" : "#/components/schemas/Neighbours"
+          }
+        },
+        "required" : [ "about", "addedAt", "albums", "bytes", "comments", "contentType", "country", "fileName", "item", "largeUrl", "lat", "lng", "lovedBy", "loves", "neighbours" ]
+      },
+      "Neighbours" : {
+        "type" : "object",
+        "properties" : {
+          "newer" : {
+            "type" : "array",
+            "description" : "Taken after it, the nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "older" : {
+            "type" : "array",
+            "description" : "Taken before it, the nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "position" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Its place counted from the newest, starting at 1. Only inside a moment or an album."
+          },
+          "total" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many there are. Only inside a moment or an album."
+          }
+        }
+      },
       "GoalChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -15641,6 +15845,10 @@
             "type" : "boolean",
             "description" : "True when the phone sent the words inside it, so it can be searched"
           },
+          "text" : {
+            "type" : "string",
+            "description" : "The words inside it as they are kept: what \"change the words\" starts with. Empty when the phone sent none."
+          },
           "facts" : {
             "type" : "array",
             "description" : "What was read from the words, to show and to correct",
@@ -15675,7 +15883,7 @@
             } ]
           }
         },
-        "required" : [ "clash", "contentType", "dates", "document", "facts", "fileName", "hasText", "linked", "pictureUrl", "remindOn" ]
+        "required" : [ "clash", "contentType", "dates", "document", "facts", "fileName", "hasText", "linked", "pictureUrl", "remindOn", "text" ]
       },
       "Fact" : {
         "type" : "object",
@@ -15890,7 +16098,7 @@
             "type" : "array",
             "description" : "Who pays, all of them: this replaces the shares there were",
             "items" : {
-              "$ref" : "#/components/schemas/ShareRequest"
+              "$ref" : "#/components/schemas/BillShareRequest"
             },
             "maxItems" : 30,
             "minItems" : 1
@@ -17585,7 +17793,12 @@
           },
           "canTick" : {
             "type" : "boolean",
-            "description" : "True when the signed-in person may tick it here. Send the line's day as dueOn."
+            "description" : "True when the signed-in person may tick it here, or, for a line that is done, take its tick away again. Send dueOn with the tick."
+          },
+          "dueOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "For a job: the due day to send with a tick, or with taking one away. For a job that is done it is the due day that was ticked, which need not be the day the line stands on, and is null for a job that had no day. Null for anything else."
           },
           "note" : {
             "type" : "string",
@@ -17593,6 +17806,10 @@
           },
           "noteIcon" : {
             "$ref" : "#/components/schemas/NoteIcon"
+          },
+          "repeats" : {
+            "type" : "boolean",
+            "description" : "True for something that comes round again, also on a line that is done, where the note no longer says so"
           },
           "whose" : {
             "description" : "Whose it is, for the coloured dot. Null: everyone's.",
@@ -17629,7 +17846,7 @@
             } ]
           }
         },
-        "required" : [ "avatarUrls", "canEdit", "canTick", "chip", "day", "done", "kind", "lead", "leadEnd", "mine", "minute", "note", "noteIcon", "thingId", "title", "whose" ]
+        "required" : [ "avatarUrls", "canEdit", "canTick", "chip", "day", "done", "dueOn", "kind", "lead", "leadEnd", "mine", "minute", "note", "noteIcon", "repeats", "thingId", "title", "whose" ]
       },
       "PlanResponse" : {
         "type" : "object",
@@ -18296,6 +18513,14 @@
               "type" : "null"
             } ]
           },
+          "unit" : {
+            "$ref" : "#/components/schemas/GoalUnit",
+            "description" : "What it counts: money, or a plain number of something"
+          },
+          "unitWords" : {
+            "type" : "string",
+            "description" : "What is counted, when it isn't money: books, stars"
+          },
           "people" : {
             "type" : "array",
             "description" : "Who put something in, whoever began first coming first",
@@ -18321,7 +18546,7 @@
             "$ref" : "#/components/schemas/AudienceChip"
           }
         },
-        "required" : [ "canEdit", "cheer", "chip", "circleId", "coverUrl", "emoji", "id", "line", "mine", "people", "percent", "reached", "source", "title", "updatedAt" ]
+        "required" : [ "canEdit", "cheer", "chip", "circleId", "coverUrl", "emoji", "id", "line", "mine", "people", "percent", "reached", "source", "title", "unit", "unitWords", "updatedAt" ]
       },
       "PageDocumentCard" : {
         "type" : "object",
@@ -18572,19 +18797,6 @@
         },
         "required" : [ "items", "nextCursor" ]
       },
-      "AlbumBrief" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "title" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "id", "title" ]
-      },
       "MealPlanSettings" : {
         "type" : "object",
         "properties" : {
@@ -18604,36 +18816,6 @@
           }
         },
         "required" : [ "cookingFor", "groceriesListId", "toGroceries" ]
-      },
-      "Neighbours" : {
-        "type" : "object",
-        "properties" : {
-          "newer" : {
-            "type" : "array",
-            "description" : "Taken after it, the nearest first",
-            "items" : {
-              "$ref" : "#/components/schemas/ItemRow"
-            }
-          },
-          "older" : {
-            "type" : "array",
-            "description" : "Taken before it, the nearest first",
-            "items" : {
-              "$ref" : "#/components/schemas/ItemRow"
-            }
-          },
-          "position" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "Its place counted from the newest, starting at 1. Only inside a moment or an album."
-          },
-          "total" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "How many there are. Only inside a moment or an album."
-          }
-        },
-        "required" : [ "newer", "older", "position", "total" ]
       },
       "MealPlanDay" : {
         "type" : "object",

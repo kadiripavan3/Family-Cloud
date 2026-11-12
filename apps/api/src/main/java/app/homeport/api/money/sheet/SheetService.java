@@ -231,11 +231,9 @@ public class SheetService {
             List<ColumnBriefResponse> columns,
             List<FunctionResponse> functions) {}
 
-    /** A number a sheet works out that something else can show or read: a tile, or the total under a column. */
-    public record NamedTotalResponse(
-            @Schema(description = "What it is called in the sheet: Saved, Cost. A goal reads it by this name.")
+    /** A number a sheet works out that something else can show: a tile, or the total under a column. */
+    public record NamedTotal(
             String name,
-
             CellKind kind,
 
             @Schema(nullable = true) Long cents,
@@ -518,28 +516,22 @@ public class SheetService {
      * there is no such sheet for this viewer, or no such number in it. A goal reads "Saved" this way, and a
      * page shows a sheet's total.
      */
-    public Optional<NamedTotalResponse> total(UUID sheetId, String name, UUID me) {
+    public Optional<NamedTotal> total(UUID sheetId, String name, UUID me) {
         return totals(sheetId, me).stream()
                 .filter(total -> total.name().equalsIgnoreCase(name.strip()))
                 .findFirst();
     }
 
-    /** The same for the app, which asks about one sheet it is looking at: to someone who may not see the sheet it isn't there. */
-    public List<NamedTotalResponse> namedTotals(UUID sheetId, UUID me) {
-        things.require(sheetId, me, ThingKind.SHEET);
-        return totals(sheetId, me);
-    }
-
     /** Every named number of a sheet, for a viewer who may see it: its tiles, then the totals under its columns. Empty otherwise. */
-    public List<NamedTotalResponse> totals(UUID sheetId, UUID me) {
+    public List<NamedTotal> totals(UUID sheetId, UUID me) {
         Optional<ThingRow> seen = thingStore.find(sheetId, me).filter(row -> row.kind() == ThingKind.SHEET);
         SheetRow sheet = seen.flatMap(row -> sheets.find(sheetId)).orElse(null);
         if (sheet == null) {
             return List.of();
         }
         Map<UUID, Person> circle = people.of(seen.get().circleId());
-        List<NamedTotalResponse> tiles = new ArrayList<>();
-        List<NamedTotalResponse> sums = new ArrayList<>();
+        List<NamedTotal> tiles = new ArrayList<>();
+        List<NamedTotal> sums = new ArrayList<>();
         for (TabRow tab : sheets.tabs(List.of(sheetId))) {
             Worked worked = work(tab, circle, LocalDate.now());
             for (TileResponse tile : worked.tileViews()) {
@@ -555,8 +547,8 @@ public class SheetService {
         return tiles;
     }
 
-    private static NamedTotalResponse named(String name, CellResponse cell, String currency) {
-        return new NamedTotalResponse(name, cell.kind(), cell.cents(), cell.number(), currency);
+    private static NamedTotal named(String name, CellResponse cell, String currency) {
+        return new NamedTotal(name, cell.kind(), cell.cents(), cell.number(), currency);
     }
 
     // ---------- making a sheet ----------

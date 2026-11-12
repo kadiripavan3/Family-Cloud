@@ -362,20 +362,6 @@ public class BillStore {
                 .list();
     }
 
-    /** The bills of a circle that are still to pay and due from one day to another (both counted), soonest first. Five hundred at most. */
-    public List<Listed> openBetween(UUID circleId, UUID me, LocalDate from, LocalDate to) {
-        return jdbc.sql("select " + ThingStore.COLUMNS + ", " + BILL + ", " + DUE + """
-             from bill_dues d join bills b on b.thing_id = d.thing_id join things t on t.id = b.thing_id
-             where t.circle_id = :circle and d.paid_at is null and d.due_on between :from and :to and\s"""
-                        + Rules.sees("t", ":me") + " order by d.due_on, d.id limit 500")
-                .param("circle", circleId)
-                .param("me", me)
-                .param("from", from)
-                .param("to", to)
-                .query(BillStore::listed)
-                .list();
-    }
-
     /** These bills with the time each is due now (or was due last, for one that is paid), as far as the viewer may see them. */
     public List<Listed> current(List<UUID> thingIds, UUID me) {
         if (thingIds.isEmpty()) {
@@ -472,18 +458,16 @@ public class BillStore {
         return places;
     }
 
-    /** Bills of a circle the viewer may see whose payee, note or reference holds these words. */
-    public List<Map.Entry<UUID, String>> search(UUID circleId, UUID me, String pattern, int limit) {
+    /** Bills of a circle whose payee, note or reference holds these words. */
+    public List<Map.Entry<UUID, String>> search(UUID circleId, String pattern, int limit) {
         return jdbc.sql("""
             select b.thing_id, case when b.payee ilike :pattern then b.payee when b.reference ilike :pattern
                      then b.reference else left(b.note, 90) end as found
             from bills b join things t on t.id = b.thing_id
             where t.circle_id = :circle and (b.payee ilike :pattern or b.note ilike :pattern or b.reference ilike :pattern)
-              and\s""" + Rules.sees("t", ":me") + """
-             order by t.updated_at desc limit :limit
+            order by t.updated_at desc limit :limit
             """)
                 .param("circle", circleId)
-                .param("me", me)
                 .param("pattern", pattern)
                 .param("limit", limit)
                 .query((rs, n) -> Map.entry(rs.getObject("thing_id", UUID.class), rs.getString("found")))

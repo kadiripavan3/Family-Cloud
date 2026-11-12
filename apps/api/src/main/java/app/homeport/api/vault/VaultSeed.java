@@ -32,13 +32,9 @@ class VaultSeed implements Seeder {
         LocalDate today = LocalDate.now();
 
         // Logins. Alex shares Netflix with Nora; two of Nora's own need a look.
-        // The two logins that bills in Money link to, and the passport the Library's scan is kept with.
         UUID netflix = item(w, "linds", "alex", "Netflix", "login", "netflix.com", null, "ok", "some");
         share(w, netflix, w.member("linds", "nora"), false);
-        w.thing("vault/netflix-login", netflix);
-        w.thing(
-                "vault/elektro-login",
-                item(w, "linds", "nora", "Electricity account", "login", "elektro.example", null, "ok", "me"));
+        item(w, "linds", "nora", "Electricity account", "login", "elektro.example", null, "ok", "me");
         UUID school = item(w, "linds", "nora", "School portal", "login", "school.example", null, "ok", "some");
         share(w, school, w.member("linds", "alex"), true);
         item(w, "linds", "nora", "Bank", "login", "bank.example", null, "reused", "me");
@@ -54,6 +50,7 @@ class VaultSeed implements Seeder {
         UUID mias = item(w, "linds", "nora", "Mia's passport", "id", "", today.plusDays(264), "ok", "some");
         share(w, mias, w.member("linds", "alex"), false);
         about(w, mias, w.member("linds", "mia"));
+        // The Library's scan of this passport links to it: "Kept in the Vault".
         w.thing("vault/mias-passport", mias);
         UUID alexs = item(w, "linds", "alex", "Alex's passport", "id", "", today.plusDays(905), "ok", "me");
         about(w, alexs, w.member("linds", "alex"));

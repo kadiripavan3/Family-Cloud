@@ -545,16 +545,15 @@ public class VaultItemStore {
                 .list();
     }
 
-    /** Items in a circle the viewer may see whose site or label holds these words. */
-    public List<GlanceRow> bySite(UUID circleId, UUID me, String words, int limit) {
+    /** Items in a circle whose site or label holds these words. Who may see each is checked by the caller. */
+    public List<GlanceRow> bySite(UUID circleId, String words, int limit) {
         return jdbc.sql("""
             select v.thing_id, v.category, v.site, v.expires_on
             from vault_items v join things t on t.id = v.thing_id
-            where t.circle_id = :circle and t.place = 'vault' and v.site ilike :pattern and\s""" + Rules.sees("t", ":me") + """
-             order by t.updated_at desc, t.id limit :limit
+            where t.circle_id = :circle and t.place = 'vault' and v.site ilike :pattern
+            order by t.updated_at desc, t.id limit :limit
             """)
                 .param("circle", circleId)
-                .param("me", me)
                 .param("pattern", Sql.anywhere(words))
                 .param("limit", limit)
                 .query(VaultItemStore::glance)

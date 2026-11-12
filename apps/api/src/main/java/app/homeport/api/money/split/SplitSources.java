@@ -1,6 +1,5 @@
 package app.homeport.api.money.split;
 
-import app.homeport.api.circle.CircleLine;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.common.Sql;
 import app.homeport.api.home.SearchSource;
@@ -24,11 +23,11 @@ import org.springframework.stereotype.Component;
 
 /**
  * What splits bring to the rest: "You're owed for Lisbon weekend" on Today (among equals, where splitting is
- * everyday business; a family keeps it in Money), "you're owed €64" under the circle in the circle switcher, a
- * search inside what was paid for, and "You're owed €64" wherever a split is listed among other things.
+ * everyday business; a family keeps it in Money), a search inside what was paid for, and "You're owed €64"
+ * wherever a split is listed among other things.
  */
 @Component
-class SplitSources implements TodaySource, SearchSource, GlanceSource, CircleLine {
+class SplitSources implements TodaySource, SearchSource, GlanceSource {
 
     private final SplitService splits;
     private final SplitStore store;
@@ -70,37 +69,14 @@ class SplitSources implements TodaySource, SearchSource, GlanceSource, CircleLin
                 .toList();
     }
 
-    /**
-     * "you're owed €64" under a circle's name in the circle switcher: what the person is owed, or owes, across
-     * every split of that circle they may see. Nothing for a circle where they are even, and nothing for a
-     * family, for the reason Today has none there: what a family owes each other is kept in Money.
-     */
-    @Override
-    public Map<UUID, String> lines(UUID me, List<UUID> circleIds) {
-        Map<UUID, String> lines = new HashMap<>();
-        for (UUID circleId : store.withSplits(circleIds)) {
-            if (circles.require(circleId, me).kind().hasRoles()) {
-                continue;
-            }
-            String owed = splits.owed(circleId, me).stream()
-                    .map(sum -> (sum.cents() > 0 ? "you're owed " : "you owe ")
-                            + Cash.round(Math.abs(sum.cents()), sum.currency()))
-                    .collect(Collectors.joining(" and "));
-            if (!owed.isEmpty()) {
-                lines.put(circleId, owed);
-            }
-        }
-        return lines;
-    }
-
     @Override
     public Place place() {
         return Place.MONEY;
     }
 
     @Override
-    public List<Found> find(UUID me, UUID circleId, String words, int limit) {
-        return store.search(circleId, me, Sql.anywhere(words), limit).stream()
+    public List<Found> find(UUID circleId, String words, int limit) {
+        return store.search(circleId, Sql.anywhere(words), limit).stream()
                 .map(found -> new Found(found.getKey(), found.getValue()))
                 .toList();
     }

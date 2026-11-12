@@ -7,7 +7,6 @@ import java.util.UUID;
  * Where a goal reads its number when nobody types it in: the "Saved" cell of a sheet, the days of a
  * challenge in Journey. The place that owns that number implements this, and Spring finds it; Plan never
  * looks into another place's tables. Until a place does, a goal that names it shows what was put in by hand.
- * Money reads a sheet ({@code money/sheet/SheetNumbers}).
  */
 public interface GoalNumber {
 
@@ -25,13 +24,6 @@ public interface GoalNumber {
     /**
      * @param number how far, in the goal's own unit (cents for money)
      * @param words where it comes from, to finish "Reads …": “Saved” in Norway budget
-     * @param thingId the thing the number lives in, when it is one this viewer can open (the sheet); else null
      */
-    record Reading(long number, String words, UUID thingId) {
-
-        /** A number that lives in nothing the app can open. */
-        public Reading(long number, String words) {
-            this(number, words, null);
-        }
-    }
+    record Reading(long number, String words) {}
 }

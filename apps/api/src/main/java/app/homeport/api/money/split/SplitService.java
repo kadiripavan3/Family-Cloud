@@ -15,7 +15,6 @@ import app.homeport.api.money.split.SplitStore.Part;
 import app.homeport.api.money.split.SplitStore.PaymentRow;
 import app.homeport.api.money.split.SplitStore.Reminded;
 import app.homeport.api.money.split.SplitStore.ShareRow;
-import app.homeport.api.notify.Nudge;
 import app.homeport.api.thing.Audience;
 import app.homeport.api.thing.ThingKind;
 import app.homeport.api.thing.ThingService;
@@ -780,7 +779,7 @@ public class SplitService {
 
     /**
      * Reminds someone of what they owe the signed-in person in a split. The time is kept, and whoever sends
-     * notifications is told through a {@link Nudge}; Money itself sends nothing.
+     * notifications is told through {@link ReminderAsked}; Money itself sends nothing.
      */
     @Transactional
     public SplitResponse remind(UUID id, UUID me, UUID memberId) {
@@ -798,17 +797,14 @@ public class SplitService {
             throw ApiProblem.badRequest("nothing_owed", "They don't owe you anything here.");
         }
         splits.reminded(id, memberId, mine);
-        String amount = Cash.round(owes, splits.currencies(List.of(id)).getOrDefault(id, Cash.EUR));
-        events.publishEvent(new Nudge(
+        events.publishEvent(new ReminderAsked(
                 row.circleId(),
                 id,
-                ThingKind.SPLIT,
-                mine,
-                memberId,
                 row.title(),
-                "A reminder from " + circle.get(mine).name() + ": you owe " + amount + ".",
-                Nudge.SPLIT,
-                false));
+                memberId,
+                mine,
+                owes,
+                splits.currencies(List.of(id)).getOrDefault(id, Cash.EUR)));
         return get(id, me);
     }
 }

@@ -33,39 +33,7 @@ public interface TodaySource {
             int minute,
 
             @Schema(description = "Pictures of the people it concerns, two at most")
-            List<String> avatarUrls,
-
-            @Schema(
-                    description = "True when the signed-in person may tick it now, or, for a line that is done, take"
-                            + " its tick away again. Send dueOn with the tick.")
-            boolean canTick,
-
-            @Schema(
-                    nullable = true,
-                    description = "The day it is due: the day a bill is to be paid by, the due day of a job (for a"
-                            + " job that is done, the due day that was ticked; send it back to take that tick away)."
-                            + " Null for something with no due day, such as an event.")
-            LocalDate dueOn,
-
-            @Schema(nullable = true, description = "What its button says, when it has one: Pay")
-            String action,
-
-            @Schema(description = "True for something that comes round again: a job every Tuesday, a bill every month")
-            boolean repeats) {
-
-        /** A line with nothing to tick, nothing due and no button: most of what the places bring. */
-        public TodayItem(
-                UUID thingId,
-                ThingKind kind,
-                String title,
-                String note,
-                String lead,
-                Boolean done,
-                int minute,
-                List<String> avatarUrls) {
-            this(thingId, kind, title, note, lead, done, minute, avatarUrls, false, null, null, false);
-        }
-    }
+            List<String> avatarUrls) {}
 
     /** A card in "New in the library" and its cousins: something that arrived lately. */
     record FreshCard(

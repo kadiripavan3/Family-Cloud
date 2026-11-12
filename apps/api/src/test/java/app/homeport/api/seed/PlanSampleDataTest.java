@@ -120,7 +120,8 @@ class PlanSampleDataTest extends ApiTest {
                 .containsExactly("When you're near the post office", "When Alex is near the shop · Groceries attached");
         assertThat(JsonPath.<String>read(
                         fetch("/v1/circles/" + linds + "/search?q=passport", nora), "$.hits[0].thing.glance"))
-                .isEqualTo("2 Jan · Alex");
+                .as("next year's day says its year")
+                .isEqualTo("2 Jan " + (today.getYear() + 1) + " · Alex");
 
         // Goals: the five rings, Norway first, and its own screen.
         String goals = fetch("/v1/circles/" + linds + "/goals?day=" + today, nora);

@@ -94,11 +94,6 @@ class MoneySeed implements Seeder {
         }
         UUID due = bills.addDue(electricity, tomorrow, 8420);
         bills.mark(due, w.member("linds", "alex"), w.member("linds", "alex"));
-        // "Log in to Elektro" and "Invoice, November" on the bill's page: its login in the Vault and its scan
-        // in the Library, linked when their sample data is there.
-        w.thing("bill/electricity", electricity);
-        w.link("bill/electricity", "vault/elektro-login");
-        w.link("bill/electricity", "document/electricity-invoice");
 
         // Rent: next Monday, by standing order.
         UUID rent = bill(
@@ -137,9 +132,6 @@ class MoneySeed implements Seeder {
                 List.of("nora"));
         paid(w, netflix, monday.plusDays(4).minusMonths(1), 1399, "nora");
         bills.addDue(netflix, monday.plusDays(4), 1399);
-        // "Login in the Vault": Alex's Netflix login, which he shares with Nora.
-        w.thing("bill/netflix", netflix);
-        w.link("bill/netflix", "vault/netflix-login");
 
         // Paid already this month, due again next month. Together they are the €1,240 the month's card shows as paid.
         Object[][] paidThisMonth = {
@@ -354,8 +346,6 @@ class MoneySeed implements Seeder {
             UUID cabins = sheets.rows(tabs.get(0)).get(2).id();
             sheets.addPaper(cabins, receipt, nora, null);
         }
-        // The Norway goal in Plan reads "Saved" from this sheet, once it knows the sheet is there.
-        w.thing("sheet/norway-budget", norway);
 
         // A budget with a tab for each month, shared with Alex.
         UUID budget = sheet(w, "nora", "Budget " + today.getYear(), "some", SheetTemplate.MONTHLY_BUDGET, "nora", 1);

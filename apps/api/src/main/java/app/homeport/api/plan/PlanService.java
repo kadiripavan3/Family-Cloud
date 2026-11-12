@@ -79,9 +79,9 @@ public class PlanService {
 
             @Schema(
                     nullable = true,
-                    description = "The day it is due: the day a bill is to be paid by, the due day of a job (for a"
-                            + " job that is done, the due day that was ticked; send it back to take that tick away)."
-                            + " Null for something with no due day, such as an event.")
+                    description = "For a job: the due day to send with a tick, or with taking one away. For a job"
+                            + " that is done it is the due day that was ticked, which need not be the day the line"
+                            + " stands on, and is null for a job that had no day. Null for anything else.")
             LocalDate dueOn,
 
             @Schema(description = "The small line under the title: Weekdays · Alex drives")
@@ -89,10 +89,9 @@ public class PlanService {
 
             NoteIcon noteIcon,
 
-            @Schema(nullable = true, description = "What its button says, when it has one: Pay")
-            String action,
-
-            @Schema(description = "True for something that comes round again")
+            @Schema(
+                    description = "True for something that comes round again, also on a line that is done, where"
+                            + " the note no longer says so")
             boolean repeats,
 
             @Schema(nullable = true, description = "Whose it is, for the coloured dot. Null: everyone's.")
@@ -165,7 +164,6 @@ public class PlanService {
             int minute,
             boolean forMe,
             LocalDate dueOn,
-            String action,
             boolean repeats) {}
 
     private final EventStore events;
@@ -266,11 +264,7 @@ public class PlanService {
                     line.kind() == ThingKind.REMINDER ? null : line.lead(),
                     line.done(),
                     line.minute(),
-                    line.avatars().stream().limit(2).toList(),
-                    line.canTick(),
-                    line.dueOn(),
-                    line.action(),
-                    line.repeats()));
+                    line.avatars().stream().limit(2).toList()));
         }
         return items;
     }
@@ -393,7 +387,6 @@ public class PlanService {
                             timed ? minutes(e.startTime()) : 0,
                             true,
                             null,
-                            null,
                             e.repeat() != null));
                 }
             }
@@ -484,7 +477,6 @@ public class PlanService {
                     r.dueTime() == null ? 1440 : minutes(r.dueTime()),
                     forMe,
                     ticked.tick().dueOn(),
-                    null,
                     r.repeat() != null));
         }
     }
@@ -537,7 +529,6 @@ public class PlanService {
                 r.dueTime() == null ? 1440 : minutes(r.dueTime()),
                 yours || thing.mine(),
                 day,
-                null,
                 r.repeat() != null);
     }
 
@@ -585,7 +576,6 @@ public class PlanService {
                     line.minute(),
                     line.forMe(),
                     line.dueOn(),
-                    line.action(),
                     line.repeats()));
         }
         return lines;
@@ -613,9 +603,8 @@ public class PlanService {
                 item.avatarUrls() == null ? List.of() : item.avatarUrls(),
                 item.minute(),
                 true,
-                item.dueOn(),
-                item.action(),
-                item.repeats());
+                null,
+                false);
     }
 
     // ---------- small pieces ----------
@@ -666,7 +655,6 @@ public class PlanService {
                 line.dueOn(),
                 line.note(),
                 line.icon(),
-                line.action(),
                 line.repeats(),
                 line.whose(),
                 line.avatars(),

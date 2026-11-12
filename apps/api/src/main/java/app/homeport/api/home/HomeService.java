@@ -144,12 +144,12 @@ public class HomeService {
         }
         for (SearchSource source : searchSources) {
             if (place == null || source.place() == place) {
-                for (Found found : source.find(me, circleId, typed, MAX_FOUND)) {
+                for (Found found : source.find(circleId, typed, MAX_FOUND)) {
                     snippets.merge(found.thingId(), found.snippet(), (title, inside) -> inside);
                 }
             }
         }
-        // One more check of who may see what, for everything any place found.
+        // One check of who may see what, for everything any place found.
         List<ThingRow> rows = thingStore.findAll(List.copyOf(snippets.keySet()), me).stream()
                 .sorted(Comparator.comparing(ThingRow::updatedAt).reversed())
                 .limit(MAX_FOUND)

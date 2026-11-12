@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -52,18 +51,15 @@ class LindsBoardsSeed implements Seeder {
     private final BoardService boards;
     private final MediaStore media;
     private final MediaStorage storage;
-    private final ObjectProvider<CalendarDinners> calendar;
 
     private SeedWorld w;
     private LocalDate today;
     private double next = 1;
 
-    LindsBoardsSeed(
-            BoardService boards, MediaStore media, MediaStorage storage, ObjectProvider<CalendarDinners> calendar) {
+    LindsBoardsSeed(BoardService boards, MediaStore media, MediaStorage storage) {
         this.boards = boards;
         this.media = media;
         this.storage = storage;
-        this.calendar = calendar;
     }
 
     @Override
@@ -327,26 +323,18 @@ class LindsBoardsSeed implements Seeder {
                 "mia",
                 List.of("Pizza dough", "Mozzarella", "Tomato sauce", "Olives", "Flour"),
                 List.of("Flour"));
-        // In the drawing this one comes "from the calendar": Plan's sample data has the dinner as an event, and
-        // the meal plan shows it on its day by itself. Where the calendar has no dinner that Saturday (Plan's
-        // sample data wasn't added, or its Saturday is next week's), it is a meal like the others, with
-        // nothing to buy.
-        LocalDate saturday = monday.plusDays(5);
-        boolean fromTheCalendar = calendar.orderedStream()
-                .anyMatch(dinners -> !dinners.between(w.circle(LINDS), w.user("nora"), saturday, saturday)
-                        .isEmpty());
-        if (!fromTheCalendar) {
-            meal(
-                    plan,
-                    saturday,
-                    "Dinner at Grandma Astrid's",
-                    "🏡",
-                    null,
-                    "At hers. Nobody cooks.",
-                    null,
-                    List.of(),
-                    List.of());
-        }
+        // In the drawing this one comes "from the calendar". Until Plan hands its dinners over (CalendarDinners),
+        // it is a meal like the others, with nothing to buy.
+        meal(
+                plan,
+                monday.plusDays(5),
+                "Dinner at Grandma Astrid's",
+                "🏡",
+                null,
+                "At hers. Nobody cooks.",
+                null,
+                List.of(),
+                List.of());
         // "23 ingredients go to Groceries": the switch is on, pointing at the family's shopping list. That list
         // is drawn in Notes with twelve lines of its own, so the sample week's ingredients are not on it yet;
         // they are written the first time someone changes the plan, as when a list couldn't be reached.
@@ -411,9 +399,6 @@ class LindsBoardsSeed implements Seeder {
                 fields(
                         "people", people.stream().map(p -> member(p).toString()).toList(),
                         "stars", Map.of("stars", 10, "cents", 200, "currency", "EUR", "into", "Mia's skates fund")));
-        // "10 stars pay €2 into Mia's skates fund": the wheel and that goal in Plan know of each other.
-        w.thing("board/chore-wheel", wheel);
-        w.link("board/chore-wheel", "goal/skates-fund");
         // Started eight weeks ago, so the wheel has turned twice round and stands as it did then.
         LocalDate monday = MealPlan.monday(today);
         LocalDate startedOn = monday.minusWeeks(8);
@@ -491,6 +476,10 @@ class LindsBoardsSeed implements Seeder {
                 }
             }
         }
+        // "10 stars pay €2 into Mia's skates fund": the wheel and that goal in Plan know of each other, when
+        // Plan's sample data is there.
+        w.thing("board/chore-wheel", wheel);
+        w.link("board/chore-wheel", "goal/skates-fund");
     }
 
     private void tick(UUID wheel, UUID job, String whose, String pressedBy, LocalDate day, int hour) {

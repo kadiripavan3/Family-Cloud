@@ -27,7 +27,6 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -438,27 +437,6 @@ class LibrarySeed implements Seeder {
                         "Total €349.00",
                         "Warranty until November " + (year + 2)),
                 null);
-
-        // The letter the electricity bill came in. Money's sample bill is due tomorrow and links to it:
-        // "Invoice, November".
-        LocalDate billDue = today.plusDays(1);
-        w.thing(
-                "document/electricity-invoice",
-                scan(
-                        w,
-                        "nora",
-                        "Invoice, " + billDue.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH),
-                        "circle",
-                        1,
-                        now.minus(10, ChronoUnit.DAYS),
-                        List.of(
-                                "Elektro Ljubljana d.d.",
-                                "Invoice for electricity",
-                                "Used: 412 kWh",
-                                "Total €84.20",
-                                "Reference: SI12 3456 7890 1184",
-                                "Please pay by " + longDay.format(billDue)),
-                        null));
 
         UUID manual = pdf(
                 w,

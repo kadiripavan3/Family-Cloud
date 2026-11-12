@@ -3,7 +3,7 @@ package app.homeport.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.homeport.api.money.sheet.SheetService;
-import app.homeport.api.money.sheet.SheetService.NamedTotalResponse;
+import app.homeport.api.money.sheet.SheetService.NamedTotal;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import java.util.Map;
@@ -998,7 +998,7 @@ class SheetTest extends ApiTest {
         UUID alexUser = UUID.fromString(userId(alexId));
 
         // What a goal reads: the tile called "Saved". €500 of €8,000 in the template's sample rows.
-        NamedTotalResponse saved = sheets.total(id, "saved", noraUser).orElseThrow();
+        NamedTotal saved = sheets.total(id, "saved", noraUser).orElseThrow();
         assertThat(saved.name()).isEqualTo("Saved");
         assertThat(saved.cents()).isEqualTo(50_000);
         assertThat(saved.currency()).isEqualTo("EUR");
@@ -1006,7 +1006,7 @@ class SheetTest extends ApiTest {
         // The total under a column has the column's name.
         assertThat(sheets.total(id, "Put in", noraUser).orElseThrow().cents()).isEqualTo(50_000);
         assertThat(sheets.totals(id, noraUser))
-                .extracting(NamedTotalResponse::name)
+                .extracting(NamedTotal::name)
                 .containsExactly("Saved", "Goal", "To go", "Put in");
         assertThat(sheets.total(id, "Spent", noraUser)).isEmpty();
 

@@ -11,7 +11,6 @@ import app.homeport.api.board.Words;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.common.PublicUrls;
 import app.homeport.api.home.TodaySource.TodayCard;
-import app.homeport.api.notify.Nudge;
 import app.homeport.api.plan.EventService;
 import app.homeport.api.plan.EventService.NewEvent;
 import app.homeport.api.plan.EventService.NewGuest;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 /**
@@ -192,13 +190,11 @@ class FindDate implements BoardRules {
     private final PublicUrls urls;
     private final EventService events;
     private final BoardStore store;
-    private final ApplicationEventPublisher told;
 
-    FindDate(PublicUrls urls, EventService events, BoardStore store, ApplicationEventPublisher told) {
+    FindDate(PublicUrls urls, EventService events, BoardStore store) {
         this.urls = urls;
         this.events = events;
         this.store = store;
-        this.told = told;
     }
 
     @Override
@@ -488,9 +484,8 @@ class FindDate implements BoardRules {
     /**
      * A nudge is remembered, once a day for each person, and shown on their Today. No push is sent from
      * here: a board's verbs run inside one database transaction, and nothing outside is waited on in one.
-     * Whoever sends things is told through a {@link Nudge}.
      */
-    private void nudge(Scene scene, Fields sent) {
+    private static void nudge(Scene scene, Fields sent) {
         UUID member = scene.inCircle(sent.id("memberId"));
         Tally tally = tally(scene);
         if (member == null
@@ -515,16 +510,6 @@ class FindDate implements BoardRules {
                     EntryDraft.of(NUDGE).by(scene.myId()).forMember(member).done(scene.now(), scene.myId()),
                     Scene.derivedId(scene.boardId(), "nudge " + member));
         }
-        told.publishEvent(new Nudge(
-                scene.circleId(),
-                scene.boardId(),
-                ThingKind.BOARD,
-                scene.myId(),
-                member,
-                scene.title(),
-                scene.firstName(scene.myId()) + " is waiting for your answer: which days can you do?",
-                Nudge.FIND_DATE,
-                false));
     }
 
     /** The day goes into the calendar as an event with everyone on it. Setting the same day twice makes one event. */

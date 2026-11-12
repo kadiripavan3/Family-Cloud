@@ -71,20 +71,13 @@ public class GoalService {
     /** Where a goal reads its number from, when it isn't put in by hand. */
     public record SourceResponse(
             GoalSource kind,
-
-            @Schema(
-                    description = "Where the number is, as the place that owns it names it. For a sheet: the sheet's"
-                            + " id, a slash, and the name of one of its totals (GET /v1/sheets/{id}/totals).")
             String ref,
 
             @Schema(description = "Reads “Saved” in Norway budget")
             String line,
 
             @Schema(description = "False while that place can't be read: the goal then shows what was put in by hand")
-            boolean live,
-
-            @Schema(nullable = true, description = "The thing the number lives in, to open from here: the sheet")
-            UUID thingId) {}
+            boolean live) {}
 
     /** The goal's list of steps: an ordinary checklist, read and ticked through the checklist routes. */
     public record StepsResponse(UUID listId, String title, int left, int done) {}
@@ -566,8 +559,7 @@ public class GoalService {
                                         ? "Reads a challenge in Journey"
                                         : "Reads a sheet")
                                 : "Reads " + words,
-                        reading.isPresent(),
-                        reading.map(Reading::thingId).orElse(null));
+                        reading.isPresent());
             }
             LongFunction<String> say = say(g);
             GoalPace pace = GoalPace.work(

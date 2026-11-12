@@ -18,6 +18,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 /**
@@ -100,11 +103,16 @@ class BoardSources implements GlanceSource, TodaySource, SearchSource, GuestView
     }
 
     /**
-     * Words inside boards. What is found inside a board has to be what the person asking may read there, and
-     * a sealed letter is found by nobody.
+     * Words inside boards. The search asks every place the same question and has no viewer in it, so the
+     * viewer is taken from the request: what is found inside a board has to be what this person may read
+     * there, and a sealed letter is found by nobody.
      */
     @Override
-    public List<Found> find(UUID me, UUID circleId, String words, int limit) {
+    public List<Found> find(UUID circleId, String words, int limit) {
+        UUID me = viewer();
+        if (me == null) {
+            return List.of();
+        }
         String typed = words.toLowerCase(Locale.ROOT);
         List<EntryRow> candidates = store.mayHold(circleId, me, words, 200);
         Map<UUID, Scene> byBoard = new LinkedHashMap<>();
@@ -140,6 +148,13 @@ class BoardSources implements GlanceSource, TodaySource, SearchSource, GuestView
         return (from > 0 ? "…" : "")
                 + text.substring(from, to).replaceAll("\\s+", " ").trim()
                 + (to < text.length() ? "…" : "");
+    }
+
+    private static UUID viewer() {
+        Authentication who = SecurityContextHolder.getContext().getAuthentication();
+        return who instanceof JwtAuthenticationToken token
+                ? UUID.fromString(token.getToken().getSubject())
+                : null;
     }
 
     /** A guest sees a board's title, and under it only what its template says anyone with the pass may read. */

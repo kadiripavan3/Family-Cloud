@@ -7,7 +7,6 @@ import app.homeport.api.page.PageService;
 import app.homeport.api.plan.EventService.NewEvent;
 import app.homeport.api.plan.EventService.NewGuest;
 import app.homeport.api.plan.EventService.When;
-import app.homeport.api.plan.GoalService.GoalChange;
 import app.homeport.api.plan.GoalService.NewGoal;
 import app.homeport.api.plan.GoalService.Source;
 import app.homeport.api.plan.ReminderService.NewReminder;
@@ -545,31 +544,6 @@ class PlanSeed implements Seeder {
         put(norway, nora, alexHere, 85_000, "", today.minusDays(20));
         put(norway, nora, mia, 500, "from her pocket money", today.minusDays(12));
         put(norway, nora, alexHere, 15_000, "payday", today.minusDays(10));
-        // "Reads “Saved” in Norway budget": once Money's sample data has made that sheet, the goal reads its
-        // number there (a sheet's id, a slash, the name of one of its totals). Until then, and without it, it
-        // shows what was put in above, which comes to the same €5,600.
-        w.thing("goal/norway", norway);
-        w.whenThing(
-                "sheet/norway-budget",
-                sheet -> goals.change(
-                        norway,
-                        nora,
-                        new GoalChange(
-                                null,
-                                null,
-                                null,
-                                null,
-                                false,
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                false,
-                                new Source(GoalSource.SHEET, sheet + "/Saved", "“Saved” in Norway budget"),
-                                false,
-                                null),
-                        today));
 
         UUID books = goals.create(
                         nora,

@@ -61,8 +61,8 @@ class VaultSources implements TodaySource, SearchSource, GlanceSource, GuestView
     }
 
     @Override
-    public List<Found> find(UUID me, UUID circleId, String words, int limit) {
-        return items.bySite(circleId, me, words, limit).stream()
+    public List<Found> find(UUID circleId, String words, int limit) {
+        return items.bySite(circleId, words, limit).stream()
                 .map(g -> new Found(g.thingId(), g.site()))
                 .toList();
     }

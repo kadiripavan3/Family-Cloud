@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-import app.homeport.api.notify.Nudge;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDate;
@@ -12,23 +11,16 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
  * A crew's templates, tried as three friends: finding a date (also by link, without the app), a vote that is
  * private until it closes, the dictionary, predictions sealed until their day, awards voted in private, and a
  * walk that keeps one number per walk. (Secret Santa has its own test.)
  */
-@RecordApplicationEvents
 class CrewTemplatesTest extends BoardTest {
 
     private static final LocalDate TODAY = LocalDate.now(ZoneOffset.UTC);
-
-    @Autowired
-    ApplicationEvents events;
 
     private String lea;
     private String nora;
@@ -122,15 +114,6 @@ class CrewTemplatesTest extends BoardTest {
                 .contains("Kai was nudged today already");
         assertThat(act(lea, board, "nudge", "{\"memberId\":\"%s\"}".formatted(noraId), 409))
                 .contains("They have answered already");
-        // The nudge is remembered here and sent by whoever sends things: they are told once, of the one that counted.
-        List<Nudge> told = events.stream(Nudge.class).toList();
-        assertThat(told).hasSize(1);
-        assertThat(told.get(0).thingId().toString()).isEqualTo(board);
-        assertThat(told.get(0).byMemberId().toString()).isEqualTo(leaId);
-        assertThat(told.get(0).toMemberId().toString()).isEqualTo(kaiId);
-        assertThat(told.get(0).sentence()).isEqualTo("Lea is waiting for your answer: which days can you do?");
-        assertThat(told.get(0).code()).isEqualTo(Nudge.FIND_DATE);
-        assertThat(told.get(0).pushed()).isFalse();
         assertThat(JsonPath.<String>read(today(kai), "$.cards[0].line"))
                 .isEqualTo("When can everyone? · the others are waiting for you");
         String cant = act(kai, board, "cant", "{}", 200);
