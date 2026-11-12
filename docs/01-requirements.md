@@ -4,7 +4,7 @@
 
 ## In one line
 
-One private place for what a family, or a group of friends, keeps together: notes, photos and videos, the calendar, bills and budgets, goals, and the passwords everyone needs. Each thing is yours alone until you choose who sees it.
+One private place for what a family, a couple, a flat or a group of friends keeps together: notes, photos and videos, the calendar, bills and budgets, goals, and the passwords everyone needs. Each thing is yours alone until you choose who sees it.
 
 ## Who it is for
 
@@ -24,7 +24,7 @@ Plenty of apps do one of these. The reasons to put them in one place:
 
 ## How it is laid out
 
-The top row of Home is where things live: seven places. One tap moves between them, the way Airbnb's top row does.
+The top row of Home is where things live: six places. One tap moves between them, the way Airbnb's top row does.
 
 | Place | What is in it |
 |---|---|
@@ -33,12 +33,11 @@ The top row of Home is where things live: seven places. One tap moves between th
 | **Notes** | Spaces, folders inside folders, pages, checklists, templates, keepsakes |
 | **Library** | Every photo, video and document, from everyone |
 | **Money** | Bills, subscriptions, sheets, splitting costs |
-| **Health** | Medicines, visits, sick days, an emergency card, moving together |
 | **Vault** | Passwords, cards, IDs, Wi‑Fi and door codes |
 
 The bottom bar has the same shape as Journey's: **Home · People · + · Activity · You**.
 
-The seven places and the way sharing works are the same in every circle. What a circle is offered inside them depends on its kind.
+The six places and the way sharing works are the same in every circle. What a circle is offered inside them depends on its kind.
 
 ## A circle's kind shapes it
 
@@ -52,8 +51,7 @@ Added on 12 Nov. The kind chosen at setup (and changeable later) decides the wor
 | **Starter spaces** | Home · Kids · Trips | Our place · Money · Trips · Someday | The flat · Bills · Landlord | Trips · Plans · The dictionary |
 | **Its templates** | Meal plan, chore wheel, house manual, babysitter notes… | Date ideas, who pays what, moving in, the wedding, names… | Cleaning rota, bills by nights, move-in photos, repair log, house rules… | When can everyone?, Secret Santa, where next?, who brings what… |
 | **Keepsakes** | Time capsule, Open when…, birthday interview, Things they said, Same spot, Grandma's stories, good things jar, doorframe | Our story, tucked notes, the anniversary questions | Heard in the kitchen, the guest book, everyone who's lived here | The dictionary, predictions, the awards |
-| **Fair and fun** | Whose turn?, piggy bank, secret missions, Saturday jar, Sleeps until…, Where is it? | Mystery date, both said yes, the fair share | The kitty, a fairer split, heads-up | Find a date, Secret Santa, where next? |
-| **Health leans to** | Children's medicines, visits, vaccinations, habits | Doing it together; each other's medicines if you choose | Each person's own; nothing shared by default | Moving together, checking in |
+| **Fair and fun** | Whose turn?, piggy bank, secret missions, Saturday jar, Sleeps until…, Where is it?, habit charts | Mystery date, both said yes, the fair share | The kitty, a fairer split, heads-up | Find a date, Secret Santa, where next?, a goal you walk together |
 
 A person can be in several circles of different kinds. Nora is in a family, a couple and a group of friends.
 
@@ -66,14 +64,14 @@ A person can be in several circles of different kinds. Nora is in a family, a co
 - **Roles:** Owner, Adult, Teen, Child, Guest. A child sees photos, the calendar and their own jobs; Money and the Vault stay shut. A child or a pet can be in a circle without a phone.
 - **Guest pass:** chosen things for someone outside the circle, for a set time, on one phone, with no account.
 - **A link for someone outside:** an album for the grandparents, with an end date and a code.
-- **A person's page** gathers what the circle keeps about them: what is coming up, sizes, allergies, documents, photos.
+- **A person's page** gathers what the circle keeps about them: what is coming up, sizes, school, documents, photos.
 
 ## Notes
 
 - **Spaces → folders → sub-folders → pages**, as deep as you like. A page can be a note, a checklist or a sheet.
 - A page is built from blocks: text, checklist, photo, file, place, and live blocks from other places (a bill, an event, a sheet total, a goal, a password that copies without showing).
 - Shared lists update while two people use them, and work with no signal.
-- **Templates, about 50 to start:** house manual, babysitter notes, packing list, birthday planner, recipe book, medical record, pet care, home inventory, emergency plan, school year, moving house and more.
+- **Templates, about 50 to start:** house manual, babysitter notes, packing list, birthday planner, recipe book, school year, pet care, home inventory, emergency plan, school year, moving house and more.
 - **Templates that do work**, marked LIVE: the weekly meal plan writes the shopping list; the chore wheel rotates jobs and counts stars; the time capsule seals letters until a date.
 - **Keepsakes** (added 11 Nov, after your comment on the time capsule): Open when… letters that open at a moment instead of a date; the birthday interview, the same ten questions every year; Things they said, with the age added by itself; Same spot, every year, a photo lined up with last year's; Grandma's stories, one spoken answer a week; the good things jar, opened on New Year's Eve; the doorframe, for height marks.
 - **Fair and fun** (added 11 Nov, after your comment on the chore wheel): Whose turn?, which remembers who chose last; the piggy bank, pocket money in three jars with interest from the parents; secret missions, one small kindness a week; the Saturday jar, shaken for something to do; Sleeps until…, a paper-chain countdown; Where is it?, a list of where things were put.
@@ -124,22 +122,22 @@ What I believe is unusual here is the combination: one line, in every one of tho
 - **Splitting costs** in a circle of friends, with the fewest payments to settle up.
 - **Not a bank.** It keeps count; it does not move money or read accounts.
 
-## Health
+## Health: taken out
 
-Added on 12 Nov, for every kind of circle, and in the first version by your decision the same day.
+Health was added as a seventh place on 12 Nov and removed the same day, by your decision, because it would need a legal check before it could be built.
 
-- **One line per person** saying only what needs doing: a medicine, a check-up that slipped, a booster that is due. Pets too.
-- **A health page per person:** what they take now, allergies, vaccinations, their doctor, their insurance card (kept in the Vault), growth.
-- **Who gave the medicine?** Each dose is ticked by whoever gave it and seen by the other parent at once. A second tick within four hours is stopped. It works from the pinned note and the widgets.
-- **A sick day, written down:** temperatures, doses and notes from both parents on one line through the days, sent to the doctor as one page.
-- **A visit to the doctor:** the questions you meant to ask, what was said, and what it sets up: the medicine, the next check-up, the fee in Money.
-- **The emergency card:** what a stranger would need and nothing else. It goes in a guest pass, to school as a link, or prints as a code.
-- **Moving together:** a circle's walking and running adds up along a real route. Steps come from each phone's health app; only weekly totals are shared, never routes.
-- **Small habits:** charts a child can fill in, with stars that go to the piggy bank. A missed day is a gap, never a reset.
-- **How's your weather?** One tap a week instead of "I'm fine", seen only by the people you choose.
-- **What runs in the family:** the family's health history, filled in once for the question every doctor asks.
-- **Yours first.** Nothing in Health is shared until that one thing is shared. Children's health is looked after by their parents until it becomes theirs. Records, visits and medicines are kept like the Vault.
-- **Not a health service.** It keeps records and reminders. It does not diagnose, advise or watch anyone.
+**Gone:** health pages for each person, medicines and doses, sick-day logs, doctor's visits, the emergency card, the weekly "weather" check-in, the family's health history, and any link to the phone's health app. Health details that had crept into other screens went with them: allergies and blood type on a person's page, the vaccination record, the medical-record template, the Medical filter in Files.
+
+**Kept, because they hold no health details:**
+
+| What | Where it lives now | Why it stays |
+|---|---|---|
+| Habit charts | Fair and fun (group 16) | Bed made, bag packed, reading, phones off the table. The same kind of thing as the chore wheel. |
+| A goal you walk together | For friends (group 19), as a goal | Each person types in a number of kilometres, the way you'd add money to a savings goal. Nothing comes from the phone's health app and no routes are kept. |
+
+**Still possible, as in any calendar or storage app:** someone can write "Dentist" on the calendar or keep a doctor's letter in Files. The app has no features built around that; it treats them as any other event or file.
+
+I am not a lawyer and can't promise that anything needs no legal look at all. What I can say is that nothing left in the app is designed to collect health information.
 
 ## Vault
 
@@ -159,17 +157,16 @@ Added on 12 Nov, for every kind of circle, and in the first version by your deci
 | A web or desktop version | Phones first, like Journey. Shared links open as web pages. |
 | Filling passwords into other apps | Needs native code on each platform. Copy and "open signed in" come first. |
 | Recognising faces | The "by person" albums start from who took a photo and who is tagged. See the questions below. |
-| Medical advice of any kind | The app keeps what you tell it and reminds you. Suggesting a dose, a diagnosis or a risk would make it a medical product, with the rules that go with one. |
+| Anything to do with health | Taken out on 12 Nov, by your decision. See [Health: taken out](#health-taken-out). |
 
 ## Decided by you
 
 | # | Decision | When |
 |---|---|---|
 | 1 | The same account, look and stack as Journey, with Sun as the accent | 11 Nov |
-| 2 | Health is a place of its own, for every kind of circle | 12 Nov |
-| 3 | The kind of circle chosen at setup shapes what that circle is offered | 12 Nov |
-| 4 | Notes keeps its name. Lore was tried and dropped. | 12 Nov |
-| 5 | Health is in the first version | 12 Nov |
+| 2 | The kind of circle chosen at setup shapes what that circle is offered | 12 Nov |
+| 3 | Notes keeps its name. Lore was tried and dropped. | 12 Nov |
+| 4 | No Health in the app. It was added, put in the first version, then removed the same day because it would need a legal check. Only the parts with no health details stay, moved elsewhere. | 12 Nov |
 
 ## Calls I made for this draft
 
@@ -177,7 +174,7 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 
 | # | Call | Why | Easy to change? |
 |---|---|---|---|
-| 1 | Seven places in Home's top row; People, +, Activity and You in the bottom bar | Seven things don't fit a tab bar, and Airbnb's pattern is the one Journey already borrows. The bar matches Journey's. | Yes: it is a layout |
+| 1 | Six places in Home's top row; People, +, Activity and You in the bottom bar | Six things don't fit a tab bar, and Airbnb's pattern is the one Journey already borrows. The bar matches Journey's. | Yes: it is a layout |
 | 2 | "Circle" is the word for a group | Works for family and for friends | Yes |
 | 3 | Everything starts as "Only you" | The safe default for an app holding bills and passwords | Yes, per kind of circle (a couple could default to shared) |
 | 4 | Only the Vault is scrambled so the service can't read it | Search inside scans, reminders from documents and "moments" need the service to read the rest. Scrambling everything would switch those off. | Hard to change later. Worth a real conversation. |
@@ -187,19 +184,17 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 | 8 | Euros and a family in Slovenia in the examples | Made-up people need a currency and a place | Yes |
 | 9 | Jot is shown with each phone's real limits | An iPhone can't keep a notification for ever or take typing in a widget; an Android phone can do more. The screens show what each can really do, and say so. | The limits are Apple's and Google's |
 | 10 | The new groups sit at the end of the screens for now | So the numbers of the screens you have already reviewed don't move. They go into their proper places once you've seen them. | Yes |
-| 11 | Health sits sixth in the row, between Money and the Vault | The row holds seven; an eighth place would not fit | Yes: it is an order |
-| 12 | Health is private per person, and its records are kept like the Vault | It is the most sensitive thing in the app after passwords | Hard to loosen later, easy to keep |
-| 13 | The kind of circle changes what is offered, never how the app works | Seven places and one sharing rule everywhere, so moving between circles never feels like changing apps | Yes |
-| 14 | Nobody is in charge of a flat or a group of friends | Splits, rules and guests are agreed by everyone or not at all | Yes |
+| 11 | The kind of circle changes what is offered, never how the app works | Six places and one sharing rule everywhere, so moving between circles never feels like changing apps | Yes |
+| 12 | Nobody is in charge of a flat or a group of friends | Splits, rules and guests are agreed by everyone or not at all | Yes |
 
 ## Questions for you
 
-1. **The top row.** Are these the right seven places, in the right order? Is anything you use daily more than one tap away?
-2. **What else is in the first version?** Health is in, by your decision. All seven places is a big build; my suggested order is below. Does anything wait for a second version?
+1. **The top row.** Are these the right six places, in the right order? Is anything you use daily more than one tap away?
+2. **What is the first version?** All six places is a big build. My suggested order is below. Does anything wait for a second version?
 3. **How private is private?** Call 4 above. If you want the service unable to read notes and photos too, some features have to go or move onto the phone.
 4. **Will it cost money?** Storing a family's full-size photos and videos has a real monthly cost. A free amount with a paid family plan is the usual answer.
 5. **Faces.** Grouping photos by who is in them is what makes "every photo of Mia" magic. It is also sensitive, most of all with children. On the phone only, off by default, or not at all?
-6. **Health and the law.** Health is in the first version, so this now has a date. Health details are a protected kind of personal data in Europe and elsewhere, and app stores have their own rules for them. A check by someone qualified has to be done before the Health step is built. Which countries will you launch in first, and who should do the check?
+6. **Children who use the app themselves.** Something I should have raised sooner. A child shown as a profile that a parent looks after (Mia's page, her photos, her jobs) is one thing. A child under 13 signing in on their own tablet, as the "child's view" screen (4.6) and the Sleeps widget suggest, is another: most countries have rules about that, and Journey itself is 13 and over. The simple route is the first: children are profiles, and anything a child ticks is ticked on a parent's phone. Which do you want?
 7. **Forwarding an email in.** It needs a service that receives mail for the app, which Journey doesn't have. Worth it for the first version, or later?
 8. **Which keepsakes and perks first?** Thirty-one are drawn across the four kinds of circle. They are templates, so they can arrive a few at a time. Tell me your favourites.
 
@@ -212,10 +207,7 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 | 3 | Plan: calendar, reminders, lists, and Jot (the pinned note and the widgets) | The second daily habit, and Jot is what makes it effortless |
 | 4 | Notes: spaces, pages, checklists, the first ten templates for each kind of circle | |
 | 5 | Money: bills, then sheets | Sheets are the largest single piece |
-| 6 | Vault, and the locked storage under it | Needs a security review before anyone trusts it with real passwords |
-| 7 | Health | In the first version, by your decision. Its records use the Vault's locked storage, so it is built straight after the Vault. The legal check starts now, so it is finished before this step begins. |
-| 8 | With Journey: Keep, then Tell | The switch and "Journey at home" can come with step 1 |
+| 6 | Vault | Needs a security review before anyone trusts it with real passwords |
+| 7 | With Journey: Keep, then Tell | The switch and "Journey at home" can come with step 1 |
 
 Each step is useful on its own and can go to a few test circles before the next begins.
-
-Putting Health in the first version brings the Vault's locked storage into it too, because Health's records are kept the same way (call 12). If you would rather have Health sooner than the Vault, the parts of Health that hold no records (moving together, habits, the weekly check-in) could come first; the medicines, visits and health pages would still wait for the locked storage.

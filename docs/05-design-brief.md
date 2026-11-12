@@ -1,6 +1,6 @@
 # Design cues
 
-> **Status:** first draft, 134 screens in 20 groups. · **Updated:** 12 Nov 2026
+> **Status:** first draft, 125 screens in 19 groups. · **Updated:** 12 Nov 2026
 >
 > The design is Journey's Design 2.1. This page says what carries over unchanged and what is new here. Journey's own brief (`docs/04-design-brief.md` in the Journey repo) is the longer read.
 
@@ -13,7 +13,7 @@
 | Glass | The tab bar, the bars that float at the bottom, and buttons on photos are frosted glass. |
 | Shape | The same eleven corner steps. Cards 20 to 22, panels 24, sheets 30, buttons and chips fully round. |
 | Photos | Real photos lead. A dark gradient under any text on a photo. |
-| Icons | 24 px line icons; 3D Fluent Emoji for the seven places, templates, categories and empty states. |
+| Icons | 24 px line icons; 3D Fluent Emoji for the six places, templates, categories and empty states. |
 | Depth | Soft shadows in light mode, hairlines in dark. |
 | Bottom bar | Five places with the gold + in the middle, the same shape as Journey's. |
 | Forms | The label inside the box. One primary button at the bottom. |
@@ -24,7 +24,7 @@
 | Cue | Rule |
 |---|---|
 | **The audience chip** | Every page, album, bill, sheet and password carries a small chip that says who can see it: a lock and "Only you", faces and names, or the circle. It always sits in the same place: top right of a page, bottom of a card, end of a row. A soft gold chip with a crossed eye means "hidden from someone". |
-| **The seven places** | Home's top row: Today, Plan, Notes, Library, Money, Health, Vault. The same 3D icon everywhere a place is mentioned. Seven is the most the row holds. |
+| **The six places** | Home's top row: Today, Plan, Notes, Library, Money, Vault. The same 3D icon everywhere a place is mentioned. |
 | **A circle's kind** | The round button in the search pill carries the circle's own icon: a family, a heart, a house, a handshake. The layout, the colours and the components never change with the kind; the words and what is offered do. |
 | **Tints** | Five small colours tell people and categories apart in a calendar or a chart. A tint is a dot or a bar, always with the person's face or name somewhere on the same screen, and never a button. |
 | **Numbers** | Money and anything in a column uses lining, equal-width figures so digits line up. Amounts carry their currency sign. |
@@ -49,9 +49,7 @@
 | Adds up every row in Cost | =SUM(D2:D7) |
 | The two of you | Members (2) |
 | Agreed by all three on 1 September | Split rule saved |
-| Alex gave it at 8:10 | Dose administered |
 | A missed day is a gap, not a failure | Streak lost |
-| No advice from us. A call or a walk might be the thing. | Your friend may be at risk |
 | Your ticks are saved here and will reach everyone when you're back | Sync pending |
 
 Security is described by what happens, in ordinary words, including the uncomfortable parts.
@@ -79,13 +77,12 @@ Nora Lind is the person using the app, the same Nora as in Journey's screens. Sh
 | 13 | States | Loading · Offline · A brand-new circle |
 | 14 | Jot | Widgets on the Home Screen · The jot bar · A note pinned in notifications · It files itself · On the iPhone Lock Screen · Say it all at once · Share into it · Every way in |
 | 15 | Keepsakes | Open when… · The birthday interview · Things they said · Same spot, every year · Grandma's stories · The good things jar · The doorframe |
-| 16 | Fair and fun | Whose turn? · The piggy bank · Secret missions · The Saturday jar · Sleeps until… · Where is it? |
-| 17 | Health | Health · A health page · Who gave the medicine? · A sick day, written down · A visit to the doctor · The emergency card · Moving together · Small habits, kept · How's your weather? · What runs in the family · Health stays yours |
-| 18 | For couples | Today, for two · Templates for two · Our story · Tucked notes · The anniversary questions · Mystery date · Both said yes · The fair share |
-| 19 | For housemates | Today, in a shared flat · Templates for a flat · The kitty · A fairer split · Heads-up · Heard in the kitchen · The guest book · Everyone who's lived here |
-| 20 | For friends | Today, with friends · Templates for friends · When can everyone? · Secret Santa · Where next? · The dictionary · Predictions · The awards |
+| 16 | Fair and fun | Whose turn? · The piggy bank · Secret missions · The Saturday jar · Sleeps until… · Where is it? · Habit charts |
+| 17 | For couples | Today, for two · Templates for two · Our story · Tucked notes · The anniversary questions · Mystery date · Both said yes · The fair share |
+| 18 | For housemates | Today, in a shared flat · Templates for a flat · The kitty · A fairer split · Heads-up · Heard in the kitchen · The guest book · Everyone who's lived here |
+| 19 | For friends | Today, with friends · Templates for friends · When can everyone? · Secret Santa · Where next? · The dictionary · Predictions · The awards · A goal you walk together |
 
-Groups 14 to 16 were added on 11 Nov after the owner's first comments, and 17 to 20 on 12 Nov. They sit at the end so the numbers of the screens already reviewed don't move. Jot belongs after Home, Health after Money, and the keepsakes, perks and the three sets for other kinds of circle with Notes.
+Groups 14 to 16 were added on 11 Nov after the owner's first comments, and 17 to 19 on 12 Nov. They sit at the end so the numbers of the screens already reviewed don't move. Jot belongs after Home, and the keepsakes, perks and the three sets for other kinds of circle with Notes. A Health group of eleven screens was added and removed on 12 Nov; two of its screens, which hold no health details, moved to groups 16 and 19.
 
 ## Not designed yet
 

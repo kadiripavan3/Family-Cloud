@@ -29,7 +29,7 @@ Each group file holds `<screen>` blocks. The build adds the phone frame, the cam
   [[key]] [[star f]]             an icon from src/icons.svg, with extra classes after the name
   [[brand]]                      the app's own mark, whichever name is switched on
   {app} {domain}                 the app's name and its web address, whichever name is switched on
-  <vtabs active="money">         the search pill and the row of seven places: today, plan, notes, library, money, health, vault
+  <vtabs active="money">         the search pill and the row of six places: today, plan, notes, library, money, vault
   <vtabs … circle="couple">      the same in another kind of circle: couple, flat or crew
   {notes}                        the name of the Notes place (places.notes.label in the tokens)
   <tabbar active="home" dot>     the tab bar: home, people, activity or you; dot marks Activity; as="kai" for someone else's phone
@@ -42,7 +42,7 @@ Each group file holds `<screen>` blocks. The build adds the phone frame, the cam
 
 Rules the build checks: ids are unique and use lowercase letters, digits and hyphens; every icon exists; nothing sits outside a `<screen>` block; every image exists.
 
-Class names in `phone.css` and `styles.css` share one page. `phone.css` begins with Journey's file, unchanged, and this app's parts follow under "Family Cloud". New classes take a short prefix for their group (`nt-` notes, `lb-` library, `pl-` plan, `mn-` and `sh-` money and sheets, `vt-` vault, `jl-` the link with Journey, `jt-` jot, `ks-` keepsakes, `pk-` fair and fun, `hl-` `he-` `hh-` `hw-` `hf-` health, `cp-` couples, `fl-` `hu-` `lh-` housemates, `fd-` `vo-` `dx` `aw` friends), and must not reuse a name either file already has (`.dots` did, once).
+Class names in `phone.css` and `styles.css` share one page. `phone.css` begins with Journey's file, unchanged, and this app's parts follow under "Family Cloud". New classes take a short prefix for their group (`nt-` notes, `lb-` library, `pl-` plan, `mn-` and `sh-` money and sheets, `vt-` vault, `jl-` the link with Journey, `jt-` jot, `ks-` keepsakes, `pk-` fair and fun, `hh-` habit charts, `hl-` the shared walk, `cp-` couples, `fl-` `hu-` `lh-` housemates, `fd-` `vo-` `dx` `aw` friends), and must not reuse a name either file already has (`.dots` did, once).
 
 ## The name switch
 

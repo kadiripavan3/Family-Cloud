@@ -1695,47 +1695,19 @@
 .pk-found b { display: block; margin-top: 3px; font-size: 19px; font-weight: 800; letter-spacing: -.021em; }
 .pk-found small { display: block; margin-top: 4px; font-size: 13px; line-height: 1.4; color: var(--muted); }
 
-/* ---------- seven places in the row (Health joined) ---------- */
-.cats.six { padding: 0 2px; }
-.cats.six .cat { font-size: 11px; gap: 4px; }
-.cats.six .cat .em { font-size: 25px; height: 30px; }
-.cats.six .cat.on::after { left: 16%; right: 16%; }
+/* ---------- small additions used across the newer groups ---------- */
 .hm-t .ic { width: 20px; height: 20px; }
 .grow .tx small.warn-t .ic, .up .tx small .ic { width: 13px; height: 13px; }
+.up > .em { flex: none; font-size: 26px; }
+.up > img.hw-av { width: 44px; height: 44px; flex: none; border-radius: 50%; object-fit: cover; }
 
-/* ---------- 17 health ---------- */
-.s-health .sec { margin-top: 20px; margin-bottom: 10px; }
-.hl-all .grow { padding: 10px 14px; }
-.hl-bar { flex: none; margin: 2px 20px 0; }
-.hl-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 0 20px; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); }
-.hl-days span { display: grid; justify-items: center; gap: 5px; padding: 8px 0; border-radius: 12px; background: var(--fill); }
-.hl-days span.now { background: var(--bg); box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); }
-.hl-days u { display: flex; gap: 2px; text-decoration: none; }
-.hl-days i { width: 6px; height: 6px; border-radius: 50%; background: var(--fill-2); }
-.hl-days i.d { background: var(--accent); }
-.hl-temp { display: flex; align-items: baseline; gap: 10px; margin: 0 20px; }
-.hl-temp b { font-size: 41px; line-height: 44px; font-weight: 800; letter-spacing: -.039em; font-variant-numeric: tabular-nums; }
-.hl-temp small { font-size: 13px; font-weight: 600; color: var(--muted); }
-.hl-chart { height: 126px; margin-top: 6px; }
-.hl-chart .fv { fill: none; stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 3 5; }
-.hl-chart .pt { fill: var(--bg); stroke: var(--accent); stroke-width: 3; }
-.hl-chart .dz { fill: var(--text); }
-.hl-said { margin: 0 16px; padding: 14px; border-radius: 18px; background: var(--fill); font-size: 14.5px; line-height: 21px; }
-.hl-said small { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
-.hl-said small .ic { width: 14px; height: 14px; }
-.he-card { margin: 4px 16px 0; padding: 16px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
-.he-top { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-.he-top img { width: 52px; height: 52px; flex: none; border-radius: 50%; object-fit: cover; }
-.he-top b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -.025em; }
-.he-top small { font-size: 13px; color: var(--muted); }
-.he-card dl { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px 10px; margin: 12px 0 0; font-size: 14px; line-height: 1.4; }
-.he-card dt { font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding-top: 1px; }
-.he-card dd { margin: 0; font-weight: 600; }
+/* habit charts (group 16) and a goal walked together (friends): the two parts kept when Health was taken out */
 .s-map .hl-sheet { z-index: 6; padding-bottom: 28px; }
 .hl-sheet .st-who { padding: 5px 20px; font-size: 14px; }
 .hl-sheet .st-who img { width: 28px; height: 28px; }
 .hl-sheet .st-who > span { flex: none; width: 44px; }
 .hl-sheet .fine { margin: 8px 24px 0; }
+.hl-sheet .btn .ic { width: 16px; height: 16px; }
 .hh-card { display: grid; gap: 10px; margin: 0 16px 10px; padding: 14px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-sm); }
 .hh-top { display: flex; align-items: center; gap: 10px; }
 .hh-top img { width: 34px; height: 34px; flex: none; border-radius: 50%; object-fit: cover; }
@@ -1748,21 +1720,8 @@
 .hh-grid i.t { background: var(--bg); box-shadow: inset 0 0 0 2px var(--accent); }
 .hh-grid .ic { width: 13px; height: 13px; }
 .hh-grid i .ic { stroke-width: 3; }
-.hw-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 14px 16px 0; }
-.hw-pick span { display: grid; justify-items: center; gap: 6px; padding: 14px 4px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 700; background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--line); }
-.hw-pick span.on { background: var(--fill); box-shadow: inset 0 0 0 2px var(--text); }
-.hw-pick .em { font-size: 34px; }
-.up > .em { flex: none; font-size: 26px; }
-.up > img.hw-av, .hf-row > img { width: 44px; height: 44px; flex: none; border-radius: 50%; object-fit: cover; }
-.hf-row { display: flex; align-items: center; gap: 12px; padding: 7px 20px; }
-.hf-row > .avi { width: 44px; height: 44px; font-size: 14px; }
-.hf-row > div { flex: 1; min-width: 0; }
-.hf-row b { display: block; font-size: 15px; font-weight: 700; }
-.hf-row .tags { margin: 5px 0 0; gap: 5px; }
-.hf-row .tags span { padding: 4px 10px; font-size: 12.5px; }
-.hf-row .tags span.hi { background: var(--accent-soft); color: var(--accent-text); }
 
-/* ---------- 18 for couples ---------- */
+/* ---------- 17 for couples ---------- */
 .tl-entry.plain { padding: 12px 14px; }
 .tl-entry.plain > b { margin: 0; }
 .tl-entry.plain > p { margin: 2px 0 0; }
@@ -1795,7 +1754,7 @@
 .cp-col p small { flex: none; font-size: 12px; font-weight: 500; color: var(--muted); }
 .note-b .btn { flex: none; align-self: center; }
 
-/* ---------- 19 for housemates ---------- */
+/* ---------- 18 for housemates ---------- */
 .fl-low { margin-top: 2px; flex-wrap: wrap; overflow: visible; }
 .fl-low .chip.on { background: var(--accent); color: var(--on-accent); }
 .fl-low .chip .ic { width: 13px; height: 13px; stroke-width: 2.8; }
@@ -1824,7 +1783,7 @@
 .lh-row > div small { display: block; font-size: 12.5px; font-weight: 500; line-height: 1.35; color: var(--muted); }
 .lh-row.gone > img { filter: grayscale(1); opacity: .7; }
 
-/* ---------- 20 for friends ---------- */
+/* ---------- 19 for friends ---------- */
 .pl-mgrid .h1 > b { background: var(--accent-soft); }
 .pl-mgrid .h2 > b { background: color-mix(in srgb, var(--accent) 55%, var(--accent-soft)); color: var(--on-accent); }
 .pl-mgrid .h3 > b { background: var(--accent); color: var(--on-accent); font-weight: 800; }

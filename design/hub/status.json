@@ -1,10 +1,10 @@
 {
   "phase": "First draft · design",
   "updated": "2026-11-12",
-  "summary": "The first draft has 134 screens in 20 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). Two things you decided on 12 Nov are now in: **Notes keeps its name**, and **Health is in the first version**. Health is the seventh place, for every kind of circle, and the kind of circle chosen at setup shapes what it gets, with a full set drawn for couples, housemates and friends beside the family one. Nothing is built yet.",
+  "summary": "The first draft has 125 screens in 19 groups, built on Journey's design system (Sun, glass, Plus Jakarta Sans, the same components). **Health has been taken out**, by your decision, because it would have needed a legal check; the two parts that hold no health details (habit charts, and a goal friends walk together) stay, moved to other groups. Notes keeps its name. The kind of circle chosen at setup shapes what it gets, with a full set drawn for couples, housemates and friends beside the family one. Nothing is built yet.",
   "next": [
-    "Health is in the first version, so its legal check now has a date: tell me which countries you will launch in first, and who should look at it. It has to be finished before the Health step is built.",
-    "Look at the newest groups at the end of the **Screens**: 17 *Health*, 18 *For couples*, 19 *For housemates*, 20 *For friends*, and the two new setup screens (2.5 and 2.6). Tell me what to keep, what to drop and what is missing for each kind of circle.",
+    "One thing I should have raised sooner: children who use the app themselves. A child as a profile a parent looks after is simple; a child under 13 signing in on their own tablet is not. Tell me which you want (question 6 under *What it does*).",
+    "Look at the newest groups at the end of the **Screens**: 17 *For couples*, 18 *For housemates*, 19 *For friends*, and the two new setup screens (2.5 and 2.6). Tell me what to keep, what to drop and what is missing for each kind of circle.",
     "If you haven't yet: groups 14 to 16 (*Jot*, *Keepsakes*, *Fair and fun*), then the rest of the **Screens**. Group 10, *With Journey*, and the sheet screens in group 8 are the ones I most want your eye on.",
     "Try the names for the app with the **Name** switch on the Screens page, then read *The name*.",
     "Answer the eight questions under *What it does*. Two of them shape the build most: how private is private, and whether there is a paid plan.",
@@ -12,8 +12,8 @@
   ],
   "open": [
     {
-      "q": "Health and the law",
-      "a": "You've put Health in the first version, so this is no longer whether but when. Health details are a protected kind of personal data, and app stores set their own conditions for apps that hold them. The screens stay on the safe side (records and reminders, no advice). A check by someone qualified has to finish before the Health step is built. Which countries first, and who does it?"
+      "q": "Children who use the app themselves",
+      "a": "Children as profiles that a parent looks after are simple. A child under 13 signing in on their own device brings children's privacy rules with it in most countries (Journey is 13 and over). The screens show a little of both. The simple route is profiles only: anything a child ticks is ticked on a parent's phone. Which do you want?"
     },
     {
       "q": "Jot on an iPhone",
@@ -25,19 +25,19 @@
     },
     {
       "q": "How private is private?",
-      "a": "In this draft the Vault and Health's records are scrambled so that the service can't read them. Pages, photos and files are private to the people you choose but readable by the service, so that search inside scans, reminders from documents and moments can work. Scrambling everything is possible and switches those off."
+      "a": "In this draft only the Vault is scrambled so that the service can't read it. Notes, photos and files are private to the people you choose but readable by the service, so that search inside scans, reminders from documents and moments can work. Scrambling everything is possible and switches those off."
     },
     {
       "q": "Is there a paid plan?",
       "a": "Keeping a family's full-size photos and videos costs roughly US$0.75 to 3 a month per family. A free amount with a family plan is the usual answer. The numbers are yours to set."
     },
     {
-      "q": "What else is in the first version?",
-      "a": "Health is in, by your decision. That brings the Vault's locked storage in with it, because Health's records are kept the same way. My suggested order: circles and sharing, Library, Plan with Jot, Notes, Money, Vault, Health, then the links with Journey. Does anything wait for a second version?"
+      "q": "What is the first version?",
+      "a": "All six places is several apps' worth of work. My suggested order: circles and sharing, Library, Plan with Jot, Notes, Money, Vault, then the links with Journey, each one going to a few test circles before the next. Does anything wait for a second version?"
     },
     {
       "q": "The top row",
-      "a": "Today, Plan, Notes, Library, Money, Health, Vault. Seven is all the row holds. Are these the right seven, in the right order? Is anything you'd use daily more than one tap away?"
+      "a": "Today, Plan, Notes, Library, Money, Vault. Are these the right six, in the right order? Is anything you'd use daily more than one tap away?"
     },
     {
       "q": "Faces",
@@ -49,6 +49,10 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-12",
+      "text": "**Health is out**, by your decision: the Health place, its eleven screens, and the health details that had crept into other screens (allergies, blood type, vaccination and medical records). The top row is six places again. Two things stayed because they hold no health details: **habit charts** (now in Fair and fun) and **a goal you walk together** (now with the friends' screens, typed in by hand, no link to the phone's health app)."
+    },
     {
       "date": "2026-11-12",
       "text": "Two decisions from you. **Notes keeps its name**: Lore is gone from every screen. **Health is in the first version**: it now has its own step in the build order, straight after the Vault whose locked storage it uses, and its legal check moves to the top of the next steps."

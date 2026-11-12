@@ -168,7 +168,7 @@ const spaces = tokens.space.map((s) => `<li><code>${s}</code><i style="--s:${s}"
    Each screen is written as <screen id title note [theme="dark"] [home="photo"] [class] [label]> ... </screen>.
    Inside it: <sb> or <sb photo> (status bar), [[icon classes]] (an icon from icons.svg),
    <kb>, <kb email> or <kb num> (keyboard), <tabbar active="home|people|activity|you" [dot]>,
-   <vtabs active="today|plan|notes|library|money|health|vault" [circle="couple|flat|crew"]> (the search pill and the row of seven places),
+   <vtabs active="today|plan|notes|library|money|vault" [circle="couple|flat|crew"]> (the search pill and the row of six places),
    {notes} (the name of the Notes place, one setting in tokens.json),
    {app} and {domain} (the name and its web address, whichever name is switched on), [[brand]] (its mark),
    <aud all|me|two|us|flat|crew> (who can see a thing), <tiles imgs="a,b,c"> (small photo tiles).
@@ -201,7 +201,7 @@ function tabbar(active, dot, who = 'me') {
   return `<div class="tabbar">${tab('home', 'Home', 'home')}${tab('people', 'People', 'users')}<span class="tab-plus">${icon('plus')}</span>`
     + `${tab('activity', 'Activity', 'bell')}<span class="tab${active === 'you' ? ' on' : ''}"><img src="img/av-${who}.jpg" alt="">You</span></div>`;
 }
-// The seven places things live. Home's top row switches between them, the way Airbnb's does.
+// The six places things live. Home's top row switches between them, the way Airbnb's does.
 const NOTES = tokens.places.notes.label;
 const CIRCLE_EMOJI = { family: '👪', couple: '❤️', flat: '🏠', crew: '🤝' };
 const PLACES = [
@@ -210,7 +210,6 @@ const PLACES = [
   ['notes', NOTES, '📓', `Search ${NOTES === 'Notes' ? 'notes' : NOTES}`, 'Pages · checklists · templates'],
   ['library', 'Library', '📷', 'Search the library', 'People · places · words in a scan'],
   ['money', 'Money', '💰', 'Search money', 'Bills · sheets · who owes who'],
-  ['health', 'Health', '💪', 'Search Health', 'Medicines · visits · moving'],
   ['vault', 'Vault', '🔐', 'Search the Vault', 'Logins · cards · IDs · codes'],
 ];
 function vtabs(active, circle = 'family') {

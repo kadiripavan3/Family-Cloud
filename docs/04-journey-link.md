@@ -80,7 +80,7 @@ Added on 11 Nov. When someone is on a journey and has children in a circle, Jour
 Added on 12 Nov.
 
 - **Friends: Where next?** The place that wins the vote becomes a trip space, and on the day you leave it becomes a shared journey with all five as authors.
-- **Friends: Walk to Lisbon.** A circle's shared distance can be a challenge in Journey, so the route and the day count are public if the crew wants them to be.
+- **Friends: a goal you walk together.** The crew's shared distance can also be a challenge in Journey, if they want the day count to be public. The kilometres are typed in either way.
 - **Couples: Our story.** Journeys the two of you kept appear on the timeline by themselves.
 - **Any circle: the awards and the trip shelf.** Kept journeys are what "Photo of the year" is chosen from.
 

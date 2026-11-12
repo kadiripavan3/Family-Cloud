@@ -65,7 +65,7 @@ flowchart LR
 
 ## What is new here, and how hard
 
-Journey is a feed of entries. This app has seven kinds of thing, live editing and secrets. These are the parts Journey's code does not already answer.
+Journey is a feed of entries. This app has six kinds of thing, live editing and secrets. These are the parts Journey's code does not already answer.
 
 | Part | Approach | How hard |
 |---|---|---|
@@ -92,10 +92,6 @@ Journey is a feed of entries. This app has seven kinds of thing, live editing an
 | **Long videos** | Kept as files in R2 and played from there. Mux charges by the stored minute, which suits Journey's 60-second clips and not a family's hours of video. | Medium, and a cost decision |
 | **Faces** | Not in the first version. If wanted: on the phone only. | Hard, and sensitive |
 | **Kind of circle** | One field on the circle. The words, starter spaces and suggested templates for each kind live in the app's word catalog and a template catalog, keyed by kind. The rules never read it: sharing works the same for all. | Small. The work is in writing four sets of content. |
-| **Health records** | Kept the way the Vault is: scrambled on the phone, shared by wrapping keys for the people chosen. So the parts of Health that hold records can be searched on the phone only. | Hard, but it is the Vault's work done once and used twice |
-| **Who gave the medicine** | The server takes the first tick and refuses a second inside the window, so two phones can't both succeed. Offline, a tick waits and the clash is shown when it lands. | Medium |
-| **Movement** | Apple's HealthKit and Android's Health Connect, read on the phone with the person's permission. Only a weekly total per person is sent. | Medium, native on both sides, and both stores review apps that read health data |
-| **Recording a visit** | Only with a clear yes on screen from the person being recorded, then speech-to-text | Medium. Recording laws differ by country. |
 | **Hidden answers** (both said yes, Secret Santa, predictions, missions) | The server keeps each person's answer or draw and never sends it to anyone else's phone until the rule says so. The same check as "hidden from". | Medium, and worth its own tests |
 | **Filling passwords into other apps** | Needs native code on each platform | Later |
 
@@ -114,19 +110,19 @@ So a family plan has to exist. A common shape: a free amount (say 5 to 10 GB, en
 
 ## Risks, said plainly
 
-1. **It is a lot.** Seven places is several apps' worth of work. Build it in the order in [What it does](01-requirements.md#a-suggested-order), and let each step reach real families before the next.
+1. **It is a lot.** Six places is several apps' worth of work. Build it in the order in [What it does](01-requirements.md#a-suggested-order), and let each step reach real families before the next.
 2. **A password manager is a promise.** If the Vault ships, it has to be right, reviewed, and honest about what "can't see" means.
 3. **Private things are less forgiving than public posts.** One wrong rule in "who can see what" shows a child's surprise or a partner's payslip to the wrong person. That rule gets the most tests.
 4. **Live editing is hard to do well.** Start with lists, where it matters most and is easiest.
 5. **The sheet engine's licence** has to be checked before it is chosen.
-6. **Health details are specially protected.** European privacy law treats them as a special category, other countries have their own rules, and Apple and Google set conditions for apps that hold them. A dose reminder is fine; a suggestion of what dose to give would make the app a medical product. This needs someone qualified before Health is built, not after. You put Health in the first version on 12 Nov, so the check should start now: it decides what Health may store and say, and it is the one thing on this list that can't be done by building carefully.
+6. **Children who use the app themselves.** A child as a profile a parent looks after is simple. A child under 13 signing in on their own device brings children's privacy rules with it in most countries, and Journey is 13 and over. I have not checked those rules. The design can avoid the question by keeping children as profiles; that choice is yours, and is listed under the questions in [What it does](01-requirements.md#questions-for-you).
 
 ## What I checked, and what I didn't
 
 - Journey's stack, services and prices: read from Journey's own tech doc, dated 9 Nov 2026.
 - The cost of a second Supabase project: sources say about US$10 a month for a small machine, and disagree on whether the included credit applies per project or per organisation. Not confirmed on Supabase's own pricing page.
 - Not checked: any library version, the formula engine's licence, Apple's and Google's current rules for apps that store passwords.
-- For Health (12 Nov): nothing was checked. Which rules apply depends on the countries you launch in. Treat everything about Health and the law here as a flag, not a finding.
+- Health (12 Nov): taken out of the app, so there is nothing to check. What was removed and what stayed is in [What it does](01-requirements.md#health-taken-out).
 - For Jot (11 Nov): Apple's WidgetKit guide lists buttons and toggles as the controls a widget can have, and I found no report of text fields in widgets in iOS 27. Apple documents a text-reply action for notifications, and says a Live Activity runs for at most 8 hours and stays on the Lock Screen for up to 12. Android 14 made pinned ("ongoing") notifications dismissible, and posting one again brings it back. I read these in documentation and developer write-ups; none of it has been tried on a phone.
 
 ## Sources
