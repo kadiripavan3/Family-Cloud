@@ -179,11 +179,40 @@ class ApiDescriptionTest extends ApiTest {
                         201),
                 "$[0].id");
 
-        List<String> forStranger = new ArrayList<>(
-                List.of(circle, child, page, pass, album, list, folder, board, vaultItem, event, reminder, goal, jot));
+        // Money: a bill, a sheet and a split that are Nora's alone.
+        String bill = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/bills",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Electricity\",\"amountCents\":8420,\"dueOn\":\"2026-11-12\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String sheet = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/sheets",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"template\":\"trip_budget\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String split = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/splits",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Between us\"}".formatted(id(), circle),
+                        201),
+                "$.id");
+
+        List<String> forStranger = new ArrayList<>(List.of(
+                circle, child, page, pass, album, list, folder, board, vaultItem, event, reminder, goal, jot, bill,
+                sheet, split));
         forStranger.addAll(library);
-        List<String> forAlex =
-                new ArrayList<>(List.of(page, album, list, folder, board, vaultItem, event, reminder, goal, jot));
+        List<String> forAlex = new ArrayList<>(
+                List.of(page, album, list, folder, board, vaultItem, event, reminder, goal, jot, bill, sheet, split));
         forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {

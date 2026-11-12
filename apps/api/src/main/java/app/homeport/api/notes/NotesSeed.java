@@ -555,6 +555,14 @@ class NotesSeed implements Seeder {
         folders.file(plan, nora, birthdays, null, false);
         clear(w, plan);
         pages.change(plan, nora, null, null, "🎂");
+        // Plan's sample data made plain versions of the party's two lists for its event. The ones made here are
+        // the ones the screens draw (with prices, in their folder), so they take their place and their links.
+        Optional<UUID> party = find(w, "linds", "Mia's birthday party", "Mia's 10th birthday party", "Mia's party");
+        w.jdbc()
+                .sql(
+                        "delete from things where circle_id = :circle and kind = 'checklist' and title in ('Party prep', 'Gift ideas')")
+                .param("circle", w.circle("linds"))
+                .update();
         write(plan, nora, words(BlockKind.HEADING, "Gift ideas"));
         // A list started in the page is shared like the page: with everyone, and hidden from Mia until her day.
         ChecklistResponse gifts =
@@ -622,6 +630,14 @@ class NotesSeed implements Seeder {
                 nora,
                 new NewBlock(BlockKind.LIVE, null, null, null, null, prep.id(), null, null, null, null, null),
                 null);
+        party.ifPresent(event -> {
+            things.link(event, prep.id(), nora);
+            things.link(event, gifts.id(), nora);
+            w.jdbc()
+                    .sql("update thing_links set created_at = created_at + interval '1 second' where to_id = :gifts")
+                    .param("gifts", gifts.id())
+                    .update();
+        });
     }
 
     // ---------- The other circles: their starter spaces, with a page or two each ----------

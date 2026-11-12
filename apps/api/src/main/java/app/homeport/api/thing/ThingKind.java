@@ -23,7 +23,10 @@ public enum ThingKind {
     VAULT_ITEM(Place.VAULT),
     EVENT(Place.PLAN),
     REMINDER(Place.PLAN),
-    GOAL(Place.PLAN);
+    GOAL(Place.PLAN),
+    BILL(Place.MONEY),
+    SHEET(Place.MONEY),
+    SPLIT(Place.MONEY);
 
     private final Place place;
 

@@ -66,8 +66,9 @@ class NotesSeedTest extends NotesApiTest {
         assertThat(JsonPath.<Integer>read(notes, "$.pinned[0].left")).isEqualTo(7);
         assertThat(titles(notes, "$.pinned[0].here[*].who.name")).containsExactly("Alex");
         assertThat(JsonPath.<String>read(notes, "$.pinned[0].emoji")).isEqualTo("🛒");
+        // What other places wrote today (a jotted note, say) can stand in front of these.
         assertThat(titles(notes, "$.recent[*].title"))
-                .startsWith("Groceries", "Wi‑Fi and smart home", "Mia's 10th birthday");
+                .containsSubsequence("Groceries", "Wi‑Fi and smart home", "Mia's 10th birthday");
 
         // 5.2 A space: folders with their counts, the live list, the page that is hidden from the kids.
         String home = fetch("/v1/folders/" + idOf(notes, "Home") + "/items", nora);

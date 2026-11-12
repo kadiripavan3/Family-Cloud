@@ -37,10 +37,13 @@ class JotSeed implements Seeder {
         this.things = things;
     }
 
-    /** After Plan: the reminder that goes with the shopping list is made there. */
+    /**
+     * After Plan (the reminder that goes with the shopping list is made there) and after Notes, whose sample
+     * data draws the Groceries list line by line: that list is used as it is.
+     */
     @Override
     public int order() {
-        return 11;
+        return 55;
     }
 
     @Override
@@ -51,18 +54,31 @@ class JotSeed implements Seeder {
         UUID noraHere = w.member("linds", "nora");
         LocalDate today = LocalDate.now(ZoneId.of(ZONE));
 
-        // Groceries: what was on it before today, then what Nora jots.
-        UUID groceries = checklists
-                .create(alex, linds, JotService.SHOPPING_LIST, Audience.CIRCLE, List.of(), UUID.randomUUID())
-                .id();
+        // Groceries: the list Notes' sample data drew, when it is there; otherwise one made here with what was
+        // on it before today.
+        UUID drawn = w.jdbc()
+                .sql(
+                        "select id from things where circle_id = :circle and kind = 'checklist' and title = :title order by created_at limit 1")
+                .param("circle", linds)
+                .param("title", JotService.SHOPPING_LIST)
+                .query(UUID.class)
+                .optional()
+                .orElse(null);
+        UUID groceries = drawn != null
+                ? drawn
+                : checklists
+                        .create(alex, linds, JotService.SHOPPING_LIST, Audience.CIRCLE, List.of(), UUID.randomUUID())
+                        .id();
         store.markShoppingList(linds, groceries, w.member("linds", "alex"));
-        for (String line : List.of("Bananas", "Strawberries", "Butter", "Coffee", "Oat milk")) {
-            UUID added = checklists
-                    .add(groceries, alex, new NewItem(line, null, null, null, null), UUID.randomUUID())
-                    .id();
-            if (line.equals("Butter")) {
-                checklists.change(
-                        added, alex, new ItemChange(null, null, null, null, null, null, null, true, null, null));
+        if (drawn == null) {
+            for (String line : List.of("Bananas", "Strawberries", "Butter", "Coffee", "Oat milk")) {
+                UUID added = checklists
+                        .add(groceries, alex, new NewItem(line, null, null, null, null), UUID.randomUUID())
+                        .id();
+                if (line.equals("Butter")) {
+                    checklists.change(
+                            added, alex, new ItemChange(null, null, null, null, null, null, null, true, null, null));
+                }
             }
         }
         store.use(w.member("linds", "alex"), groceries); // Alex is at the shop
@@ -100,7 +116,33 @@ class JotSeed implements Seeder {
         }
 
         UUID morning = UUID.randomUUID();
-        jots.jot(linds, nora, "Milk, bread", today, ZONE, JotSource.NOTIFICATION, null, morning);
+        if (drawn == null) {
+            jots.jot(linds, nora, "Milk, bread", today, ZONE, JotSource.NOTIFICATION, null, morning);
+        } else {
+            // On the drawn list these were bought and cleared since; the jots remember that they were added.
+            store.insert(
+                    linds,
+                    noraHere,
+                    morning,
+                    0,
+                    JotSource.NOTIFICATION,
+                    "Milk",
+                    ReadAs.LIST_ITEM,
+                    "Milk",
+                    groceries,
+                    null);
+            store.insert(
+                    linds,
+                    noraHere,
+                    morning,
+                    1,
+                    JotSource.NOTIFICATION,
+                    "bread",
+                    ReadAs.LIST_ITEM,
+                    "Bread",
+                    groceries,
+                    null);
+        }
         UUID note = UUID.randomUUID();
         jots.jot(linds, nora, "Mia needs €5 for the class photo", today, ZONE, JotSource.NOTIFICATION, null, note);
         w.jdbc()
@@ -124,7 +166,21 @@ class JotSeed implements Seeder {
                 JotSource.NOTIFICATION,
                 null,
                 UUID.randomUUID());
-        jots.jot(linds, nora, "Eggs", today, ZONE, JotSource.NOTIFICATION, null, UUID.randomUUID());
+        if (drawn == null) {
+            jots.jot(linds, nora, "Eggs", today, ZONE, JotSource.NOTIFICATION, null, UUID.randomUUID());
+        } else {
+            store.insert(
+                    linds,
+                    noraHere,
+                    UUID.randomUUID(),
+                    0,
+                    JotSource.NOTIFICATION,
+                    "Eggs",
+                    ReadAs.LIST_ITEM,
+                    "Eggs",
+                    groceries,
+                    null);
+        }
         jots.jot(
                 linds,
                 nora,
