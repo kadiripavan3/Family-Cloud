@@ -37,7 +37,7 @@ export function canAskThePhone(): boolean {
   }
 }
 
-/** How this phone keeps the key for this account, or null when it keeps none (a new phone, or after signing out). */
+/** How this phone keeps the key for this account, or null when it keeps none (a new phone). */
 export async function keptHow(account: string): Promise<KeptHow | null> {
   try {
     const how = await SecureStore.getItemAsync(howEntry(account), PLAIN);
@@ -79,7 +79,7 @@ export async function takeWithPasscode(account: string, passcode: string, onProg
   return unwrapWith(passcode, JSON.parse(kept) as Wrapped, 'this-device', onProgress);
 }
 
-/** Removes the key from this phone: signing out, or a Vault that was started over. */
+/** Removes the key from this phone: a Vault that was never made after all, or one that is started over. */
 export async function forgetKept(account: string): Promise<void> {
   await SecureStore.deleteItemAsync(deviceEntry(account), BEHIND_DEVICE).catch(() => undefined);
   await SecureStore.deleteItemAsync(passcodeEntry(account), PLAIN).catch(() => undefined);

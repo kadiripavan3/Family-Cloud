@@ -3,20 +3,17 @@ import { Plus } from 'lucide-react-native';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { type GetVaultItemsParams, useGetVaultItemsInfinite, type VaultItemRowResponse } from '@/api/generated/homeport';
+import { type GetVaultItemsParams, useGetVaultItemsInfinite } from '@/api/generated/homeport';
 import { more, paged, rows } from '@/api/pages';
 import { useCircle } from '@/features/circles/current';
 import { NotFound } from '@/features/states/NotFound';
 import { PageProblem } from '@/features/states/PageProblem';
 import { thingHref } from '@/features/things/open';
-import { openItem } from '@/features/vault/actions';
 import { VaultScreen } from '@/features/vault/Gate';
-import { mainSecret } from '@/features/vault/inside';
 import { ItemRow } from '@/features/vault/ItemRow';
 import { isDrawer } from '@/features/vault/look';
 import { LockToast, Toast } from '@/features/vault/Toast';
-import { useCopy } from '@/features/vault/useCopy';
-import { useSecretAction } from '@/features/vault/useSecretAction';
+import { useCopyFromList } from '@/features/vault/useCopyFromList';
 import { loadState } from '@/lib/loading';
 import { useTheme } from '@/theme';
 import { AppBar } from '@/ui/AppBar';
@@ -52,19 +49,10 @@ function Drawer({ which }: { which: string }) {
   const asked = useGetVaultItemsInfinite(circle.id, params, { query: paged });
   const load = loadState(asked);
   const items = rows(asked.data);
-  const { copy, said } = useCopy();
-  const opening = useSecretAction();
+  const { copyFrom, said } = useCopyFromList();
   const says = words.vault.drawer;
   const title = drawer ? words.vault.drawers[drawer].name : which === 'look' ? says.look : says.shared;
   const everyone = words.kinds[circle.kind].everyone(circle.name);
-
-  const copyFrom = (item: VaultItemRowResponse) =>
-    void opening.run(async () => {
-      const opened = await openItem(item);
-      const secret = mainSecret(opened.inside);
-      opened.itemKey.fill(0);
-      await copy(secret);
-    });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -81,7 +69,7 @@ function Drawer({ which }: { which: string }) {
           data={items}
           keyOf={(item) => item.id}
           row={(item) => (
-            <ItemRow item={item} everyone={everyone} onOpen={() => router.push(thingHref({ kind: 'vault_item', id: item.id }))} onCopy={item.myState === 'ready' && !item.sample ? () => copyFrom(item) : undefined} />
+            <ItemRow item={item} everyone={everyone} onOpen={() => router.push(thingHref({ kind: 'vault_item', id: item.id }))} onCopy={() => copyFrom(item)} />
           )}
           empty={
             <View style={{ paddingTop: 60 }}>

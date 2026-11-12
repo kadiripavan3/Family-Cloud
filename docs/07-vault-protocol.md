@@ -1,6 +1,6 @@
 # The Vault: how it is protected
 
-> **Status:** built on the API's side and tested end to end with real keys (`VaultProtocolTest`). The app's side is built against this document. **Not yet looked at by anyone outside**: the review named in [Tech and costs](02-tech-stack.md) has to happen before real passwords go in. · **Updated:** 12 Nov 2026
+> **Status:** built on both sides. The API is tested end to end with real keys (`VaultProtocolTest`); the app's cryptography (`apps/mobile/src/features/vault/crypto/`) is tested against the published test vectors of each algorithm and against a second implementation, and the two sides are walked together in a browser (`scripts/e2e/steps/06-vault.js`). **Not yet looked at by anyone outside**: the review named in [Tech and costs](02-tech-stack.md) has to happen before real passwords go in. **Not yet run on a phone**: everything was run in the browser preview and under the tests. · **Updated:** 12 Nov 2026
 >
 > This is the contract between the app and the API, and the text an outside reviewer checks. Where the code and this document disagree, one of them has a bug.
 
@@ -66,7 +66,17 @@ The app uses these. The API never runs any of them: to it, everything below is t
 | A sealed card on a guest pass | AES-256-GCM, because a browser has it built in (Web Crypto) and the page then needs no library |
 | A one-time code | TOTP (RFC 6238), worked out on the phone from a secret inside the item. Nothing is served. |
 
-No library is chosen by this document. Whichever the app uses has to implement exactly these, and be checked against published test vectors in the app's own tests.
+**What the app uses for them** (checked on 12 Nov 2026 on the npm registry; each is MIT, pure JavaScript with no native part, and pinned to one exact version in `apps/mobile/package.json`):
+
+| Package | Version | Used for |
+|---|---|---|
+| `@noble/curves` | 2.4.0 | X25519 |
+| `@noble/ciphers` | 2.4.0 | XChaCha20-Poly1305, and AES-256-GCM for a guest pass (a phone has no Web Crypto) |
+| `@noble/hashes` | 2.4.0 | HKDF-SHA-256, scrypt, SHA-256, and HMAC-SHA-1 for one-time codes |
+
+Written in the app itself, because they are small: Shamir's sharing (`crypto/shamir.ts`), one-time codes over the library's HMAC (`crypto/totp.ts`), base64url and UTF-8 (`crypto/bytes.ts`), and the layout of a sealed piece (`crypto/seal.ts`). The app's own tests hold each to its published test vectors: RFC 7748 (X25519), RFC 5869 (HKDF), RFC 7914 (scrypt), the XChaCha draft's example, the GCM standard's test case 14, RFC 4226 and RFC 6238 (one-time codes), RFC 4648 (base64). A swap of library has to pass the same tests.
+
+**Random bytes** come from the phone's own secure source through `expo-crypto`'s `getRandomValues` (in the browser preview: `crypto.getRandomValues`). Not through its `getRandomBytes`: that one falls back to `Math.random` in a development build. A source that returns nothing (sixteen zero bytes) stops the app instead of handing out a zero key.
 
 **Text on the wire.** Every sealed piece and every key travels as **base64url without padding** (`A–Z a–z 0–9 - _`). The API refuses anything else with a sentence, so a password sent in the clear by mistake is turned away rather than stored. It also bounds the length of each kind (see [Limits](#limits)).
 
@@ -108,13 +118,14 @@ The recipient computes `shared = X25519(p, E)` with their private key `p` and op
 | `helper-share` | One share of the Vault key | One helper |
 | `recovery-share` | The same share, passed on during a recovery | The temporary key of the new phone |
 | `pass-key` | A guest pass's key, kept for its maker's other phone | The pass's maker |
+| `this-device` | A person's private key as a phone or browser keeps it between unlocks, when it is kept behind a passcode. **Never sent anywhere.** | A key made from that passcode |
 
 ### The Vault key
 
 - 24 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no `I`, `O`, `0` or `1`, which are easy to confuse), each chosen at random: 120 bits. Shown in six groups of four.
 - Shown once, on the phone, to save or print. **Never sent to the API**, in any form.
-- Before it is used, it is put in upper case and the spaces are taken out.
-- `wrapping key = scrypt(Vault key, salt, N, r, p, 32 bytes)` with a random 16-byte salt. The app uses N = 32768, r = 8, p = 1 unless the review says otherwise. The salt and the three numbers are stored next to the wrapped private key, so a new phone can do the same sum. They are not secret. (The API accepts N from 2^14 to 2^22 as a power of two, r 1 to 32, p 1 to 16; a phone should refuse numbers so large they would freeze it.)
+- Before it is used, it is put in upper case and the spaces are taken out (the app takes out line breaks too: the key is shown on two lines).
+- `wrapping key = scrypt(Vault key, salt, N, r, p, 32 bytes)` with a random 16-byte salt. The app uses N = 32768, r = 8, p = 1 unless the review says otherwise. The salt and the three numbers are stored next to the wrapped private key, so a new phone can do the same sum. They are not secret. (The API accepts N from 2^14 to 2^22 as a power of two, r 1 to 32, p 1 to 16; a phone should refuse numbers so large they would freeze it. The app refuses, before doing any of the sum, a record that asks for more than 128 MB (N × r above 2^20) or more than eight times its own work (N × r × p above 2^21).) The sum is done in slices of about 12 milliseconds, so the screen keeps drawing and shows how far it is.
 - `wrapped private key = seal(wrapping key, private key, "private-key")`.
 - After unwrapping, the phone works out the public key from the private key and checks it against the one in the record. If they differ, it stops.
 
@@ -144,11 +155,41 @@ The part of an address after `#` is never sent by a browser: not in the request,
 |---|---|---|---|
 | **A person's private key** | Their phone, when they set up their Vault | In the phone's secure storage. Nowhere else in the clear. | It wrapped with the key made from the Vault key |
 | **A person's public key** | The same moment | Their phone, the API, and the phones of people in their circles | It, as it is |
-| **The Vault key** | Their phone | On paper or in a PDF the person saved. Whether the phone also keeps it is an [open question](#open-questions-for-the-review). | Nothing. For someone with helpers: shares of it, each sealed for one helper. |
+| **The Vault key** | Their phone | On paper or in a PDF the person saved. **The app does not keep it:** it is held in memory from the moment it is made until the person says "I've saved my key" or the Vault locks, and typed again when it is needed (see [question 9](#open-questions-for-the-review)). | Nothing. For someone with helpers: shares of it, each sealed for one helper. |
 | **The key made from the Vault key** | Any phone that is given the Vault key | Only in memory, while unwrapping | Nothing (the salt and the numbers to derive it) |
 | **An item key** | The phone that creates the item, or that gives it a new key | In memory while an item is open | One wrapped copy for each person with a grant, and one for the trusted person if the item is in the escrow |
 | **A temporary key pair** | A new phone, for one recovery | That phone, until the recovery ends | The public half |
 | **A guest pass's key** | The phone that makes the pass | In the link that is sent to the guest; on its maker's phone | Nothing, or it sealed for its maker's Vault |
+
+## On the phone
+
+What the app does with all of the above between the API and the screen. None of it reaches the API.
+
+**Unlocked means: the private key is in memory.** It is nowhere else in the clear. It is overwritten and let go of when the Vault locks:
+
+- after two minutes without a touch on a Vault screen (or the time chosen under "Lock the Vault after" on Privacy and security);
+- when the app goes to the background;
+- when the person locks it by hand;
+- when they sign out, however the sign-in ends.
+
+A screen of the Vault that is open when it locks is replaced by the locked page, and starts afresh after unlocking: nothing it held outlives the lock. (JavaScript gives no promise that no copy of a key is left in memory; see the questions.)
+
+**Between unlocks the private key is kept wrapped**, one of two ways:
+
+| Way | Where | What opens it |
+|---|---|---|
+| Behind Face ID or a fingerprint | The phone's secure storage (Keychain, Keystore), stored with the option that requires authentication | The phone, after it has recognised its owner. When the faces or fingerprints on the phone change, the phone throws the entry away, and the Vault key is typed again. |
+| Behind a passcode | The secure storage of a phone without Face ID (and of Expo Go on an iPhone, which can't ask for it). **In the browser preview: the browser's own storage.** | A passcode of at least 8 characters the person chose, through scrypt with the numbers above, then `seal(…, "this-device")` |
+
+The key that comes out is checked against the public key in the person's record before it is used. Signing out locks the Vault; the wrapped key stays on the phone under that account's name, where another account doesn't find it.
+
+**The browser preview is for trying things out, not for real secrets,** and it says so where the passcode is chosen. A browser has no secure storage and no Face ID: whoever can read that browser's storage can keep guessing passcodes, and any script that gets into the page while the Vault is unlocked can read what the page can.
+
+**What is never written anywhere:** anything a phone has opened (a password, a note, a share, a key), the Vault key, a passcode. Not to the app's data layer (what it has loaded and what it remembers of a change), not to what it keeps on the phone to open without a connection (nothing of the Vault is kept there at all, not even titles and sealed pieces), not to a log, and not into an error's own words. A test searches the data layer for each of these after an item was opened, shown and copied (`NothingSecretIsKept.test.tsx`).
+
+**Copying** puts a value on the clipboard, which other apps can read. An iPhone is told to remove it after 60 seconds and not to pass it to the person's other devices. On Android it is marked as sensitive and the app empties the clipboard after 60 seconds if it still holds the value and the app is in front. A browser page empties it after 60 seconds if the browser lets it. What was pasted somewhere stays there.
+
+**The Vault key on screen** is also drawn as a QR code and can be handed to the browser's print dialog as a page of its own ("Save as PDF"). Both are made on the phone from the text on the screen.
 
 ## The messages
 
@@ -175,6 +216,10 @@ An item is a thing like any other in the app (`vault_item`, in the place `vault`
 **In the clear:** `title`, `category` (`login`, `card`, `id`, `wifi`, `code`, `secret`), `site`, `expiresOn` (an ID only), `about` (members), `health` (`ok`, `weak`, `reused`, `leaked`: the phone's verdict; the API can't know, and nothing sets `leaked` yet).
 
 **Sealed:** everything else, as one `ciphertext` = `seal(item key, plaintext, "item")`. What the plaintext looks like is the app's business. It should repeat the title and the site inside, so a phone can notice if the clear labels were changed to point at something else.
+
+*What the app seals* is JSON as UTF-8: `{"v": 1, "title", "site", "category", "fields": {…}}`, with the fields of its drawer (`username`, `password`, `totp`, `notes` for a login; `holder`, `number`, `expires`, `code`, `pin` for a card; `number` for an ID; `network`, `password` for Wi‑Fi; `code`; `text` for a secret note). When an item is opened and the labels inside are not the ones the API showed, the screen says so and shows the inside ones.
+
+*The `health` word* is worked out on the phone when an item is saved: `weak` for a password shorter than 10 characters, or shorter than 16 with fewer than three kinds of character, or with fewer than five different characters; `reused` when another item the person opened since unlocking holds the same password (the phone compares keyed fingerprints that never leave memory); otherwise `ok`. Nothing sets `leaked`.
 
 | Message | Sends | The API |
 |---|---|---|
@@ -213,6 +258,8 @@ What `PUT …/sharing` does and checks:
 - Whoever is no longer named (or, with `circle`, no longer included) loses their grant.
 - `once` can't go with `change`. `stopsAt` has to be in the future.
 - **`rotation`** gives the item a new key at the same moment: `{version, ciphertext, myWrappedKey, emergencyWrappedKey}`. The phone seals the item again with a fresh item key and wraps that key for itself and for each person who keeps access. Every wrapped key that isn't replaced in this request is dropped (its holder waits for a new one). If the item is part of the owner's escrow, the new key wrapped for the trusted person has to come along, or the request is refused (`escrow_key_needed`). **The app should do this whenever it removes someone**, because that person may have kept the old item key.
+
+*What the app does when the sheet is saved:* someone new, someone who was waiting, and someone whose key was used up or had stopped gets the item key wrapped for them (if they have a Vault). Someone who holds a working key keeps it. When someone who has had the key is taken off, it sends a `rotation` in the same request. Keys for people who wait are handed over when the owner presses "Hand over" in their unlocked Vault, not silently.
 
 The general audience sheet (`PUT /v1/things/{id}/audience`) also works on a Vault item, because it works on every thing. It hands nobody a key: people it adds wait for one, and people it removes are handed nothing from that moment.
 
@@ -257,6 +304,8 @@ The new phone opens the two shares with its temporary private key, joins them in
 
 **A helper should check that it is really them** before helping: call, or ask in person. The app should show both people the same short check words worked out from the temporary public key (the first bytes of its SHA-256), so a recovery started by someone else doesn't look the same. The API can't do this check for them.
 
+*What the app does:* three words, one for each of the first three bytes of that SHA-256, from a list of 256 everyday words (24 bits). They are shown on the new phone, on the helper's phone before the button that passes the share on, and on any other phone of the owner's next to the button that cancels. The temporary private key stays in the new phone's secure storage until the recovery ends; in the browser preview it is held in memory only, so closing the page means starting again. After getting back in, the app offers a new Vault key at once and splits it for the helpers.
+
 ### 6. A door code on a guest pass
 
 A guest has no account and no key.
@@ -270,6 +319,7 @@ A guest has no account and no key.
 | `POST /g/{token}/cards/{id}/shown` | The page's script | | Notes that the card was shown. A show-once card **loses its ciphertext here**: the API has nothing left to hand out. Only the phone the pass is open on can say so. |
 
 - The API's address for a pass ends before the `#`. The phone adds `#` and the key and gives the person the whole link to send.
+- *What the app does:* every pass made by someone with a Vault gets a key of its own at the moment it is made, sent as `keyForMaker`. A card is added from the pass's page: the phone opens the Vault item, seals what a guest should read with the pass's key, and sends the card. The link with the key is only shown while the maker's Vault is unlocked.
 - The page runs one script, `/share/guest.js`. It reads the key from the address, shows a card only after a tap, hides it again after 30 seconds, and for a show-once card tells the API first and shows it only when the API has answered. Without the part after `#`, or with a wrong one, it says the link is incomplete.
 - The page's `Content-Security-Policy` allows that script and the API's own style sheets, and nothing else: no script written into the page, nothing loaded from or sent to another address.
 - A Vault item put on a pass as a thing shows its title and "Kept in the Vault. Not shown on a pass." Only a sealed card carries a secret to a guest.
@@ -382,13 +432,19 @@ The API marks such an item (`sample: true`), refuses to open, change or share it
 
 - `VaultProtocolTest` plays every flow above against the API with real keys: a Vault opened on a new phone, an item shared and opened by a second person, a removed grant, once, stops-at, a late joiner, emergency access, a recovery with three helpers of whom two help, a guest pass. After each test it reads back **every request that was sent and every row the API stored** and fails if any holds a password, a note, an item key, a private key, a share or a Vault key, in any spelling.
 - Its stand-in for the phone uses what Java has: X25519, HKDF-SHA-256, AES-GCM and Shamir's sharing are the real thing. Two are stand-ins: ChaCha20-Poly1305 with a 12-byte nonce in place of XChaCha20, and PBKDF2 in place of scrypt. The API never looks inside, so this proves the protocol can be built, **not** that the app's cryptography is right. That needs the app's own tests against published test vectors, and the review.
+- **The app's cryptography** has tests of its own next to it (`apps/mobile/src/features/vault/crypto/__tests__/`): each algorithm against its published test vectors (listed under "The building blocks"), and each of this document's layouts against a second implementation written from this document on Node's OpenSSL (`src/test/vaultReference.ts`), in both directions: what one seals, the other opens. Shamir's sharing is checked for every pair of shares, for all 255 helper numbers, and for the property that one share fits every possible secret equally well.
+- **Both sides together** are walked in a browser as several people on several phones (`scripts/e2e/steps/06-vault.js`): setting up, sharing three ways, taking it back, one look, locking, a new phone with the typed Vault key, emergency access with the clock moved in the database, helpers and a recovery, a new Vault key, and a guest pass whose page opens a code the app sealed. Along the way the walk reads the database and fails if any row holds the password, the one-time code secret, the note, a Vault key or a passcode, in any common spelling.
+- The guest page's script is also run in the app's tests on what the app's `sealForGuest` makes.
 - The guest page's script was run in a real browser (Chromium) against the API: the key stays in the address through the code form, a card opens after a tap and hides after 30 seconds, a show-once card is gone after loading again, a missing or wrong key says "incomplete", the key reaches the server in no request, and the page's security policy blocks nothing it needs.
 
 ## Not built yet
 
 - **Filling a password in inside other apps** is phone work that comes after the first version. Copying, and opening a site, come first.
 - **Checking for leaks** needs an outside service that isn't connected. The word `leaked` exists; nothing sets it yet.
-- **Face ID and the two-minute lock** are the phone's.
+- **Face ID** is written and tested against a stand-in for the phone's secure storage, and has **never run on a phone**. The two-minute lock, the passcode way and everything else ran in the browser preview.
+- **How long scrypt takes on a phone** is not known. With the document's numbers it takes about a quarter of a second in a desktop browser and under the tests; a phone's JavaScript engine without a compiler will be several times slower. See the questions.
+- **"Save as PDF" on a phone** needs a part of the phone build that isn't in the app; in the browser it is the print dialog.
+- **Taking one card off a guest pass** has a route and no button yet.
 - **Children** are profiles without a sign-in in this build, so nothing can be sealed for them. "Mia can use Netflix" needs a child who has a device of her own.
 - **Sharing with someone outside the circle** (the sitter, a friend) is a guest pass with a sealed card. A grant always goes to a member of the item's circle.
 - **Starting over.** Someone who lost their Vault key and has no helpers can't set up a new Vault today; a second key pair is refused. See the questions.
@@ -403,7 +459,7 @@ The API marks such an item (`sample: true`), refuses to open, change or share it
 6. **Check words for a recovery** are the app's to show. Is the first part of a SHA-256 of the temporary key the right thing to compare, and how many words?
 7. **Two helpers and the service together** can rebuild a Vault key. Is two of up to five the right threshold? Should the owner choose it?
 8. **Replacing the Vault key needs no proof** that the caller holds the private key. Someone with the sign-in alone could replace the wrapped private key with rubbish: they read nothing, but the owner could no longer get in on a new phone. Should that request be signed with a key only the Vault holds? The same question for switching emergency access off and removing helpers.
-9. **Does the phone keep the Vault key?** It needs it to split the key again when a helper is added. Keeping it (in secure storage, behind Face ID) is convenient; not keeping it means typing 24 characters each time.
+9. **Does the phone keep the Vault key?** It needs it to split the key again when a helper is added. Keeping it (in secure storage, behind Face ID) is convenient; not keeping it means typing 24 characters each time. *The app as built does not keep it, and asks for it to be typed when the key is split.*
 10. **Scrypt's numbers.** N = 32768, r = 8, p = 1 on phones of the last five years. With 120 random bits in the Vault key, is that the right trade?
 11. **Nothing is signed and old versions can be replayed.** Does an item need a version inside its sealed part, or a signature of whoever saved it?
 12. **A new item key whenever someone is removed** is recommended to the app, not demanded by the API. Should the API refuse a removal that comes without one?
@@ -413,4 +469,20 @@ The API marks such an item (`sample: true`), refuses to open, change or share it
 16. **Pushes name people** ("Alex asked to open your Vault") and show on a lock screen. Should they say less?
 17. **Backups.** How long are database backups kept, given that erased keys live on in them?
 18. **Starting over** after losing everything: should there be a way to delete a Vault and set up a new one, and what should it take?
-19. **Which library** the app uses for these algorithms, and which version, is not decided here and was not checked for this document.
+19. **Which library** the app uses for these algorithms: the `@noble` family, at the versions under "The building blocks". Are these the right ones, and is pinning exact versions with the lockfile's hashes enough against a bad release? Of what the app uses, the library's own notes say SHA-1 (used here only for one-time codes) was outside its 2022 audit.
+
+Added while building the app:
+
+20. **Keys in JavaScript memory.** The private key and item keys are bytes the app overwrites when it lets go of them, but the engine may have made copies, and a typed Vault key, a passcode and an opened password are strings, which can't be overwritten at all. Is that acceptable for a first version, or does secret entry and key handling belong in native code?
+21. **scrypt in JavaScript on a phone.** N = 32768 has not been timed on a phone. If it takes several seconds there, should N go down (the Vault key has 120 random bits; a passcode has far fewer), or should the phone build bring a native scrypt? The same numbers are used for both today.
+22. **The passcode way.** A passcode of 8 or more characters, stretched with scrypt, is all that stands between the wrapped key and whoever can read the storage it is in: on a phone that is the secure storage, in the browser preview it is the page's own storage. Nothing can limit guesses made away from the phone. Is 8 characters the right floor? Should the browser preview be barred from real Vaults altogether?
+23. **A page in a browser** runs whatever script reaches it. The preview shares that weakness with the guest page (question 14), for a whole Vault instead of one door code. Should a production web build exist for the Vault at all?
+24. **Opening an item opens all of it.** The app asks for the scrambled piece as soon as an item's page is shown, to draw the user name and the one-time code, and the API notes an opening each time. Should the secret fields be sealed apart and opened only on "show" or "copy"?
+25. **One-time code secrets live next to the password** they are the second factor for. Convenient, and it means the Vault alone is both factors. Should the app say so where the secret is typed?
+26. **What the `health` word tells the service.** `weak` and `reused` are in the clear by design (the nudge on the Vault's home needs them). `reused` on two items says they share a password. Acceptable?
+27. **The clear labels are checked only when an item is opened.** A list shows the title the API sent. Should lists be checked too, at the price of opening everything?
+28. **The clipboard.** Clearing after 60 seconds is the system's promise on an iPhone and best effort elsewhere; a clipboard manager or a keyboard that keeps a history has it for good. Should copying be offered at all for "can use" items, where the app otherwise never shows the value?
+29. **The Vault key as a QR code and a printed page.** A screenshot, a print queue, a PDF in a synced folder: each is a copy the app can't follow. Should the screen warn about each, or is "save or print" enough?
+30. **What the phone shows when it is put away.** The Vault locks when the app goes to the background, but the picture the phone keeps for its app switcher may be taken before that. Should Vault screens be blanked the moment the app stops being in front?
+31. **Check words are 24 bits** from a list of 256 words. They tie a phone call to one recovery; they are not meant to stop someone who can try many temporary keys. Enough?
+32. **A pass's key is made for every pass** by someone with a Vault, sealed for them, whether or not a code is ever added. Is a sealed key the API holds for no reason a cost?

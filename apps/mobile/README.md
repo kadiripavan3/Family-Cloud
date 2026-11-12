@@ -72,6 +72,22 @@ Milestone 1, the spine: circles, people and sharing.
 | 12.3 Privacy and security | `/settings/security` | The three choices under "This phone" are remembered on the phone. |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
+Milestone 6, the Vault. Its contract is `docs/07-vault-protocol.md`; its cryptography is in `src/features/vault/crypto/` (no React, no API calls, a test file for each) and what the phone does with keys, step by step, in `src/features/vault/actions.ts`.
+
+| Screen (design) | Address | |
+|---|---|---|
+| 9.1 The Vault, locked | `/?place=vault` | Also what any Vault screen shows while locked (`features/vault/Gate`). Face ID on a phone; a passcode where there is none, and in the browser. |
+| 9.2 The Vault | `/?place=vault`, `/vault/drawer/<login, card, …, look, shared>` | |
+| 9.3 A password | `/vault-item/<id>`, `/new/password`, `/vault/edit/<id>` | |
+| 9.4 Share a secret | (a sheet on 9.3) | |
+| 9.5 If something happens | `/vault/emergency`; for the trusted person `/vault/entrusted/<id>` | |
+| 9.6 Your Vault key | `/vault/key`, after `/vault/setup`; for a helper `/vault/helping` | |
+| Getting in | `/vault/unlock` (with the Vault key), `/vault/recover` (with two helpers) | Not drawn. |
+
+- **Nothing a phone has opened goes into the data layer.** A screen that handles keys or what they open runs its work with `useSecretAction()` (`features/vault`), never with `useMutation`, and keeps what it shows in its own state. `NothingSecretIsKept.test.tsx` searches the data layer for it.
+- **A screen of the Vault** is wrapped in `VaultScreen` (`features/vault/Gate`): locked, it shows the locked page; unlocked, any touch on it starts the two minutes again.
+- **Another screen that needs a sealed card for a guest** calls `sealForGuest(text, key?)` (`features/vault/crypto/guest`); the guest pass screens use `features/vault/PassCards`.
+
 Stand-ins (`features/states/NotBuiltYet`) until they are built from their designs: five of Home's six places (all but Today), Activity, eight of the ten things the + sheet opens, "Storage and backup" (`/settings/storage`), and "Export and leaving" (`/settings/leaving`), which so far holds Log out and Delete account.
 
 ## The API's description

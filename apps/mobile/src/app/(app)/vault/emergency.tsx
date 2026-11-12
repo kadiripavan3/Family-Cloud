@@ -19,6 +19,7 @@ import { paged, rows, useEveryPage } from '@/api/pages';
 import { readOwnNote, saveEmergencyAccess } from '@/features/vault/actions';
 import { VaultScreen } from '@/features/vault/Gate';
 import { ItemTile } from '@/features/vault/ItemTile';
+import { ASK_EACH_VISIT } from '@/features/vault/look';
 import { problemOf } from '@/features/vault/problems';
 import { useSecretAction } from '@/features/vault/useSecretAction';
 import { momentOf } from '@/features/vault/when';
@@ -59,7 +60,7 @@ export default function EmergencyAccess() {
 
 function Unlocked() {
   const { colors } = useTheme();
-  const asked = useGetEmergency();
+  const asked = useGetEmergency({ query: ASK_EACH_VISIT });
   const load = loadState(asked);
   const emergency = asked.data;
   return (

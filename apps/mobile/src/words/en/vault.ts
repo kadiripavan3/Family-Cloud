@@ -64,7 +64,7 @@ export const vault = {
     passcode: 'Unlock with your passcode',
     vaultKey: 'Use your Vault key',
     lostKey: "I've lost my Vault key",
-    /** A phone that holds no key for this person yet: a new phone, or after signing out. */
+    /** A phone that holds no key for this person yet. */
     newPhone: "This phone doesn't hold your Vault yet. Type your Vault key once, and it stays here.",
     newBrowser: "This browser doesn't hold your Vault yet. Type your Vault key once, and it stays here behind a passcode.",
     /** Face ID didn't give the key back. */
@@ -156,8 +156,9 @@ export const vault = {
       stopped: (owner: string) => `From ${owner} · stopped working`,
     },
     copy: (title: string) => `Copy ${title}`,
+    /** Why the copy at the end of a row did nothing. */
+    cantCopy: { sample: 'Sample item: add your own to see the real thing.', waiting: 'There is no key for you yet. It arrives the next time its owner opens their Vault.', used: 'You opened it once. It is gone now.', stopped: 'It has stopped working for you.' },
     empty: { title: 'Nothing in your Vault yet', body: 'Add a password, a card or the Wi‑Fi. It starts as only yours.', button: 'Add the first one' },
-    add: 'Add to the Vault',
     more: {
       key: 'Your Vault key',
       keyNote: (saved: boolean) => (saved ? 'Saved · and who can help you back in' : "You haven't said you saved it"),
@@ -196,7 +197,6 @@ export const vault = {
       sharedBody: 'What other people share with you from their Vault shows up here.',
     },
     add: 'Add',
-    yours: 'Only you',
   },
 
   // ---------- 9.3 A password ----------
@@ -377,7 +377,6 @@ export const vault = {
     opens: {
       label: 'What opens',
       none: 'Nothing chosen yet',
-      count: (count: number) => plural(count, 'thing'),
       /** "Bank, Insurance, 14 things": the first few by name, then how many in all. */
       summary: (titles: readonly string[], count: number) => [...titles.slice(0, 2), plural(count, 'thing')].join(', '),
       title: 'What opens to them?',
@@ -430,7 +429,6 @@ export const vault = {
     lead: ["It unscrambles the Vault on a new phone. We don't have a copy, so ", mark('bold', "we can't reset it for you"), '.'] as Rich,
     pdf: 'Save as PDF',
     copy: 'Copy',
-    copied: 'Copied',
     /** The card when the key is no longer held: it was shown once. */
     shownOnce: { title: 'Shown once', body: "This phone doesn't keep your Vault key, so it can't show it again. If you didn't save it, make a new one: the old one stops working." },
     makeNew: 'Make a new Vault key',
@@ -489,7 +487,6 @@ export const vault = {
       words: 'Check words',
       pass: 'They match: pass my part on',
       given: 'You passed your part on',
-      help: (name: string) => `Help ${name}`,
     },
   },
 

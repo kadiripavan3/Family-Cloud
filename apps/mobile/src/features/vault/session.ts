@@ -16,7 +16,8 @@ import { randomBytes } from './crypto/random';
  * written anywhere: not to the query cache, not to what is kept on the phone (`api/kept`), not to a log.
  * Between unlocks the key is kept wrapped by `keeper`.
  *
- * There is no React in here. Screens read whether it is unlocked with `useVaultLock()`.
+ * No screen and no data layer in here: the state is plain module state, and the hooks at its end
+ * (`useVaultUnlocked`, `useVaultLocksAt`, `useFreshVaultKey`) are how screens read it.
  */
 
 /** How long the Vault stays open without being used. */
@@ -30,15 +31,13 @@ export class VaultLocked extends Error {
   }
 }
 
-export type Lock = { unlocked: boolean; /** The moment it locks itself, as `Date.now()` counts. Null while locked. */ locksAt: number | null };
-
-const LOCKED: Lock = { unlocked: false, locksAt: null };
+/** The moment it locks itself, as `Date.now()` counts. Null while locked. */
+let locksAt: number | null = null;
 
 /** Two minutes, unless the person chose otherwise. */
 let lockAfterMs = LOCK_AFTER_MS;
 
 let privateKey: Uint8Array | null = null;
-let lock: Lock = LOCKED;
 let timer: ReturnType<typeof setTimeout> | null = null;
 const listeners = new Set<() => void>();
 
@@ -53,9 +52,8 @@ function tell() {
 
 function startTimer() {
   if (timer) clearTimeout(timer);
-  const locksAt = Date.now() + lockAfterMs;
+  locksAt = Date.now() + lockAfterMs;
   timer = setTimeout(lockVault, lockAfterMs);
-  lock = { unlocked: true, locksAt };
 }
 
 let watching = false;
@@ -91,8 +89,8 @@ export function lockVault(): void {
   marksKey = null;
   marks.clear();
   freshVaultKey = null;
-  if (lock === LOCKED) return;
-  lock = LOCKED;
+  if (locksAt === null) return;
+  locksAt = null;
   tell();
 }
 
@@ -119,11 +117,18 @@ const subscribe = (heard: () => void) => {
     listeners.delete(heard);
   };
 };
-const current = () => lock;
+/** Whether the Vault is unlocked right now. A screen that reads this is drawn again when it locks or unlocks, and not each time it is used. */
+export function useVaultUnlocked(): boolean {
+  return useSyncExternalStore(subscribe, isVaultUnlocked, () => false);
+}
 
-/** Whether the Vault is unlocked right now, and when it locks itself. */
-export function useVaultLock(): Lock {
-  return useSyncExternalStore(subscribe, current, () => LOCKED);
+/** The moment the Vault locks itself, for the countdown. It moves on every use. Null while locked. */
+export function useVaultLocksAt(): number | null {
+  return useSyncExternalStore(
+    subscribe,
+    () => locksAt,
+    () => null,
+  );
 }
 
 // ---------- a Vault key that was just made, to be shown once ----------

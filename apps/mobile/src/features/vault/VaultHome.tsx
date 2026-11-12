@@ -1,6 +1,6 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { ChevronRight, HeartHandshake, KeyRound, LifeBuoy, Lock, TriangleAlert } from 'lucide-react-native';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { useCache } from '@/api/cache';
@@ -15,7 +15,6 @@ import {
   type VaultAttentionResponse,
   type VaultCategory,
   type VaultHomeResponse,
-  type VaultItemRowResponse,
   type VaultRecordResponse,
 } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
@@ -39,15 +38,14 @@ import { Row, RowGroup } from '@/ui/Rows';
 import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
-import { giveWaitingKeys, openItem } from './actions';
-import { mainSecret } from './inside';
+import { giveWaitingKeys } from './actions';
 import { ItemRow } from './ItemRow';
 import { Locked } from './Locked';
 import { DRAWERS } from './look';
 import { problemOf } from './problems';
-import { lockVault, setLockAfterMinutes, useVaultLock, vaultUsed } from './session';
+import { lockVault, setLockAfterMinutes, useVaultUnlocked, vaultUsed } from './session';
 import { LockToast, Toast } from './Toast';
-import { useCopy } from './useCopy';
+import { useCopyFromList } from './useCopyFromList';
 import { useSecretAction } from './useSecretAction';
 import { momentOf } from './when';
 
@@ -57,7 +55,7 @@ import { momentOf } from './when';
  * what needs a look, and what other people shared (9.2), and it says when it will lock itself.
  */
 export function VaultHome() {
-  const lock = useVaultLock();
+  const unlocked = useVaultUnlocked();
   const asked = useGetVault();
   const account = useGetMe().data?.id;
   // "Lock the Vault after" on Privacy and security is remembered on the phone. Two minutes unless changed.
@@ -69,7 +67,7 @@ export function VaultHome() {
   if (load.error) return <Problem message={messageFor(load.error)} onRetry={load.retry} retrying={load.retrying} />;
   if (!vault) return <Loading offline={load.offline} />;
   if (!vault.setUp) return <Start />;
-  if (!lock.unlocked) {
+  if (!unlocked) {
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_ROOM }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Attention locked />
@@ -111,10 +109,16 @@ function Open({ vault }: { vault: VaultRecordResponse }) {
   const circle = useCircle();
   const asked = useGetVaultHome(circle.id);
   const emergency = useGetEmergency().data;
-  const { copy, said } = useCopy();
-  const opening = useSecretAction();
+  const { copyFrom, said, error: copyProblem } = useCopyFromList();
   const load = loadState(asked);
   const home = asked.data;
+  // Other people share and take back while this page sits under another: coming back to it asks again.
+  const { refetch } = asked;
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch]),
+  );
 
   if (load.error) return <Problem message={messageFor(load.error)} onRetry={load.retry} retrying={load.retrying} />;
   if (!home) return <Loading offline={load.offline} />;
@@ -122,14 +126,6 @@ function Open({ vault }: { vault: VaultRecordResponse }) {
   const everyone = words.kinds[circle.kind].everyone(circle.name);
   const look = home.needsALook;
   const empty = home.drawers.every((drawer) => drawer.items === 0);
-  /** Copies an item's main secret straight from the list: it is opened, copied, and let go of again. */
-  const copyFrom = (item: VaultItemRowResponse) =>
-    void opening.run(async () => {
-      const opened = await openItem(item);
-      const secret = mainSecret(opened.inside);
-      opened.itemKey.fill(0);
-      await copy(secret);
-    });
   const says = words.vault.home;
 
   return (
@@ -164,7 +160,7 @@ function Open({ vault }: { vault: VaultRecordResponse }) {
               <ChevronRight size={18} color={colors.text} strokeWidth={2.6} />
             </Tap>
             {home.sharedWithYou.map((item) => (
-              <ItemRow key={item.id} item={item} everyone={everyone} onOpen={() => router.push(thingHref({ kind: 'vault_item', id: item.id }))} onCopy={item.myState === 'ready' && !item.sample ? () => copyFrom(item) : undefined} />
+              <ItemRow key={item.id} item={item} everyone={everyone} onOpen={() => router.push(thingHref({ kind: 'vault_item', id: item.id }))} onCopy={() => copyFrom(item)} />
             ))}
           </>
         ) : null}
@@ -194,9 +190,9 @@ function Open({ vault }: { vault: VaultRecordResponse }) {
             <Row icon={(c) => <Lock size={18} color={c} />} label={says.more.lock} onPress={lockVault} trailing={<View />} />
           </RowGroup>
         </View>
-        {opening.error ? (
+        {copyProblem ? (
           <Txt variant="caption" color="danger" center accessibilityLiveRegion="polite" style={{ marginTop: 12, marginHorizontal: layout.gutter }}>
-            {problemOf(opening.error)}
+            {problemOf(copyProblem)}
           </Txt>
         ) : null}
       </ScrollView>
@@ -262,6 +258,12 @@ function Attention({ vault, locked }: { vault?: VaultRecordResponse; locked?: bo
   const router = useRouter();
   const cache = useCache();
   const asked = useGetVaultAttention();
+  const { refetch } = asked;
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch]),
+  );
   const giving = useSecretAction();
   const [given, setGiven] = useState<number | null>(null);
   const [refusing, setRefusing] = useState(false);

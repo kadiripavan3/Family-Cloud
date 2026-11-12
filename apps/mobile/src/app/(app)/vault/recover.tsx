@@ -12,8 +12,9 @@ import { finishRecovery, isMyRecovery, keepUnlockedVault, makeNewVaultKey, start
 import { CheckWords } from '@/features/vault/CheckWords';
 import { DeviceLockFields, lockFrom, NOTHING_TYPED } from '@/features/vault/DeviceLockFields';
 import { forgetRecovery } from '@/features/vault/keeper';
+import { ASK_EACH_VISIT } from '@/features/vault/look';
 import { problemOf } from '@/features/vault/problems';
-import { useVaultLock } from '@/features/vault/session';
+import { useVaultUnlocked } from '@/features/vault/session';
 import { useSecretAction } from '@/features/vault/useSecretAction';
 import { Working } from '@/features/vault/Working';
 import { formatDayLong, toISODate } from '@/lib/dates';
@@ -42,10 +43,10 @@ const ASK_AGAIN_MS = 5000;
  */
 export default function Recover() {
   const { colors } = useTheme();
-  const lock = useVaultLock();
+  const unlocked = useVaultUnlocked();
   const vault = useGetVault();
   const attention = useGetVaultAttention();
-  const helpers = useGetVaultHelpers();
+  const helpers = useGetVaultHelpers({ query: ASK_EACH_VISIT });
   const load = loadState(vault, attention, helpers);
   const recovery = attention.data?.recovery ?? null;
   const says = words.vault.recover;
@@ -63,7 +64,7 @@ export default function Recover() {
             <Heading>{says.title}</Heading>
             <Lead>{says.lead}</Lead>
           </View>
-          {recovery ? <Running recovery={recovery} /> : lock.unlocked ? <BackIn /> : <Start canRecover={helpers.data.ready} />}
+          {recovery ? <Running recovery={recovery} /> : unlocked ? <BackIn /> : <Start canRecover={helpers.data.ready} />}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -122,6 +123,14 @@ function Running({ recovery: first }: { recovery: VaultRecoveryResponse }) {
       current = false;
     };
   }, [account, first]);
+  // Ended somewhere else (cancelled on another phone, or lapsed): what this phone kept for it goes, and the
+  // page starts over.
+  const ended = recovery.state !== 'open';
+  useEffect(() => {
+    if (!ended) return;
+    if (account) void forgetRecovery(account);
+    void cache.vaultRecoveryChanged();
+  }, [ended, account, cache]);
 
   const open = async () => {
     if (!account || !lock) return;

@@ -22,6 +22,7 @@ import { makeNewVaultKey, splitForHelpers } from '@/features/vault/actions';
 import { grouped } from '@/features/vault/crypto/vaultKey';
 import { VaultScreen } from '@/features/vault/Gate';
 import { KeyQr } from '@/features/vault/KeyQr';
+import { ASK_EACH_VISIT } from '@/features/vault/look';
 import { printVaultKey } from '@/features/vault/printKey';
 import { problemOf } from '@/features/vault/problems';
 import { holdFreshVaultKey, useFreshVaultKey, vaultUsed } from '@/features/vault/session';
@@ -68,7 +69,7 @@ export default function VaultKey() {
 function Unlocked() {
   const { colors } = useTheme();
   const vault = useGetVault();
-  const helpers = useGetVaultHelpers();
+  const helpers = useGetVaultHelpers({ query: ASK_EACH_VISIT });
   const load = loadState(vault, helpers);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

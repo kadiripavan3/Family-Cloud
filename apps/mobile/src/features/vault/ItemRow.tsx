@@ -15,6 +15,8 @@ export function itemLine(item: VaultItemRowResponse, everyone: string): string {
   const says = words.vault.home;
   if (item.mine) return item.glance;
   const owner = firstName(item.owner.name);
+  // A sample item has no key for anyone: its line says what the real thing would.
+  if (item.sample) return item.chip.audience === 'circle' ? everyone : says.from(owner, item.myAccess);
   if (item.myState === 'waiting') return says.state.waiting(owner);
   if (item.myState === 'used') return says.state.used(owner);
   if (item.myState === 'stopped') return says.state.stopped(owner);
@@ -26,8 +28,8 @@ type Props = {
   /** What "everyone" is called in this circle: "Everyone in The Linds". */
   everyone: string;
   onOpen: () => void;
-  /** Copies its main secret without opening its page. Left out for an item that can't be copied from a list. */
-  onCopy?: () => void;
+  /** Copies its main secret without opening its page, or says why it can't. */
+  onCopy: () => void;
 };
 
 /** An item of the Vault as a row: its tile, its title, a line about it, and a way to copy it without showing it. */
@@ -51,13 +53,9 @@ export function ItemRow({ item, everyone, onOpen, onCopy }: Props) {
           </Txt>
         </View>
       </Pressable>
-      {onCopy ? (
-        <Tap accessibilityRole="button" accessibilityLabel={words.vault.home.copy(item.title)} hitSlop={6} onPress={onCopy} scaleTo={0.9} style={{ width: 58, minHeight: 58, alignItems: 'center', justifyContent: 'center' }}>
-          <Copy size={18} color={colors.muted} />
-        </Tap>
-      ) : (
-        <View style={{ width: layout.rowGutter }} />
-      )}
+      <Tap accessibilityRole="button" accessibilityLabel={words.vault.home.copy(item.title)} hitSlop={6} onPress={onCopy} scaleTo={0.9} style={{ width: 58, minHeight: 58, alignItems: 'center', justifyContent: 'center' }}>
+        <Copy size={18} color={colors.muted} />
+      </Tap>
     </View>
   );
 }

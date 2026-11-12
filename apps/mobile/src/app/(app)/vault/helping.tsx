@@ -11,6 +11,7 @@ import { PersonRow } from '@/features/people/PersonRow';
 import { passMyShareOn } from '@/features/vault/actions';
 import { CheckWords } from '@/features/vault/CheckWords';
 import { VaultScreen } from '@/features/vault/Gate';
+import { ASK_EACH_VISIT } from '@/features/vault/look';
 import { problemOf } from '@/features/vault/problems';
 import { useSecretAction } from '@/features/vault/useSecretAction';
 import { loadState } from '@/lib/loading';
@@ -43,8 +44,8 @@ export default function Helping() {
 function Unlocked() {
   const { colors } = useTheme();
   const router = useRouter();
-  const helping = useGetHelping();
-  const entrusted = useGetEntrusted();
+  const helping = useGetHelping({ query: ASK_EACH_VISIT });
+  const entrusted = useGetEntrusted({ query: ASK_EACH_VISIT });
   const load = loadState(helping, entrusted);
   const says = words.vault.helping;
   const nothing = helping.data?.length === 0 && entrusted.data?.length === 0;

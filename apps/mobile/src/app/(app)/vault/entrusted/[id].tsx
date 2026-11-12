@@ -13,6 +13,7 @@ import { VaultScreen } from '@/features/vault/Gate';
 import type { Inside } from '@/features/vault/inside';
 import { ItemFields } from '@/features/vault/ItemFields';
 import { ItemTile } from '@/features/vault/ItemTile';
+import { ASK_EACH_VISIT } from '@/features/vault/look';
 import { problemOf } from '@/features/vault/problems';
 import { Toast } from '@/features/vault/Toast';
 import { useCopy } from '@/features/vault/useCopy';
@@ -53,7 +54,7 @@ export default function EntrustedVault() {
 function Unlocked() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const asked = useGetEntrustedVault(id, { query: { refetchInterval: (query) => (query.state.data?.state === 'asked' ? ASK_AGAIN_MS : false) } });
+  const asked = useGetEntrustedVault(id, { query: { ...ASK_EACH_VISIT, refetchInterval: (query) => (query.state.data?.state === 'asked' ? ASK_AGAIN_MS : false) } });
   const load = loadState(asked);
   const entrusted = asked.data;
   return (

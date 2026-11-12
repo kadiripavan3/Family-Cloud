@@ -14,6 +14,7 @@ import { healthOf } from '@/features/vault/health';
 import { passwordOf } from '@/features/vault/inside';
 import { ItemFields } from '@/features/vault/ItemFields';
 import { ItemTile } from '@/features/vault/ItemTile';
+import { ASK_EACH_VISIT } from '@/features/vault/look';
 import { problemOf } from '@/features/vault/problems';
 import { usedElsewhere } from '@/features/vault/session';
 import { ShareSheet } from '@/features/vault/ShareSheet';
@@ -53,7 +54,7 @@ function Unlocked() {
   const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const asked = useGetVaultItem(id);
+  const asked = useGetVaultItem(id, { query: ASK_EACH_VISIT });
   const load = loadState(asked);
   const item = asked.data;
   const canEdit = !!item && item.canEdit && !item.sample && item.myState === 'ready';
@@ -198,6 +199,8 @@ function Item({ item }: { item: VaultItemResponse }) {
       {said ? <Toast text={said} bottom={34} /> : null}
       {opened ? (
         <ShareSheet
+          // Each opening starts from what is so: nothing ticked last time is carried over.
+          key={String(sharing)}
           visible={sharing !== undefined}
           onClose={() => setSharing(undefined)}
           item={item}

@@ -17,7 +17,7 @@ import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
 import { Locked } from './Locked';
-import { useVaultLock, vaultUsed } from './session';
+import { useVaultUnlocked, vaultUsed } from './session';
 
 type Props = {
   children: ReactNode;
@@ -34,10 +34,10 @@ type Props = {
 export function VaultScreen({ children, leading = 'back' }: Props) {
   const { colors } = useTheme();
   const router = useRouter();
-  const lock = useVaultLock();
-  const asked = useGetVault({ query: { enabled: !lock.unlocked } });
+  const unlocked = useVaultUnlocked();
+  const asked = useGetVault({ query: { enabled: !unlocked } });
 
-  if (lock.unlocked) {
+  if (unlocked) {
     return (
       <View
         style={{ flex: 1, backgroundColor: colors.bg }}
