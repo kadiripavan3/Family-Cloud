@@ -5,6 +5,7 @@ import { APP } from './names';
 const KINDS: Record<string, { name: string; a: string }> = {
   page: { name: 'Page', a: 'a page' },
   checklist: { name: 'List', a: 'a list' },
+  folder: { name: 'Folder', a: 'a folder' },
   event: { name: 'Event', a: 'an event' },
   reminder: { name: 'Reminder', a: 'a reminder' },
   goal: { name: 'Goal', a: 'a goal' },
@@ -13,7 +14,6 @@ const KINDS: Record<string, { name: string; a: string }> = {
   file: { name: 'File', a: 'a file' },
   document: { name: 'Document', a: 'a document' },
   album: { name: 'Album', a: 'an album' },
-  folder: { name: 'Folder', a: 'a folder' },
   split: { name: 'Split', a: 'a split of costs' },
   moment: { name: 'Moment', a: 'a moment' },
   bill: { name: 'Bill', a: 'a bill' },

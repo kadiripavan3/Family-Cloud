@@ -5,7 +5,6 @@ import NewBill from '@/app/(app)/new/bill';
 import NewPassword from '@/app/(app)/new/password';
 import NewSheet from '@/app/(app)/new/sheet';
 import { MoneyHome } from '@/features/money/MoneyHome';
-import { NotesHome } from '@/features/notes/NotesHome';
 import { VaultHome } from '@/features/vault/VaultHome';
 import { onPhone } from '@/test/phone';
 
@@ -24,7 +23,6 @@ describe('the screens that are still to be built', () => {
   });
 
   it.each([
-    ['Notes', <NotesHome key="notes" />],
     ['Money', <MoneyHome key="money" />],
     ['Vault', <VaultHome key="vault" />],
   ])("%s, one of Home's places, says which place it is and that it is on its way", async (name, place) => {

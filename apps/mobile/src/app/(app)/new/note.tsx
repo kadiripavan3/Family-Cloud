@@ -1,13 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { useCache } from '@/api/cache';
 import { ApiError, messageFor } from '@/api/fetcher';
-import { createPage } from '@/api/generated/homeport';
+import { createPage, useGetFolder } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
 import { useUnsaved } from '@/features/navigation/useUnsaved';
+import { GoesInto } from '@/features/notes/GoesInto';
 import { StartsAsPill } from '@/features/sharing/StartsAsPill';
 import { useStartsAs } from '@/features/sharing/useStartsAs';
 import { thingHref } from '@/features/things/open';
@@ -20,14 +21,17 @@ import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
 /**
- * /new/note, one of the ten things the + sheet opens: a page with a title and words, made in the current
- * circle. It starts as seen by whoever the + sheet said, or else by what the circle's kind says, and that
- * can be changed here before it is saved. Saving opens the page itself.
+ * /new/note, one of the ten things the + sheet opens, and "New in Home" in a space (`?folder=<id>`): a page
+ * with a title and its first words, made in the current circle and filed in that folder when one is named.
+ * It starts as seen by whoever the + sheet said, or else by what the circle's kind says, and that can be
+ * changed here before it is saved. Saving opens the page itself, where it is built further from blocks.
  */
 export default function NewNote() {
   const router = useRouter();
   const cache = useCache();
   const circle = useCircle();
+  const { folder: folderId } = useLocalSearchParams<{ folder?: string }>();
+  const folder = useGetFolder(folderId ?? '', { query: { enabled: !!folderId } }).data;
   const [audience, setAudience] = useStartsAs(circle);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -36,9 +40,9 @@ export default function NewNote() {
   const unsaved = useUnsaved(typed);
 
   const save = useMutation({
-    mutationFn: () => createPage({ clientId: clientId.current, circleId: circle.id, title: title.trim(), body, audience }),
+    mutationFn: () => createPage({ clientId: clientId.current, circleId: circle.id, title: title.trim(), body, audience, ...(folderId ? { folderId } : null) }),
     onSuccess: (page) => {
-      void cache.thingMade(circle.id);
+      void cache.noteMade(circle.id);
       unsaved.release();
       router.replace(thingHref({ kind: 'page', id: page.id }));
     },
@@ -56,6 +60,7 @@ export default function NewNote() {
           </Txt>
           <StartsAsPill circle={circle} value={audience} onChange={setAudience} />
         </View>
+        {folder ? <GoesInto folder={folder} /> : null}
         {save.isError && !(failed?.fields.title || failed?.fields.body) ? (
           <Txt variant="caption" color="danger" accessibilityLiveRegion="polite" style={{ marginHorizontal: 4 }}>
             {messageFor(save.error)}
