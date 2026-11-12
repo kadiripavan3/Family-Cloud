@@ -17,6 +17,8 @@ public enum PushKind {
     REMINDER_DUE("A reminder is due", "Open to see which one"),
     /** Whoever made a reminder nudges whoever has it. */
     REMINDER_NUDGE("A gentle nudge", "Open to see what about"),
+    /** Someone nudges you about a template that waits for your answer: the days you can, for find-a-date. */
+    NUDGE("A gentle nudge", "Open to see what about"),
     /** A bill that asked to be remembered is coming up. */
     BILL_DUE("A bill is due", "Open to see which one"),
     /** Someone added a batch of photos you may see. Once per burst. */
@@ -29,6 +31,8 @@ public enum PushKind {
     ASK_ANSWERED(null, null),
     /** Someone reminds you of what you owe in a split. */
     MONEY_REMINDER("A reminder about money", "Open to see what"),
+    /** A goodnight someone away recorded for home, told at the circle's bedtime. */
+    GOODNIGHT("A goodnight is waiting", "Open to play it"),
     /** The export you asked for can be fetched. */
     EXPORT_READY(null, null),
     /** The Sunday summary. Has its own switch. */

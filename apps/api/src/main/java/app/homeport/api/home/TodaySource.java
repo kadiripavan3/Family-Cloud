@@ -13,17 +13,28 @@ import java.util.UUID;
 public interface TodaySource {
 
     /**
-     * The button a line has when there is something to do right from it.
+     * The button a line has when there is something to do right from it. What it says and what it does are
+     * two things: a share of a split to pay says "Pay" and a couple's says "Settle", and both settle up.
      *
      * @param act what kind of act it is, for the app to know what to call: {@code pay} marks the signed-in
-     *     person's share of a bill as paid ({@code PUT /v1/bills/{id}/paid})
+     *     person's share of a bill as paid ({@code PUT /v1/bills/{id}/paid}); {@code remind} reminds whoever
+     *     owes in a split ({@code PUT /v1/splits/{id}/reminders/{memberId}}, for each person the split says
+     *     owes you); {@code settle} opens the split to settle up ({@code POST /v1/splits/{id}/payments})
      */
     record TodayAction(
-            @Schema(description = "What the button says: Pay")
+            @Schema(description = "What the button says: Pay, Remind, Settle")
             String label,
 
-            @Schema(description = "What kind of act it is: pay")
-            String act) {}
+            @Schema(
+                    description = "What kind of act it is. pay: mark your share of the bill paid (PUT"
+                            + " /v1/bills/{id}/paid with dueOn). remind: remind whoever owes you in the split (PUT"
+                            + " /v1/splits/{id}/reminders/{memberId} for each of them). settle: open the split to"
+                            + " settle up (POST /v1/splits/{id}/payments).")
+            String act) {
+
+        /** Marks your share of a bill as paid. */
+        public static final TodayAction PAY = new TodayAction("Pay", "pay");
+    }
 
     /**
      * For something that is due rather than on: the day, and what Activity says about it when the day is
@@ -66,8 +77,24 @@ public interface TodaySource {
             @Schema(description = "True for something that comes round again: the repeat mark")
             boolean repeats,
 
-            @Schema(nullable = true, description = "For a bill or a reminder: when it is due, and how Activity says it")
-            TodayDue due) {
+            @Schema(
+                    nullable = true,
+                    description = "For a bill or a reminder: when it is due, and how Activity says it. For a reminder"
+                            + " that is done: the due day that was ticked, to send back when taking the tick away.")
+            TodayDue due,
+
+            @Schema(
+                    description = "For a reminder: true when the signed-in person may tick it here, or, for a line"
+                            + " that is done, take its tick away again (PUT /v1/reminders/{id}/done, with due.on as"
+                            + " dueOn). False for everything else, which is ticked where it is kept.")
+            boolean canTick,
+
+            @Schema(
+                    nullable = true,
+                    description = "When this line is a job that is also kept as another thing (a job on the chore"
+                            + " wheel that has its reminder in Plan): that thing. Today lists such a pair once, so a"
+                            + " line that names another is only here when the other isn't on the list.")
+            UUID sameAs) {
 
         /** A line with no button, that doesn't repeat and isn't due: what most places bring. */
         public TodayItem(
@@ -79,11 +106,48 @@ public interface TodaySource {
                 Boolean done,
                 int minute,
                 List<String> avatarUrls) {
-            this(thingId, kind, title, note, lead, done, minute, avatarUrls, null, false, null);
+            this(thingId, kind, title, note, lead, done, minute, avatarUrls, null, false, null, false, null);
         }
 
         public TodayItem with(TodayAction button, boolean comesRound, TodayDue when) {
-            return new TodayItem(thingId, kind, title, note, lead, done, minute, avatarUrls, button, comesRound, when);
+            return new TodayItem(
+                    thingId,
+                    kind,
+                    title,
+                    note,
+                    lead,
+                    done,
+                    minute,
+                    avatarUrls,
+                    button,
+                    comesRound,
+                    when,
+                    canTick,
+                    sameAs);
+        }
+
+        /** Says whether the signed-in person may tick the line here (or take its tick away, when it is done). */
+        public TodayItem tickedHere(boolean mayTick) {
+            return new TodayItem(
+                    thingId, kind, title, note, lead, done, minute, avatarUrls, action, repeats, due, mayTick, sameAs);
+        }
+
+        /** Says that this line is the same job as another thing: Today lists the two once. */
+        public TodayItem alsoKeptAs(UUID otherThing) {
+            return new TodayItem(
+                    thingId,
+                    kind,
+                    title,
+                    note,
+                    lead,
+                    done,
+                    minute,
+                    avatarUrls,
+                    action,
+                    repeats,
+                    due,
+                    canTick,
+                    otherThing);
         }
     }
 

@@ -35,8 +35,11 @@ import org.springframework.stereotype.Component;
  * <p>Making the sample data through the places' own services wrote lines and queued pushes of its own (every
  * shared thing "was added" a second ago). Those are cleared first: the sample family did all that long ago.
  *
- * <p>"Iceland ring road was kept from Journey" is on the drawing and not here: keeping a journey is the link
- * between the two apps, which is not built yet. The line's kind exists ({@link ActivityKind#KEPT}) for when it is.
+ * <p>"Iceland ring road was kept from Journey" stands there too, when the sample data of the link with
+ * Journey is added: said in the same words as for anyone who keeps a journey ({@link JourneyNews#kept}), and
+ * dated when the sample says it was kept (in April, as the Library draws it), not at this moment. It carries
+ * the number of originals the screens draw. Activity keeps a line for ninety days, so the nightly tidying of
+ * an API that is left running forgets this one; the drawing has it under "Earlier this week".
  */
 @Component
 @ConditionalOnProperty(name = "homeport.seed.enabled", havingValue = "true")
@@ -46,12 +49,14 @@ class TiesSeed implements Seeder {
 
     private final ThingService things;
     private final ActivityLog activity;
+    private final JourneyNews journey;
 
     private SeedWorld w;
 
-    TiesSeed(ThingService things, ActivityLog activity) {
+    TiesSeed(ThingService things, ActivityLog activity, JourneyNews journey) {
         this.things = things;
         this.activity = activity;
+        this.journey = journey;
     }
 
     @Override
@@ -110,6 +115,20 @@ class TiesSeed implements Seeder {
         Instant now = Instant.now();
         LocalDate today = LocalDate.now(HOME);
         LocalDate monday = today.with(TemporalAdjusters.previous(DayOfWeek.MONDAY));
+
+        // Long before all that, Nora kept "Iceland ring road": the line is dated when the sample says it was kept.
+        w.jdbc()
+                .sql("""
+                    select coalesce(k.page_id, k.album_id) as about, k.photos, k.kept_at from kept_journeys k
+                    where k.circle_id = :circle and k.kept_by = :nora and k.title = 'Iceland ring road'
+                      and coalesce(k.page_id, k.album_id) is not null
+                    """)
+                .param("circle", linds)
+                .param("nora", nora)
+                .query((rs, n) -> activity.record(
+                        journey.kept(linds, nora, rs.getObject("about", UUID.class), rs.getInt("photos"))
+                                .at(rs.getTimestamp("kept_at").toInstant())))
+                .list();
 
         // Earlier this week. On Monday Ines, the sitter, opened her pass at 18:02; it ran until 23:30.
         activity.record(Happened.in(linds, ActivityKind.GUEST_PASS)

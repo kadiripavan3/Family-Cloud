@@ -1,5 +1,6 @@
 package app.homeport.api.money.split;
 
+import app.homeport.api.circle.CircleKind;
 import app.homeport.api.circle.CircleService;
 import app.homeport.api.common.Sql;
 import app.homeport.api.home.SearchSource;
@@ -44,29 +45,55 @@ class SplitSources implements TodaySource, SearchSource, GlanceSource {
 
     @Override
     public List<TodayItem> today(UUID me, UUID circleId, LocalDate day) {
-        if (circles.require(circleId, me).kind().hasRoles()) {
+        CircleKind kind = circles.require(circleId, me).kind();
+        if (kind.hasRoles()) {
             return List.of();
         }
         return splits.standings(circleId, me).stream()
                 .filter(mine -> mine.balanceCents() != 0)
                 .map(mine -> new TodayItem(
-                        mine.thing().id(),
-                        ThingKind.SPLIT,
-                        (mine.balanceCents() > 0 ? "You're owed for " : "You owe for ")
-                                + mine.thing().title(),
-                        mine.with().stream()
-                                .map(owing -> owing.person().name() + " "
-                                        + Cash.round(Math.abs(owing.cents()), mine.currency()))
-                                .collect(Collectors.joining(" · ")),
-                        Cash.round(Math.abs(mine.balanceCents()), mine.currency()),
-                        null,
-                        1440,
-                        mine.with().stream()
-                                .map(owing -> owing.person().avatarUrl())
-                                .filter(Objects::nonNull)
-                                .limit(2)
-                                .toList()))
+                                mine.thing().id(),
+                                ThingKind.SPLIT,
+                                title(mine),
+                                mine.with().stream()
+                                        .map(owing -> owing.person().name() + " "
+                                                + Cash.round(Math.abs(owing.cents()), mine.currency()))
+                                        .collect(Collectors.joining(" · ")),
+                                Cash.round(Math.abs(mine.balanceCents()), mine.currency()),
+                                null,
+                                1440,
+                                mine.with().stream()
+                                        .map(owing -> owing.person().avatarUrl())
+                                        .filter(Objects::nonNull)
+                                        .limit(2)
+                                        .toList())
+                        .with(action(kind, mine.balanceCents() > 0), false, null))
                 .toList();
+    }
+
+    /**
+     * "You're owed for Lisbon weekend" among several; between you and one other person the line names them:
+     * "Alex owes you for October", "You owe Nora for October".
+     */
+    static String title(Mine mine) {
+        boolean owed = mine.balanceCents() > 0;
+        String with = mine.with().size() == 1 ? mine.with().get(0).person().name() : null;
+        if (with == null) {
+            return (owed ? "You're owed for " : "You owe for ") + mine.thing().title();
+        }
+        return (owed ? with + " owes you for " : "You owe " + with + " for ")
+                + mine.thing().title();
+    }
+
+    /**
+     * The button of a split's line. Two people who share a life settle up, whichever of them owes. Among
+     * friends and housemates, whoever is owed can remind the others, and whoever owes can pay their share.
+     */
+    static TodayAction action(CircleKind kind, boolean owed) {
+        if (kind == CircleKind.COUPLE) {
+            return new TodayAction("Settle", "settle");
+        }
+        return owed ? new TodayAction("Remind", "remind") : new TodayAction("Pay", "settle");
     }
 
     @Override
@@ -76,7 +103,7 @@ class SplitSources implements TodaySource, SearchSource, GlanceSource {
 
     @Override
     public List<Found> find(UUID circleId, UUID me, String words, int limit) {
-        return store.search(circleId, Sql.anywhere(words), limit).stream()
+        return store.search(circleId, me, Sql.anywhere(words), limit).stream()
                 .map(found -> new Found(found.getKey(), found.getValue()))
                 .toList();
     }

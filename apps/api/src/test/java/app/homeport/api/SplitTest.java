@@ -161,8 +161,17 @@ class SplitTest extends ApiTest {
         assertThat(JsonPath.<String>read(today, "$.items[0].lead")).isEqualTo("€64");
         assertThat(JsonPath.<String>read(today, "$.items[0].note")).isEqualTo("Lea €44 · Kai €20");
         assertThat(JsonPath.<String>read(today, "$.items[0].kind")).isEqualTo("split");
-        assertThat(JsonPath.<String>read(fetch("/v1/circles/" + circle + "/today", lena), "$.items[0].title"))
-                .isEqualTo("You owe for Lisbon weekend");
+        // Whoever is owed can remind the others from the line; whoever owes can pay their share from it. Someone
+        // who owes one person reads who, and someone who owes two reads how much in all.
+        assertThat(JsonPath.<String>read(today, "$.items[0].action.label")).isEqualTo("Remind");
+        assertThat(JsonPath.<String>read(today, "$.items[0].action.act")).isEqualTo("remind");
+        String lenas = fetch("/v1/circles/" + circle + "/today", lena);
+        assertThat(JsonPath.<String>read(lenas, "$.items[0].title")).isEqualTo("You owe Ana for Lisbon weekend");
+        assertThat(JsonPath.<String>read(lenas, "$.items[0].action.label")).isEqualTo("Pay");
+        assertThat(JsonPath.<String>read(lenas, "$.items[0].action.act")).isEqualTo("settle");
+        assertThat(JsonPath.<String>read(fetch("/v1/circles/" + circle + "/today", lea), "$.items[0].title"))
+                .startsWith("You owe ")
+                .endsWith(" for Lisbon weekend");
         assertThat(JsonPath.<String>read(fetch("/v1/things/" + split, nora), "$.glance"))
                 .isEqualTo("You're owed €64");
         assertThat(JsonPath.<String>read(fetch("/v1/things/" + split, kai), "$.glance"))

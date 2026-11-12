@@ -35,7 +35,10 @@ public enum ActivityKind {
     ASK_ANSWERED(false),
     /** The export someone asked for can be fetched. Only they get this line. */
     EXPORT(false),
-    /** Something arrived from Journey. "Iceland ring road was kept from Journey". */
+    /**
+     * News of the link with Journey: "Iceland ring road was kept from Journey", "Norway 2027 became a journey",
+     * and, for whoever sent it, "You told “Saturday at the lake” in Journey". Drawn with Journey's mark, not a face.
+     */
     KEPT(false),
     /** Something is due today or tomorrow. Never stored: laid into the answer from what the places say is due. */
     DUE(false);

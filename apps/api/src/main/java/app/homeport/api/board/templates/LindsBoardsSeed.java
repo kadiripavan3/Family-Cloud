@@ -389,12 +389,10 @@ class LindsBoardsSeed implements Seeder {
                 fields(
                         "people", people.stream().map(p -> member(p).toString()).toList(),
                         "stars", Map.of("stars", 10, "cents", 200, "currency", "EUR", "into", "Mia's skates fund")));
-        // Started nine weeks ago: the wheel has turned twice round and one job on, so this week the laundry is
-        // Alex's, the table Mia's and Biscuit Leo's, and Nora has the week off. The bins are not on the wheel:
-        // the family takes turns at those with a reminder in Plan ("Take the bins out"), and the same job kept
-        // in two places would stand on Today twice.
+        // Started eight weeks ago, so the wheel has turned twice round and stands as it did then: the bins are
+        // Nora's this week, the laundry Alex's, the table Mia's and Biscuit Leo's.
         LocalDate monday = MealPlan.monday(today);
-        LocalDate startedOn = monday.minusWeeks(9);
+        LocalDate startedOn = monday.minusWeeks(8);
         w.jdbc()
                 .sql(
                         "update boards set settings = jsonb_set(settings, '{startsOn}', to_jsonb(cast(:day as text))) where thing_id = :id")
@@ -402,6 +400,19 @@ class LindsBoardsSeed implements Seeder {
                 .param("id", wheel)
                 .update();
         List<UUID> jobs = List.of(
+                add(
+                        "nora",
+                        wheel,
+                        ChoreWheel.JOB,
+                        fields(
+                                "name",
+                                "Bins and recycling",
+                                "emoji",
+                                "🗑️",
+                                "when",
+                                "Tuesday and Friday evening",
+                                "timesAWeek",
+                                2)),
                 add(
                         "nora",
                         wheel,
@@ -417,26 +428,36 @@ class LindsBoardsSeed implements Seeder {
                         wheel,
                         ChoreWheel.JOB,
                         fields("name", "Feed Biscuit", "emoji", "🐶", "when", "Every morning", "timesAWeek", 7)));
-        int[] times = {2, 7, 7};
+        int[] times = {2, 2, 7, 7};
+        // Two of the jobs are also reminders in Plan, when Plan's sample data is there: the family is reminded of
+        // the bins on the evening they go out, and Leo of Biscuit every morning. Each job names its reminder, so
+        // Today lists it once.
+        w.whenThing(
+                "reminder/bins",
+                reminder -> boards.changeEntry(jobs.get(0), w.user("nora"), fields("reminderId", reminder), today));
+        w.whenThing(
+                "reminder/feed-biscuit",
+                reminder -> boards.changeEntry(jobs.get(3), w.user("nora"), fields("reminderId", reminder), today));
 
-        // This week: Alex has done both loads, Mia missed one day, Leo fed Biscuit every morning.
+        // This week: Nora hasn't done the bins, Alex has done both loads, Mia missed one day, Leo fed Biscuit every
+        // morning.
         int daysSoFar = (int) (today.toEpochDay() - monday.toEpochDay()) + 1;
         Map<String, Integer> left = new LinkedHashMap<>(Map.of("mia", 34, "leo", 21));
         for (int d = 0; d < daysSoFar; d++) {
             LocalDate day = monday.plusDays(d);
             if (d < 2) {
-                tick(wheel, jobs.get(0), "alex", "alex", day, 19);
+                tick(wheel, jobs.get(1), "alex", "alex", day, 19);
             }
             if (d != 1 || daysSoFar < 3) {
-                tick(wheel, jobs.get(1), "mia", "nora", day, 18);
+                tick(wheel, jobs.get(2), "mia", "nora", day, 18);
                 left.merge("mia", -1, Integer::sum);
             }
-            tick(wheel, jobs.get(2), "leo", "nora", day, 7);
+            tick(wheel, jobs.get(3), "leo", "nora", day, 7);
             left.merge("leo", -1, Integer::sum);
         }
         // The weeks before, by the rule of the wheel, until Mia has her 34 stars and Leo his 21.
-        for (int back = 1; back <= 9; back++) {
-            int week = 9 - back;
+        for (int back = 1; back <= 8; back++) {
+            int week = 8 - back;
             for (String child : List.of("mia", "leo")) {
                 for (int job = 0; job < jobs.size(); job++) {
                     if (!people.get(Math.floorMod(job + week, people.size())).equals(child)) {

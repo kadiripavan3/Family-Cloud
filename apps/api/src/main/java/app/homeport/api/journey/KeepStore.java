@@ -9,7 +9,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -450,6 +452,23 @@ class KeepStore {
                         rs.getObject("page_media_id", UUID.class),
                         rs.getObject("item_id", UUID.class)))
                 .list();
+    }
+
+    /** The cover of each of these pages that is a kept journey's book, as its storage key: for a small picture. */
+    Map<UUID, String> coversOfBooks(List<UUID> pageIds) {
+        Map<UUID, String> covers = new HashMap<>();
+        if (pageIds.isEmpty()) {
+            return covers;
+        }
+        jdbc.sql("""
+            select k.page_id, m.storage_key from kept_journeys k
+            join media m on m.id = k.cover_media_id and m.status = 'ready' and m.has_sizes
+            where k.page_id in (:pages)
+            """)
+                .param("pages", pageIds)
+                .query((rs, n) -> covers.put(rs.getObject("page_id", UUID.class), rs.getString("storage_key")))
+                .list();
+        return covers;
     }
 
     /** How many journeys were kept in a circle in a week, with their titles: for the Sunday summary. */

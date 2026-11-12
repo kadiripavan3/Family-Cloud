@@ -2,6 +2,8 @@ package app.homeport.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.homeport.api.home.TodaySource.TodayAction;
+import app.homeport.api.home.TodaySource.TodayDue;
 import app.homeport.api.home.TodaySource.TodayItem;
 import app.homeport.api.plan.PlanSource;
 import app.homeport.api.plan.PlanSource.Dated;
@@ -31,14 +33,18 @@ class TodayAndCalendarTest extends PlanTestBase {
             return (me, circleId, from, to) -> List.of(new Dated(
                     LocalDate.parse("2026-11-12"),
                     new TodayItem(
-                            BILL,
-                            ThingKind.PAGE,
-                            "Electricity is due",
-                            "Split with Alex",
-                            "€84",
-                            null,
-                            1440,
-                            List.of()),
+                                    BILL,
+                                    ThingKind.PAGE,
+                                    "Electricity is due",
+                                    "Split with Alex",
+                                    "€84",
+                                    null,
+                                    1440,
+                                    List.of())
+                            .with(
+                                    TodayAction.PAY,
+                                    true,
+                                    new TodayDue(LocalDate.parse("2026-11-12"), "€84.20", "Your half is €42.10")),
                     List.of()));
         }
     }
@@ -105,6 +111,21 @@ class TodayAndCalendarTest extends PlanTestBase {
         assertThat(JsonPath.<Integer>read(home, "$.done")).isEqualTo(1);
         assertThat(JsonPath.<String>read(home, "$.items[2].kind")).isEqualTo("event");
         assertThat(JsonPath.<Integer>read(home, "$.items[2].minute")).isEqualTo(930);
+        // Each line says whether it can be ticked from here. One that is done says which due day was ticked, so
+        // its tick can be taken away again without asking the reminder first. An event has nothing to tick.
+        assertThat(JsonPath.<List<Boolean>>read(home, "$.items[*].canTick"))
+                .containsExactly(false, true, false, true, true, true);
+        assertThat(JsonPath.<Boolean>read(home, "$.items[1].done")).isTrue();
+        assertThat(JsonPath.<String>read(home, "$.items[1].due.on")).isEqualTo(TODAY);
+        assertThat(JsonPath.<Boolean>read(home, "$.items[1].repeats")).isTrue();
+        assertThat(JsonPath.<String>read(home, "$.items[3].due.on")).isEqualTo(TODAY);
+        assertThat(JsonPath.<String>read(home, "$.items[5].due.on"))
+                .as("still open from Monday: the day it was due")
+                .isEqualTo("2026-11-09");
+        // Alex was given the car service: he may tick it. He asked for nothing and made nothing else.
+        assertThat(JsonPath.<List<Boolean>>read(
+                        fetch("/v1/circles/" + circle + "/today?day=" + TODAY, alex), "$.items[*].canTick"))
+                .containsExactly(false, false, true);
 
         // The day's list keeps to the calendar, and hands over what is still open from before next to it.
         String plan = fetch("/v1/circles/" + circle + "/plan?day=" + TODAY + "&days=1", nora);
@@ -127,6 +148,20 @@ class TodayAndCalendarTest extends PlanTestBase {
                         "All day|Leo's school play||null",
                         "15:30|Dentist · Mia|Alex is taking her|null",
                         "null|Book the car service|Today|false");
+
+        // The tick is taken away with nothing but what Today said: the reminder is open again, due the same day.
+        send(
+                HttpMethod.PUT,
+                "/v1/reminders/" + fed + "/done",
+                nora,
+                "{\"done\":false,\"dueOn\":\"%s\",\"day\":\"%s\"}"
+                        .formatted(JsonPath.<String>read(home, "$.items[1].due.on"), TODAY),
+                200);
+        String again = fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora);
+        assertThat(JsonPath.<List<Boolean>>read(again, "$.items[?(@.title == 'Feed Biscuit')].done"))
+                .containsExactly(false);
+        assertThat(JsonPath.<List<String>>read(again, "$.items[?(@.title == 'Feed Biscuit')].due.on"))
+                .containsExactly(TODAY);
     }
 
     @Test
@@ -142,6 +177,17 @@ class TodayAndCalendarTest extends PlanTestBase {
                 .as("its own place says who sees it")
                 .isNull();
         assertThat(JsonPath.<Boolean>read(plan, "$.days[0].entries[1].canTick")).isFalse();
+        // What the place said about its line comes through whole: its button, that it comes round, when it is due.
+        assertThat(JsonPath.<String>read(plan, "$.days[0].entries[1].action.label"))
+                .isEqualTo("Pay");
+        assertThat(JsonPath.<String>read(plan, "$.days[0].entries[1].action.act"))
+                .isEqualTo("pay");
+        assertThat(JsonPath.<Boolean>read(plan, "$.days[0].entries[1].repeats")).isTrue();
+        assertThat(JsonPath.<String>read(plan, "$.days[0].entries[1].due.on")).isEqualTo("2026-11-12");
+        assertThat(JsonPath.<String>read(plan, "$.days[0].entries[1].due.amount"))
+                .isEqualTo("€84.20");
+        assertThat(JsonPath.<Object>read(plan, "$.days[0].entries[0].action")).isNull();
+        assertThat(JsonPath.<Object>read(plan, "$.days[0].entries[0].due")).isNull();
         // The week and the month give it a dot: everyone's, since it named nobody.
         assertThat(JsonPath.<List<Integer>>read(plan, "$.week[3].dots[*].tint"))
                 .hasSize(2)

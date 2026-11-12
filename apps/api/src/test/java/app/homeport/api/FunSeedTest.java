@@ -15,6 +15,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,10 @@ class FunSeedTest extends ApiTest {
 
     private static final LocalDate TODAY = LocalDate.now(ZoneOffset.UTC);
     private static final LocalDate MONDAY = TODAY.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+    /** Today's cards without the ones the link with Journey puts there: what the circle's own templates bring. */
+    private static final String THE_TEMPLATES_CARDS =
+            "$.cards[?(@.look nin ['goodnight', 'journey_away', 'journey_on_this_day'])]";
 
     @Autowired
     private List<Seeder> seeders;
@@ -251,9 +256,12 @@ class FunSeedTest extends ApiTest {
         assertThat(JsonPath.<List<Boolean>>read(charts, "$.view.charts[*].doneToday"))
                 .containsExactly(false, false, true, false);
 
-        // None of it is put on the family's Today, which stays as its own screen draws it.
-        assertThat(JsonPath.<List<Object>>read(fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora), "$.cards"))
-                .isEmpty();
+        // None of it is put on the family's Today. What stands above the day's list there is the link with
+        // Journey's own, as "Journey, at home" draws it: a goodnight, who is away, a day from a kept journey.
+        String familyDay = fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora);
+        assertThat(JsonPath.<List<String>>read(familyDay, "$.cards[*].kind")).doesNotContain("board");
+        assertThat(JsonPath.<List<String>>read(familyDay, "$.cards[*].look"))
+                .isSubsetOf("goodnight", "journey_away", "journey_on_this_day");
         assertThat(JsonPath.<List<String>>read(fetch("/v1/circles/" + circle + "/boards", nora), "$.items[*].glance"))
                 .contains(
                         "Tonight: Leo chooses the film",
@@ -405,36 +413,50 @@ class FunSeedTest extends ApiTest {
         // 17.1 Today, for two. The day's list: the run, the note that is tucked away for her, what he owes her.
         String hers = fetch("/v1/circles/" + circle + "/today?day=" + there, nora);
         assertThat(JsonPath.<List<String>>read(hers, "$.items[*].title"))
-                .containsExactly("Run together", "A note is tucked away for you", "You're owed for " + lastMonth);
+                .containsExactly("Run together", "A note is tucked away for you", "Alex owes you for " + lastMonth);
         assertThat(JsonPath.<List<String>>read(hers, "$.items[*].lead")).containsExactly("7:00", null, "€42");
+        // Two people who share a life settle up, whichever of them owes: the line's button says so for both.
+        assertThat(JsonPath.<String>read(hers, "$.items[2].action.label")).isEqualTo("Settle");
+        assertThat(JsonPath.<String>read(hers, "$.items[2].action.act")).isEqualTo("settle");
         assertThat(JsonPath.<List<String>>read(hers, "$.items[*].note"))
                 .containsExactly("Week 3 of couch to 5K", "From Alex. It turns up when it turns up.", "Alex €42");
         assertThat(JsonPath.<Integer>read(hers, "$.items[0].avatarUrls.length()"))
                 .isEqualTo(2);
-        // Above it, the cards: the date she plans, then "The two of you".
-        assertThat(JsonPath.<List<String>>read(hers, "$.cards[*].look"))
+        // Above it, the cards a couple's own templates bring: the date she plans, then "The two of you".
+        List<Map<String, Object>> cards = JsonPath.read(hers, THE_TEMPLATES_CARDS);
+        assertThat(cards)
+                .extracting(card -> card.get("look"))
                 .containsExactly("mystery_date", "our_story", "both_yes", "checklist");
-        assertThat(JsonPath.<String>read(hers, "$.cards[0].title")).endsWith(" is yours to plan");
-        assertThat(JsonPath.<String>read(hers, "$.cards[0].line"))
-                .isEqualTo("All Alex knows: “20:00, wear something warm”");
-        assertThat(JsonPath.<List<String>>read(hers, "$.cards[1:4].title"))
+        assertThat((String) cards.get(0).get("title")).endsWith(" is yours to plan");
+        assertThat(cards.get(0).get("line")).isEqualTo("All Alex knows: “20:00, wear something warm”");
+        assertThat(cards.subList(1, 4))
+                .extracting(card -> card.get("title"))
                 .containsExactly("Our story", "Both said yes", "Someday");
-        assertThat(JsonPath.<List<String>>read(hers, "$.cards[1:4].figure"))
+        assertThat(cards.subList(1, 4))
+                .extracting(card -> card.get("figure"))
                 .containsExactly("4,503 days", "A match", null);
-        assertThat(JsonPath.<String>read(hers, "$.cards[1].line")).isEqualTo("Since a wedding in Piran");
+        assertThat(cards.get(1).get("line")).isEqualTo("Since a wedding in Piran");
         LocalDate dinner = TODAY.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
-        assertThat(JsonPath.<String>read(hers, "$.cards[2].line"))
-                .isEqualTo(dinner.equals(there) ? "Thai, tonight" : "Thai, on Saturday");
-        assertThat(JsonPath.<String>read(hers, "$.cards[3].line")).isEqualTo("14 of 60 done");
-        assertThat(JsonPath.<String>read(hers, "$.cards[1].imageUrl")).contains("bench");
-        assertThat(JsonPath.<String>read(hers, "$.cards[2].imageUrl")).contains("heart-hands");
+        assertThat(cards.get(2).get("line")).isEqualTo(dinner.equals(there) ? "Thai, tonight" : "Thai, on Saturday");
+        assertThat(cards.get(3).get("line")).isEqualTo("14 of 60 done");
+        assertThat((String) cards.get(1).get("imageUrl")).contains("bench");
+        assertThat((String) cards.get(2).get("imageUrl")).contains("heart-hands");
         if (there.getDayOfWeek() != DayOfWeek.FRIDAY) {
-            assertThat(JsonPath.<String>read(hers, "$.cards[0].title")).isEqualTo("Friday is yours to plan");
+            assertThat(cards.get(0).get("title")).isEqualTo("Friday is yours to plan");
         }
-        // His: the same day in his words. What is hidden from him isn't in it.
+        // Alex is in this circle too, and away in the sample data of the link with Journey: she is told so here as
+        // in the family, by the same rule. That is the one card here no template of theirs made.
+        assertThat(JsonPath.<List<String>>read(hers, "$.cards[*].look"))
+                .containsExactlyInAnyOrder("mystery_date", "our_story", "both_yes", "checklist", "journey_away");
+        assertThat(JsonPath.<List<String>>read(hers, "$.cards[?(@.look == 'journey_away')].title"))
+                .containsExactly("Alex is on a journey");
+        // His: the same day in his words. What is hidden from him isn't in it, and nobody tells him he is away.
         String his = fetch("/v1/circles/" + circle + "/today?day=" + there, alex);
         assertThat(JsonPath.<List<String>>read(his, "$.items[*].title"))
-                .containsExactly("Run together", "A note is tucked away for you", "You owe for " + lastMonth);
+                .containsExactly("Run together", "A note is tucked away for you", "You owe Nora for " + lastMonth);
+        assertThat(JsonPath.<String>read(his, "$.items[2].action.label")).isEqualTo("Settle");
+        assertThat(JsonPath.<List<String>>read(his, "$.cards[*].look"))
+                .containsExactly("mystery_date", "our_story", "both_yes", "checklist");
         assertThat(JsonPath.<String>read(his, "$.cards[0].line"))
                 .isEqualTo("Nora is planning. 20:00. Wear something warm.");
         assertThat(his).doesNotContain("Krvavec").doesNotContain("Your coffee this morning");

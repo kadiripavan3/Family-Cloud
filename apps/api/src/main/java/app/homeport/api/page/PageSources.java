@@ -100,9 +100,11 @@ class PageSources implements TodaySource, SearchSource, GlanceSource {
         return jdbc.sql("""
             select p.thing_id, substring(p.body from greatest(position(lower(:plain) in lower(p.body)) - 30, 1) for 90) as around
             from pages p join things t on t.id = p.thing_id
-            where t.circle_id = :circle and p.body ilike :pattern order by t.updated_at desc limit :limit
+            where t.circle_id = :circle and p.body ilike :pattern and\s""" + Rules.sees("t", ":me") + """
+             order by t.updated_at desc limit :limit
             """)
                 .param("circle", circleId)
+                .param("me", me)
                 .param("pattern", Sql.anywhere(words))
                 .param("plain", words)
                 .param("limit", limit)

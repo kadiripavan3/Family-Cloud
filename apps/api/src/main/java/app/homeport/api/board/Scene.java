@@ -14,6 +14,7 @@ import app.homeport.api.media.MediaSize;
 import app.homeport.api.media.MediaStore;
 import app.homeport.api.media.MediaStore.MediaRow;
 import app.homeport.api.thing.Audience;
+import app.homeport.api.thing.ThingKind;
 import app.homeport.api.thing.ThingService.PersonBrief;
 import app.homeport.api.thing.ThingStore;
 import app.homeport.api.thing.ThingStore.ThingRow;
@@ -21,6 +22,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -236,6 +239,33 @@ public final class Scene {
         return memberId;
     }
 
+    /**
+     * Which of these things of other places the viewer may see: a job's reminder in Plan, a day's event. What
+     * a template says about a thing it points at, it says only to someone who may see that thing.
+     */
+    public Set<UUID> seenAmong(Collection<UUID> thingIds) {
+        List<UUID> asked = thingIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (me == null || asked.isEmpty()) {
+            return Set.of();
+        }
+        return things.findAll(asked, me.userId()).stream().map(ThingRow::id).collect(Collectors.toSet());
+    }
+
+    /**
+     * A thing of another place the app named for an entry to point at, checked to be of this kind, in this
+     * circle, and one the viewer may see. Null stays null.
+     */
+    public UUID pointsAt(UUID thingId, ThingKind kind) {
+        if (thingId == null) {
+            return null;
+        }
+        ThingRow other = me == null ? null : things.find(thingId, me.userId()).orElse(null);
+        if (other == null || other.kind() != kind || !other.circleId().equals(thing.circleId())) {
+            throw ApiProblem.badRequest("not_in_circle", "Choose one from this circle that you can see.");
+        }
+        return thingId;
+    }
+
     /** A name and a face for a row: first name, small picture. Null for nobody. */
     public PersonBrief brief(UUID memberId) {
         Person person = person(memberId);
@@ -405,6 +435,27 @@ public final class Scene {
 
     List<Told> told() {
         return quiet ? List.of() : told;
+    }
+
+    // ---------- what someone's phone hears ----------
+
+    /** A gentle push for one person, as a template asks for it. */
+    public record Nudge(UUID memberId, String title, String body) {}
+
+    private final List<Nudge> nudges = new ArrayList<>();
+
+    /**
+     * Asks for a gentle push to one person of the circle about this board: "Reunion dinner", "A gentle nudge
+     * from Lea: tap the days you can." It is queued with the rest of what the verb did and leaves through the
+     * outbox, which keeps its own rules (see {@code notify/Outbox}): only to someone who may see the board,
+     * never to yourself, never in a circle they muted, and once a day for each person at most.
+     */
+    public void nudge(UUID memberId, String title, String body) {
+        nudges.add(new Nudge(memberId, title, body));
+    }
+
+    List<Nudge> nudges() {
+        return nudges;
     }
 
     boolean quiet() {

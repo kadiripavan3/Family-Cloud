@@ -151,6 +151,47 @@ class ChoreWheelTest extends BoardTest {
         // A tick is for today or a recent day, never for tomorrow.
         act(nora, wheel, "tick", "{\"jobId\":\"%s\",\"day\":\"%s\"}".formatted(table, TODAY.plusDays(1)), 400);
 
+        // The family is also reminded of the bins by Plan, and says so on the job: it names its reminder. Today
+        // then lists the job once, as the reminder, for whoever has that reminder on their list.
+        String bins = JsonPath.read(view(nora, wheel), "$.view.jobs[0].id");
+        String reminder = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/reminders",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Take the bins out\",\"dueOn\":\"%s\",\"timeZone\":\"UTC\",\"audience\":\"circle\"}"
+                                .formatted(id(), circle, TODAY),
+                        201),
+                "$.id");
+        change(nora, bins, "{\"reminderId\":\"%s\"}".formatted(reminder), 200);
+        assertThat(JsonPath.<String>read(view(nora, wheel), "$.view.jobs[0].reminderId"))
+                .isEqualTo(reminder);
+        String norasDay = fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora);
+        assertThat(JsonPath.<List<String>>read(norasDay, "$.items[*].title"))
+                .containsExactlyInAnyOrder("Take the bins out", "Set the table");
+        assertThat(JsonPath.<Integer>read(norasDay, "$.left")).isEqualTo(1);
+        // On a day the reminder isn't on her list, the wheel's own line is: nothing is lost, only never said twice.
+        String dayAfter = fetch("/v1/circles/" + circle + "/today?day=" + TODAY.minusDays(1), nora);
+        assertThat(JsonPath.<List<String>>read(dayAfter, "$.items[*].title")).contains("Bins");
+        assertThat(JsonPath.<List<String>>read(dayAfter, "$.items[?(@.title == 'Bins')].sameAs"))
+                .containsExactly(reminder);
+        // A job can only name a reminder of its own circle that the person may see, and can let go of it again.
+        String elsewhere = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/reminders",
+                        kai,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Kai's own\",\"timeZone\":\"UTC\",\"audience\":\"me\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        change(nora, bins, "{\"reminderId\":\"%s\"}".formatted(elsewhere), 400);
+        change(nora, bins, "{\"reminderId\":\"%s\"}".formatted(wheel), 400);
+        change(nora, bins, "{\"reminderId\":null}", 200);
+        assertThat(JsonPath.<List<String>>read(
+                        fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora), "$.items[*].title"))
+                .containsExactlyInAnyOrder("Take the bins out", "Bins", "Set the table");
+
         // Not a pet, not someone from another circle, and not nobody.
         String outsider = memberOf(kai, circle(kai, "solo", "Kai alone"));
         assertThat(send(

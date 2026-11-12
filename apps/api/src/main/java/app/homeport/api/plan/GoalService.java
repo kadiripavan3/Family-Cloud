@@ -10,6 +10,8 @@ import app.homeport.api.list.ChecklistStore.Tally;
 import app.homeport.api.media.MediaKind;
 import app.homeport.api.media.MediaService;
 import app.homeport.api.media.MediaSize;
+import app.homeport.api.plan.GoalNumber.Line;
+import app.homeport.api.plan.GoalNumber.Lines;
 import app.homeport.api.plan.GoalNumber.Reading;
 import app.homeport.api.plan.GoalStore.EntryRow;
 import app.homeport.api.plan.GoalStore.Goal;
@@ -47,7 +49,10 @@ import org.springframework.transaction.annotation.Transactional;
  *       the goal, so they are ticked, shared and worked on like any other list;
  *   <li>a number read from elsewhere (a cell of a sheet, the days of a Journey challenge) through
  *       {@link GoalNumber}. While nothing can read that place, or the viewer may not see it, the goal shows
- *       what was put in by hand.
+ *       what was put in by hand. Such a goal keeps no second count of its own: where the number is a sum of
+ *       lines (the rows "Saved" adds up), those rows are the goal's lines, "Add money" writes a row there
+ *       and taking a line back removes it; where it is anything else, adding is refused in plain words and
+ *       {@code addHere} is false.
  * </ul>
  *
  * The ring, what is left and the sentence about the pace are worked out by {@link GoalPace}.
@@ -66,6 +71,8 @@ public class GoalService {
 
             @Schema(description = "Alex added €150") String line,
             String note,
+
+            @Schema(nullable = true, description = "Null only for a line read from a sheet whose row has no day")
             LocalDate day) {}
 
     /** Where a goal reads its number from, when it isn't put in by hand. */
@@ -77,7 +84,15 @@ public class GoalService {
             String line,
 
             @Schema(description = "False while that place can't be read: the goal then shows what was put in by hand")
-            boolean live) {}
+            boolean live,
+
+            @Schema(
+                    nullable = true,
+                    description = "The thing the number is read from, to open from the row: the sheet. Null when"
+                            + " you can't see it, and when it is no thing here (a challenge in Journey).")
+            UUID thingId,
+
+            @Schema(nullable = true) ThingKind thingKind) {}
 
     /** The goal's list of steps: an ordinary checklist, read and ticked through the checklist routes. */
     public record StepsResponse(UUID listId, String title, int left, int done) {}
@@ -171,6 +186,13 @@ public class GoalService {
 
             @Schema(description = "The last few times something was put in")
             List<EntryResponse> recent,
+
+            @Schema(
+                    description = "False when Add can't be done on this goal: its number is kept elsewhere and is"
+                            + " not a sum of lines you can add to (a formula in a sheet, a sheet you may not change,"
+                            + " a challenge in Journey). Offer to open source.thingId instead. True otherwise; for"
+                            + " a goal that reads the sum of a sheet's column, what is added becomes a row there.")
+            boolean addHere,
 
             Instant updatedAt,
             boolean mine,
@@ -378,16 +400,65 @@ public class GoalService {
         if (amount == 0) {
             throw ApiProblem.badRequest("nothing_added", "Say how much.");
         }
-        UUID id = goals.addEntry(goalId, by, amount, clean(note), day == null ? LocalDate.now() : day, clientId);
+        LocalDate on = day == null ? LocalDate.now() : day;
+        if (g.how() == HowFar.SOURCE) {
+            // One number, kept in one place: what is added here is written where the number is counted.
+            Optional<Lines> lines = lines(g, row.circleId(), me);
+            if (lines.isEmpty() || !lines.get().canAdd()) {
+                throw keptElsewhere(g, row.circleId(), me, lines.isPresent());
+            }
+            UUID line = numbers.get(g.sourceKind())
+                    .add(row.circleId(), g.sourceRef(), me, by, amount, clean(note), on, clientId);
+            thingStore.touch(goalId);
+            return view(new EntryRow(line, goalId, by, amount, clean(note), on, Instant.now()), g, circle);
+        }
+        UUID id = goals.addEntry(goalId, by, amount, clean(note), on, clientId);
         thingStore.touch(goalId);
         return view(goals.entry(id).orElseThrow(), g, circle);
+    }
+
+    /** The lines the number of a goal that reads elsewhere is the sum of, when it is one this viewer can read. */
+    private Optional<Lines> lines(GoalRow g, UUID circleId, UUID me) {
+        return g.how() != HowFar.SOURCE || g.sourceKind() == null || !numbers.containsKey(g.sourceKind())
+                ? Optional.empty()
+                : numbers.get(g.sourceKind()).lines(circleId, g.sourceRef(), me);
+    }
+
+    /** Why nothing can be added on this goal's page, in plain words, with where to go instead. */
+    private ApiProblem keptElsewhere(GoalRow g, UUID circleId, UUID me, boolean hasLines) {
+        Optional<Reading> reading = numbers.containsKey(g.sourceKind())
+                ? numbers.get(g.sourceKind()).read(circleId, g.sourceRef(), me)
+                : Optional.empty();
+        String where = reading.map(Reading::words).orElse(g.sourceWords());
+        String from = where.isEmpty() ? "somewhere else" : where;
+        if (hasLines) {
+            return new ApiProblem(
+                    HttpStatus.FORBIDDEN,
+                    "kept_elsewhere",
+                    "This goal reads its number from " + from + ", and you can't change that. Ask whoever can.");
+        }
+        return ApiProblem.conflict(
+                "kept_elsewhere",
+                g.sourceKind() == GoalSource.JOURNEY
+                        ? "This goal counts " + from + ". It moves when a day is ticked there."
+                        : reading.isPresent()
+                                ? "This goal reads its number from " + from + ". Change it there and the goal moves."
+                                : "This goal reads its number from " + from + ", which can't be opened just now.");
     }
 
     @Transactional
     public void removeEntry(UUID entryId, UUID me) {
         Optional<EntryRow> entry = goals.entry(entryId);
         if (entry.isEmpty()) {
-            return; // removing what is gone is fine
+            // Not one of a goal's own: a line of a number that is kept elsewhere (a row of the sheet the goal
+            // reads) is taken back there, by that place's rules of who may. Anything else is gone already,
+            // and removing what is gone is fine.
+            for (GoalNumber number : numbers.values()) {
+                if (number.remove(entryId, me)) {
+                    return;
+                }
+            }
+            return;
         }
         try {
             things.requireEdit(entry.get().goalId(), me, ThingKind.GOAL);
@@ -404,6 +475,28 @@ public class GoalService {
         ThingRow row = things.require(goalId, me, ThingKind.GOAL);
         GoalRow g = goals.find(goalId).orElseThrow(ThingService::notFound);
         Map<UUID, Person> circle = people.in(row.circleId());
+        Optional<Lines> lines = lines(g, row.circleId(), me);
+        if (lines.isPresent()) {
+            // The lines of the place it reads, the latest first. They are few (a table's rows), so a page is cut
+            // from the whole: after the line the cursor names.
+            List<Line> all = lines.get().all();
+            int from = 0;
+            if (!page.first()) {
+                UUID after = page.uuid(0);
+                from = all.size();
+                for (int i = 0; i < all.size(); i++) {
+                    if (all.get(i).id().equals(after)) {
+                        from = i + 1;
+                    }
+                }
+            }
+            return page.page(
+                            all.subList(from, Math.min(all.size(), from + page.fetch())),
+                            line -> Keyset.cursor(line.id()))
+                    .map(shown -> shown.stream()
+                            .map(line -> view(line, goalId, g, circle))
+                            .toList());
+        }
         return page.page(goals.entries(goalId, page), e -> Keyset.cursor(e.onDay(), e.createdAt(), e.id()))
                 .map(shown -> shown.stream().map(e -> view(e, g, circle)).toList());
     }
@@ -444,11 +537,20 @@ public class GoalService {
                 standing.source(),
                 standing.steps(),
                 ofYear,
-                goals.months(id, ofYear),
-                goals.entries(id, Keyset.first(RECENT)).stream()
-                        .limit(RECENT)
-                        .map(e -> view(e, g, circle))
-                        .toList(),
+                standing.lines() == null
+                        ? goals.months(id, ofYear)
+                        : months(standing.lines().all(), ofYear),
+                standing.lines() == null
+                        ? goals.entries(id, Keyset.first(RECENT)).stream()
+                                .limit(RECENT)
+                                .map(e -> view(e, g, circle))
+                                .toList()
+                        : standing.lines().all().stream()
+                                .limit(RECENT)
+                                .map(line -> view(line, id, g, circle))
+                                .toList(),
+                g.how() != HowFar.SOURCE
+                        || (standing.lines() != null && standing.lines().canAdd()),
                 row.updatedAt(),
                 row.mine(),
                 row.canEdit(),
@@ -510,7 +612,19 @@ public class GoalService {
             List<PersonBrief> people,
             String cheer,
             SourceResponse source,
-            StepsResponse steps) {}
+            StepsResponse steps,
+            Lines lines) {}
+
+    /** What the lines of a number that is kept elsewhere add up to in each month of a year, January first. */
+    private static List<Long> months(List<Line> lines, int year) {
+        long[] months = new long[12];
+        for (Line line : lines) {
+            if (line.day() != null && line.day().getYear() == year) {
+                months[line.day().getMonthValue() - 1] += line.amount();
+            }
+        }
+        return java.util.Arrays.stream(months).boxed().toList();
+    }
 
     /** Works out where each of these goals of one circle stands, with a handful of questions for all of them. */
     private Map<UUID, Standing> standings(List<Goal> all, UUID circleId, UUID me, LocalDate today) {
@@ -539,6 +653,7 @@ public class GoalService {
             StepsResponse steps =
                     list == null ? null : new StepsResponse(list.id(), list.title(), tally.left(), tally.done());
             SourceResponse source = null;
+            Lines lines = null;
             if (g.how() == HowFar.TICKS && tally != null) {
                 current = tally.done();
                 target = Math.max(1, tally.done() + tally.left());
@@ -549,6 +664,8 @@ public class GoalService {
                         : numbers.get(g.sourceKind()).read(circleId, g.sourceRef(), me);
                 if (reading.isPresent()) {
                     current = reading.get().number();
+                    // Who put in what is read where the number is, when it is a sum of lines.
+                    lines = lines(g, circleId, me).orElse(null);
                 }
                 String words = reading.map(Reading::words).orElse(g.sourceWords());
                 source = new SourceResponse(
@@ -559,12 +676,22 @@ public class GoalService {
                                         ? "Reads a challenge in Journey"
                                         : "Reads a sheet")
                                 : "Reads " + words,
-                        reading.isPresent());
+                        reading.isPresent(),
+                        reading.map(Reading::thingId).orElse(null),
+                        reading.map(Reading::thingKind).orElse(null));
             }
             LongFunction<String> say = say(g);
             GoalPace pace = GoalPace.work(
                     target, current, g.startsOn(), g.targetOn(), today, g.unit() == GoalUnit.MONEY ? 100 : 1, say);
-            List<PersonBrief> who = givers.getOrDefault(g.id(), List.of()).stream()
+            // Whoever began first comes first. The lines of a number kept elsewhere are read the latest first.
+            List<UUID> gave = lines == null
+                    ? givers.getOrDefault(g.id(), List.of())
+                    : lines.all().reversed().stream()
+                            .map(Line::memberId)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .toList();
+            List<PersonBrief> who = gave.stream()
                     .map(circle::get)
                     .filter(Objects::nonNull)
                     .map(Person::brief)
@@ -580,7 +707,8 @@ public class GoalService {
                     who,
                     cheer(who, persons),
                     source,
-                    steps);
+                    steps,
+                    lines);
         }));
     }
 
@@ -623,6 +751,14 @@ public class GoalService {
 
     private static LongFunction<String> say(GoalRow g) {
         return g.unit() == GoalUnit.MONEY ? amount -> Amounts.money(amount, g.currency()) : Amounts::count;
+    }
+
+    /** A line of the place the goal reads, shown as an entry of the goal. */
+    private EntryResponse view(Line line, UUID goalId, GoalRow g, Map<UUID, Person> circle) {
+        return view(
+                new EntryRow(line.id(), goalId, line.memberId(), line.amount(), line.note(), line.day(), null),
+                g,
+                circle);
     }
 
     private EntryResponse view(EntryRow e, GoalRow g, Map<UUID, Person> circle) {

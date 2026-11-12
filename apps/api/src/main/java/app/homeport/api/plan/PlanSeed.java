@@ -42,6 +42,7 @@ class PlanSeed implements Seeder {
     private final EventService events;
     private final ReminderService reminders;
     private final GoalService goals;
+    private final GoalStore goalStore;
     private final ChecklistService checklists;
     private final PageService pages;
     private final ThingService things;
@@ -50,12 +51,14 @@ class PlanSeed implements Seeder {
             EventService events,
             ReminderService reminders,
             GoalService goals,
+            GoalStore goalStore,
             ChecklistService checklists,
             PageService pages,
             ThingService things) {
         this.events = events;
         this.reminders = reminders;
         this.goals = goals;
+        this.goalStore = goalStore;
         this.checklists = checklists;
         this.pages = pages;
         this.things = things;
@@ -315,24 +318,29 @@ class PlanSeed implements Seeder {
         UUID leo = w.member("linds", "leo");
 
         // Due today although it is "Tue and Fri": it is tonight on the screens. The tick makes Friday or Tuesday next.
-        reminders.create(
-                nora,
-                new NewReminder(
-                        linds,
-                        "Take the bins out",
-                        null,
-                        today,
-                        LocalTime.of(19, 0),
-                        ZONE,
-                        null,
-                        Recurrence.weekly(Weekday.TUE, Weekday.FRI),
-                        List.of(noraHere, alexHere),
-                        true,
-                        null,
-                        null,
-                        null,
-                        Audience.CIRCLE),
-                UUID.randomUUID());
+        // (The bins are also a job on the chore wheel, which names this reminder: Today lists the job once.)
+        w.thing(
+                "reminder/bins",
+                reminders
+                        .create(
+                                nora,
+                                new NewReminder(
+                                        linds,
+                                        "Take the bins out",
+                                        null,
+                                        today,
+                                        LocalTime.of(19, 0),
+                                        ZONE,
+                                        null,
+                                        Recurrence.weekly(Weekday.TUE, Weekday.FRI),
+                                        List.of(noraHere, alexHere),
+                                        true,
+                                        null,
+                                        null,
+                                        null,
+                                        Audience.CIRCLE),
+                                UUID.randomUUID())
+                        .id());
 
         UUID form = reminders
                 .create(
@@ -398,8 +406,39 @@ class PlanSeed implements Seeder {
                 .param("id", car)
                 .update();
 
-        // Feeding Biscuit is Leo's job on the chore wheel, where it earns him a star: it is not kept here as
-        // a reminder as well, or the same job would stand on Today twice.
+        // Nora asked Leo to feed Biscuit every morning, for a star, and today it was done at 7:40. (It is also
+        // his job on the chore wheel this week, which names this reminder: Today lists the job once.)
+        UUID biscuit = reminders
+                .create(
+                        nora,
+                        new NewReminder(
+                                linds,
+                                "Feed Biscuit",
+                                null,
+                                today,
+                                LocalTime.of(7, 30),
+                                ZONE,
+                                null,
+                                Recurrence.every(Recurrence.Unit.DAY),
+                                List.of(leo),
+                                false,
+                                null,
+                                1,
+                                null,
+                                Audience.CIRCLE),
+                        UUID.randomUUID())
+                .id();
+        reminders.tick(biscuit, nora, true, today, today);
+        w.jdbc()
+                .sql("update reminder_ticks set done_at = :at where thing_id = :id")
+                .param(
+                        "at",
+                        java.sql.Timestamp.from(
+                                today.atTime(7, 40).atZone(ZoneId.of(ZONE)).toInstant()))
+                .param("id", biscuit)
+                .update();
+        w.thing("reminder/feed-biscuit", biscuit);
+
         reminders.create(
                 nora,
                 new NewReminder(
@@ -504,18 +543,21 @@ class PlanSeed implements Seeder {
                         UUID.randomUUID(),
                         today)
                 .id();
-        put(norway, nora, noraHere, 38_000, "", today.minusDays(240));
-        put(norway, nora, alexHere, 55_000, "", today.minusDays(210));
-        put(norway, nora, noraHere, 48_000, "", today.minusDays(180));
-        put(norway, nora, alexHere, 66_000, "", today.minusDays(150));
-        put(norway, nora, noraHere, 25_000, "", today.minusDays(120));
-        put(norway, nora, leo, 300, "from his piggy bank", today.minusDays(95));
-        put(norway, nora, noraHere, 88_000, "", today.minusDays(60));
-        put(norway, nora, alexHere, 60_000, "", today.minusDays(45));
-        put(norway, nora, noraHere, 79_200, "", today.minusDays(30));
-        put(norway, nora, alexHere, 85_000, "", today.minusDays(20));
-        put(norway, nora, mia, 500, "from her pocket money", today.minusDays(12));
-        put(norway, nora, alexHere, 15_000, "payday", today.minusDays(10));
+        // What was put in before the number was read from the sheet. A goal that reads its number keeps no count
+        // of its own, so these are written as what they are, the hand-kept history: it is what the goal shows
+        // while the sheet can't be read (Money's sample data keeps the same story in the sheet's Savings tab).
+        byHand(norway, noraHere, 38_000, "", today.minusDays(240));
+        byHand(norway, alexHere, 55_000, "", today.minusDays(210));
+        byHand(norway, noraHere, 48_000, "", today.minusDays(180));
+        byHand(norway, alexHere, 66_000, "", today.minusDays(150));
+        byHand(norway, noraHere, 25_000, "", today.minusDays(120));
+        byHand(norway, leo, 300, "from his piggy bank", today.minusDays(95));
+        byHand(norway, noraHere, 88_000, "", today.minusDays(60));
+        byHand(norway, alexHere, 60_000, "", today.minusDays(45));
+        byHand(norway, noraHere, 79_200, "", today.minusDays(30));
+        byHand(norway, alexHere, 85_000, "", today.minusDays(20));
+        byHand(norway, mia, 500, "from her pocket money", today.minusDays(12));
+        byHand(norway, alexHere, 15_000, "payday", today.minusDays(10));
 
         UUID books = goals.create(
                         nora,
@@ -567,7 +609,8 @@ class PlanSeed implements Seeder {
                         UUID.randomUUID(),
                         today)
                 .id();
-        put(run, nora, noraHere, 12, "", today);
+        // Until Journey can be asked, the goal shows the twelve days that were put in by hand.
+        byHand(run, noraHere, 12, "", today);
 
         UUID car = goals.create(
                         nora,
@@ -638,5 +681,10 @@ class PlanSeed implements Seeder {
 
     private void put(UUID goal, UUID by, UUID forMember, long amount, String note, LocalDate day) {
         goals.addEntry(goal, by, amount, note, day, forMember, UUID.randomUUID());
+    }
+
+    /** An entry of a goal that reads its number elsewhere, kept by hand from before it did. */
+    private void byHand(UUID goal, UUID member, long amount, String note, LocalDate day) {
+        goalStore.addEntry(goal, member, amount, note, day, UUID.randomUUID());
     }
 }

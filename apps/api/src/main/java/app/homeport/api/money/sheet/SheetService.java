@@ -42,6 +42,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -549,6 +551,199 @@ public class SheetService {
 
     private static NamedTotal named(String name, CellResponse cell, String currency) {
         return new NamedTotal(name, cell.kind(), cell.cents(), cell.number(), currency);
+    }
+
+    // ---------- a named number that is the sum of one column ----------
+
+    /**
+     * The one column a named number adds up, when the number is nothing but that: a tile written
+     * {@code SUM([Put in])}, or the total under a column that sums. With where a line's day, person and words
+     * go in that table (its first date, person and text column), for whoever shows the rows as lines.
+     *
+     * @param canEdit true when the viewer may add and remove rows there
+     */
+    public record Summed(
+            UUID sheetId,
+            UUID tabId,
+            UUID columnId,
+            ColumnKind kind,
+            UUID dayColumn,
+            UUID whoColumn,
+            UUID noteColumn,
+            boolean canEdit) {}
+
+    /** A row of such a table, as a line: how much it adds, and who, when and why when the row says. */
+    public record SummedRow(UUID id, UUID memberId, long amount, String note, LocalDate day) {}
+
+    /**
+     * Which column a named number of a sheet adds up, for a viewer who may see the sheet. The name is found
+     * exactly as {@link #total} finds it (a tile first, the first tab first, then a column's total), so this
+     * always speaks of the same number. Empty when that number is anything but the sum of one column that
+     * rows are typed into: a formula over several, a count, an average.
+     */
+    public Optional<Summed> summed(UUID sheetId, String name, UUID me) {
+        ThingRow seen = thingStore
+                .find(sheetId, me)
+                .filter(row -> row.kind() == ThingKind.SHEET)
+                .orElse(null);
+        if (seen == null) {
+            return Optional.empty();
+        }
+        List<TabRow> tabs = sheets.tabs(List.of(sheetId));
+        List<UUID> tabIds = tabs.stream().map(TabRow::id).toList();
+        Map<UUID, List<ColumnRow>> columns =
+                sheets.columns(tabIds).stream().collect(Collectors.groupingBy(ColumnRow::tabId));
+        Map<UUID, List<TileRow>> tiles = sheets.tiles(tabIds).stream().collect(Collectors.groupingBy(TileRow::tabId));
+        String wanted = name.strip();
+        for (TabRow tab : tabs) {
+            List<ColumnRow> ofTab = columns.getOrDefault(tab.id(), List.of());
+            for (TileRow tile : tiles.getOrDefault(tab.id(), List.of())) {
+                if (tile.name().equalsIgnoreCase(wanted)) {
+                    return plainSum(tile.formula(), ofTab).map(column -> summed(seen, column, ofTab));
+                }
+            }
+        }
+        for (TabRow tab : tabs) {
+            List<ColumnRow> ofTab = columns.getOrDefault(tab.id(), List.of());
+            for (ColumnRow column : ofTab) {
+                if (column.name().equalsIgnoreCase(wanted) && column.summary() != Summary.NONE) {
+                    return column.summary() == Summary.SUM && typedIn(column)
+                            ? Optional.of(summed(seen, column, ofTab))
+                            : Optional.empty();
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** The column a formula adds up, when the formula is SUM of one column and nothing else. */
+    private static Optional<ColumnRow> plainSum(String formula, List<ColumnRow> columns) {
+        try {
+            if (Formula.read(formula, new Worked.Lookup(columns)) instanceof Node.Call call
+                    && call.fn() == Fn.SUM
+                    && call.args().size() == 1
+                    && call.args().get(0) instanceof Node.Column of) {
+                return columns.stream()
+                        .filter(column -> column.id().equals(of.id()) && typedIn(column))
+                        .findFirst();
+            }
+        } catch (FormulaProblem unreadable) {
+            // A formula that can't be read adds up nothing.
+        }
+        return Optional.empty();
+    }
+
+    private static boolean typedIn(ColumnRow column) {
+        return column.kind() == ColumnKind.MONEY || column.kind() == ColumnKind.NUMBER;
+    }
+
+    private static Summed summed(ThingRow sheet, ColumnRow column, List<ColumnRow> ofTab) {
+        return new Summed(
+                sheet.id(),
+                column.tabId(),
+                column.id(),
+                column.kind(),
+                first(ofTab, ColumnKind.DATE),
+                first(ofTab, ColumnKind.PERSON),
+                first(ofTab, ColumnKind.TEXT),
+                sheet.canEdit());
+    }
+
+    private static UUID first(List<ColumnRow> columns, ColumnKind kind) {
+        return columns.stream()
+                .filter(column -> column.kind() == kind)
+                .map(ColumnRow::id)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** The rows that add something to such a number, the latest day first and, within a day, the lower row first. */
+    public List<SummedRow> summedRows(Summed of) {
+        List<SummedRow> lines = new ArrayList<>();
+        for (RowRow row : sheets.rows(of.tabId())) {
+            Long amount = amount(row.cells().get(of.columnId().toString()), of.kind());
+            if (amount == null || amount == 0) {
+                continue;
+            }
+            Object who = of.whoColumn() == null
+                    ? null
+                    : row.cells().get(of.whoColumn().toString());
+            Object day = of.dayColumn() == null
+                    ? null
+                    : row.cells().get(of.dayColumn().toString());
+            Object words = of.noteColumn() == null
+                    ? null
+                    : row.cells().get(of.noteColumn().toString());
+            lines.add(new SummedRow(
+                    row.id(),
+                    who instanceof List<?> people && !people.isEmpty() ? readId(people.get(0)) : null,
+                    amount,
+                    words instanceof String text && !text.isBlank() ? text : row.note(),
+                    readDay(day)));
+        }
+        // What was added last stands first among the lines of one day.
+        Collections.reverse(lines);
+        lines.sort(Comparator.comparing(SummedRow::day, Comparator.nullsLast(Comparator.reverseOrder())));
+        return lines;
+    }
+
+    private static Long amount(Object kept, ColumnKind kind) {
+        try {
+            if (kept == null) {
+                return null;
+            }
+            return kind == ColumnKind.MONEY
+                    ? (kept instanceof Number cents ? cents.longValue() : null)
+                    : Long.valueOf(new BigDecimal(kept.toString()).longValue());
+        } catch (RuntimeException unreadable) {
+            return null;
+        }
+    }
+
+    private static UUID readId(Object kept) {
+        try {
+            return UUID.fromString(String.valueOf(kept));
+        } catch (IllegalArgumentException notAnId) {
+            return null;
+        }
+    }
+
+    private static LocalDate readDay(Object kept) {
+        try {
+            return kept == null ? null : LocalDate.parse(kept.toString());
+        } catch (RuntimeException notADay) {
+            return null;
+        }
+    }
+
+    /**
+     * Adds a row to such a table as this person: the amount in the column that is summed, and the day, the
+     * person and the words where the table has a column for them (words go to the row's note otherwise).
+     * Whoever may not change the sheet is refused, as for any row. Returns the row's id.
+     */
+    @Transactional
+    public UUID addSummedRow(
+            Summed of, UUID me, UUID memberId, long amount, String note, LocalDate day, UUID clientId) {
+        Map<UUID, Object> cells = new LinkedHashMap<>();
+        cells.put(of.columnId(), of.kind() == ColumnKind.MONEY ? (Object) amount : String.valueOf(amount));
+        if (of.dayColumn() != null && day != null) {
+            cells.put(of.dayColumn(), day.toString());
+        }
+        if (of.whoColumn() != null && memberId != null) {
+            cells.put(of.whoColumn(), List.of(memberId.toString()));
+        }
+        boolean words = note != null && !note.isBlank();
+        if (words && of.noteColumn() != null) {
+            cells.put(of.noteColumn(), note.strip());
+        }
+        return addRow(of.tabId(), me, cells, words && of.noteColumn() == null ? note : "", null, clientId, day)
+                .row()
+                .id();
+    }
+
+    /** True when this id is a row of a sheet. */
+    public boolean isRow(UUID id) {
+        return sheets.homeOfRow(id).isPresent();
     }
 
     // ---------- making a sheet ----------
