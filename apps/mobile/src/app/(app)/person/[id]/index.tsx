@@ -13,6 +13,7 @@ import { useCircles } from '@/features/circles/current';
 import { pickSquarePhoto } from '@/features/media/pick';
 import { useLeave } from '@/features/navigation/useLeave';
 import { FactsSheet } from '@/features/people/FactsSheet';
+import { ComingUp } from '@/features/plan/ComingUp';
 import { PageProblem } from '@/features/states/PageProblem';
 import { ThingRow } from '@/features/things/ThingRow';
 import { ageOn, formatDayLong, formatWeekday, nextBirthday, today } from '@/lib/dates';
@@ -173,9 +174,7 @@ function Loaded({ data }: { data: PersonPageResponse }) {
         </View>
 
         <GroupLabel style={{ marginHorizontal: layout.gutter }}>{says.comingUp}</GroupLabel>
-        <Txt variant="callout" color="muted" style={{ marginHorizontal: layout.gutter }}>
-          {says.comingUpEmpty}
-        </Txt>
+        <ComingUp member={member} />
 
         <GroupLabel style={{ marginHorizontal: layout.gutter }}>{member.you ? says.keptYou : says.kept(name)}</GroupLabel>
         {kept.length ? (

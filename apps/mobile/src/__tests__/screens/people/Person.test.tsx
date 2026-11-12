@@ -18,9 +18,15 @@ jest.mock('@/api/upload', () => ({ uploadPhoto: jest.fn() }));
 jest.mock('@/features/media/pick', () => ({ pickSquarePhoto: jest.fn() }));
 jest.mock('@/features/circles/current', () => ({ useCircles: jest.fn(), useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// What is coming up for them is Plan's own piece, with its own test: here only that it stands under its label.
+jest.mock('@/features/plan/ComingUp', () => ({ ComingUp: ({ member }: { member: { name: string } }) => mockComingUp(member.name) }));
 jest.mock('@/api/generated/homeport', () => ({ useGetPerson: jest.fn(), useGetMe: jest.fn(() => mockMe), changeMember: jest.fn(), removeMember: jest.fn() }));
 
 const mockLinds = linds;
+function mockComingUp(name: string) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>the calendar for {name}</Text>;
+}
 const mockMe = loaded(me());
 const asked = jest.mocked(useGetPerson) as unknown as jest.Mock;
 /** Mia, turning ten in 23 days, whenever the test runs. */
@@ -59,11 +65,11 @@ describe("4.2 A person's page", () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'page', id: plan.id } });
   });
 
-  it('says quietly that what is coming up arrives with Plan, and when nothing is kept', async () => {
+  it('shows what is coming up for them from the calendar, and says so when nothing is kept', async () => {
     asked.mockReturnValue(loaded({ member: mia, kept: [] }));
     await render(inApp(<Person />));
     expect(screen.getByText('Coming up')).toBeOnTheScreen();
-    expect(screen.getByText('Nothing yet. Events and reminders about them show here once Plan is built.')).toBeOnTheScreen();
+    expect(screen.getByText('the calendar for Mia')).toBeOnTheScreen();
     expect(screen.getByText('Nothing yet. Whatever is kept about Mia and shared with you shows here.')).toBeOnTheScreen();
   });
 

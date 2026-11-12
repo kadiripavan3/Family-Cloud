@@ -67,12 +67,16 @@ describe('3.4 The + button', () => {
     expect(screen.getByRole('button', { name: 'Seen by Only you. Change' })).toBeDisabled();
   });
 
-  it('draws the line to type a sentence into, and says it arrives with Plan', async () => {
+  it('opens "Type it" from the line on top, with who it starts as seen by when that was changed', async () => {
     await render(onPhone(<PlusSheet visible onClose={onClose} />));
     expect(screen.getByText('Type it: “Haircut for Leo, Saturday 10”')).toBeOnTheScreen();
-    await userEvent.setup().press(screen.getByRole('button', { name: 'Type what to add' }));
-    expect(screen.getByText('Typing a sentence that files itself arrives with Plan. Pick one of the ten below for now.')).toBeOnTheScreen();
-    expect(mockRouter.push).not.toHaveBeenCalled();
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'Type what to add' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(mockRouter.push).toHaveBeenLastCalledWith('/plan/quick-add');
+    await user.press(screen.getByRole('button', { name: 'Seen by Only you. Change' }));
+    await user.press(screen.getByRole('button', { name: 'Type what to add' }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/plan/quick-add', params: { audience: 'circle' } });
   });
 
   it('forgets what was changed for one thing when it is opened for the next', async () => {

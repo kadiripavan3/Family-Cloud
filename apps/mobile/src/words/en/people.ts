@@ -86,7 +86,6 @@ export const people = {
     },
     facts: { edit: 'Edit', add: 'Add a fact', title: (name: string) => `About ${name}`, hint: 'Short facts worth having to hand: a shoe size, a class, an allergy.', field: 'A fact', placeholder: 'Shoes 33', addButton: 'Add', remove: (fact: string) => `Remove ${fact}`, save: 'Save' },
     comingUp: 'Coming up',
-    comingUpEmpty: 'Nothing yet. Events and reminders about them show here once Plan is built.',
     kept: (name: string) => `Kept for ${name}`,
     keptYou: 'Kept for you',
     keptEmpty: (name: string) => `Nothing yet. Whatever is kept about ${name} and shared with you shows here.`,

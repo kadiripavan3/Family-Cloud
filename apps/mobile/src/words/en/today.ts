@@ -71,7 +71,6 @@ export const today = {
     title: 'Add something',
     typeIt: 'Type it: “Haircut for Leo, Saturday 10”',
     typeItLabel: 'Type what to add',
-    typeItLater: 'Typing a sentence that files itself arrives with Plan. Pick one of the ten below for now.',
     /** The ten things it makes, by the last part of the address each one opens ("/new/note"). */
     things: { note: 'Note', checklist: 'Checklist', photos: 'Photos', scan: 'Scan', event: 'Event', reminder: 'Reminder', bill: 'Bill', sheet: 'Sheet', password: 'Password', goal: 'Goal' },
     goesInto: 'Goes into',

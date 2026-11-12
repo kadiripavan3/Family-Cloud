@@ -18,6 +18,10 @@ export const dates = {
   },
   /** "April 2026": the month a calendar shows. */
   month: (month: number, year: number) => `${MONTHS[month]} ${year}`,
+  /** "Sat 14 Nov", "Sat 2 Jan 2027": a day on a calendar with its weekday. `weekday` is numbered from 0 (Sunday); `day` is already written out. */
+  weekdayDay: (weekday: number, day: string) => `${WEEKDAYS[weekday]} ${day}`,
+  /** "3 Apr to 20 Apr", "10:00 to 10:30". Both ends are already written out. */
+  range: (from: string, to: string) => `${from} to ${to}`,
 
   // The day picker
   /** One letter for each day of the week, Monday first. */
