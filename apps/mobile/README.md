@@ -105,24 +105,6 @@ Milestone 1, the spine: circles, people and sharing.
 | 12.3 Privacy and security | `/settings/security` | The three choices under "This phone" are remembered on the phone. |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
-Milestone 5, Money: bills, sheets, the loan planner and splitting costs. Every amount, share, total and formula result comes from the API; the app only writes them (`lib/money`).
-
-| Screen (design) | Address | |
-|---|---|---|
-| 8.1 Money | `/?place=money` | The month's card, what is due soonest, the sheets as a rail, and the circle's splits under them. |
-| The lists of bills | `/money/bills`, `/money/bills?show=subscriptions` | To pay, paid, subscriptions. Not drawn. |
-| 8.2 A bill | `/bill/<id>` | "Pay" on Today's line is `PayBillButton` (`features/money/PayBill`). |
-| Adding and changing a bill | `/new/bill`, `/money/bill?id=<id>` | Not drawn. |
-| 8.3 Scan a bill | `/money/scan`, `?bill=<id>`, `?split=<id>` | A picked picture and typed or pasted lines stand in for the camera and its text reading. |
-| 8.4 Sheets | `/money/sheets`, `/new/sheet` | The templates are the API's. |
-| 8.5 A sheet | `/sheet/<id>` | It asks again every few seconds: "Alex is here too". |
-| 8.6 A row, as a card | `/money/row/<id>` | A box is saved when it is left, with only that cell. |
-| 8.7 A formula you can read | `/money/formula?sheet=<id>&tab=<id>` | `&tile=`, `&column=` for one that is there; `&as=tile` or `&as=column` for a new one. |
-| 8.8 Template: loan planner | `/money/loan` | The savings plan has no such screen yet: its template starts as its sheet. |
-| 8.9 Splitting with friends | `/split/<id>`, `/money/splits` | |
-
-A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out). Its lists read their rows through `useWhileInFront`: a list that another screen covers keeps the rows it had until it is looked at again, because in a browser the list trips ("not enough layouts") when a row goes while it is covered, as when a sheet opened from it is deleted.
-
 Milestone 2, the Library: photos, videos and documents (`src/features/library`).
 
 | Screen (design) | Address | |
@@ -158,6 +140,58 @@ Milestone 3, Plan: the calendar, events, reminders, goals. Its pieces are in `sr
 | A new event, reminder, goal | `/new/event` (`?day=`), `/new/reminder`, `/new/goal` | Not drawn. The first two have a line on top that leads to Type it. |
 
 Plan's pieces that other screens use: `useTick()` and `Tick` (ticking a reminder from any list, for the due day the line is for; `TodayTick` is the tick on Today, where a line has no due day and the reminder itself is asked first), `ComingUp` (a person's page), `PlanEntry` and `DayHeader` (one line of a day), `WhenSheet`, `RepeatSheet`, `RemindSheet` and `PeopleSheet` (picking a day and time, how often, how long ahead, and people of the circle), `readTime` and `readCents` (`features/plan/times`: a time and an amount the way people type them), and `useNotice()` (a sentence that answers a press and goes by itself).
+
+Milestone 3, Jot: adding something without opening the app (`src/features/jot`; what runs outside the app is in `native/jot` and `plugins/`, built in only with `JOT_NATIVE=1`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 14.2 The jot bar, 14.6 Filed for you | `/jot`, `/jot/filed` | A line is read by the API's rules and filed; "what was filed" undoes or moves it. A line that looks like a code is held back and can go to the Vault. |
+| 14.4 Voice | `/jot/voice` | Typed words stand in for the microphone in a browser. |
+| 14.7 Share into Homeport | `/jot/share` | What another app shares. In a browser, a pasted text. |
+| 14.1 Widgets, 14.3 The pinned note, 14.5 The Lock Screen | `/jot/widgets`, `/jot/pinned`, `/jot/lock` | Pictures of what the phone build adds, with what each can and can't do. Their code has never run on a phone. |
+| Ways in | `/jot/ways` | Reached from You, Settings. |
+
+Milestone 4, Notes: spaces, folders, pages, lists (`src/features/notes`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 5.1 Notes | `/?place=notes` | Pinned, spaces, lately, not filed. |
+| 5.2 A space | `/folder/<id>` | A space or any folder; folders inside folders open in place. "Templates" opens the gallery. |
+| 5.3 A page, 5.4 Blocks | `/page/<id>` | Blocks changed one at a time. A list in a page ticks in place; a live block shows another thing as it stands and opens it; a password's "Copy" opens it in the Vault. A page that is a kept journey is drawn as its book (milestone 10). |
+| 5.5 A checklist, 13.2 Offline | `/checklist/<id>` | Changes are written on the phone first and sent in order when there is a connection (`features/notes/changes`). An open list or page asks again every few seconds. |
+| New | `/new/note`, `/new/checklist` | Take `?folder=`. |
+
+Milestones 4, 7 and 8, the templates that do work. Every one is a board at `/board/<id>`, started from the gallery at `/templates`; "Adding a template" above is how each was added.
+
+| Where its files are | Templates |
+|---|---|
+| `src/features/templates` | Weekly meal plan, chore wheel, time capsule |
+| `src/features/keepsakes` | Open when…, the birthday interview, what they said, same spot every year, Grandma's stories (with her own web page), the good things jar, the doorframe |
+| `src/features/perks` | Whose turn?, the piggy bank, secret missions, the Saturday jar, sleeps until…, where is it?, habit charts |
+| `src/features/couple` | Our story, tucked notes, the anniversary, mystery date, both said yes, the fair share |
+| `src/features/flat` | The kitty, a fairer split, heads-up, heard in this flat, the guest book (with its page at the door), who lived here; and "Running low" on a flat's Today |
+| `src/features/crew` | When can everyone? (with its page by link), Secret Santa, where next?, the dictionary, predictions, the awards, a goal you walk together |
+
+- **Today is one screen for every kind of circle** (`src/features/today`): it draws what the API's Today holds. The first card that is only words is the headline beside the ring; the day's things and the other cards are lines of one list (`TodayLine`), a line about shared costs or a bill with its button; cards with a picture stand in a rail with what is new.
+- Six templates are marked LIVE in the galleries and have no drawing of their own yet (Date ideas, Who pays what, Names; Cleaning rota, Bills by nights, Move-in photos): they say "Coming with the next update" and can't be started.
+
+Milestone 5, Money: bills, sheets, the loan planner and splitting costs. Every amount, share, total and formula result comes from the API; the app only writes them (`lib/money`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 8.1 Money | `/?place=money` | The month's card, what is due soonest, the sheets as a rail, and the circle's splits under them. |
+| The lists of bills | `/money/bills`, `/money/bills?show=subscriptions` | To pay, paid, subscriptions. Not drawn. |
+| 8.2 A bill | `/bill/<id>` | "Pay" on Today's line is `PayBillButton` (`features/money/PayBill`). |
+| Adding and changing a bill | `/new/bill`, `/money/bill?id=<id>` | Not drawn. |
+| 8.3 Scan a bill | `/money/scan`, `?bill=<id>`, `?split=<id>` | A picked picture and typed or pasted lines stand in for the camera and its text reading. |
+| 8.4 Sheets | `/money/sheets`, `/new/sheet` | The templates are the API's. |
+| 8.5 A sheet | `/sheet/<id>` | It asks again every few seconds: "Alex is here too". |
+| 8.6 A row, as a card | `/money/row/<id>` | A box is saved when it is left, with only that cell. |
+| 8.7 A formula you can read | `/money/formula?sheet=<id>&tab=<id>` | `&tile=`, `&column=` for one that is there; `&as=tile` or `&as=column` for a new one. |
+| 8.8 Template: loan planner | `/money/loan` | The savings plan has no such screen yet: its template starts as its sheet. |
+| 8.9 Splitting with friends | `/split/<id>`, `/money/splits` | |
+
+A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out). Its lists read their rows through `useWhileInFront`: a list that another screen covers keeps the rows it had until it is looked at again, because in a browser the list trips ("not enough layouts") when a row goes while it is covered, as when a sheet opened from it is deleted.
 
 Milestone 6, the Vault. Its contract is `docs/07-vault-protocol.md`; its cryptography is in `src/features/vault/crypto/` (no React, no API calls, a test file for each) and what the phone does with keys, step by step, in `src/features/vault/actions.ts`.
 
