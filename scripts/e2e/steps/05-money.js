@@ -110,10 +110,10 @@ exports.run = async function run(ctx) {
     await R('button', { name: "Alex's part isn't paid after all" }).waitFor();
     await shot('bill-who-pays');
     await closeSheet();
-    // No login is linked to it: the row is there and says so.
-    await R('button', { name: /^No login kept with it/ }).click();
-    await T('No login yet').waitFor();
-    await R('button', { name: 'OK' }).click();
+    // Its login is kept in the Vault and its invoice in the Library: each is a row that opens it (the Vault's
+    // own steps open a login; a bill without one says so, which the bill's own test covers).
+    await R('button', { name: /^Log in to Elektro\. From the Vault/ }).waitFor();
+    await R('button', { name: /^Invoice, / }).waitFor();
     // The three dots: changing it, who sees it, its IBAN and reference to copy, deleting it.
     await R('button', { name: 'More', exact: true }).click();
     await R('button', { name: 'Change the bill' }).waitFor();

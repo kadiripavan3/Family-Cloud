@@ -24,7 +24,7 @@ const db = (sql) => execFileSync('psql', [DB_URL, '-At', '-v', 'ON_ERROR_STOP=1'
 
 const NORA = 'nora@example.com';
 /** Every table the Vault writes to, and the two a sealed card on a guest pass lives in. */
-const TABLES = ['vaults', 'things', 'vault_items', 'vault_grants', 'vault_emergencies', 'vault_emergency_items', 'vault_helpers', 'vault_recoveries', 'vault_recovery_shares', 'vault_notices', 'guest_passes', 'guest_pass_cards'];
+const TABLES = ['vaults', 'things', 'vault_items', 'vault_grants', 'vault_emergencies', 'vault_emergency_items', 'vault_helpers', 'vault_recoveries', 'vault_recovery_shares', 'pushes', 'asks', 'guest_passes', 'guest_pass_cards'];
 const KEY_SHAPE = /^([A-HJ-NP-Z2-9]{4} ){5}[A-HJ-NP-Z2-9]{4}$/;
 
 /** Fails when any row of the Vault's tables holds one of these, in any of the spellings a careless request could carry it in. */
@@ -49,7 +49,7 @@ function forgetVaultOf(email) {
     delete from vault_emergencies where owner_id = '${user}' or trusted_id = '${user}';
     delete from vault_helpers where owner_id = '${user}' or helper_id = '${user}';
     delete from vault_recoveries where owner_id = '${user}';
-    delete from vault_notices where user_id = '${user}';
+    delete from pushes where user_id = '${user}' and kind like 'vault%';
     delete from vaults where user_id = '${user}';
   `);
 }
@@ -176,7 +176,7 @@ exports.run = async function run(ctx) {
   await step('vault-home', async () => {
     // 9.2 The Vault: the six drawers with their counts, what needs a look, what others shared, and the countdown.
     await me.R('button', { name: /^Logins, 5$/ }).waitFor({ timeout: 20000 });
-    for (const drawer of [/^Cards, 1$/, /^IDs, 3$/, /^Wi‑Fi, 1$/, /^Codes, 2$/, /^Secrets, 1$/]) await me.R('button', { name: drawer }).waitFor();
+    for (const drawer of [/^Cards, 1$/, /^IDs, 3$/, /^Wi‑Fi, 1$/, /^Codes, 3$/, /^Secrets, 1$/]) await me.R('button', { name: drawer }).waitFor();
     await me.T('Two passwords need a look').waitFor();
     await me.T('One is used in more than one place. One showed up in a known leak.').waitFor();
     await me.T('Shared with you').waitFor();
@@ -366,7 +366,7 @@ exports.run = async function run(ctx) {
     await me.R('button', { name: 'Back' }).click();
     await me.R('heading', { name: 'Logins' }).waitFor();
     await me.R('button', { name: 'Back' }).click();
-    await me.R('button', { name: /^Codes, 2$/ }).click();
+    await me.R('button', { name: /^Codes, 3$/ }).click();
     await me.R('heading', { name: 'Codes' }).waitFor();
     await me.R('button', { name: 'Add', exact: true }).click();
     await me.R('heading', { name: 'New code' }).waitFor();
@@ -766,13 +766,13 @@ exports.run = async function run(ctx) {
     await me.R('button', { name: 'Copy Bank' }).click();
     await me.T('Sample item: add your own to see the real thing.').waitFor();
     await me.R('button', { name: 'Back' }).click();
-    await me.R('button', { name: /^Codes, 3$/ }).click();
+    await me.R('button', { name: /^Codes, 4$/ }).click();
     await me.R('button', { name: new RegExp(`^${shed}\\.`) }).click();
     await me.R('button', { name: 'Edit' }).click();
     await me.R('button', { name: 'Delete this item' }).click();
     await me.T('Delete this item?').waitFor();
     await me.R('button', { name: 'Delete it' }).click();
-    await me.R('button', { name: /^Codes, 2$/ }).waitFor({ timeout: 20000 });
+    await me.R('button', { name: /^Codes, 3$/ }).waitFor({ timeout: 20000 });
     if (db(`select count(*) from things where id = '${door}'`) !== '0') throw new Error('the deleted item is still in the database');
   });
 

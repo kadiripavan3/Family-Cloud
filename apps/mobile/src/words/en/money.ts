@@ -148,7 +148,7 @@ export const money = {
       note: 'From the Vault · opens signed in',
       none: 'No login kept with it',
       noneNote: 'Nothing from the Vault is linked yet',
-      noneSheet: { title: 'No login yet', body: 'Nothing in the Vault is linked to this bill. Linking a password to a bill arrives with the Vault.' },
+      noneSheet: { title: 'No login yet', body: "Nothing in the Vault is linked to this bill. Linking one from here isn't built yet." },
     },
     invoice: {
       note: 'Scanned from the letter · in Files',

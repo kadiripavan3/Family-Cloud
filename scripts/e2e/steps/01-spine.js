@@ -216,7 +216,7 @@ async function newFamily(ctx) {
     await L('What to add').waitFor();
     await R('button', { name: 'Close' }).click();
     await R('button', { name: 'Add something' }).click();
-    // A thing that isn't built yet has its own place and says so.
+    // Each of the ten opens its own screen to make one (Money's own steps fill a bill in).
     await R('button', { name: 'Bill', exact: true }).click();
     await R('heading', { name: 'Bill' }).waitFor();
     await R('button', { name: 'Close' }).click();
@@ -765,12 +765,14 @@ async function sampleCircles(ctx) {
     await T('New in the library').waitFor();
     await R('button', { name: /^Saturday at Lake Bled\. 19 new\./ }).waitFor();
     await shot('home');
-    // Something on Today opens by its kind. A bill's own screen arrives with Money; until then it says so.
+    // Something on Today opens by its kind: the bill, on its own page in Money (whose steps pay and split it).
     await R('button', { name: '€84. Electricity. Due tomorrow · split with Alex' }).click();
     await R('heading', { name: 'Electricity' }).waitFor();
-    await T(/^This is a bill\. It opens here once Money is built/).waitFor();
-    await shot('thing-to-come');
+    await T('€84.20', { exact: true }).waitFor();
+    await T(/^Split 50\/50 with Alex/).waitFor();
+    await shot('bill-from-today');
     await R('button', { name: 'Back', exact: true }).click();
+    await T('New in the library').waitFor();
   });
 
   await step('circle-switch', async () => {
