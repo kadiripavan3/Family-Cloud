@@ -64,7 +64,8 @@ export function CardLine({ card, first }: { card: TodayCard; first: boolean }) {
     <TodayLine
       first={first}
       wideFront
-      lines={2}
+      // (A card says more than a day's own line, and its button takes room: its words may run to a third line.)
+      lines={3}
       front={card.figure ? <FrontWords>{card.figure}</FrontWords> : card.emoji ? <Emoji char={card.emoji} size={26} /> : <Icon size={20} color={colors.text} />}
       title={card.title ?? ''}
       note={card.line}

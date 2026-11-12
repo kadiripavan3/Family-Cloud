@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
+import { View } from 'react-native';
 
 import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
@@ -7,8 +8,10 @@ import { addSplitPayment, remindSplitMember, type SplitResponse, type ToPayRespo
 import { today } from '@/lib/dates';
 import { newClientId } from '@/lib/ids';
 import { formatMoney } from '@/lib/money';
+import { layout } from '@/theme';
 import { Button } from '@/ui/Button';
-import { ConfirmSheet } from '@/ui/ConfirmSheet';
+import { Sheet } from '@/ui/Sheet';
+import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
 type Props = {
@@ -92,17 +95,18 @@ function Settle({ split, mine, title, say }: { split: SplitResponse; mine: ToPay
           setIds(mine.map(() => newClientId()));
         }}
       />
-      <ConfirmSheet
-        visible={ids !== null}
-        onClose={() => setIds(null)}
-        title={question}
-        body={words.today.split.body(split.title)}
-        confirm={words.today.split.confirm}
-        cancel={words.today.split.notYet}
-        busy={settle.isPending}
-        problem={settle.isError ? messageFor(settle.error) : null}
-        onConfirm={() => (ids ? settle.mutate(ids) : undefined)}
-      />
+      {/* (Not the sheet that asks before something is deleted: nothing is lost here, so its yes is not a red one.) */}
+      <Sheet visible={ids !== null} onClose={() => setIds(null)} title={question} subtitle={words.today.split.body(split.title)}>
+        <View style={{ gap: 10, paddingTop: 6, paddingHorizontal: layout.rowGutter }}>
+          {settle.isError ? (
+            <Txt variant="caption" color="danger" accessibilityLiveRegion="polite">
+              {messageFor(settle.error)}
+            </Txt>
+          ) : null}
+          <Button label={words.today.split.confirm} size="lg" block loading={settle.isPending} onPress={() => (ids ? settle.mutate(ids) : undefined)} />
+          <Button label={words.today.split.notYet} variant="soft" size="lg" block disabled={settle.isPending} onPress={() => setIds(null)} />
+        </View>
+      </Sheet>
     </>
   );
 }

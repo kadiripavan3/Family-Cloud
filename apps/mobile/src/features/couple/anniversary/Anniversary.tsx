@@ -1,10 +1,9 @@
 import { Check, CircleHelp, History, Lock } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import type { AnniversaryNextResponse, AnniversaryQuestionResponse, AnniversaryResponse, AnniversarySettings } from '@/api/generated/homeport';
 import { BoardFrame, type MenuRow } from '@/features/templates/BoardFrame';
-import { CtaBar } from '@/features/templates/parts/Bars';
 import type { Board, BoardScreenProps } from '@/features/templates/types';
 import { useBoardChanges, useBoardPart } from '@/features/templates/useBoard';
 import { formatDayFull, formatDayOfYear } from '@/lib/dates';
@@ -16,6 +15,7 @@ import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
 import { EmptyState } from '@/ui/EmptyState';
 import { Field } from '@/ui/Field';
+import { GlassBar } from '@/ui/GlassBar';
 import { NoteBox } from '@/ui/NoteBox';
 import { Sheet } from '@/ui/Sheet';
 import { Txt } from '@/ui/Txt';
@@ -69,9 +69,9 @@ export function Anniversary({ board }: BoardScreenProps<AnniversaryResponse, Ann
       menu={menu}
       problem={part.problem}
       floating={
-        <CtaBar title={next.dayHasCome ? say.next.waits(next.year, both) : say.next.opens(next.year, formatDayOfYear(next.opensOn))} line={[mine, othersLine(next)].filter(Boolean).join(' ')}>
+        <NextBar title={next.dayHasCome ? say.next.waits(next.year, both) : say.next.opens(next.year, formatDayOfYear(next.opensOn))} line={[mine, othersLine(next)].filter(Boolean).join(' ')}>
           {board.view.youAnswer ? <Button label={next.youAreDone ? say.write.change : say.write.button} size="sm" inline onPress={() => setWriting(true)} /> : null}
-        </CtaBar>
+        </NextBar>
       }>
       {view.years.length > 1 && view.years.length <= 4 ? (
         <View style={{ marginBottom: 14 }}>
@@ -92,6 +92,29 @@ export function Anniversary({ board }: BoardScreenProps<AnniversaryResponse, Ann
       <WriteSheet board={board} visible={writing} onClose={() => setWriting(false)} />
       <AskSheet board={board} visible={asking} onClose={() => setAsking(false)} />
     </BoardFrame>
+  );
+}
+
+/**
+ * The glass bar that floats over the end of the page: the year that is being written, and its one button.
+ * (The frame's own `CtaBar` keeps its title to one line; "Year thirteen opens when you have both answered"
+ * needs two.)
+ */
+function NextBar({ title, line, children }: { title: string; line: string; children?: ReactNode }) {
+  return (
+    <GlassBar radius="sheet" contentStyle={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingLeft: 20, paddingRight: 10, minHeight: 56 }}>
+      <View style={{ flex: 1 }}>
+        <Txt variant="item" weight={800} numberOfLines={2}>
+          {title}
+        </Txt>
+        {line ? (
+          <Txt variant="footnote" color="muted" numberOfLines={2}>
+            {line}
+          </Txt>
+        ) : null}
+      </View>
+      {children}
+    </GlassBar>
   );
 }
 

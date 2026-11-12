@@ -83,6 +83,13 @@ describe('17.7 Both said yes', () => {
     expect(screen.queryByText('Also deciding')).toBeNull();
   });
 
+  it('says a deck with nothing in it is empty, and how to add the first idea', async () => {
+    asked.mockReturnValue(loaded(bothYesBoard(bothYesView({ decks: [deck({ ideas: 0, seen: 0, matches: 0 })], deck: { id: 'deck-dinner', card: null, number: 0, of: 0, matches: [] } }))));
+    await render(inApp(<Board />));
+    expect(screen.getByRole('header', { name: 'Nothing in Dinner yet' })).toBeOnTheScreen();
+    expect(screen.getByText('Add the first idea with the plus.')).toBeOnTheScreen();
+  });
+
   it('adds an idea to the open deck', async () => {
     await render(inApp(<Board />));
     const user = userEvent.setup();

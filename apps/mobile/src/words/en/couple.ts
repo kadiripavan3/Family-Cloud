@@ -321,6 +321,11 @@ export const couple = {
       no: (idea: string) => `No to ${idea}`,
       yes: (idea: string) => `Yes to ${idea}`,
     },
+    /** A deck with nothing in it yet. */
+    noIdeas: {
+      title: (deck: string) => `Nothing in ${deck} yet`,
+      line: 'Add the first idea with the plus.',
+    },
     /** This person has answered every idea of the open deck. */
     through: {
       title: (deck: string) => `You're through ${deck}`,

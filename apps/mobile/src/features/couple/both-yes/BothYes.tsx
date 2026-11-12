@@ -96,6 +96,8 @@ export function BothYes({ board }: BoardScreenProps<BothYesResponse, BothYesSett
               <Slip emoji={open.card.emoji ?? deck?.emoji} title={open.card.text} line={words.common.join([say.card.count(open.number, open.of), say.card.private(others)])} />
               <Answer idea={open.card} busy={changes.busy || part.waiting} onSay={(yes) => void changes.act('say', { ideaId: open.card?.id, yes })} />
             </>
+          ) : open && open.of === 0 ? (
+            <Slip emoji={deck?.emoji} title={say.noIdeas.title(deck?.name ?? '')} line={board.canEdit ? say.noIdeas.line : say.watching.line} />
           ) : open ? (
             <Slip emoji={deck?.emoji} title={view.youAnswer ? say.through.title(deck?.name ?? '') : say.watching.title(view.people.map((person) => person.name ?? ''))} line={view.youAnswer ? say.through.line(open.of) : say.watching.line} />
           ) : null}
