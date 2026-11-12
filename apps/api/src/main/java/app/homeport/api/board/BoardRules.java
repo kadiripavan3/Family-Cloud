@@ -144,7 +144,10 @@ public interface BoardRules {
         return List.of();
     }
 
-    /** The cards it puts at the top of Today for this viewer: whose turn it is to plan, a match, a count of days. */
+    /**
+     * The cards it puts at the top of this viewer's Today, one or two at most: whose turn it is to plan, a match,
+     * what the kitty holds, a day that works for four. Like everything else, only what this viewer may know.
+     */
     default List<TodayCard> cards(Scene scene) {
         return List.of();
     }

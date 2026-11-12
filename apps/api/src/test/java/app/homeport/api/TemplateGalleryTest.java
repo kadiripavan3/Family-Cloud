@@ -113,7 +113,7 @@ class TemplateGalleryTest extends BoardTest {
                         "stories",
                         "good_jar",
                         "doorframe")
-                // a family's fair and fun, and a couple's keepsakes and rituals
+                // a family's fair and fun, a couple's keepsakes and rituals, a flat's and friends'
                 .contains(
                         "whose_turn",
                         "piggy_bank",
@@ -127,7 +127,20 @@ class TemplateGalleryTest extends BoardTest {
                         "anniversary",
                         "mystery_date",
                         "both_yes",
-                        "fair_share");
+                        "fair_share",
+                        "heard",
+                        "guest_book",
+                        "lived_here",
+                        "kitty",
+                        "fairer_split",
+                        "heads_up",
+                        "find_date",
+                        "secret_santa",
+                        "where_next",
+                        "dictionary",
+                        "predictions",
+                        "awards",
+                        "walk_together");
         assertThat(JsonPath.<List<String>>read(couple, "$.templates[?(@.template == 'date_ideas')].note"))
                 .containsExactly("Coming with the next update");
         assertThat(JsonPath.<List<Object>>read(couple, "$.templates[?(@.live == false && @.ready == false)]"))
