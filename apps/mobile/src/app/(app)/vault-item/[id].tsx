@@ -232,27 +232,28 @@ function Person({ person, mine, onChange }: { person: VaultItemPersonResponse; m
   const says = words.vault.item;
   const name = person.you ? says.you : firstName(person.name);
   const access = person.access ?? 'see';
+  const lines = person.you ? says.lineYou : says.line;
   const line = person.owner
     ? person.you
       ? says.yours
       : says.owner
     : person.state === 'used'
-      ? says.line.used
+      ? lines.used
       : person.state === 'stopped'
-        ? says.line.stopped
+        ? lines.stopped
         : person.state === 'waiting'
           ? person.missing === 'no_vault'
-            ? says.line.noVault
-            : says.line.waiting
+            ? lines.noVault
+            : lines.waiting
           : person.once
-            ? says.line.once
+            ? lines.once
             : person.stopsAt
-              ? says.line.until(plainMomentOf(person.stopsAt))
+              ? lines.until(plainMomentOf(person.stopsAt))
               : person.changedAt
-                ? says.line.changed(timeAgo(person.changedAt))
+                ? lines.changed(timeAgo(person.changedAt))
                 : mine && person.openedAt
-                  ? says.line.opened(timeAgo(person.openedAt))
-                  : says.line[access];
+                  ? lines.opened(timeAgo(person.openedAt))
+                  : lines[access];
   const pill = person.owner ? null : (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 7, paddingLeft: 12, paddingRight: onChange ? 8 : 12, borderRadius: radius.pill, backgroundColor: colors.fill }}>
       <Txt variant="footnote" weight={700}>

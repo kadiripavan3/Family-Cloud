@@ -145,13 +145,17 @@ function Key({ vault, helpers }: { vault: VaultRecordResponse; helpers: VaultHel
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 <KeyQr text={fresh} size={76} />
+                {/* Two lines of three groups, each group in its own column: the app has no fixed-width font, and a key is read and typed group by group. */}
                 <View accessible accessibilityLabel={grouped(fresh)} testID="vault-key" style={{ flex: 1, gap: 4 }}>
-                  <Txt variant="headline" weight={500} selectable style={{ fontVariant: ['tabular-nums'] }}>
-                    {groups.slice(0, 3).join(' ')}
-                  </Txt>
-                  <Txt variant="headline" weight={500} selectable style={{ fontVariant: ['tabular-nums'] }}>
-                    {groups.slice(3).join(' ')}
-                  </Txt>
+                  {[groups.slice(0, 3), groups.slice(3)].map((line) => (
+                    <View key={line.join('')} style={{ flexDirection: 'row' }}>
+                      {line.map((group) => (
+                        <Txt key={group} variant="headline" weight={500} selectable style={{ flex: 1, fontVariant: ['tabular-nums'] }}>
+                          {group}
+                        </Txt>
+                      ))}
+                    </View>
+                  ))}
                 </View>
               </View>
               <View style={{ flexDirection: 'row', gap: 10 }}>

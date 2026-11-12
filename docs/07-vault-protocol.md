@@ -442,7 +442,7 @@ The API marks such an item (`sample: true`), refuses to open, change or share it
 - **Filling a password in inside other apps** is phone work that comes after the first version. Copying, and opening a site, come first.
 - **Checking for leaks** needs an outside service that isn't connected. The word `leaked` exists; nothing sets it yet.
 - **Face ID** is written and tested against a stand-in for the phone's secure storage, and has **never run on a phone**. The two-minute lock, the passcode way and everything else ran in the browser preview.
-- **How long scrypt takes on a phone** is not known. With the document's numbers it takes about a quarter of a second in a desktop browser and under the tests; a phone's JavaScript engine without a compiler will be several times slower. See the questions.
+- **How long scrypt takes on a phone** is not known. With the document's numbers one run took 150 to 210 ms in desktop Chromium (the longest stretch without a frame drawn: about 100 ms) and 190 to 250 ms under the tests, on a shared four-core machine on 12 Nov 2026. A phone's JavaScript engine without a compiler will be several times slower. The phone bundle was compiled to Hermes bytecode with these libraries in it; the cryptography has not been **run** under Hermes. See the questions.
 - **"Save as PDF" on a phone** needs a part of the phone build that isn't in the app; in the browser it is the print dialog.
 - **Taking one card off a guest pass** has a route and no button yet.
 - **Children** are profiles without a sign-in in this build, so nothing can be sealed for them. "Mia can use Netflix" needs a child who has a device of her own.

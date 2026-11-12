@@ -140,9 +140,9 @@ export const vault = {
     locksIn: (seconds: number) => `Locks itself in ${clock(seconds)}`,
     look: {
       title: (count: number) => `${counted(count, 'password needs', 'passwords need')} a look`,
-      /** "One is weak. Two are used in more than one place." */
+      /** "One is weak. Two are used in more than one place. One showed up in a known leak." */
       body: (weak: number, reused: number, leaked: number) =>
-        [weak ? `${counted(weak, 'is', 'are')} weak.` : null, reused ? `${counted(reused, 'is', 'are')} used in more than one place.` : null, leaked ? `${counted(leaked, 'has', 'have')} shown up in a known leak.` : null]
+        [weak ? `${counted(weak, 'is', 'are')} weak.` : null, reused ? `${counted(reused, 'is', 'are')} used in more than one place.` : null, leaked ? `${counted(leaked, 'showed', 'showed')} up in a known leak.` : null]
           .filter(Boolean)
           .join(' '),
     },
@@ -260,6 +260,20 @@ export const vault = {
       noVault: "Hasn't opened their Vault yet",
       used: 'Opened it once. It is gone for them',
       stopped: 'Has stopped working for them',
+    },
+    /** The same lines under the person's own name, on something another person shared with them. */
+    lineYou: {
+      use: 'The app never shows it to you',
+      see: 'You can look it up any time',
+      change: 'You can save changes too',
+      once: 'Gone for you after one look',
+      until: (when: string) => `Until ${when}`,
+      opened: (ago: string) => `You opened it ${ago}`,
+      changed: (ago: string) => `You changed it ${ago}`,
+      waiting: 'Waiting for a key from their phone',
+      noVault: 'Open your Vault to get the key',
+      used: 'You opened it once. It is gone for you',
+      stopped: 'Has stopped working for you',
     },
     share: 'Share with someone',
     shareNote: 'To use, to see or to change',

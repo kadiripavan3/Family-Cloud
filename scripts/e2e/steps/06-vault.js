@@ -178,7 +178,7 @@ exports.run = async function run(ctx) {
     await me.R('button', { name: /^Logins, 5$/ }).waitFor({ timeout: 20000 });
     for (const drawer of [/^Cards, 1$/, /^IDs, 3$/, /^Wi‑Fi, 1$/, /^Codes, 2$/, /^Secrets, 1$/]) await me.R('button', { name: drawer }).waitFor();
     await me.T('Two passwords need a look').waitFor();
-    await me.T('One is used in more than one place. One has shown up in a known leak.').waitFor();
+    await me.T('One is used in more than one place. One showed up in a known leak.').waitFor();
     await me.T('Shared with you').waitFor();
     await me.T('Netflix').waitFor();
     await me.T(/^Locks itself in [01]:\d\d$/).waitFor();

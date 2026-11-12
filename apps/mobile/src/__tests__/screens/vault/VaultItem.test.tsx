@@ -168,16 +168,19 @@ describe('9.3 A password', () => {
       expect(screen.queryByRole('button', { name: /Change$/ })).toBeNull();
       expect(screen.queryByRole('button', { name: /^Share with someone/ })).toBeNull();
       expect(screen.getByText('It is theirs')).toBeOnTheScreen();
+      // Under the person's own name the line speaks to them.
+      expect(screen.getByText('You can look it up any time')).toBeOnTheScreen();
     });
 
     it('to use: the app never shows it, offers "copy once", and says in plain words that this is a rule of the app', async () => {
-      asked.mockReturnValue(loaded(fromAlex({ myAccess: 'use' })));
+      asked.mockReturnValue(loaded(fromAlex({ myAccess: 'use', people: [itemPerson({ owner: true, access: 'change' }), { ...noraOwns, owner: false, access: 'use' }] })));
       jest.mocked(openVaultItem).mockImplementation(async () => openedAnswer(undefined, { access: 'use' }));
       await render(inApp(<VaultItem />));
       const copy = await screen.findByRole('button', { name: 'Copy password once' });
       expect(screen.queryByRole('button', { name: 'Show password' })).toBeNull();
       expect(screen.queryByText(PASSWORD)).toBeNull();
       expect(screen.getByText('You can use this, not see it')).toBeOnTheScreen();
+      expect(screen.getByText('The app never shows it to you')).toBeOnTheScreen();
       expect(screen.getByText("“Can use, can't keep” is a rule of this app, not of the mathematics. Your phone holds the password for the moment it copies it; the app never shows it and offers only “copy once”.")).toBeOnTheScreen();
       // No verdict either: its length would say something about it.
       expect(screen.queryByText('Strong, and not used twice')).toBeNull();

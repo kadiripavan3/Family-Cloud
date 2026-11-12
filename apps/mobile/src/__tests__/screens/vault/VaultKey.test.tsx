@@ -67,8 +67,7 @@ describe('9.6 Your Vault key', () => {
     expect(screen.getByRole('header', { name: 'Your Vault key' })).toBeOnTheScreen();
     expect(screen.getByText(/^It unscrambles the Vault on a new phone\. We don't have a copy, so /)).toBeOnTheScreen();
     expect(screen.getByText("we can't reset it for you")).toBeOnTheScreen();
-    expect(screen.getByText('KT4M 9QXZ PL2A')).toBeOnTheScreen();
-    expect(screen.getByText('77HD VB3N E8RW')).toBeOnTheScreen();
+    for (const group of VAULT_KEY.split(' ')) expect(screen.getByText(group)).toBeOnTheScreen();
     expect(screen.getByLabelText(VAULT_KEY)).toBeOnTheScreen();
     expect(screen.getByLabelText('Your Vault key as a QR code')).toBeOnTheScreen();
   });
@@ -107,7 +106,8 @@ describe('9.6 Your Vault key', () => {
     await render(inApp(<VaultKey />));
     expect(screen.getByText('Shown once')).toBeOnTheScreen();
     expect(screen.getByText('You said you saved it.')).toBeOnTheScreen();
-    expect(screen.queryByText('KT4M 9QXZ PL2A')).toBeNull();
+    expect(screen.queryByText('KT4M')).toBeNull();
+    expect(screen.queryByLabelText(VAULT_KEY)).toBeNull();
     expect(screen.queryByRole('button', { name: "I've saved my key" })).toBeNull();
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: 'Make a new Vault key' }));

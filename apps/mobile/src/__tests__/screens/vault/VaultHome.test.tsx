@@ -64,7 +64,7 @@ describe('9.2 The Vault', () => {
   it('nudges about passwords that need a look, by what is wrong with them', async () => {
     await render(inApp(<VaultHome />));
     expect(screen.getByText('Two passwords need a look')).toBeOnTheScreen();
-    expect(screen.getByText('One is used in more than one place. One has shown up in a known leak.')).toBeOnTheScreen();
+    expect(screen.getByText('One is used in more than one place. One showed up in a known leak.')).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('button', { name: /^Two passwords need a look/ }));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/vault/drawer/[category]', params: { category: 'look' } });
   });
