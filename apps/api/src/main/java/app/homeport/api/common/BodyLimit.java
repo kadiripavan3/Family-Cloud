@@ -20,6 +20,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * JSON or a small form. So a request body over 64 KB is refused before anything reads it into memory, also
  * on the paths that need no sign-in (the video service's webhook, the public forms).
  *
+ * <p>The Vault is allowed twice that: what it is sent was scrambled on the phone, and 64 KB of ciphertext is
+ * 88 KB once it is written as text. Each of its routes bounds its own fields (see {@link Sealed}).
+ *
  * <p>The one exception is the local stand-in for storage, which takes whole files and has its own ceiling.
  */
 @Component
@@ -27,6 +30,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class BodyLimit extends OncePerRequestFilter {
 
     public static final int MAX_BYTES = 64 * 1024;
+    public static final int MAX_VAULT_BYTES = 128 * 1024;
+
+    private static int ceiling(HttpServletRequest request) {
+        return request.getRequestURI().startsWith(request.getContextPath() + "/v1/vault/")
+                ? MAX_VAULT_BYTES
+                : MAX_BYTES;
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -36,7 +46,8 @@ public class BodyLimit extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        if (request.getContentLengthLong() > MAX_BYTES) {
+        int max = ceiling(request);
+        if (request.getContentLengthLong() > max) {
             response.setStatus(HttpStatus.CONTENT_TOO_LARGE.value());
             response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
             // Fixed words, never input.
@@ -46,13 +57,16 @@ public class BodyLimit extends OncePerRequestFilter {
             return;
         }
         // A body sent without saying how long it is gets counted as it is read.
-        chain.doFilter(request.getContentLengthLong() < 0 ? new Counted(request) : request, response);
+        chain.doFilter(request.getContentLengthLong() < 0 ? new Counted(request, max) : request, response);
     }
 
     private static final class Counted extends HttpServletRequestWrapper {
 
-        Counted(HttpServletRequest request) {
+        private final int max;
+
+        Counted(HttpServletRequest request, int max) {
             super(request);
+            this.max = max;
         }
 
         @Override
@@ -63,7 +77,7 @@ public class BodyLimit extends OncePerRequestFilter {
 
                 private void count(int more) {
                     read += Math.max(more, 0);
-                    if (read > MAX_BYTES) {
+                    if (read > max) {
                         throw new ApiProblem(
                                 HttpStatus.CONTENT_TOO_LARGE, "too_large", "That's more than we can take in one go.");
                     }

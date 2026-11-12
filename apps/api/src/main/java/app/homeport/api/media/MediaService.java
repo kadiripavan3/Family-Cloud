@@ -21,7 +21,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * <p>A photo is made afresh from what was uploaded (see {@link MediaSizes}): really a picture, the right way
  * up, in three sizes, under an address the phone never had a link to. Other files are kept as they arrive,
- * under an address that can't be guessed.
+ * under an address that can't be guessed. A photo for the Library also keeps its upload, untouched and at
+ * full size, next to the three sizes.
  */
 @Service
 public class MediaService {
@@ -131,6 +132,20 @@ public class MediaService {
     /** Starts an upload: a record of the file to come, and where the phone sends it. Nobody may pile up uploads without end. */
     public NewUpload startUpload(
             UUID ownerId, MediaKind kind, String contentType, String fileName, Integer durationSeconds) {
+        return startUpload(ownerId, kind, contentType, fileName, durationSeconds, false);
+    }
+
+    /**
+     * The same, and with {@code keepOriginal} a photo's upload is kept as it arrived next to the sizes made
+     * from it: what the Library asks for. Anything that isn't a photo is kept as it arrives either way.
+     */
+    public NewUpload startUpload(
+            UUID ownerId,
+            MediaKind kind,
+            String contentType,
+            String fileName,
+            Integer durationSeconds,
+            boolean keepOriginal) {
         String type = contentType == null
                 ? ""
                 : contentType.toLowerCase(Locale.ROOT).split(";")[0].trim();
@@ -166,7 +181,15 @@ public class MediaService {
         String key = kind == MediaKind.PHOTO
                 ? "%s/%s/%s.%s".formatted(INCOMING, month, id, extension)
                 : "%s/%s/%s-%s.%s".formatted(folder(kind), month, id, secretPart(), extension);
-        store.insert(id, ownerId, kind, type, clean(fileName), key, durationSeconds);
+        store.insert(
+                id,
+                ownerId,
+                kind,
+                type,
+                clean(fileName),
+                key,
+                durationSeconds,
+                keepOriginal && kind == MediaKind.PHOTO);
         return new NewUpload(id, storage.uploadTarget(id, key, type));
     }
 
@@ -226,8 +249,25 @@ public class MediaService {
                         row.storageKey()
                                         .replaceFirst("^" + INCOMING + "/", "photos/")
                                         .replaceFirst("\\.[a-z]+$", "") + "-" + secretPart() + ".jpg";
-                MediaSizes.Made made = sizes.make(row.storageKey(), kept);
-                store.photoReady(row.id(), kept, made.bytes(), made.width(), made.height());
+                if (row.keepOriginal()) {
+                    // The upload moves from where it arrived to an address nobody was ever told.
+                    String original = row.storageKey()
+                            .replaceFirst("^" + INCOMING + "/", "originals/")
+                            .replaceFirst("(\\.[a-z]+)$", "-" + secretPart() + "$1");
+                    MediaSizes.Made made = sizes.make(row.storageKey(), kept, original, row.contentType());
+                    store.photoReady(
+                            row.id(),
+                            kept,
+                            made.bytes(),
+                            made.width(),
+                            made.height(),
+                            made.original().key(),
+                            made.original().bytes(),
+                            made.original().hash());
+                } else {
+                    MediaSizes.Made made = sizes.make(row.storageKey(), kept);
+                    store.photoReady(row.id(), kept, made.bytes(), made.width(), made.height());
+                }
             } else {
                 store.fileReady(row.id(), bytes);
             }
@@ -271,6 +311,11 @@ public class MediaService {
     /** The address of one size of a stored photo, or null when there is none. */
     public String urlFor(String storageKey, MediaSize size) {
         return storageKey == null ? null : storage.publicUrl(size.keyFor(storageKey));
+    }
+
+    /** These uploads, whoever sent them: for a place that has already checked who may see what they belong to. */
+    public List<MediaRow> rows(List<UUID> ids) {
+        return store.findAll(ids);
     }
 
     public MediaResponse view(MediaRow row) {

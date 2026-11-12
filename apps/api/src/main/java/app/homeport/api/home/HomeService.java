@@ -89,13 +89,26 @@ public class HomeService {
         items.sort(Comparator.comparingInt(TodayItem::minute).thenComparing(TodayItem::title));
         int done =
                 (int) items.stream().filter(i -> Boolean.TRUE.equals(i.done())).count();
-        return new TodayResponse(
-                on,
-                items.size() - done,
-                done,
-                items,
-                fresh.stream().limit(MAX_FRESH).toList(),
-                thingStore.onlyMine(me));
+        return new TodayResponse(on, items.size() - done, done, items, oncePerTitle(fresh), thingStore.onlyMine(me));
+    }
+
+    /**
+     * Two places can know the same thing (a recipe is a page in Notes and a scan in the Library). It is shown
+     * once: the card with a label on its picture wins, then the one with a picture.
+     */
+    private static List<FreshCard> oncePerTitle(List<FreshCard> cards) {
+        Map<String, FreshCard> byTitle = new LinkedHashMap<>();
+        for (FreshCard card : cards) {
+            byTitle.merge(
+                    card.title().trim().toLowerCase(java.util.Locale.ROOT),
+                    card,
+                    (kept, next) -> weight(next) > weight(kept) ? next : kept);
+        }
+        return byTitle.values().stream().limit(MAX_FRESH).toList();
+    }
+
+    private static int weight(FreshCard card) {
+        return (card.pill() != null ? 2 : 0) + (card.imageUrl() != null ? 1 : 0);
     }
 
     /**

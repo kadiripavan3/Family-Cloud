@@ -1,6 +1,18 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{legal/parts :: head('Guest pass')}"></head>
+<!-- Its own head, not the shared one: this page also loads guest.css and the one script it may run. -->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guest pass · Homeport</title>
+  <link rel="stylesheet" th:href="@{/share/tokens.css}">
+  <link rel="stylesheet" th:href="@{/share/page.css}">
+  <link rel="stylesheet" th:href="@{/share/pages.css}">
+  <link rel="stylesheet" th:href="@{/share/guest.css}">
+  <!-- The only script this page may run (see its Content-Security-Policy). It opens sealed cards with the key
+       from the part of the link after the #, which never reaches the server. -->
+  <script defer th:src="@{/share/guest.js}"></script>
+</head>
 <body class="plain">
   <main class="text">
     <p class="brandline"><span class="brand">Homeport</span></p>
@@ -33,7 +45,8 @@
     <th:block th:if="${state == 'code'}">
       <h1 th:text="${'Hello, ' + guest}">Hello</h1>
       <p class="lede"><b th:text="${circle}">A circle</b> shared a few things with you. Type the code they gave you.</p>
-      <form method="post" th:action="@{'/g/' + ${token}}">
+      <!-- The script keeps the part after the # on the address this form sends to, so it is still there afterwards. -->
+      <form method="post" th:action="@{'/g/' + ${token}}" data-keep-key>
         <label for="code">The four-digit code</label>
         <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="4" required>
         <p class="problem" role="alert" th:if="${wrong}">That isn't the code. Try again.</p>
@@ -48,9 +61,26 @@
       <article th:each="card : ${cards}">
         <p class="eyebrow" th:text="${card.label}">Page</p>
         <h2 th:text="${card.title}">Title</h2>
-        <p class="body" th:if="${card.text != null}" th:text="${card.text}" style="white-space: pre-wrap">Words</p>
+        <p class="body keep-lines" th:if="${card.text != null}" th:text="${card.text}">Words</p>
+        <p class="body" th:each="image : ${card.images}"><img th:src="${image}" alt="" style="max-width: 100%; border-radius: 12px"></p>
       </article>
-      <p class="empty" th:if="${cards.isEmpty()}">Nothing is on this pass any more.</p>
+
+      <!-- A sealed card: the server holds only the scrambled text. The script opens it on this phone, after a
+           tap, and hides it again after half a minute. -->
+      <article class="sealed" th:each="card : ${sealed}" th:attr="data-card=${card.id},data-once=${card.once},data-sealed=${card.ciphertext}">
+        <p class="eyebrow" th:text="${card.once} ? 'Shows once' : 'Sealed'">Sealed</p>
+        <h2 th:text="${card.label}">Front door code</h2>
+        <p class="meta" th:if="${card.gone()}">This was shown once and is hidden for good. Ask the person who sent the pass if you need it again.</p>
+        <th:block th:unless="${card.gone()}">
+          <p class="secret" aria-live="polite" hidden></p>
+          <p class="problem" role="alert" hidden></p>
+          <button class="btn line" type="button" hidden>Show</button>
+          <p class="meta" th:if="${card.once}">It shows once, for half a minute, and is then hidden for good.</p>
+          <p class="meta" th:unless="${card.once}">It hides again after half a minute.</p>
+          <noscript><p class="problem">This part is scrambled and opens on your phone, which needs JavaScript. Switch it on for this page and load it again.</p></noscript>
+        </th:block>
+      </article>
+      <p class="empty" th:if="${cards.isEmpty() and sealed.isEmpty()}">Nothing is on this pass any more.</p>
     </th:block>
   </main>
   <footer>Homeport. Everything your people keep, together.</footer>

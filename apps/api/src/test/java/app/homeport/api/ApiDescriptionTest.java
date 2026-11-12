@@ -33,7 +33,8 @@ class ApiDescriptionTest extends ApiTest {
     }
 
     /** Operations that create something and take no clientId, each with the reason that is good enough. */
-    private static final Map<String, String> CREATES_WITHOUT_CLIENT_ID = Map.of();
+    private static final Map<String, String> CREATES_WITHOUT_CLIENT_ID =
+            Map.of("POST /v1/library", "a batch: each file in it carries its own clientId");
 
     @Test
     void everyListThatHandsOutACursorTakesACursorAndALimit() {
@@ -90,6 +91,8 @@ class ApiDescriptionTest extends ApiTest {
         join(nora, circle, alex);
         String child = addMember(nora, circle, "Mia", "child");
         String page = page(nora, circle, "Gift list", "me");
+        String list = privateThing(nora, "/v1/checklists", circle, "Gift ideas");
+        String folder = privateThing(nora, "/v1/folders", circle, "Nora's work");
         String pass = JsonPath.read(
                 send(
                         HttpMethod.POST,
@@ -101,11 +104,116 @@ class ApiDescriptionTest extends ApiTest {
                 "$.id");
         String code = JsonPath.<String>read(fetch("/v1/circles/" + circle, nora), "$.joinUrl")
                 .replaceFirst(".*/", "");
+        // A Vault item only Nora can see. (What is scrambled is made up here: the API never looks inside.)
+        send(
+                HttpMethod.PUT,
+                "/v1/vault",
+                nora,
+                "{\"publicKey\":\"%s\",\"wrappedPrivateKey\":\"AAAA\",\"salt\":\"%s\",\"kdf\":{\"n\":32768,\"r\":8,\"p\":1}}"
+                        .formatted("A".repeat(43), "A".repeat(22)),
+                200);
+        String vaultItem = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/vault/items",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Bank\",\"category\":\"login\",\"ciphertext\":\"AAAA\",\"wrappedKey\":\"AAAA\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+
+        // The Library's kinds, each only Nora's: a photo, a document (a scan), a video and an album.
+        String clipTarget = send(
+                HttpMethod.POST, "/v1/media/uploads", nora, "{\"kind\":\"video\",\"contentType\":\"video/mp4\"}", 200);
+        send(clipTarget, "video/mp4", "a clip".getBytes());
+        String clip = JsonPath.read(clipTarget, "$.mediaId");
+        send(HttpMethod.POST, "/v1/media/uploads/" + clip + "/complete", nora, null, 204);
+        List<String> library = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/library",
+                        nora,
+                        ("{\"circleId\":\"%s\",\"items\":[{\"clientId\":\"%s\",\"mediaId\":\"%s\"},"
+                                        + "{\"clientId\":\"%s\",\"mediaId\":\"%s\",\"kind\":\"document\",\"text\":\"Words inside\"},"
+                                        + "{\"clientId\":\"%s\",\"mediaId\":\"%s\"}]}")
+                                .formatted(circle, id(), uploadPhoto(nora), id(), uploadPhoto(nora), id(), clip),
+                        201),
+                "$.items[*].item.id");
+        assertThat(library).hasSize(3);
+        String album = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/albums",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Only hers\",\"itemIds\":[\"%s\"]}"
+                                .formatted(id(), circle, library.get(0)),
+                        201),
+                "$.id");
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = List.of(circle, child, page, pass);
-        List<String> forAlex = List.of(page);
+        // A board only Nora can see, with a sealed letter in it.
+        String board = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/boards",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"template\":\"time_capsule\",\"audience\":\"me\",\"settings\":{\"opensOn\":\"%s\"}}"
+                                .formatted(
+                                        id(), circle, java.time.LocalDate.now().plusYears(1)),
+                        201),
+                "$.id");
+        // Plan: an event, a reminder and a goal that are Nora's alone, and something she jotted.
+        String made = "{\"clientId\":\"%s\",\"circleId\":\"" + circle
+                + "\",\"title\":\"Hers\",\"day\":\"2026-11-11\",\"timeZone\":\"UTC\",\"target\":5}";
+        String event = JsonPath.read(send(HttpMethod.POST, "/v1/events", nora, made.formatted(id()), 201), "$.id");
+        String reminder =
+                JsonPath.read(send(HttpMethod.POST, "/v1/reminders", nora, made.formatted(id()), 201), "$.id");
+        String goal = JsonPath.read(send(HttpMethod.POST, "/v1/goals", nora, made.formatted(id()), 201), "$.id");
+        String jot = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/circles/" + circle + "/jots",
+                        nora,
+                        "{\"clientId\":\"%s\",\"text\":\"Gate code 4471\"}".formatted(id()),
+                        201),
+                "$[0].id");
+
+        // Money: a bill, a sheet and a split that are Nora's alone.
+        String bill = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/bills",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Electricity\",\"amountCents\":8420,\"dueOn\":\"2026-11-12\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String sheet = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/sheets",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"template\":\"trip_budget\"}"
+                                .formatted(id(), circle),
+                        201),
+                "$.id");
+        String split = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/splits",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Between us\"}".formatted(id(), circle),
+                        201),
+                "$.id");
+
+        List<String> forStranger = new ArrayList<>(List.of(
+                circle, child, page, pass, album, list, folder, board, vaultItem, event, reminder, goal, jot, bill,
+                sheet, split));
+        forStranger.addAll(library);
+        List<String> forAlex = new ArrayList<>(
+                List.of(page, album, list, folder, board, vaultItem, event, reminder, goal, jot, bill, sheet, split));
+        forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {
@@ -114,7 +222,7 @@ class ApiDescriptionTest extends ApiTest {
             String path = name.substring(4);
             for (String id : forStranger) {
                 if (answers(path.replace("{id}", id), stranger)) {
-                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass));
+                    gaveAway.add("a stranger: " + path + " with " + label(id, circle, child, page, pass, board));
                 }
             }
             for (String id : forAlex) {
@@ -131,10 +239,27 @@ class ApiDescriptionTest extends ApiTest {
         assertThat(fetch("/v1/join/" + code, stranger)).contains("The Linds").doesNotContain("Mia");
     }
 
-    private static String label(String id, String circle, String child, String page, String pass) {
+    private static String label(String id, String circle, String child, String page, String pass, String board) {
         return id.equals(circle)
                 ? "a circle's id"
-                : id.equals(child) ? "a member's id" : id.equals(page) ? "a page's id" : "a guest pass's id";
+                : id.equals(child)
+                        ? "a member's id"
+                        : id.equals(page)
+                                ? "a page's id"
+                                : id.equals(pass) ? "a guest pass's id" : "the id of a thing " + id;
+    }
+
+    /** Makes something only its maker can see, of the kind this route makes. Returns its id. */
+    private String privateThing(String token, String route, String circle, String title) throws Exception {
+        return JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        route,
+                        token,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"%s\",\"audience\":\"me\"}"
+                                .formatted(id(), circle, title),
+                        201),
+                "$.id");
     }
 
     /** True when the route answers with something: neither "not found" nor "forbidden". */

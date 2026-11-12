@@ -38,7 +38,13 @@ class ServerSettingsTest {
 
         assertThat(answer.statusCode()).isEqualTo(200);
         assertThat(answer.headers().firstValue("Content-Encoding")).contains("gzip");
-        assertThat(answer.body().length).isLessThan(30_000); // it is several times that uncompressed
+        // Asked for plainly, the same answer is several times as long.
+        HttpResponse<byte[]> plain = HttpClient.newHttpClient()
+                .send(
+                        HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v3/api-docs"))
+                                .build(),
+                        HttpResponse.BodyHandlers.ofByteArray());
+        assertThat(answer.body().length * 3).isLessThan(plain.body().length);
     }
 
     @Test

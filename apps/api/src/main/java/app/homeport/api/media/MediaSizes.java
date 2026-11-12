@@ -10,6 +10,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
@@ -29,10 +32,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 /**
- * Turns the file a phone uploaded into the photo Journey keeps. The upload is opened, checked (a JPEG or a
+ * Turns the file a phone uploaded into the photo that is shown. The upload is opened, checked (a JPEG or a
  * PNG, not enormous), drawn the right way up and saved again as a JPEG in three sizes, under an address the
- * phone never had a link to. So what is stored is exactly what the API looked at: nothing can be swapped in
- * afterwards, and nothing that travelled inside the file (where it was taken, on which phone) is kept.
+ * phone never had a link to. So what is shown is exactly what the API looked at: nothing can be swapped in
+ * afterwards, and nothing that travelled inside the file (where it was taken, on which phone) is in it.
+ *
+ * <p>A profile picture or a cover keeps nothing else. A photo for the Library also keeps the upload itself,
+ * at full size and untouched, under another address that can't be guessed, so it can be downloaded again.
  *
  * <p>The same code runs whatever the storage is (a folder on this computer, or R2).
  */
@@ -44,6 +50,12 @@ public class MediaSizes {
 
     /** The biggest picture the API will open: 25 megapixels, as the file's own header says. */
     static final long MAX_PIXELS = 25_000_000L;
+
+    /**
+     * The biggest picture opened when its original is kept (the Library): phones take 48 and 50 megapixels at
+     * full size. It is read at a reduced size all the same, so it takes no more memory than a small one.
+     */
+    static final long MAX_KEPT_PIXELS = 64_000_000L;
 
     /**
      * The most memory one opened picture may take. A file of a megabyte can claim to be a picture that needs
@@ -66,7 +78,10 @@ public class MediaSizes {
      * A photo as it was stored: its size in pixels and in bytes, and its medium version (a JPEG of at most 800
      * pixels) for the automatic check to look at.
      */
-    public record Made(int width, int height, long bytes, byte[] preview) {}
+    public record Made(int width, int height, long bytes, byte[] preview, Original original) {}
+
+    /** The upload itself, kept as it arrived: where, how big, and its fingerprint (SHA-256, in hex). */
+    public record Original(String key, long bytes, String hash) {}
 
     /**
      * Reads the uploaded file, stores the photo made from it under {@code finalKey} (with every
@@ -74,6 +89,15 @@ public class MediaSizes {
      * too big, or not a picture the API takes.
      */
     public Made make(String uploadKey, String finalKey) {
+        return make(uploadKey, finalKey, null, null);
+    }
+
+    /**
+     * The same, and with an {@code originalKey} the upload is also kept exactly as it arrived, under that
+     * address: the Library keeps originals at full size, with everything that travelled inside the file, for
+     * the people the photo is shared with to download again.
+     */
+    public Made make(String uploadKey, String finalKey, String originalKey, String contentType) {
         boolean mine = false;
         try {
             // Wait for a turn before reading anything, so files that wait don't each hold megabytes.
@@ -93,7 +117,21 @@ public class MediaSizes {
             if (upload.length > MediaService.MAX_PHOTO_BYTES) {
                 throw new ApiProblem(HttpStatus.CONTENT_TOO_LARGE, "too_large", "That photo is too big.");
             }
-            Made made = store(upload, finalKey);
+            Made made = store(upload, finalKey, originalKey == null ? MAX_PIXELS : MAX_KEPT_PIXELS);
+            if (originalKey != null) {
+                try {
+                    storage.put(originalKey, upload, contentType);
+                } catch (IOException | RuntimeException e) {
+                    remove(finalKey);
+                    throw new IllegalStateException("Could not keep the original " + originalKey, e);
+                }
+                made = new Made(
+                        made.width(),
+                        made.height(),
+                        made.bytes(),
+                        made.preview(),
+                        new Original(originalKey, upload.length, sha256(upload)));
+            }
             storage.delete(uploadKey);
             return made;
         } catch (InterruptedException e) {
@@ -111,7 +149,20 @@ public class MediaSizes {
      * API brings itself (the sample photos); an upload goes through {@link #make}.
      */
     public Made store(byte[] original, String finalKey) {
-        BufferedImage full = fit(upright(open(original), orientation(original)), FULL);
+        return store(original, finalKey, MAX_PIXELS);
+    }
+
+    /** The fingerprint of a file: SHA-256, in hex. The same bytes always give the same one. */
+    public static String sha256(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private Made store(byte[] original, String finalKey, long maxPixels) {
+        BufferedImage full = fit(upright(open(original, maxPixels), orientation(original)), FULL);
         try {
             byte[] fullJpeg = jpeg(full, 0.88f);
             BufferedImage medium = fit(full, MediaSize.MEDIUM.side());
@@ -120,7 +171,7 @@ public class MediaSizes {
             storage.put(finalKey, fullJpeg, "image/jpeg");
             storage.put(MediaSize.MEDIUM.keyFor(finalKey), mediumJpeg, "image/jpeg");
             storage.put(MediaSize.SMALL.keyFor(finalKey), smallJpeg, "image/jpeg");
-            return new Made(full.getWidth(), full.getHeight(), fullJpeg.length, mediumJpeg);
+            return new Made(full.getWidth(), full.getHeight(), fullJpeg.length, mediumJpeg, null);
         } catch (IOException | RuntimeException e) {
             remove(finalKey);
             throw new IllegalStateException("Could not store the photo " + finalKey, e);
@@ -152,6 +203,10 @@ public class MediaSizes {
      * opened, whatever the file calls itself, and only when its header says it fits in memory.
      */
     static BufferedImage open(byte[] file) {
+        return open(file, MAX_PIXELS);
+    }
+
+    static BufferedImage open(byte[] file, long maxPixels) {
         try (ImageInputStream in = new MemoryCacheImageInputStream(new ByteArrayInputStream(file))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
             if (!readers.hasNext()) {
@@ -168,7 +223,7 @@ public class MediaSizes {
                 if (width < 1 || height < 1) {
                     throw unsupported();
                 }
-                if ((long) width * height > MAX_PIXELS) {
+                if ((long) width * height > maxPixels) {
                     throw tooLarge();
                 }
                 // Every "step"-th pixel is read: the result is between the size that is kept and twice that.
