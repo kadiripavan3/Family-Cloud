@@ -1,8 +1,8 @@
-# Family Cloud: notes for Claude
+# Homeport: notes for Claude
 
-Family Cloud is the working title of an app for iOS and Android where a family, or a group of friends, keeps things together: notes, photos and videos, the calendar, bills and budgets, goals, and passwords. Each thing is private until its owner shares it. It is the sister app of **Journey** (`kadiripavan3/Journey`): same owner, same account, same design system, same stack. The owner builds both with Claude Code and knows Java well.
+Homeport (first called Family Cloud; the repository keeps that name) is an app for iOS and Android where a family, or a group of friends, keeps things together: notes, photos and videos, the calendar, bills and budgets, goals, and passwords. Each thing is private until its owner shares it. It is the sister app of **Journey** (`kadiripavan3/Journey`): same owner, same account, same design system, same stack. The owner builds both with Claude Code and knows Java well.
 
-**Where it stands:** a first design draft and a build plan waiting for the owner's go-ahead. Nothing is built, and nothing in the docs is decided until the owner says so.
+**Where it stands:** being built, milestone by milestone, from `docs/06-build-plan.md`. The owner chose the name **Homeport** on 12 Nov 2026 and told Claude to build every milestone on the plan's defaults. `design/hub/status.json` says which milestone is done.
 
 ## At the start of every session
 
@@ -27,10 +27,37 @@ Family Cloud is the working title of an app for iOS and Android where a family, 
 | Status, next steps, update log | `design/hub/status.json` |
 | The hub page | built from all of the above; see `design/hub/README.md` |
 
+## Build and test the code
+
+The app is in `apps/mobile` (Expo SDK 58), the API in `apps/api` (Spring Boot 4, Java 21 source level). Both started as copies of Journey's and keep its rules: **Journey's `CLAUDE.md` is the rulebook** (`/home/user/kadiripavan3/journey/CLAUDE.md` in the cloud environment, `kadiripavan3/Journey` on GitHub), and what follows says only what is Homeport's own.
+
+```sh
+pg_ctlcluster 16 main start && PSQL="runuser -u postgres -- psql" ./scripts/local-db.sh   # once per container: the local databases
+cd apps/api && ./mvnw -q -B -ntp verify        # API: tests against the local PostgreSQL, formatting, no warnings
+cd apps/mobile && npm ci && EXPO_OFFLINE=1 npm run check      # app: types, lint, tests
+```
+
+- **Local first.** Every outside service has a stand-in behind a switch (`homeport.auth.mode` and friends) and the `local` profile. The app works with any email and the code 123456. Local mode starts with the people of the screens: sign in as `nora@example.com` (or `alex@`, `kai@`, `lea@`, `lena@`, `ana@`) to see The Linds, Nora and Alex, Lisbon crew and the flat; any other address starts empty.
+- **API change:** write the test, then `UPDATE_OPENAPI=1 ./mvnw test -Dtest=OpenApiDocumentTest` in `apps/api` and `npm run api:generate` in `apps/mobile`. Commit `openapi.json` and the generated client with the change. Format with `./mvnw spotless:apply`.
+- **In this cloud environment** use `/opt/maven/bin/mvn` if `./mvnw` can't download, and `EXPO_OFFLINE=1` for `expo` commands.
+
+### How the API is put together
+
+Controller (takes `@Me UUID me`) → service (the rules) → `Store` (all the SQL, with `JdbcClient`; no JPA). Fixed sets of words are enums with `code()`, `of()` and `read()`. A list that can grow is a `Page` read with `Keyset`. Creating takes a `clientId`. Messages people read come from `ApiProblem` in plain English.
+
+- **A thing** is anything that can be shared: a page, a photo, an event, a bill, a password. Every thing has one row in `things` (its circle, its owner, its kind, its place, its title, who it is shared with) and its own table under the same id (`pages.thing_id`). A new kind is a constant in `ThingKind`, a table, and a service that calls `ThingService.create(...)` first and `things.require(id, me, kind)` / `requireEdit` / `requireOwner` before reading or changing. Deleting is `DELETE /v1/things/{id}` for every kind (the kind's table goes with it by `on delete cascade`).
+- **Who may see what is written once**, in `common/Rules.java`: `Rules.sees("t", ":me")`, `Rules.edits(...)`, `Rules.owns(...)`, `Rules.inCircle(...)`. Every query that reads things for someone joins `things t` and uses it; `ThingStore.COLUMNS` gives the thing's columns with `mine` and `can_edit` for that viewer. Never write the rule again inside a query. `SharingRulesTest` tries every way to reach a thing and makes them agree; a new kind adds its own ways there or in a test like it.
+- **The audience chip** on every response is `ThingService.chip(row)` / `chips(rows)`; the sheet behind it is `GET/PUT /v1/things/{id}/audience`, the same for every kind.
+- **People are members.** Everything is shared with, assigned to and about `members` (one row per person per circle; a child or a pet has no `user_id`). `CircleService.me(circleId, me)` is the signed-in person's own member; `CircleService.runs(circle, member)` says whether they may change the circle (the adults in a family, everyone among equals).
+- **A place plugs into Home instead of Home knowing about it.** Implement the interface and Spring finds it: `home/TodaySource` (what it brings to Today and to "new"), `home/SearchSource` (finding words inside its things; titles are searched for every kind already), `guest/GuestView` (how a guest is shown one kind of thing; without one the kind can't go on a pass), `seed/Seeder` (its sample data, by the short names in `SeedWorld`: `w.circle("linds")`, `w.member("linds", "mia")`, `w.photo("nora", "canoe.jpg")`). `page/` is the smallest complete example of all of them.
+- **What a kind of circle starts things as** is `CircleKind.startsAs()` (yours alone in a family, shared among equals). A service passes the audience the app sent, or null for that default.
+- **Photos and files** go through `media/` exactly as in Journey (ask for a target, send, say done). Four kinds: photo (made afresh in three sizes), video, file, audio (kept as they arrive, under an address that can't be guessed). A thing points at a media row; deleting the row queues the file for removal by itself.
+- **The tests' base** is `ApiTest`: `person("Nora")`, `circle(token, "family", "The Linds")`, `join(owner, circle, joiner)`, `addMember(...)`, `page(...)`, `send(method, path, token, json, expectedStatus)`, `fetch(path, token)`. `ApiDescriptionTest` holds every route to: lists take a cursor, creating takes a `clientId`, and a GET by id answers "not found" to a stranger and to someone in the circle it wasn't shared with.
+
 ## The relationship with Journey
 
 - **The design system is Journey's.** `phone.css` starts with Journey's file unchanged (device, shared components, Journey's own screens) and adds this app's parts at the end, with prefixed class names. A change to colour, type or shape belongs in both repos' `design/tokens.json`. Prefer an existing component over a new one.
-- **The stack is Journey's** (Expo, Spring Boot, PostgreSQL and Auth on Supabase, Cloudflare R2, Fly.io). When the build starts, Journey's `CLAUDE.md` and `docs/02-tech-stack.md` are the model for how the code is put together.
+- **The stack is Journey's** (Expo, Spring Boot, PostgreSQL and Auth on Supabase, Cloudflare R2, Fly.io), and so is the way the code is put together.
 - **Changes inside Journey** that the link needs are listed in `docs/04-journey-link.md`. They are made in the Journey repo, with the owner's go-ahead.
 
 ## When something changes
