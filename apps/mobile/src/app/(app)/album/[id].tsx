@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ellipsis, ImagePlus, ListChecks, Pencil, Sparkle, Trash2 } from 'lucide-react-native';
+import { Ellipsis, ImagePlus, ListChecks, Pencil, Route, Sparkle, Trash2 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
 import { type AlbumResponse, changeAlbum, deleteThing, type DocumentCard, useGetAlbum, useGetFilesInfinite, useGetWallInfinite } from '@/api/generated/homeport';
 import { more, paged, rows } from '@/api/pages';
+import { tellHref } from '@/features/journeyLink/tell/start';
 import { albumRest } from '@/features/library/AlbumCard';
 import { takesByHand } from '@/features/library/AlbumPickSheet';
 import { DocRow } from '@/features/library/DocRow';
@@ -177,6 +178,16 @@ export default function Album() {
             onPress={() => {
               setOpen(null);
               router.push(selectHref({ album: id }));
+            }}
+          />
+        )}
+        {album.folder ? null : (
+          <SheetRow
+            icon={(c) => <Route size={22} color={c} />}
+            label={words.together.tell.title}
+            onPress={() => {
+              setOpen(null);
+              router.push(tellHref({ album: id, circleId: album.circleId }));
             }}
           />
         )}

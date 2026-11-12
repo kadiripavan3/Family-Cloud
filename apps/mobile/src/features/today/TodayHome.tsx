@@ -7,6 +7,7 @@ import { type CircleResponse, type FreshCard, type TodayItem, type TodayResponse
 import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
+import { JourneyOnToday } from '@/features/journeyLink/TodayJourneyCard';
 import { PayBillButton } from '@/features/money/PayBill';
 import { TodayTick } from '@/features/plan/TodayTick';
 import { kindOf } from '@/features/things/kinds';
@@ -85,7 +86,8 @@ function Day({ data, circle }: { data: TodayResponse; circle: CircleResponse }) 
         <Ring progress={all === 0 ? 0 : data.done / all} emoji={words.today.summary.emoji[circle.kind]} />
       </Card>
 
-      <TodayCards cards={data.cards} />
+      {/* Journey's cards (someone away, On this day, a goodnight held until bedtime) are drawn by the link with Journey; the rest as ever. */}
+      <JourneyOnToday cards={data.cards}>{(rest) => <TodayCards cards={rest} />}</JourneyOnToday>
 
       {data.items.length ? (
         <Card style={{ marginTop: 14, marginHorizontal: layout.barGutter, borderRadius: radius.card, overflow: 'hidden' }}>

@@ -19,15 +19,13 @@ export const you = {
   /** The round buttons above the card. */
   swap: `Switch to ${JOURNEY}`,
   settings: 'Notifications and appearance',
-  /** What the swap button says until both apps are on one phone. */
-  swapSheet: { title: `Over to ${JOURNEY}`, body: `The other app, ${JOURNEY}, opens from here once both apps are on this phone. It's the same account: nothing to sign in to again.`, ok: 'Got it' },
 
   /** The three numbers on the card. */
   stats: { circles: 'Circles', notes: 'Notes', kept: 'Kept' },
   size,
 
-  /** The line about the shared account. */
-  account: { title: `One account with ${JOURNEY}`, note: `The link between the two apps arrives later`, later: `What you post in ${JOURNEY} shows up here, and the way over there, once the link between the two apps is built.` },
+  /** The line about the shared account. What stands under it (what you have in Journey) is in `together.apps`. */
+  account: { title: `One account with ${JOURNEY}` },
 
   // The list
   rows: {

@@ -188,9 +188,8 @@ exports.run = async function run(ctx) {
       if (hers.items.length !== 11 || hers.items.some((item) => item.addedBy.name !== 'Mia')) throw new Error(`Mia's photos of the moment came back as ${hers.items.length}, not all hers`);
       await shot('moment-by-mia');
       await R('button', { name: 'All 51', exact: true }).click();
-      // A story in Journey waits for the two apps to be linked, and says so.
-      await R('button', { name: 'Journey', exact: true }).click();
-      await T('Turning this into a story arrives when Homeport and Journey are linked.').waitFor();
+      // Its other button drafts a journey from it: that is walked in 10-journey.
+      await R('button', { name: 'Journey', exact: true }).waitFor();
     });
 
     await step('viewer', async () => {
@@ -337,8 +336,9 @@ exports.run = async function run(ctx) {
       await shot('albums');
       await R('tab', { name: 'Only you, 1' }).click();
       await R('button', { name: /^For the photo book\. 4$/ }).waitFor();
-      await R('tab', { name: 'From Journey, 0' }).click();
-      await T('Nothing from Journey yet').waitFor();
+      // The albums of the journeys that were kept (10-journey walks keeping one).
+      await R('tab', { name: /^From Journey, \d+$/ }).click();
+      await R('button', { name: /^Iceland ring road\. \d+ originals · kept in April$/ }).waitFor();
       await shot('albums-from-journey');
       // An album made by hand: empty until photos are put in.
       await R('button', { name: 'New album', exact: true }).click();
@@ -513,9 +513,7 @@ exports.run = async function run(ctx) {
       await shot('select-album');
       await R('button', { name: 'Create and add', exact: true }).click();
       await T(`Added 2 to Walk ${tag}.`).waitFor();
-      // Sending them to Journey waits for the two apps to be linked.
-      await R('button', { name: 'Journey', exact: true }).click();
-      await T('Sending these to Journey arrives when Homeport and Journey are linked.').waitFor();
+      // (The bar's Journey drafts a journey from what is picked: walked in 10-journey.)
       // Copies of both.
       const saved = [];
       const keep = (download) => saved.push(download);

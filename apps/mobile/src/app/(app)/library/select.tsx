@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, Download, EyeOff, Layers, Lock, type LucideIcon, Route, Share, Trash2 } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, useWindowDimensions, View } from 'react-native';
@@ -11,6 +11,7 @@ import { addToAlbum, createAlbum, deleteSelected, hideSelected, shareSelected, u
 import { more, paged, rows, useEveryPage } from '@/api/pages';
 import { useCircle } from '@/features/circles/current';
 import { membersOf } from '@/features/circles/members';
+import { tellHref, tellOnly } from '@/features/journeyLink/tell/start';
 import { AlbumPickSheet } from '@/features/library/AlbumPickSheet';
 import { cleaned, narrowFrom } from '@/features/library/narrow';
 import { PhotoTile } from '@/features/library/PhotoTile';
@@ -54,6 +55,7 @@ export default function Select() {
   const params = useLocalSearchParams<{ first?: string; into?: string; kind?: string; loved?: string; by?: string; about?: string; place?: string; album?: string; moment?: string }>();
   const { colors } = useTheme();
   const leave = useLeave();
+  const router = useRouter();
   const cache = useCache();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -221,7 +223,16 @@ export default function Select() {
         <GlassBar radius="pill" style={{ position: 'absolute', left: 14, right: 14, bottom: Math.max(insets.bottom, 24) }} contentStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', minHeight: 70, paddingHorizontal: 6 }}>
           <BarButton icon={Share} label={says.bar.share} onPress={withPicked(() => setOpen('share'))} />
           <BarButton icon={Layers} label={says.bar.album} onPress={withPicked(() => setOpen('album'))} />
-          <BarButton icon={Route} label={says.bar.journey} accent onPress={() => say(words.library.notYet.send)} />
+          <BarButton
+            icon={Route}
+            label={says.bar.journey}
+            accent
+            onPress={withPicked(() => {
+              // "Tell it as a journey" (10.5), with only what is picked: drafted from the album or the moment it is in.
+              tellOnly(ids);
+              router.push(tellHref(narrow.album ? { album: narrow.album, circleId: circle.id } : { moment: narrow.moment ?? ids[0], circleId: circle.id }));
+            })}
+          />
           <BarButton icon={EyeOff} label={says.bar.hide} onPress={withPicked(() => setOpen('hide'))} />
           <BarButton icon={Download} label={says.bar.save} onPress={withPicked(() => void save())} />
           <BarButton icon={Trash2} label={says.bar.delete} onPress={withPicked(() => setOpen('delete'))} />

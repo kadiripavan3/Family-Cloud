@@ -9,6 +9,8 @@ import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
 import { type BlockResponse, changePage, type PageResponse, sharePageLists, type ThingKind, useGetAudience, useGetLinks } from '@/api/generated/homeport';
 import { useOnline } from '@/api/online';
+import { JourneyBook } from '@/features/journeyLink/book/JourneyBook';
+import { useBookOf } from '@/features/journeyLink/book/useBookOf';
 import { useLeave } from '@/features/navigation/useLeave';
 import { useNoteActions } from '@/features/notes/actions';
 import { pageWithWaiting, steadyKeys } from '@/features/notes/changes/apply';
@@ -65,10 +67,13 @@ import { words } from '@/words';
  */
 export default function Page() {
   const { colors } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, as } = useLocalSearchParams<{ id: string; as?: string }>();
   const asked = useLivePage(id);
   const load = loadState(asked);
   const page = asked.data;
+  // A page that is the book of a kept journey is laid out as one (10.4), unless it was opened "as a page".
+  const kind = useBookOf(id, page?.circleId, as === 'page');
+  if (kind === 'book') return <JourneyBook pageId={id} />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -77,7 +82,7 @@ export default function Page() {
           <AppBar />
           <PageProblem error={load.error} onRetry={load.retry} retrying={load.retrying} inset={false} />
         </>
-      ) : !page ? (
+      ) : !page || kind === 'asking' ? (
         <>
           <AppBar />
           {load.offline ? (

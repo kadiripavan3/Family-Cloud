@@ -1,9 +1,11 @@
+import { useRouter } from 'expo-router';
 import { Check, Route, Trash2, Upload } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useGetLenses, useGetStorage } from '@/api/generated/homeport';
+import { useGetStorage } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
+import { useKeptTotals } from '@/features/journeyLink/keep/useKeptTotals';
 import { formatBytes } from '@/features/library/sizes';
 import { useToast } from '@/features/library/Toast';
 import { PageProblem } from '@/features/states/PageProblem';
@@ -33,10 +35,11 @@ export default function Storage() {
   const circle = useCircle();
   const { say, toast } = useToast(insets.bottom + 32);
   const asked = useGetStorage(circle.id);
-  const lenses = useGetLenses(circle.id);
+  const router = useRouter();
+  // What was kept from Journey, and how much of it was here already (so it isn't counted twice).
+  const kept = useKeptTotals(circle.id);
   const load = loadState(asked);
   const data = asked.data;
-  const fromJourney = lenses.data?.albums.fromJourney ?? 0;
 
   const kinds = data
     ? [
@@ -111,7 +114,13 @@ export default function Storage() {
           <GroupLabel style={{ marginHorizontal: layout.gutter }}>{says.thisPhone}</GroupLabel>
           <RowGroup>
             <Row first icon={(c) => <Upload size={18} color={c} />} label={says.backup.title} note={says.backup.note} onPress={() => say(says.backup.why)} />
-            <Row icon={(c) => <Route size={18} color={c} />} label={says.journey.title} note={fromJourney > 0 ? says.journey.some(fromJourney) : says.journey.none} trailing={fromJourney > 0 ? <Check size={20} color={colors.ok} strokeWidth={2.6} /> : undefined} />
+            <Row
+              icon={(c) => <Route size={18} color={c} />}
+              label={says.journey.title}
+              note={kept?.journeys ? says.journey.some(kept.here, kept.matched) : says.journey.none}
+              trailing={kept?.journeys ? <Check size={20} color={colors.ok} strokeWidth={2.6} /> : undefined}
+              onPress={() => router.push('/journey/kept')}
+            />
             <Row icon={(c) => <Trash2 size={18} color={c} />} label={says.freeUp.title} note={says.freeUp.note} trailing={<Button label={says.freeUp.button} size="sm" variant="soft" inline onPress={() => say(says.freeUp.why)} />} />
           </RowGroup>
         </ScrollView>
