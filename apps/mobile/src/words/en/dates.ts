@@ -1,6 +1,7 @@
 /** Days, months and "how long ago". Months are numbered from 0 (January), as in a JavaScript date. */
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export const dates = {
@@ -37,6 +38,16 @@ export const dates = {
   /** "Today, 18:00 to 23:30": a stretch of time within one day, or from one day to another. */
   span: (day: string, from: string, to: string) => `${day}, ${from} to ${to}`,
   spanDays: (fromDay: string, from: string, toDay: string, to: string) => `${fromDay} ${from} to ${toDay} ${to}`,
+
+  // A week on a board, and a mark on a ruler
+  /** "Fri": a weekday's short name, numbered from 0 (Sunday). */
+  weekdayShort: (weekday: number) => WEEKDAYS[weekday]!,
+  /** "Friday": the same, written out. */
+  weekdayLong: (weekday: number) => WEEKDAYS_LONG[weekday]!,
+  /** "9 to 15 November", or "30 November to 6 December" when the days are in two months. */
+  range: (fromDay: number, fromMonth: number, toDay: number, toMonth: number) => (fromMonth === toMonth ? `${fromDay} to ${toDay} ${MONTHS[toMonth]}` : `${fromDay} ${MONTHS[fromMonth]} to ${toDay} ${MONTHS[toMonth]}`),
+  /** "Nov 26": a month with the last two figures of its year, where there is room for no more. */
+  monthAndYear: (month: number, year: number) => `${MONTHS[month]!.slice(0, 3)} ${String(year % 100).padStart(2, '0')}`,
 
   // How long ago
   justNow: 'just now',

@@ -9,6 +9,7 @@
 // Before running: the API on port 8080 with the local profile, and the web build served on 8081
 // (`node scripts/e2e/serve.js <dist> 8081`). Other addresses: set API_URL and WEB_URL, and build the web
 // app with EXPO_PUBLIC_API_URL set to the same API address.
+// To run some parts only, name their files without ".js": ONLY=04-templates,07-keepsakes node scripts/e2e/walkthrough.js …
 // usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>
 const fs = require('fs');
 const path = require('path');
@@ -20,7 +21,8 @@ const STEPS = path.join(__dirname, 'steps');
   const [out, scheme] = process.argv.slice(2);
   if (!out || !['light', 'dark'].includes(scheme)) throw new Error('usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>');
   fs.mkdirSync(out, { recursive: true });
-  const milestones = fs.readdirSync(STEPS).filter((file) => /^\d\d-[\w-]+\.js$/.test(file)).sort();
+  const only = (process.env.ONLY || '').split(',').filter(Boolean);
+  const milestones = fs.readdirSync(STEPS).filter((file) => /^\d\d-[\w-]+\.js$/.test(file) && (only.length === 0 || only.includes(file.replace(/\.js$/, '')))).sort();
   const ctx = await start(out, scheme);
   try {
     for (const file of milestones) {

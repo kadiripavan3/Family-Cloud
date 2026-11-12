@@ -19,6 +19,7 @@ const KINDS: Record<string, { name: string; a: string }> = {
   vault_item: { name: 'Vault item', a: 'something in the Vault' },
   password: { name: 'Password', a: 'a password' },
   keepsake: { name: 'Keepsake', a: 'a keepsake' },
+  board: { name: 'Template', a: 'a template' },
 };
 
 export const things = {

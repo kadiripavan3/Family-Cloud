@@ -1,4 +1,4 @@
-import { Bell, Calendar, File, FileText, Gift, IdCard, Image, Images, KeyRound, type LucideIcon, Receipt, SquareCheck, Table, Target, Video } from 'lucide-react-native';
+import { Bell, Calendar, File, FileText, Gift, IdCard, Image, Images, KeyRound, LayoutTemplate, type LucideIcon, Receipt, SquareCheck, Table, Target, Video } from 'lucide-react-native';
 
 import { words } from '@/words';
 
@@ -25,6 +25,7 @@ const ICONS: Record<string, LucideIcon> = {
   password: KeyRound,
   id: IdCard,
   keepsake: Gift,
+  board: LayoutTemplate,
 };
 
 /** A kind's icon and what it is called: `name` on its own ("Page"), `a` in a sentence ("a page"). */

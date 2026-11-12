@@ -42,6 +42,38 @@ The spine: the pieces every place builds on. Their names and signatures are fixe
 - **Days, times and money**: besides `formatDay` and `timeAgo`, `lib/dates` has `formatComingDay` ("Today", "Tomorrow", "Fri 4 Dec"), `formatTime` ("18:00"), `formatSpan` ("Today, 18:00 to 23:30"), `atTime(day, '18:00')`, `ageOn` and `nextBirthday`; `lib/money` has `formatMoney(cents)` ("€45", "€45.50").
 - **In `src/ui`** since the foundation: `Segmented` (a few choices in one grey bar), `MoreRow` (a soft row with an emoji, a bold line and an arrow), `Blob` (a big emoji on a soft round ground), `SelectPill` (a small pill that holds a choice and opens the others), `GrowingInput` (a box typed straight into the page, as tall as what is in it); `EmojiTabs` takes `six`, `NoteBox` takes `soft` and `trailing`, `DayPicker` takes `byYear` (for a birthday), and `ThingRow` takes `picked` for a list to tick things in.
 
+## Adding a template
+
+A template that does work (LIVE in the gallery) is a **board**: a thing of kind `board`, opened at `/board/<id>`. The gallery (`/templates`), the route, the bar with the audience chip and More (rename, delete), the loading and problem states and every way of changing a board are shared and live in `src/features/templates/`. A new template adds four things and changes nothing that is shared:
+
+1. **One screen file in its own folder**, in your place's feature folder: `src/features/perks/whose-turn/WhoseTurn.tsx`. It takes the board with its view and settings typed, and draws inside the frame:
+
+   ```tsx
+   export function WhoseTurn({ board }: BoardScreenProps<WhoseTurnView, WhoseTurnSettings>) {
+     const changes = useBoardChanges(board);
+     return (
+       <BoardFrame board={board} title={board.title} problem={changes.problem}>
+         …what the drawing shows, from board.view…
+       </BoardFrame>
+     );
+   }
+   ```
+
+   `WhoseTurnView` and `WhoseTurnSettings` are the template's records in the generated client; `x-board-templates` in `apps/api/openapi.json` names them and lists, under `guide`, what `settings`, each kind of entry, each verb and `show` take.
+2. **One line in the typing map**, in your place's own file `src/features/templates/places/<place>.ts` (`notes`, `keepsakes`, `perks`, `couple`, `flat`, `crew`): `whose_turn: template<WhoseTurnView, WhoseTurnSettings>(WhoseTurn),`. The line pairs the template's code with its two types and its screen, and the compiler refuses a screen that takes other records. From then on the board opens on your screen instead of "arrives with the next update".
+3. **Its words** in your place's catalog file, under a key of its own: `words.perks.whoseTurn`.
+4. **Its test and its walk-through steps**: a made-up view in `src/test/samples/<place>.ts`, drawn through the route (`src/__tests__/screens/templates/MealPlan.test.tsx` is the example: `useGetBoard` answers `board({ template: 'meal_plan', view: … })`), and steps in your place's walk-through file that start it from the gallery (`/templates`, its card, Start).
+
+What the frame gives you (`src/features/templates/`):
+
+- **`BoardFrame`**: `title` and `subtitle` for the bar's middle; `chip="menu"` when the bar is full (the chip then stands on the More sheet only); `chipLook` to word the chip the template's way ("For Mia"); `actions` for a round button of your own before More; `menu` for your own rows on the More sheet ("Next week"); `footer` for what is pinned at the end (`Foot`, `AddBar`), `floating` for the glass bar (`CtaBar`); `scroll={false}` when your page is a `List`; `tone="stage"` for a camera or a photo; `problem` for the sentence of a change that didn't work. Pulling the page down asks for the board again.
+- **`useBoardChanges(board)`**: `add(kind, fields, clientId?)`, `change(entryId, fields)`, `remove(entryId)`, `act(verb, body)`, `set(settings, title?)`, with `busy` and `problem`. Each sends the phone's day, tells the cache (`boardSaved`), and answers null instead of throwing. A sheet that adds keeps its own `clientId` (`useRef(newClientId())`) and asks for its own `useBoardChanges`, so a tick behind it doesn't share its spinner.
+- **`useBoardPart(board, show)`**: another part of the same board (another week, an earlier year), typed like the board. A list that is read a page at a time is `useGetBoardEntriesInfinite(board.id, { kind, member, filter, q })` with `List`.
+- **Before it starts**: a template that needs something to begin (who it is for, a date) exports a small component taking `SetupProps` and passes it as the second argument: `template<V, S>(Screen, Setup)`. The gallery's sheet draws it above Start; it calls `onChange({ settings, title })`, or `onChange(null)` while something is missing.
+- **Parts** (`src/features/templates/parts/`): `BoardRow`, `Face`, `Tile`, `Sealed`, `Arrow` (rows in a `RowGroup`); `BlobHead`, `PersonHead` (the top of a page); `Foot`, `CtaBar`, `AddBar` (the end of a page); `PersonChips` (pick one of the circle's people); `PlayButton` (a recording, played back); `Notice` (a sentence in a sheet, for a control that can't do its work in this build). `media.ts` has `pickPhoto`, `uploadPhoto` and `uploadSound`; `sound` has `pickSound` (in a browser a sound file stands in for the microphone).
+
+A template without a screen yet still shows in the gallery, starts, and opens on a friendly "arrives with the next update" page with its chip and More, so nothing made from it is lost.
+
 ## What is built
 
 The foundation: welcome, how it works, signing in (the test sign-in takes any email and the code 123456), creating a profile, the four tabs and the + button, notifications, appearance, logging out and deleting the account.
