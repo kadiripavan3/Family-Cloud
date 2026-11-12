@@ -63,7 +63,10 @@ public class ThingService {
             Instant updatedAt,
             boolean mine,
             boolean canEdit,
-            AudienceChip chip) {}
+            AudienceChip chip,
+
+            @Schema(nullable = true, description = "Where it stands, in a few words: 4 of 9 done")
+            String glance) {}
 
     public record AudiencePerson(
             UUID memberId,
@@ -111,12 +114,19 @@ public class ThingService {
     private final CircleService circles;
     private final MemberStore members;
     private final MediaService media;
+    private final List<GlanceSource> glanceSources;
 
-    ThingService(ThingStore things, CircleService circles, MemberStore members, MediaService media) {
+    ThingService(
+            ThingStore things,
+            CircleService circles,
+            MemberStore members,
+            MediaService media,
+            List<GlanceSource> glanceSources) {
         this.things = things;
         this.circles = circles;
         this.members = members;
         this.media = media;
+        this.glanceSources = glanceSources;
     }
 
     public static ApiProblem notFound() {
@@ -184,7 +194,7 @@ public class ThingService {
     /** What a thing is linked to, as far as the viewer may see it. */
     public List<ThingBrief> linked(UUID id, UUID me) {
         require(id, me);
-        return briefs(things.linked(id, me));
+        return briefs(things.linked(id, me), me);
     }
 
     /** Links two things in the same circle. Whoever may change the first and see the second can. */
@@ -267,8 +277,19 @@ public class ThingService {
         return chips(List.of(row)).get(row.id());
     }
 
-    public List<ThingBrief> briefs(List<ThingRow> rows) {
+    /** Things of mixed kinds for one viewer, each with its chip and a few words on where it stands. */
+    public List<ThingBrief> briefs(List<ThingRow> rows, UUID me) {
         Map<UUID, AudienceChip> chips = chips(rows);
+        Map<UUID, String> glances = new java.util.HashMap<>();
+        for (GlanceSource source : glanceSources) {
+            List<UUID> ofKind = rows.stream()
+                    .filter(r -> r.kind() == source.kind())
+                    .map(ThingRow::id)
+                    .toList();
+            if (!ofKind.isEmpty()) {
+                glances.putAll(source.glances(ofKind, me));
+            }
+        }
         return rows.stream()
                 .map(r -> new ThingBrief(
                         r.id(),
@@ -279,7 +300,8 @@ public class ThingService {
                         r.updatedAt(),
                         r.mine(),
                         r.canEdit(),
-                        chips.get(r.id())))
+                        chips.get(r.id()),
+                        glances.get(r.id())))
                 .toList();
     }
 

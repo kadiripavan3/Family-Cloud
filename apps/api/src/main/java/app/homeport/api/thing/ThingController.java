@@ -33,7 +33,7 @@ class ThingController {
     @GetMapping("/things/{id}")
     @Operation(operationId = "getThing", summary = "A thing of any kind, as far as its title and who sees it")
     ThingBrief get(@Me UUID me, @PathVariable UUID id) {
-        return things.briefs(List.of(things.require(id, me))).get(0);
+        return things.briefs(List.of(things.require(id, me)), me).get(0);
     }
 
     @GetMapping("/things/{id}/audience")

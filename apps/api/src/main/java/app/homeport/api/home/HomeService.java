@@ -126,13 +126,13 @@ public class HomeService {
                 .toList();
         return new SearchResponse(
                 typed,
-                things.briefs(rows).stream()
+                things.briefs(rows, me).stream()
                         .map(b -> new SearchHit(b, snippets.get(b.id())))
                         .toList());
     }
 
     public PersonPageResponse person(UUID memberId, UUID me) {
         MemberRow member = circles.member(memberId, me);
-        return new PersonPageResponse(circles.view(member, me), things.briefs(thingStore.about(memberId, me, 30)));
+        return new PersonPageResponse(circles.view(member, me), things.briefs(thingStore.about(memberId, me, 30), me));
     }
 }

@@ -2577,6 +2577,10 @@
           },
           "chip" : {
             "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done"
           }
         }
       },

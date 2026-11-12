@@ -197,6 +197,8 @@ class ChecklistTest extends ApiTest {
 
         assertThat(JsonPath.<List<String>>read(fetch("/v1/things/" + plan + "/links", nora), "$[*].title"))
                 .containsExactly("Party prep", "Gift ideas");
+        assertThat(JsonPath.<String>read(fetch("/v1/things/" + plan + "/links", nora), "$[0].glance"))
+                .isEqualTo("0 of 1 done");
         assertThat(JsonPath.<List<String>>read(fetch("/v1/things/" + prep + "/links", nora), "$[*].title"))
                 .containsExactly("Birthday plan");
         // Alex sees the link to what he may see, and nothing of the private list.

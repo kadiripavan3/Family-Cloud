@@ -3,6 +3,7 @@ package app.homeport.api.list;
 import app.homeport.api.common.Sql;
 import app.homeport.api.guest.GuestView;
 import app.homeport.api.home.SearchSource;
+import app.homeport.api.thing.GlanceSource;
 import app.homeport.api.thing.Place;
 import app.homeport.api.thing.ThingKind;
 import java.util.List;
@@ -11,9 +12,9 @@ import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
-/** What checklists bring to the rest: a search inside their lines, and how a guest reads one. */
+/** What checklists bring to the rest: a search inside their lines, how a guest reads one, and "4 of 9 done". */
 @Component
-class ChecklistSources implements SearchSource, GuestView {
+class ChecklistSources implements SearchSource, GuestView, GlanceSource {
 
     private final JdbcClient jdbc;
     private final ChecklistStore lists;
@@ -53,5 +54,14 @@ class ChecklistSources implements SearchSource, GuestView {
                 lists.items(thingId).stream()
                         .map(i -> (i.doneAt() == null ? "☐ " : "☑ ") + i.text())
                         .collect(Collectors.joining("\n")));
+    }
+
+    @Override
+    public java.util.Map<UUID, String> glances(List<UUID> thingIds, UUID me) {
+        return lists.tallies(thingIds).entrySet().stream()
+                .collect(Collectors.toMap(
+                        java.util.Map.Entry::getKey,
+                        e -> e.getValue().done() + " of "
+                                + (e.getValue().done() + e.getValue().left()) + " done"));
     }
 }
