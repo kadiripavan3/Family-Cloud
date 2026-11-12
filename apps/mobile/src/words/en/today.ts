@@ -1,7 +1,8 @@
 /** 3 Home: the row of six places and what stands under it, 3.1 Today and 3.4 the + button. */
 import { places } from '@/theme/tokens';
 
-import { spelled } from './plural';
+import { APP } from './names';
+import { formatList, spelled } from './plural';
 
 /** "any of the five of you", "either of you", "you". */
 const anyOfYou = (people: number) => (people <= 1 ? 'you' : people === 2 ? 'either of you' : `any of the ${spelled(people)} of you`);
@@ -25,8 +26,28 @@ export const today = {
   },
   done: 'Done',
   notDone: 'Not done yet',
-  /** Above the rail of what is new. */
-  fresh: 'New in the library',
+  /**
+   * Above the rail under the day's list, by kind of circle: what is new, and what the circle's own templates
+   * keep ("Our story", a vote, a new word).
+   */
+  section: { family: 'New in the library', couple: 'The two of you', flat: 'New in the flat', crew: 'From the crew', solo: 'New in the library' },
+
+  /** A line about shared costs ("You're owed for Lisbon weekend"): its button, and what a press comes to. */
+  split: {
+    remind: 'Remind',
+    settle: 'Settle',
+    /** The button, for a screen reader: "Remind. You're owed for Lisbon weekend". */
+    spoken: (button: string, title: string) => `${button}. ${title}`,
+    reminded: (names: readonly string[]) => `${formatList(names)} ${names.length === 1 ? 'has' : 'have'} been reminded.`,
+    /** The question before a payment is marked as made: who paid whom, and how much. */
+    paidYou: (name: string, amount: string) => `Has ${name} paid you ${amount}?`,
+    youPaid: (name: string, amount: string) => `Have you paid ${name} ${amount}?`,
+    several: (amount: string) => `Is ${amount} settled?`,
+    body: (split: string) => `It is marked as paid in “${split}”, for everyone who sees it. ${APP} moves no money itself.`,
+    confirm: 'Yes, mark it paid',
+    notYet: 'Not yet',
+    settled: (split: string) => `“${split}” is marked as paid.`,
+  },
 
   /** 13.3 A brand-new circle: nothing on Today yet. */
   empty: {
