@@ -1,0 +1,138 @@
+<screen id="flat-today" title="Today, in a shared flat" note="Seen on Kai's phone. Three people who share a flat, a kitty and a landlord. Nobody is in charge: there are no roles here, and nothing is decided without everyone. The same seven places, filled with a flat's concerns.">
+  <sb>
+  <div class="scroll">
+    <vtabs active="today" circle="flat">
+    <div class="ctx"><div><b>Bins tonight, and it's Lena's turn</b><span>The kitty is down to €6.40</span></div><div class="ring" style="--p:20"><span class="em">🏠</span></div></div>
+    <div class="group hm-list">
+      <div class="grow"><span class="hm-t">Fri</span><span class="tx"><b>Lena's sister is staying</b><small>Until Sunday · everyone said fine</small></span><span class="stack sm"><img src="img/av-lena.jpg" alt=""></span></div>
+      <div class="grow"><span class="hm-t">€61</span><span class="tx"><b>Your share of the electricity</b><small>€159, split by nights at home</small></span><span class="btn btn-sm btn-soft">Pay</span></div>
+      <div class="grow"><span class="hm-t">[[alert]]</span><span class="tx"><b>The boiler, reported 12 days ago</b><small class="warn-t">No answer from the landlord</small></span><span class="btn btn-sm btn-soft">Nudge</span></div>
+    </div>
+    <div class="sec"><h3>Running low</h3>[[right]]</div>
+    <div class="prompts fl-low"><span class="chip on">[[check]]Loo roll</span><span class="chip">[[plus]]Bin bags</span><span class="chip">[[plus]]Oil</span><span class="chip">[[plus]]Dish soap</span><span class="chip">[[plus]]Coffee</span></div>
+  </div>
+  <tabbar active="home" as="kai">
+</screen>
+
+<screen id="flat-templates" title="Templates for a flat" note="What housemates need is fairness and a paper trail. A rota with swaps, bills split by the nights you were there, dated photos from the day you moved in, and a repair log that remembers what the landlord was told and when.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[x]]</span><span class="t">Templates</span><span class="soft-round">[[search]]</span></div>
+    <div class="fchips"><span class="fchip on"><span class="em">🏠</span>For a flat<small>15</small></span><span class="fchip">Money</span><span class="fchip">Landlord</span><span class="fchip">All 53</span></div>
+    <div class="gap16"></div>
+    <div class="tgrid">
+      <div class="tcard on"><span class="tag live">LIVE</span><span class="em">🧹</span><b>Cleaning rota</b><small>Swaps, cover, and a fair count</small></div>
+      <div class="tcard"><span class="tag live">LIVE</span><span class="em">💡</span><b>Bills by nights</b><small>Away for a month? Pay less</small></div>
+      <div class="tcard"><span class="tag live">LIVE</span><span class="em">📦</span><b>Move-in photos</b><small>Dated, signed by all. Saves a deposit</small></div>
+      <div class="tcard"><span class="em">🛠️</span><b>Repair log</b><small>What was reported, and when</small></div>
+      <div class="tcard"><span class="em">📝</span><b>House rules</b><small>Agreed by everyone, changed by vote</small></div>
+      <div class="tcard"><span class="em">🛋️</span><b>Is the sofa free?</b><small>Who has guests, and when</small></div>
+      <div class="tcard"><span class="em">🎉</span><b>House party</b><small>Budget, playlist, neighbours told</small></div>
+      <div class="tcard"><span class="em">🚚</span><b>Moving out</b><small>Keys, deposit and the last bills</small></div>
+    </div>
+  </div>
+</screen>
+
+<screen id="kitty" title="The kitty" note="A shared pot for the things nobody wants to count: loo roll, oil, bin bags. Everyone pays in the same on the first; whoever shops scans the receipt. Tap what is running low and it joins the list of whoever's turn it is.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">The kitty</span><aud flat><span class="soft-round">[[more]]</span></div>
+    <div class="mn-due"><span class="itile"><span class="em">💰</span></span><b>€6.40</b><small>€10 each on the 1st · Lena hasn't paid in yet</small></div>
+    <div class="glabel">Running low? Tap it</div>
+    <div class="prompts fl-low"><span class="chip on">[[check]]Loo roll</span><span class="chip">[[plus]]Bin bags</span><span class="chip">[[plus]]Oil</span><span class="chip">[[plus]]Dish soap</span></div>
+    <div class="gap16"></div>
+    <div class="note-b soft">[[repeat]]<div><b>It's Lena's turn to shop</b>She gets the list when she's near the shop.</div></div>
+    <div class="glabel">In and out</div>
+    <div class="up"><span class="itile"><span class="em">🛒</span></span><div class="tx"><b>Loo roll, bin bags</b><small>Lea · Tuesday · receipt kept</small></div><span class="amt">−€8.90</span></div>
+    <div class="up"><span class="itile"><span class="em">🛒</span></span><div class="tx"><b>Olive oil, salt, sponges</b><small>You · 2 Nov</small></div><span class="amt">−€14.70</span></div>
+    <div class="up"><span class="stack sm"><img src="img/av-kai.jpg" alt=""><img src="img/av-lea.jpg" alt=""></span><div class="tx"><b>Paid in for November</b><small>You and Lea</small></div><span class="amt ok-s">+€20.00</span></div>
+    <div class="up"><span class="itile acc">[[euro]]</span><div class="tx"><b>Left over from October</b></div><span class="amt">€10.00</span></div>
+  </div>
+</screen>
+
+<screen id="fair-split" title="A fairer split" note="Equal isn't always fair. Rent follows the size of the room, with the shared space split evenly. Bills follow the nights each person was at home. The numbers are agreed by everyone before they count, and anyone can ask for a new vote.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">How we split</span><span class="soft-round">[[more]]</span></div>
+    <div class="seg2"><span class="on">Rent</span><span>Bills</span><span>Kitty</span></div>
+    <div class="fl-split">
+      <div class="wi-s"><div><span><img src="img/av-kai.jpg" alt="">You · the big room, 18 m²</span><b>€372</b></div><div class="wi-tr"><b style="width:78%"></b><i style="left:78%"></i></div></div>
+      <div class="wi-s"><div><span><img src="img/av-lea.jpg" alt="">Lea · 14 m²</span><b>€310</b></div><div class="wi-tr"><b style="width:56%"></b><i style="left:56%"></i></div></div>
+      <div class="wi-s"><div><span><img src="img/av-lena.jpg" alt="">Lena · 11 m², facing the street</span><b>€268</b></div><div class="wi-tr"><b style="width:38%"></b><i style="left:38%"></i></div></div>
+    </div>
+    <div class="fl-sum"><span>The rent</span><span>€950</span></div>
+    <div class="gap16"></div>
+    <div class="note-b soft">[[check]]<div><b>Agreed by all three on 1 September</b>Drag a slider and the others move to keep the total. It counts once everyone says yes.</div></div>
+    <div class="glabel">October's electricity, by nights at home</div>
+    <div class="st-who"><img src="img/av-lea.jpg" alt="">Lea<div class="pbar"><b style="width:100%"></b></div><small>€70</small></div>
+    <div class="st-who"><img src="img/av-kai.jpg" alt="">You<div class="pbar"><b style="width:87%"></b></div><small>€61</small></div>
+    <div class="st-who"><img src="img/av-lena.jpg" alt="">Lena<div class="pbar"><b style="width:40%"></b></div><small>€28</small></div>
+  </div>
+</screen>
+
+<screen id="heads-up" title="Heads-up" note="The message that usually gets lost in a group chat. One line to tell the flat something, and a tap from each person to say it's fine. It stays on the calendar, and time away is counted when the bills are split.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Heads-up</span><span class="soft-round">[[plus]]</span></div>
+    <div class="hu-card me">
+      <div class="hu-top"><img src="img/av-lea.jpg" alt=""><div><b>Six people over on Saturday, done by midnight</b><small>Lea · an hour ago</small></div></div>
+      <div class="hu-ok"><span class="stack sm"><img src="img/av-lena.jpg" alt=""></span>Lena's fine<span class="sp"></span><span class="btn btn-sm btn-soft">Let's talk</span><span class="btn btn-sm">Fine by me</span></div>
+    </div>
+    <div class="hu-card">
+      <div class="hu-top"><img src="img/av-lena.jpg" alt=""><div><b>My sister's staying, Friday to Sunday</b><small>Lena · on the sofa</small></div></div>
+      <div class="hu-ok"><span class="stack sm"><img src="img/av-kai.jpg" alt=""><img src="img/av-lea.jpg" alt=""></span>You and Lea said fine</div>
+    </div>
+    <div class="hu-card">
+      <div class="hu-top"><img src="img/av-kai.jpg" alt=""><div><b>I'm away 20 to 27 November</b><small>You · 7 nights off your bills</small></div></div>
+      <div class="hu-ok">[[check]]Lea will water the plants</div>
+    </div>
+    <div class="gap8"></div>
+    <div class="note-b">[[moon]]<div><b>Quiet after 23:00 on weeknights</b>From the House rules, agreed by all three.</div></div>
+    <div class="nt-add"><div class="qa-field">[[plus]]<span class="ph-t">Tell the flat something</span>[[mic]]</div></div>
+  </div>
+</screen>
+
+<screen id="heard" title="Heard in the kitchen" note="A flat's keepsake. The lines that deserve to outlive the tenancy, with who said them and when. In ten years it is the only record of what living here was like.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Heard in the kitchen</span><span class="soft-round">[[search]]</span></div>
+    <div class="fchips"><span class="fchip on">All<small>112</small></span><span class="fchip av"><img src="img/av-lea.jpg" alt="">Lea</span><span class="fchip av"><img src="img/av-lena.jpg" alt="">Lena</span><span class="fchip av"><img src="img/av-kai.jpg" alt="">You</span></div>
+    <div class="gap16"></div>
+    <div class="ks-say"><p>“I'm not hungover. I'm buffering.”</p><div><img src="img/av-lea.jpg" alt=""><span><b>Lea</b> · Sunday, 11:40</span></div></div>
+    <div class="ks-say"><p>“That's not mould. That's character.”</p><div><img src="img/av-kai.jpg" alt=""><span><b>You</b> · about the bathroom ceiling</span></div></div>
+    <div class="ks-say"><p>“Whose turn is it to have opinions about the heating?”</p><div><img src="img/av-lena.jpg" alt=""><span><b>Lena</b> · the first cold night</span></div></div>
+    <div class="nt-add"><div class="qa-field">[[plus]]<span class="ph-t">Who said what?</span>[[mic]]</div></div>
+  </div>
+</screen>
+
+<screen id="guest-book" title="The guest book" note="A code by the front door. Guests scan it and leave a line and a photo: no app, no account. The flat ends up with a book of everyone who ever slept on the sofa.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">The guest book</span><span class="soft-round">[[share]]</span></div>
+    <div class="note-b soft">[[scan]]<div><b>The code by the door</b>23 guests and 61 nights on the sofa since 2024.</div><span class="btn btn-sm">Print</span></div>
+    <div class="gap16"></div>
+    <div class="ks-say gb"><span class="gb-pic" style="background-image:url(img/breakfast.jpg)"></span><div><p>“Came for a weekend, stayed for the pancakes.”</p><small>Tom, from Leeds · 3 nights in October</small></div></div>
+    <div class="ks-say gb"><span class="gb-pic" style="background-image:url(img/mugs.jpg)"></span><div><p>“Best sofa in Ljubljana. Sorry about the glass.”</p><small>Maja, Lena's sister · 2 nights</small></div></div>
+    <div class="ks-say gb"><span class="gb-pic" style="background-image:url(img/sparkler.jpg)"></span><div><p>“Thank you for New Year. I remember most of it.”</p><small>Ana · who used to live here</small></div></div>
+  </div>
+</screen>
+
+<screen id="lived-here" title="Everyone who's lived here" note="A flat outlives its flatmates. When someone moves out they stay in the roll and keep the memories, and every code and password stops working for them. The house manual, the repair log and the bin days pass to whoever comes next.">
+  <sb>
+  <div class="pg">
+    <div class="appbar"><span class="soft-round">[[left]]</span><span class="t">Trubarjeva 9, flat 3</span><span class="soft-round">[[more]]</span></div>
+    <div class="glabel">Here now</div>
+    <div class="lh-row"><b>2026 –</b><img src="img/av-lena.jpg" alt=""><div>Lena<small>The small room, facing the street</small></div></div>
+    <div class="lh-row"><b>2024 –</b><img src="img/av-lea.jpg" alt=""><div>Lea</div></div>
+    <div class="lh-row"><b>2023 –</b><img src="img/av-kai.jpg" alt=""><div>You</div></div>
+    <div class="glabel">Before</div>
+    <div class="lh-row gone"><b>2023 – 25</b><img src="img/av-ana.jpg" alt=""><div>Ana<small>Moved to Lisbon. Still in the photos, off the Wi‑Fi.</small></div></div>
+    <div class="lh-row gone"><b>2021 – 23</b><span class="avi">2</span><div>Two people before you<small>Left the house manual and a cactus</small></div></div>
+    <div class="gap16"></div>
+    <div class="group">
+      <div class="grow"><span class="gi">[[key]]</span><span class="tx"><b>When someone moves out</b><small>Memories stay theirs. Codes and logins stop.</small></span>[[right chev]]</div>
+      <div class="grow"><span class="gi">[[book]]</span><span class="tx"><b>Handed on to the next person</b><small>House manual, repair log, bin days</small></span>[[right chev]]</div>
+      <div class="grow"><span class="gi">[[euro]]</span><span class="tx"><b>A last settling-up</b><small>Bills to the day, the kitty, the deposit</small></span>[[right chev]]</div>
+    </div>
+  </div>
+</screen>

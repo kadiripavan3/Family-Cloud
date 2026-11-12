@@ -167,9 +167,11 @@ const spaces = tokens.space.map((s) => `<li><code>${s}</code><i style="--s:${s}"
    Each screen is written as <screen id title note [theme="dark"] [home="photo"] [class] [label]> ... </screen>.
    Inside it: <sb> or <sb photo> (status bar), [[icon classes]] (an icon from icons.svg),
    <kb>, <kb email> or <kb num> (keyboard), <tabbar active="home|people|activity|you" [dot]>,
-   <vtabs active="today|plan|notes|library|money|vault"> (the search pill and the row of six places),
+   <vtabs active="today|plan|notes|library|money|health|vault" [circle="couple|flat|crew"]> (the search pill and the row of seven places),
+   {lore} (the name of the place that used to be Notes, from tokens.json),
    {app} and {domain} (the name and its web address, whichever name is switched on), [[brand]] (its mark),
-   <aud all|me|two> (who can see a thing), <tiles imgs="a,b,c"> (small photo tiles).
+   <aud all|me|two|us|flat|crew> (who can see a thing), <tiles imgs="a,b,c"> (small photo tiles).
+   <tabbar … as="kai"> puts someone else in the You tab, for screens seen through another person's phone.
    The build adds the device frame, the camera island, the home indicator, the number and the caption. */
 const ICONS = new Set([...src('icons.svg').matchAll(/<symbol id="i-([a-z0-9-]+)"/g)].map((m) => m[1]));
 const icon = (name, classes = '') => {
@@ -193,33 +195,40 @@ function keyboard(kind) {
     + `<div class="kr k3">${key(icon('shift'), 'mod')}${row('zxcvbnm')}${key(icon('backspace'), 'mod')}</div><div class="kr k4">${bottom}</div>`
     + `<div class="kb-foot">${icon('globe')}${icon('mic')}</div></div>`;
 }
-function tabbar(active, dot) {
+function tabbar(active, dot, who = 'me') {
   const tab = (id, label, name) => `<span class="tab${active === id ? ' on' : ''}">${icon(name)}${label}${id === 'activity' && dot ? '<i class="dot"></i>' : ''}</span>`;
   return `<div class="tabbar">${tab('home', 'Home', 'home')}${tab('people', 'People', 'users')}<span class="tab-plus">${icon('plus')}</span>`
-    + `${tab('activity', 'Activity', 'bell')}<span class="tab${active === 'you' ? ' on' : ''}"><img src="img/av-me.jpg" alt="">You</span></div>`;
+    + `${tab('activity', 'Activity', 'bell')}<span class="tab${active === 'you' ? ' on' : ''}"><img src="img/av-${who}.jpg" alt="">You</span></div>`;
 }
-// The six places things live. Home's top row switches between them, the way Airbnb's does.
+// The seven places things live. Home's top row switches between them, the way Airbnb's does.
+const LORE = tokens.places.notes.label;
+const CIRCLE_EMOJI = { family: '👪', couple: '❤️', flat: '🏠', crew: '🤝' };
 const PLACES = [
-  ['today', 'Today', '🏡', 'Find anything', 'Notes · photos · bills · passwords'],
+  ['today', 'Today', '🏡', 'Find anything', 'Pages · photos · bills · passwords'],
   ['plan', 'Plan', '📅', 'Find a date or a job', 'Events · reminders · lists · goals'],
-  ['notes', 'Notes', '📓', 'Search notes', 'Pages · checklists · templates'],
+  ['notes', LORE, '📖', `Search ${LORE}`, 'Pages · lists · templates'],
   ['library', 'Library', '📷', 'Search the library', 'People · places · words in a scan'],
   ['money', 'Money', '💰', 'Search money', 'Bills · sheets · who owes who'],
+  ['health', 'Health', '💪', 'Search Health', 'Medicines · visits · moving'],
   ['vault', 'Vault', '🔐', 'Search the Vault', 'Logins · cards · IDs · codes'],
 ];
-function vtabs(active) {
+function vtabs(active, circle = 'family') {
+  if (!CIRCLE_EMOJI[circle]) throw new Error(`<vtabs circle="${circle}">: not one of ${Object.keys(CIRCLE_EMOJI).join(', ')}`);
   const cur = PLACES.find((p) => p[0] === active);
   if (!cur) throw new Error(`<vtabs active="${active}">: not one of ${PLACES.map((p) => p[0]).join(', ')}`);
-  return `<div class="search">${icon('search')}<div class="q"><b>${cur[3]}</b><span>${cur[4]}</span></div><span class="round"><span class="em">👪</span></span></div>`
+  return `<div class="search">${icon('search')}<div class="q"><b>${cur[3]}</b><span>${cur[4]}</span></div><span class="round"><span class="em">${CIRCLE_EMOJI[circle]}</span></span></div>`
     + `<div class="cats six">${PLACES.map(([id, label, emoji]) => `<div class="cat${id === active ? ' on' : ''}"><span class="em">${emoji}</span>${label}</div>`).join('')}</div>`;
 }
 const AUD = {
   all: '<span class="aud"><span class="em">👪</span>The Linds</span>',
   me: () => `<span class="aud">${icon('lock')}Only you</span>`,
   two: '<span class="aud"><span class="stack sm"><img src="img/av-alex.jpg" alt=""><img src="img/av-me.jpg" alt=""></span>Alex and you</span>',
+  us: '<span class="aud"><span class="em">❤️</span>The two of you</span>',
+  flat: '<span class="aud"><span class="em">🏠</span>The flat</span>',
+  crew: '<span class="aud"><span class="em">🤝</span>Lisbon crew</span>',
 };
 const aud = (kind) => {
-  if (!AUD[kind]) throw new Error(`<aud ${kind}>: use all, me or two`);
+  if (!AUD[kind]) throw new Error(`<aud ${kind}>: use ${Object.keys(AUD).join(', ')}`);
   return typeof AUD[kind] === 'function' ? AUD[kind]() : AUD[kind];
 };
 const tiles = (list) => list.split(',').map((n) => `<i style="background-image:url(img/${n.trim()}.jpg)"></i>`).join('');
@@ -227,13 +236,14 @@ const expand = (body, where) => {
   const out = body
     .replace(/<sb( photo)?>/g, (m, p) => statusBar(!!p))
     .replace(/<kb(?: (email|num))?>/g, (m, k) => keyboard(k))
-    .replace(/<tabbar active="([a-z]*)"( dot)?>/g, (m, a, d) => tabbar(a, !!d))
-    .replace(/<vtabs active="([a-z]*)">/g, (m, a) => vtabs(a))
+    .replace(/<tabbar active="([a-z]*)"( dot)?(?: as="([a-z]+)")?>/g, (m, a, d, w) => tabbar(a, !!d, w))
+    .replace(/<vtabs active="([a-z]*)"(?: circle="([a-z]+)")?>/g, (m, a, c) => vtabs(a, c))
+    .replace(/\{lore\}/g, LORE)
     .replace(/<aud ([a-z]+)>/g, (m, k) => aud(k))
     .replace(/<tiles imgs="([a-z0-9, -]+)">/g, (m, l) => tiles(l))
     .replace(/\{app\}/g, '<span class="bn"></span>').replace(/\{domain\}/g, '<span class="bd"></span>')
     .replace(/\[\[([a-z0-9-]+)((?: [a-z0-9-]+)*)\]\]/g, (m, n, c) => icon(n, c));
-  const left = out.match(/\[\[|<sb\b|<kb\b|<tabbar\b|<vtabs\b|<aud\b|<tiles\b|\{app\}|\{domain\}/);
+  const left = out.match(/\[\[|<sb\b|<kb\b|<tabbar\b|<vtabs\b|<aud\b|<tiles\b|\{app\}|\{domain\}|\{lore\}/);
   if (left) throw new Error(`${where}: shorthand not understood near "${out.slice(left.index, left.index + 40)}"`);
   return out;
 };
@@ -246,8 +256,8 @@ function renderScreen(a, body, num, where) {
   if (screenIds.has(a.id)) throw new Error(`${where}: screen id "${a.id}" is used twice`);
   screenIds.add(a.id);
   const classes = ['screen', 'ph', a.theme === 'dark' ? 'always-dark' : '', a.class || ''].filter(Boolean).join(' ');
-  const named = (t) => t.replace(/\{app\}/g, '<span class="bn"></span>');
-  const label = (a.label || `${a.title} screen. ${a.note}`).replace(/\{app\}/g, 'the app');
+  const named = (t) => t.replace(/\{app\}/g, '<span class="bn"></span>').replace(/\{lore\}/g, LORE);
+  const label = (a.label || `${a.title} screen. ${a.note}`).replace(/\{app\}/g, 'the app').replace(/\{lore\}/g, LORE);
   return `<figure class="shot">
 <div class="device" id="shot-${a.id}" data-comment-target role="img" aria-label="${label}">
 <div class="${classes}">
@@ -272,12 +282,12 @@ const screenGroups = JSON.parse(src('screens/index.json')).groups.map((g, gi) =>
 const screenTotal = screenGroups.reduce((n, g) => n + g.shots.length, 0);
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const screenSections = screenGroups.map((g) => `<section class="sg" id="screens-${g.id}" aria-labelledby="screens-${g.id}-h">
-<div class="sg-head"><span class="sg-n">${g.n}</span><div><h2 id="screens-${g.id}-h">${esc(g.title)}${g.tag ? ` <span class="sg-tag">${esc(g.tag)}</span>` : ''}</h2><p>${esc(g.intro)}</p></div><span class="sg-count">${plural(g.shots.length, 'screen')}</span></div>
+<div class="sg-head"><span class="sg-n">${g.n}</span><div><h2 id="screens-${g.id}-h">${esc(g.title.replace(/\{lore\}/g, LORE))}${g.tag ? ` <span class="sg-tag">${esc(g.tag)}</span>` : ''}</h2><p>${esc(g.intro.replace(/\{lore\}/g, LORE))}</p></div><span class="sg-count">${plural(g.shots.length, 'screen')}</span></div>
 <div class="gallery">
 ${g.shots.join('\n')}
 </div>
 </section>`).join('\n');
-const screenNav = screenGroups.map((g) => `<a href="#screens-${g.id}">${esc(g.title)}<span>${g.shots.length}</span></a>`).join('');
+const screenNav = screenGroups.map((g) => `<a href="#screens-${g.id}">${esc(g.title.replace(/\{lore\}/g, LORE))}<span>${g.shots.length}</span></a>`).join('');
 
 /* ---------- assemble ---------- */
 const vars = {

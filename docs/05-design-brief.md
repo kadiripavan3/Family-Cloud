@@ -1,6 +1,6 @@
 # Design cues
 
-> **Status:** first draft, 97 screens in 16 groups. · **Updated:** 11 Nov 2026
+> **Status:** first draft, 134 screens in 20 groups. · **Updated:** 12 Nov 2026
 >
 > The design is Journey's Design 2.1. This page says what carries over unchanged and what is new here. Journey's own brief (`docs/04-design-brief.md` in the Journey repo) is the longer read.
 
@@ -13,7 +13,7 @@
 | Glass | The tab bar, the bars that float at the bottom, and buttons on photos are frosted glass. |
 | Shape | The same eleven corner steps. Cards 20 to 22, panels 24, sheets 30, buttons and chips fully round. |
 | Photos | Real photos lead. A dark gradient under any text on a photo. |
-| Icons | 24 px line icons; 3D Fluent Emoji for the six places, templates, categories and empty states. |
+| Icons | 24 px line icons; 3D Fluent Emoji for the seven places, templates, categories and empty states. |
 | Depth | Soft shadows in light mode, hairlines in dark. |
 | Bottom bar | Five places with the gold + in the middle, the same shape as Journey's. |
 | Forms | The label inside the box. One primary button at the bottom. |
@@ -24,7 +24,8 @@
 | Cue | Rule |
 |---|---|
 | **The audience chip** | Every page, album, bill, sheet and password carries a small chip that says who can see it: a lock and "Only you", faces and names, or the circle. It always sits in the same place: top right of a page, bottom of a card, end of a row. A soft gold chip with a crossed eye means "hidden from someone". |
-| **The six places** | Home's top row: Today, Plan, Notes, Library, Money, Vault. The same 3D icon everywhere a place is mentioned. |
+| **The seven places** | Home's top row: Today, Plan, Lore, Library, Money, Health, Vault. The same 3D icon everywhere a place is mentioned. Seven is the most the row holds. |
+| **A circle's kind** | The round button in the search pill carries the circle's own icon: a family, a heart, a house, a handshake. The layout, the colours and the components never change with the kind; the words and what is offered do. |
 | **Tints** | Five small colours tell people and categories apart in a calendar or a chart. A tint is a dot or a bar, always with the person's face or name somewhere on the same screen, and never a button. |
 | **Numbers** | Money and anything in a column uses lining, equal-width figures so digits line up. Amounts carry their currency sign. |
 | **Sheets** | The grid is quiet: hairlines, grey headers, no colour except the selected cell in soft gold. Column headers carry a small icon for their kind. Formulas are chips, never a line of typed symbols. |
@@ -46,23 +47,28 @@
 | We don't have a copy, so we can't reset it for you | Zero-knowledge architecture |
 | You're owed €64 | Net balance: +64.00 |
 | Adds up every row in Cost | =SUM(D2:D7) |
+| The two of you | Members (2) |
+| Agreed by all three on 1 September | Split rule saved |
+| Alex gave it at 8:10 | Dose administered |
+| A missed day is a gap, not a failure | Streak lost |
+| No advice from us. A call or a walk might be the thing. | Your friend may be at risk |
 | Your ticks are saved here and will reach everyone when you're back | Sync pending |
 
 Security is described by what happens, in ordinary words, including the uncomfortable parts.
 
 ## The people in the screens
 
-Nora Lind is the person using the app, the same Nora as in Journey's screens. The Linds are Nora, her partner Alex Strand, Mia (9), Leo (6) and Biscuit the dog; Astrid is Nora's mother. Lisbon crew is a circle of friends (Lea, Kai, Lena, Ana). Ines is the sitter. All made up.
+Nora Lind is the person using the app, the same Nora as in Journey's screens. She is in three circles, one of each kind but a flat. **The Linds** (a family) are Nora, her partner Alex Strand, Mia (9), Leo (6) and Biscuit the dog; Astrid is Nora's mother. **Nora and Alex** (a couple) is the two of them. **Lisbon crew** (friends) is Nora, Lea, Kai, Lena and Ana. The flat at **Trubarjeva 9** (housemates) is Kai, Lea and Lena, and those screens are seen on Kai's phone; Ana used to live there. Ines is the sitter. All made up.
 
 ## Screens
 
 | # | Group | Screens |
 |---|---|---|
 | 1 | Welcome | Welcome · How it works · Log in or sign up |
-| 2 | Set up a circle | Who is it for? · Name it and invite people · Bring your things in · All set |
+| 2 | Set up a circle | Who is it for? · Name it and invite people · Bring your things in · All set · Made for your kind of circle · What each kind gets |
 | 3 | Home | Today · Your circles · Find anything · The + button |
 | 4 | People and sharing | People · A person's page · Who can see this? · Keep it a surprise · Guest pass · A child's view |
-| 5 | Notes | Notes · A space · A page · Add to a page · A shared list · Templates · Weekly meal plan · Chore wheel · Time capsule |
+| 5 | Lore | Lore · A space · A page · Add to a page · A shared list · Templates · Weekly meal plan · Chore wheel · Time capsule |
 | 6 | Library | The wall · Pinch out to a year · A moment · A photo · Albums · Places · Files · A document · Select and share |
 | 7 | Plan | Plan · Month · An event · Type it · Reminders · Goals · A goal |
 | 8 | Money | Money · A bill · Scan a bill · Sheets · A sheet · A row, as a card · A formula you can read · Loan planner · Splitting with friends |
@@ -74,8 +80,12 @@ Nora Lind is the person using the app, the same Nora as in Journey's screens. Th
 | 14 | Jot | Widgets on the Home Screen · The jot bar · A note pinned in notifications · It files itself · On the iPhone Lock Screen · Say it all at once · Share into it · Every way in |
 | 15 | Keepsakes | Open when… · The birthday interview · Things they said · Same spot, every year · Grandma's stories · The good things jar · The doorframe |
 | 16 | Fair and fun | Whose turn? · The piggy bank · Secret missions · The Saturday jar · Sleeps until… · Where is it? |
+| 17 | Health | Health · A health page · Who gave the medicine? · A sick day, written down · A visit to the doctor · The emergency card · Moving together · Small habits, kept · How's your weather? · What runs in the family · Health stays yours |
+| 18 | For couples | Today, for two · Templates for two · Our story · Tucked notes · The anniversary questions · Mystery date · Both said yes · The fair share |
+| 19 | For housemates | Today, in a shared flat · Templates for a flat · The kitty · A fairer split · Heads-up · Heard in the kitchen · The guest book · Everyone who's lived here |
+| 20 | For friends | Today, with friends · Templates for friends · When can everyone? · Secret Santa · Where next? · The dictionary · Predictions · The awards |
 
-Groups 14 to 16 were added on 11 Nov after the owner's first comments. They sit at the end so the numbers of the screens already reviewed don't move; Jot belongs after Home, and the other two with Notes.
+Groups 14 to 16 were added on 11 Nov after the owner's first comments, and 17 to 20 on 12 Nov. They sit at the end so the numbers of the screens already reviewed don't move. Jot belongs after Home, Health after Money, and the keepsakes, perks and the three sets for other kinds of circle with Lore.
 
 ## Not designed yet
 
