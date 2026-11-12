@@ -49,6 +49,7 @@
         <p class="eyebrow" th:text="${card.label}">Page</p>
         <h2 th:text="${card.title}">Title</h2>
         <p class="body" th:if="${card.text != null}" th:text="${card.text}" style="white-space: pre-wrap">Words</p>
+        <p class="body" th:each="image : ${card.images}"><img th:src="${image}" alt="" style="max-width: 100%; border-radius: 12px"></p>
       </article>
       <p class="empty" th:if="${cards.isEmpty()}">Nothing is on this pass any more.</p>
     </th:block>

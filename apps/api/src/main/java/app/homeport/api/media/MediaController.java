@@ -41,7 +41,12 @@ class MediaController {
             String fileName,
 
             @Schema(description = "For a video or a recording: how long it is, in whole seconds")
-            Integer durationSeconds) {}
+            Integer durationSeconds,
+
+            @Schema(
+                    description =
+                            "True for a photo going into the Library: the file is kept as it arrives, at full size, next to the sizes made from it")
+            Boolean keepOriginal) {}
 
     record UploadResponse(
             @Schema(description = "Use this id when saving what the file belongs to")
@@ -57,7 +62,12 @@ class MediaController {
     @Operation(operationId = "startUpload", summary = "Get a place to upload one file")
     UploadResponse startUpload(@Me UUID me, @Valid @RequestBody StartUploadRequest request) {
         NewUpload upload = media.startUpload(
-                me, request.kind(), request.contentType(), request.fileName(), request.durationSeconds());
+                me,
+                request.kind(),
+                request.contentType(),
+                request.fileName(),
+                request.durationSeconds(),
+                Boolean.TRUE.equals(request.keepOriginal()));
         return new UploadResponse(
                 upload.mediaId(),
                 upload.target().url(),

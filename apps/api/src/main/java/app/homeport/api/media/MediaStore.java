@@ -22,7 +22,11 @@ public class MediaStore {
             Long bytes,
             Integer width,
             Integer height,
-            Integer durationS) {
+            Integer durationS,
+            boolean keepOriginal,
+            String originalKey,
+            Long originalBytes,
+            String contentHash) {
 
         public boolean ready() {
             return status == MediaStatus.READY;
@@ -38,9 +42,22 @@ public class MediaStore {
     /** A record of a file to come. */
     public void insert(
             UUID id, UUID ownerId, MediaKind kind, String contentType, String fileName, String key, Integer durationS) {
+        insert(id, ownerId, kind, contentType, fileName, key, durationS, false);
+    }
+
+    /** A record of a file to come. With {@code keepOriginal}, a photo's upload is kept next to the sizes made from it. */
+    public void insert(
+            UUID id,
+            UUID ownerId,
+            MediaKind kind,
+            String contentType,
+            String fileName,
+            String key,
+            Integer durationS,
+            boolean keepOriginal) {
         jdbc.sql("""
-            insert into media (id, owner_id, kind, content_type, file_name, storage_key, duration_s)
-            values (:id, :owner, :kind, :type, :name, :key, :duration)
+            insert into media (id, owner_id, kind, content_type, file_name, storage_key, duration_s, keep_original)
+            values (:id, :owner, :kind, :type, :name, :key, :duration, :keep)
             """)
                 .param("id", id)
                 .param("owner", ownerId)
@@ -49,6 +66,7 @@ public class MediaStore {
                 .param("name", fileName)
                 .param("key", key)
                 .param("duration", durationS)
+                .param("keep", keepOriginal)
                 .update();
     }
 
@@ -94,6 +112,35 @@ public class MediaStore {
                 .update();
     }
 
+    /**
+     * A photo whose original was kept: where the original is, how big it is, and its fingerprint. Written with
+     * the photo itself, so the record always names every file there is to remove.
+     */
+    public void photoReady(
+            UUID id,
+            String finalKey,
+            long bytes,
+            int width,
+            int height,
+            String originalKey,
+            long originalBytes,
+            String contentHash) {
+        jdbc.sql("""
+            update media set status = 'ready', storage_key = :key, has_sizes = true, content_type = 'image/jpeg',
+              bytes = :bytes, width = :width, height = :height, original_key = :original,
+              original_bytes = :originalBytes, content_hash = :hash where id = :id
+            """)
+                .param("id", id)
+                .param("key", finalKey)
+                .param("bytes", bytes)
+                .param("width", width)
+                .param("height", height)
+                .param("original", originalKey)
+                .param("originalBytes", originalBytes)
+                .param("hash", contentHash)
+                .update();
+    }
+
     public void fileReady(UUID id, long bytes) {
         jdbc.sql("update media set status = 'ready', bytes = :bytes where id = :id")
                 .param("id", id)
@@ -131,7 +178,11 @@ public class MediaStore {
                 (Long) rs.getObject("bytes"),
                 (Integer) rs.getObject("width"),
                 (Integer) rs.getObject("height"),
-                (Integer) rs.getObject("duration_s"));
+                (Integer) rs.getObject("duration_s"),
+                rs.getBoolean("keep_original"),
+                rs.getString("original_key"),
+                (Long) rs.getObject("original_bytes"),
+                rs.getString("content_hash"));
     }
 
     /** Deletes these records. The database queues their files for removal in the same transaction. */

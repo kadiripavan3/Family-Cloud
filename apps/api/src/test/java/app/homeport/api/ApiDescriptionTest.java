@@ -33,7 +33,8 @@ class ApiDescriptionTest extends ApiTest {
     }
 
     /** Operations that create something and take no clientId, each with the reason that is good enough. */
-    private static final Map<String, String> CREATES_WITHOUT_CLIENT_ID = Map.of();
+    private static final Map<String, String> CREATES_WITHOUT_CLIENT_ID =
+            Map.of("POST /v1/library", "a batch: each file in it carries its own clientId");
 
     @Test
     void everyListThatHandsOutACursorTakesACursorAndALimit() {
@@ -102,10 +103,40 @@ class ApiDescriptionTest extends ApiTest {
         String code = JsonPath.<String>read(fetch("/v1/circles/" + circle, nora), "$.joinUrl")
                 .replaceFirst(".*/", "");
 
+        // The Library's kinds, each only Nora's: a photo, a document (a scan), a video and an album.
+        String clipTarget = send(
+                HttpMethod.POST, "/v1/media/uploads", nora, "{\"kind\":\"video\",\"contentType\":\"video/mp4\"}", 200);
+        send(clipTarget, "video/mp4", "a clip".getBytes());
+        String clip = JsonPath.read(clipTarget, "$.mediaId");
+        send(HttpMethod.POST, "/v1/media/uploads/" + clip + "/complete", nora, null, 204);
+        List<String> library = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/library",
+                        nora,
+                        ("{\"circleId\":\"%s\",\"items\":[{\"clientId\":\"%s\",\"mediaId\":\"%s\"},"
+                                        + "{\"clientId\":\"%s\",\"mediaId\":\"%s\",\"kind\":\"document\",\"text\":\"Words inside\"},"
+                                        + "{\"clientId\":\"%s\",\"mediaId\":\"%s\"}]}")
+                                .formatted(circle, id(), uploadPhoto(nora), id(), uploadPhoto(nora), id(), clip),
+                        201),
+                "$.items[*].item.id");
+        assertThat(library).hasSize(3);
+        String album = JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        "/v1/albums",
+                        nora,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"Only hers\",\"itemIds\":[\"%s\"]}"
+                                .formatted(id(), circle, library.get(0)),
+                        201),
+                "$.id");
+
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = List.of(circle, child, page, pass);
-        List<String> forAlex = List.of(page);
+        List<String> forStranger = new ArrayList<>(List.of(circle, child, page, pass, album));
+        forStranger.addAll(library);
+        List<String> forAlex = new ArrayList<>(List.of(page, album));
+        forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
             if (!name.startsWith("GET ") || !name.contains("{id}")) {
@@ -134,7 +165,11 @@ class ApiDescriptionTest extends ApiTest {
     private static String label(String id, String circle, String child, String page, String pass) {
         return id.equals(circle)
                 ? "a circle's id"
-                : id.equals(child) ? "a member's id" : id.equals(page) ? "a page's id" : "a guest pass's id";
+                : id.equals(child)
+                        ? "a member's id"
+                        : id.equals(page)
+                                ? "a page's id"
+                                : id.equals(pass) ? "a guest pass's id" : "the id of a thing " + id;
     }
 
     /** True when the route answers with something: neither "not found" nor "forbidden". */

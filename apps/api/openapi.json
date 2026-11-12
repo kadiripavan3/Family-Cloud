@@ -19,6 +19,12 @@
     "name" : "checklists",
     "description" : "Lists you tick, changed one line at a time"
   }, {
+    "name" : "library",
+    "description" : "Every photo, video and document, from everyone"
+  }, {
+    "name" : "files",
+    "description" : "Scans and documents, and what was read inside them"
+  }, {
     "name" : "me",
     "description" : "The signed-in person and their profile"
   }, {
@@ -27,6 +33,9 @@
   }, {
     "name" : "things",
     "description" : "What every kind of thing shares: who can see it"
+  }, {
+    "name" : "albums",
+    "description" : "Albums made by hand, albums that fill themselves, and folders of files"
   }, {
     "name" : "home",
     "description" : "What Home shows across every place"
@@ -357,6 +366,63 @@
         }
       }
     },
+    "/v1/library/{id}/love" : {
+      "put" : {
+        "tags" : [ "library" ],
+        "summary" : "Give it a heart",
+        "operationId" : "loveLibraryItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "as",
+          "in" : "query",
+          "description" : "A child or a pet of the circle to give the heart for. Left out: yourself.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "library" ],
+        "summary" : "Take your heart back",
+        "operationId" : "unloveLibraryItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "as",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/join/{code}" : {
       "get" : {
         "tags" : [ "circles" ],
@@ -512,6 +578,230 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/library" : {
+      "post" : {
+        "tags" : [ "library" ],
+        "summary" : "Add uploaded photos, videos and documents, a hundred at a time at most. Each carries its own clientId, and a file that is there already is answered with what it became.",
+        "operationId" : "addToLibrary",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewItems"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AddedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/{id}/comments" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "What people said under it, the oldest first",
+        "operationId" : "getLibraryComments",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageCommentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "library" ],
+        "summary" : "Say something under it",
+        "operationId" : "addLibraryComment",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewCommentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CommentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/select/share" : {
+      "post" : {
+        "tags" : [ "library" ],
+        "summary" : "Set who can see many things at once. Done to the ones that are yours; says how many.",
+        "operationId" : "shareSelected",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ShareSelected"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SelectResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/select/hide" : {
+      "post" : {
+        "tags" : [ "library" ],
+        "summary" : "Hide many things from one person. Done to the ones that are yours and shared; says how many.",
+        "operationId" : "hideSelected",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HideSelected"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SelectResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/select/delete" : {
+      "post" : {
+        "tags" : [ "library" ],
+        "summary" : "Delete many things for good. Done to the ones that are yours; says how many.",
+        "operationId" : "deleteSelected",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeleteSelected"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SelectResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/check" : {
+      "post" : {
+        "tags" : [ "library" ],
+        "summary" : "Which of these files are in your Library already. Ask before uploading, with each file's SHA-256.",
+        "operationId" : "checkLibrary",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HashCheck"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CheckResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -737,6 +1027,73 @@
         }
       }
     },
+    "/v1/albums" : {
+      "post" : {
+        "tags" : [ "albums" ],
+        "summary" : "Start an album: by hand, from a moment, or one that fills itself for a person. Or a folder of files.",
+        "operationId" : "createAlbum",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewAlbum"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AlbumResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/albums/{id}/items" : {
+      "post" : {
+        "tags" : [ "albums" ],
+        "summary" : "Put photos, videos or files into an album, many at once. Says how many it could put in.",
+        "operationId" : "addToAlbum",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Selection"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SelectResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/local-auth/token" : {
       "post" : {
         "tags" : [ "local-auth" ],
@@ -937,6 +1294,206 @@
         }
       }
     },
+    "/v1/library/{id}" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from",
+        "operationId" : "getLibraryItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "kind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          }
+        }, {
+          "name" : "loved",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "by",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "about",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "place",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "album",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "moment",
+          "in" : "query",
+          "description" : "A photo of the moment to stay inside while swiping: usually this one",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "library" ],
+        "summary" : "Change a caption, or when and where it was taken",
+        "operationId" : "changeLibraryItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ItemChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}" : {
+      "get" : {
+        "tags" : [ "files" ],
+        "summary" : "One document: what was read from it, the day that matters, a day for a reminder, what it is linked to",
+        "operationId" : "getDocument",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "files" ],
+        "summary" : "Rename a document, say what kind it is, send the words inside it again, or correct the day that matters",
+        "operationId" : "changeDocument",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}" : {
       "get" : {
         "tags" : [ "circles" ],
@@ -1122,6 +1679,70 @@
         }
       }
     },
+    "/v1/albums/{id}" : {
+      "get" : {
+        "tags" : [ "albums" ],
+        "summary" : "One album, counted for you. What is in it comes from the wall, asked with `album`.",
+        "operationId" : "getAlbum",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AlbumResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "albums" ],
+        "summary" : "Rename an album, change the words under it or its cover",
+        "operationId" : "changeAlbum",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlbumChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AlbumResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/things/{id}" : {
       "get" : {
         "tags" : [ "things" ],
@@ -1248,6 +1869,34 @@
         }
       }
     },
+    "/v1/library/{id}/moment" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "The moment a photo belongs to: what was taken that day at that place, by whom",
+        "operationId" : "getMoment",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MomentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/guest-passes/{id}" : {
       "get" : {
         "tags" : [ "guest passes" ],
@@ -1325,6 +1974,34 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/TodayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/storage" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "How much a circle keeps: by photos, videos and files, and by person",
+        "operationId" : "getStorage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StorageResponse"
                 }
               }
             }
@@ -1418,6 +2095,373 @@
         }
       }
     },
+    "/v1/circles/{id}/library" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "The wall: every photo and video you may see, the newest taken first, with the moments they belong to",
+        "operationId" : "getWall",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "kind",
+          "in" : "query",
+          "description" : "Only photos, or only videos",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          }
+        }, {
+          "name" : "loved",
+          "in" : "query",
+          "description" : "Only what you gave a heart",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "by",
+          "in" : "query",
+          "description" : "Only what this member added",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "about",
+          "in" : "query",
+          "description" : "Only what this member is in",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "place",
+          "in" : "query",
+          "description" : "Only what was taken at the place with this name",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "album",
+          "in" : "query",
+          "description" : "Only what is in this album",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "moment",
+          "in" : "query",
+          "description" : "Only the moment this photo belongs to",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "until",
+          "in" : "query",
+          "description" : "Start at this day and go back from there: how the strip at the side jumps",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WallResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/library/timeline" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "The years and months of the wall with their counts, and one year's months with their newest pictures. Takes the wall's narrowing.",
+        "operationId" : "getTimeline",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "kind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          }
+        }, {
+          "name" : "loved",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "by",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "about",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "place",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "album",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "year",
+          "in" : "query",
+          "description" : "The year to open. Left out: the newest with anything in it.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "tiles",
+          "in" : "query",
+          "description" : "How many pictures to give for each month of that year, 24 at most",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 16
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TimelineResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/library/places" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "The places photos were taken at, each with its count and a cover. Five hundred at most.",
+        "operationId" : "getPlaces",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlacesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/library/lenses" : {
+      "get" : {
+        "tags" : [ "library" ],
+        "summary" : "What the chips above the wall lead to: how many albums, places and files, and the people who are in photos",
+        "operationId" : "getLenses",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LensesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/files" : {
+      "get" : {
+        "tags" : [ "files" ],
+        "summary" : "The documents in a circle you can see, the newest first. With nothing chosen: the ones in no folder.",
+        "operationId" : "getFiles",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "category",
+          "in" : "query",
+          "description" : "Only this kind of document",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/DocumentCategory"
+          }
+        }, {
+          "name" : "folder",
+          "in" : "query",
+          "description" : "Only what is in this folder",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "q",
+          "in" : "query",
+          "description" : "Only what has these words in its name or inside it",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "day",
+          "in" : "query",
+          "description" : "The day on the person's phone. The API's own day when left out.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageDocumentCard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/files/summary" : {
+      "get" : {
+        "tags" : [ "files" ],
+        "summary" : "What stands above the list of files: how many there are, of which kinds, and the folders",
+        "operationId" : "getFilesSummary",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FilesSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/checklists" : {
       "get" : {
         "tags" : [ "checklists" ],
@@ -1461,6 +2505,78 @@
         }
       }
     },
+    "/v1/circles/{id}/albums" : {
+      "get" : {
+        "tags" : [ "albums" ],
+        "summary" : "The albums in a circle you can see, last changed first",
+        "operationId" : "getAlbums",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "tab",
+          "in" : "query",
+          "description" : "One of the three tabs: shared, mine or journey. Left out: all of them.",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/AlbumTab"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageAlbumResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/comments/{commentId}" : {
+      "delete" : {
+        "tags" : [ "library" ],
+        "summary" : "Remove a comment: your own, or one under your photo. Removing one that is gone is fine.",
+        "operationId" : "removeLibraryComment",
+        "parameters" : [ {
+          "name" : "commentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/checklists/{id}/done" : {
       "delete" : {
         "tags" : [ "checklists" ],
@@ -1485,6 +2601,35 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/albums/{id}/items/{itemId}" : {
+      "delete" : {
+        "tags" : [ "albums" ],
+        "summary" : "Take one thing out of an album. The thing itself stays.",
+        "operationId" : "removeFromAlbum",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "itemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1647,7 +2792,7 @@
       },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page", "checklist" ]
+        "enum" : [ "page", "checklist", "photo", "video", "document", "album" ]
       },
       "AboutRequest" : {
         "type" : "object",
@@ -2018,6 +3163,10 @@
             "type" : "integer",
             "format" : "int32",
             "description" : "For a video or a recording: how long it is, in whole seconds"
+          },
+          "keepOriginal" : {
+            "type" : "boolean",
+            "description" : "True for a photo going into the Library: the file is kept as it arrives, at full size, next to the sizes made from it"
           }
         },
         "required" : [ "contentType", "kind" ]
@@ -2045,6 +3194,424 @@
           }
         },
         "required" : [ "headers", "mediaId", "method", "uploadUrl" ]
+      },
+      "DocumentCategory" : {
+        "type" : "string",
+        "enum" : [ "id", "insurance", "school", "receipt", "recipe", "manual", "tax", "health", "home", "other" ]
+      },
+      "NewItem" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "mediaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind",
+            "description" : "Left out: a photo, a video or a document, as the upload is. Say document for a photo that is a scan."
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "takenAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it was taken, with the offset of the clock where it was taken: 2026-11-07T11:42:00+01:00"
+          },
+          "lat" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "lng" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
+          },
+          "placeName" : {
+            "type" : "string",
+            "description" : "The name of the place, as the phone looked it up: Lake Bled",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "country" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "posterMediaId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "For a video or a file: a still or a first page, uploaded as a photo"
+          },
+          "contentHash" : {
+            "type" : "string",
+            "description" : "The file's SHA-256, in hex, so the same file is recognised when it is sent again",
+            "pattern" : "^[0-9a-fA-F]{64}$"
+          },
+          "addedBy" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A child or someone else without a phone it is added for. Left out: yourself."
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Who is in it",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "For a document: the words the phone read inside it",
+            "maxLength" : 200000,
+            "minLength" : 0
+          },
+          "pages" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "For a document: how many pages it has",
+            "maximum" : 5000,
+            "minimum" : 1
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/DocumentCategory",
+            "description" : "For a document: what it is. Left out: guessed from its name and its words."
+          }
+        },
+        "required" : [ "clientId", "mediaId" ]
+      },
+      "NewItems" : {
+        "type" : "object",
+        "properties" : {
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NewItem"
+            },
+            "maxItems" : 100,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "circleId", "items" ]
+      },
+      "Added" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "item" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ItemRow"
+          },
+          "alreadyThere" : {
+            "type" : "boolean",
+            "description" : "True when this file was in your Library already: nothing new was made"
+          },
+          "problem" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Problem",
+            "description" : "Why this one could not be added. The others were."
+          }
+        }
+      },
+      "AddedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Added"
+            }
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "ItemRow" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Its caption, or a document's name. May be empty."
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "Its picture, small, for a grid. A video's is a still. Null for a file."
+          },
+          "url" : {
+            "type" : [ "string", "null" ],
+            "description" : "The same picture at a size for a card"
+          },
+          "fileUrl" : {
+            "type" : "string",
+            "description" : "The file itself, as it was sent: the original photo, the video, the document"
+          },
+          "width" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "height" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "durationSeconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "A video's length, in seconds"
+          },
+          "takenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "takenLocal" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The clock where it was taken. Days, months and years are read from this."
+          },
+          "placeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "addedBy" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PersonBrief",
+            "description" : "Who added it. Null when they have left the circle."
+          },
+          "loved" : {
+            "type" : "boolean",
+            "description" : "True when you gave it a heart"
+          },
+          "momentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The moment it belongs to. Null for a document."
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      },
+      "Problem" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "NewCommentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "body" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "body", "clientId" ]
+      },
+      "CommentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "by" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "canRemove" : {
+            "type" : "boolean",
+            "description" : "True when you may remove it: you wrote it, or it is under your photo"
+          }
+        },
+        "required" : [ "body", "by", "canRemove", "createdAt", "id" ]
+      },
+      "ShareSelected" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience"
+          },
+          "everyoneEdits" : {
+            "type" : "boolean"
+          },
+          "people" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonAccess"
+            }
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Hidden"
+            }
+          }
+        },
+        "required" : [ "audience", "ids" ]
+      },
+      "SelectResult" : {
+        "type" : "object",
+        "properties" : {
+          "applied" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many it was done to"
+          },
+          "skipped" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many were left as they are: not yours to change, or no longer there"
+          }
+        }
+      },
+      "HideSelected" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          },
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "through" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The last day it is hidden. Left out: for good."
+          }
+        },
+        "required" : [ "ids", "memberId" ]
+      },
+      "DeleteSelected" : {
+        "type" : "object",
+        "properties" : {
+          "ids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "ids" ]
+      },
+      "HashCheck" : {
+        "type" : "object",
+        "properties" : {
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "hashes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "pattern" : "^[0-9a-fA-F]{64}$"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "circleId", "hashes" ]
+      },
+      "CheckResponse" : {
+        "type" : "object",
+        "properties" : {
+          "known" : {
+            "type" : "array",
+            "description" : "The fingerprints you already have here, each with the thing it is",
+            "items" : {
+              "$ref" : "#/components/schemas/KnownHash"
+            }
+          }
+        },
+        "required" : [ "known" ]
+      },
+      "KnownHash" : {
+        "type" : "object",
+        "properties" : {
+          "hash" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
       },
       "NewCircleRequest" : {
         "type" : "object",
@@ -2369,6 +3936,150 @@
         },
         "required" : [ "clientId", "text" ]
       },
+      "NewAlbum" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "personId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Someone in the circle, a pet too: the album then fills itself with every photo and video they are in"
+          },
+          "folder" : {
+            "type" : "boolean",
+            "description" : "True for a folder of files"
+          },
+          "itemIds" : {
+            "type" : "array",
+            "description" : "Things to put into it straight away",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          },
+          "momentOf" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A photo: everything in its moment that you may see goes into the album"
+          }
+        },
+        "required" : [ "circleId", "clientId", "title" ]
+      },
+      "AlbumOrigin" : {
+        "type" : "string",
+        "enum" : [ "hand", "person", "journey" ]
+      },
+      "AlbumResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "A few words under its name: mostly asleep"
+          },
+          "origin" : {
+            "$ref" : "#/components/schemas/AlbumOrigin"
+          },
+          "person" : {
+            "description" : "For an album that fills itself: whose photos it gathers",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "folder" : {
+            "type" : "boolean",
+            "description" : "True for a folder of files"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things in it you may see"
+          },
+          "fresh" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of them someone else added in the last week"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "contributors" : {
+            "type" : "array",
+            "description" : "Who added what you see in it, the one who added most first, three at most",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "everyoneAdds" : {
+            "type" : "boolean",
+            "description" : "True when everyone in the circle may put things into it"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "contributors", "count", "coverUrl", "everyoneAdds", "folder", "fresh", "id", "mine", "note", "origin", "person", "title", "updatedAt" ]
+      },
+      "Selection" : {
+        "type" : "object",
+        "properties" : {
+          "itemIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "itemIds" ]
+      },
       "TokenRequest" : {
         "type" : "object",
         "properties" : {
@@ -2483,6 +4194,343 @@
           }
         }
       },
+      "ItemChange" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "takenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lat" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 90,
+            "minimum" : -90
+          },
+          "lng" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 180,
+            "minimum" : -180
+          },
+          "placeName" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "country" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "removePlace" : {
+            "type" : "boolean",
+            "description" : "True to forget where it was taken"
+          }
+        }
+      },
+      "DateLabel" : {
+        "type" : "string",
+        "enum" : [ "expires", "valid_until", "renews", "due", "warranty" ]
+      },
+      "DocumentChange" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/DocumentCategory"
+          },
+          "pages" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 5000,
+            "minimum" : 1
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "The words inside it, read again on the phone",
+            "maxLength" : 200000,
+            "minLength" : 0
+          },
+          "keyDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Set the day that matters by hand, with keyLabel"
+          },
+          "keyLabel" : {
+            "$ref" : "#/components/schemas/DateLabel"
+          },
+          "removeKeyDate" : {
+            "type" : "boolean",
+            "description" : "True to go back to the day read from the words, or to none"
+          }
+        }
+      },
+      "Clash" : {
+        "type" : "object",
+        "properties" : {
+          "trip" : {
+            "$ref" : "#/components/schemas/ThingBrief"
+          },
+          "tripEnds" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "monthsLeftAfter" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many months it is still good for after the trip. Many countries want six. Zero or less: it runs out before the trip ends."
+          }
+        }
+      },
+      "DocumentCard" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "badge" : {
+            "type" : "string",
+            "description" : "The small label on its tile: PDF, JPG, or ID for a passport or a card"
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/DocumentCategory"
+          },
+          "pages" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "bytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "A picture of it, small, when it has one"
+          },
+          "fileUrl" : {
+            "type" : "string",
+            "description" : "The file itself"
+          },
+          "keyDate" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/KeyDate"
+          },
+          "amountCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The total of a receipt, in cents"
+          },
+          "currency" : {
+            "type" : [ "string", "null" ]
+          },
+          "reminderSet" : {
+            "type" : "boolean",
+            "description" : "True when a reminder in Plan is linked to it"
+          },
+          "inVault" : {
+            "type" : "boolean",
+            "description" : "True when something in the Vault is linked to it: the app shows a lock"
+          },
+          "linkedFrom" : {
+            "type" : [ "string", "null" ],
+            "description" : "The name of the first page or list it is linked from"
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Who it is about: it shows on their page",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "addedBy" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "addedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      },
+      "DocumentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "document" : {
+            "$ref" : "#/components/schemas/DocumentCard"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "pictureUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The scan as a picture, when the file is one"
+          },
+          "hasText" : {
+            "type" : "boolean",
+            "description" : "True when the phone sent the words inside it, so it can be searched"
+          },
+          "facts" : {
+            "type" : "array",
+            "description" : "What was read from the words, to show and to correct",
+            "items" : {
+              "$ref" : "#/components/schemas/Fact"
+            }
+          },
+          "dates" : {
+            "type" : "array",
+            "description" : "Every day found after a word that says what it means",
+            "items" : {
+              "$ref" : "#/components/schemas/FoundDay"
+            }
+          },
+          "remindOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "A good day for a reminder. Making the reminder is Plan's."
+          },
+          "linked" : {
+            "type" : "array",
+            "description" : "What it is linked to: its entry in the Vault, the trip it is needed for",
+            "items" : {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }
+          },
+          "clash" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Clash"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "clash", "contentType", "dates", "document", "facts", "fileName", "hasText", "linked", "pictureUrl", "remindOn" ]
+      },
+      "Fact" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "date" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The same as a day, when it is one"
+          },
+          "secret" : {
+            "type" : "boolean",
+            "description" : "True for something to show only when asked, like a passport's number"
+          }
+        }
+      },
+      "FoundDay" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "$ref" : "#/components/schemas/DateLabel"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "KeyDate" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "$ref" : "#/components/schemas/DateLabel"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "daysLeft" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many days from today. Negative once it has passed."
+          },
+          "soon" : {
+            "type" : "boolean",
+            "description" : "True when it is time to do something: within 60 days, or within a year for an ID"
+          },
+          "byHand" : {
+            "type" : "boolean",
+            "description" : "True when someone set it by hand instead of it being read from the words"
+          }
+        }
+      },
+      "ThingBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done"
+          }
+        }
+      },
       "CircleChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -2564,42 +4612,27 @@
           }
         }
       },
-      "ThingBrief" : {
+      "AlbumChange" : {
         "type" : "object",
         "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "kind" : {
-            "$ref" : "#/components/schemas/ThingKind"
-          },
-          "place" : {
-            "$ref" : "#/components/schemas/Place"
-          },
           "title" : {
-            "type" : "string"
-          },
-          "updatedAt" : {
             "type" : "string",
-            "format" : "date-time"
+            "maxLength" : 200,
+            "minLength" : 1
           },
-          "mine" : {
-            "type" : "boolean"
+          "note" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
           },
-          "canEdit" : {
-            "type" : "boolean"
+          "coverItemId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A photo to show on its card"
           },
-          "chip" : {
-            "$ref" : "#/components/schemas/AudienceChip"
-          },
-          "glance" : {
-            "type" : [ "string", "null" ],
-            "description" : "Where it stands, in a few words: 4 of 9 done"
+          "removeCover" : {
+            "type" : "boolean",
+            "description" : "True to go back to showing its newest photo"
           }
         }
       },
@@ -2669,6 +4702,101 @@
           }
         },
         "required" : [ "bytesKept", "circles", "notes", "phones" ]
+      },
+      "MomentPerson" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many of its photos and videos they added"
+          }
+        }
+      },
+      "MomentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Ask for the moment by this: the id of its newest photo. Any of its photos' ids works."
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Saturday at Lake Bled when several people were there, otherwise the day: Thursday"
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "placeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "videos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "shared" : {
+            "type" : "boolean",
+            "description" : "True when more than one person added to it"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who added how many, the one who added most first",
+            "items" : {
+              "$ref" : "#/components/schemas/MomentPerson"
+            }
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Everyone when all of it is shared with everyone, only you when none is, otherwise some"
+          }
+        },
+        "required" : [ "audience", "circleId", "coverUrl", "day", "id", "people", "photos", "placeName", "shared", "title", "total", "videos" ]
+      },
+      "PageCommentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CommentResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
       },
       "JoinPreview" : {
         "type" : "object",
@@ -2793,6 +4921,62 @@
         },
         "required" : [ "day", "done", "fresh", "items", "left", "onlyYou" ]
       },
+      "PersonBytes" : {
+        "type" : "object",
+        "properties" : {
+          "person" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PersonBrief",
+            "description" : "Null for what was added by people who have left"
+          },
+          "you" : {
+            "type" : "boolean"
+          },
+          "bytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "StorageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "usedBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "quotaBytes" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How much the circle may keep. There are no plans yet: this comes from the API's settings and nothing is refused when it is passed."
+          },
+          "photoBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "videoBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "documentBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "otherBytes" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Everything else: the pictures of the circle and its people"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "By whoever added it, the one with most first",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBytes"
+            }
+          }
+        },
+        "required" : [ "documentBytes", "otherBytes", "people", "photoBytes", "quotaBytes", "usedBytes", "videoBytes" ]
+      },
       "SearchHit" : {
         "type" : "object",
         "properties" : {
@@ -2865,6 +5049,306 @@
           }
         }
       },
+      "WallResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          },
+          "moments" : {
+            "type" : "array",
+            "description" : "The moments the photos of this page belong to, the newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/MomentResponse"
+            }
+          }
+        },
+        "required" : [ "items", "moments", "nextCursor" ]
+      },
+      "MonthView" : {
+        "type" : "object",
+        "properties" : {
+          "month" : {
+            "type" : "string",
+            "description" : "The month, as 2026-11"
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "videos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "tiles" : {
+            "type" : "array",
+            "description" : "Its newest pictures, for a small grid. Empty for a year that wasn't asked for.",
+            "items" : {
+              "$ref" : "#/components/schemas/TileView"
+            }
+          }
+        }
+      },
+      "TileView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "TimelineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "years" : {
+            "type" : "array",
+            "description" : "Every year with something in it, the newest first: the strip at the side",
+            "items" : {
+              "$ref" : "#/components/schemas/YearCount"
+            }
+          },
+          "year" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "The year whose months follow: the one asked for, or the newest"
+          },
+          "months" : {
+            "type" : "array",
+            "description" : "The months of that year with something in them, the newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/MonthView"
+            }
+          }
+        },
+        "required" : [ "months", "year", "years" ]
+      },
+      "YearCount" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "videos" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PlaceView" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "The place's name, as the phone looked it up. Ask the wall for it with `place`."
+          },
+          "country" : {
+            "type" : [ "string", "null" ]
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "description" : "Where its photos were taken, on average"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "videos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "visits" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "On how many different days"
+          },
+          "lastDay" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "Who added them",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          }
+        }
+      },
+      "PlacesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "places" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "countries" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "list" : {
+            "type" : "array",
+            "description" : "The place with most photos first, five hundred at most",
+            "items" : {
+              "$ref" : "#/components/schemas/PlaceView"
+            }
+          }
+        },
+        "required" : [ "countries", "list", "places" ]
+      },
+      "AlbumCounts" : {
+        "type" : "object",
+        "properties" : {
+          "shared" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "onlyYou" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "fromJourney" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "LensesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "photos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "videos" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "files" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "places" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "albums" : {
+            "$ref" : "#/components/schemas/AlbumCounts"
+          },
+          "people" : {
+            "type" : "array",
+            "description" : "The people who are in photos, the one in most first",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonLens"
+            }
+          }
+        },
+        "required" : [ "albums", "files", "people", "photos", "places", "videos" ]
+      },
+      "PersonLens" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many photos and videos they are in that you may see"
+          },
+          "coverUrl" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PageDocumentCard" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentCard"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        }
+      },
+      "CategoryCount" : {
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "$ref" : "#/components/schemas/DocumentCategory"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "FilesSummary" : {
+        "type" : "object",
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many documents you may see in this circle"
+          },
+          "categories" : {
+            "type" : "array",
+            "description" : "The kinds there are, the one with most first",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryCount"
+            }
+          },
+          "folders" : {
+            "type" : "array",
+            "description" : "The folders you may see, a hundred at most",
+            "items" : {
+              "$ref" : "#/components/schemas/AlbumResponse"
+            }
+          }
+        }
+      },
       "ChecklistRow" : {
         "type" : "object",
         "properties" : {
@@ -2913,6 +5397,26 @@
             "description" : "Send this back as `cursor` to get the next page. Null on the last page."
           }
         }
+      },
+      "AlbumTab" : {
+        "type" : "string",
+        "enum" : [ "shared", "mine", "journey" ]
+      },
+      "PageAlbumResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AlbumResponse"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
+          }
+        },
+        "required" : [ "items", "nextCursor" ]
       }
     },
     "securitySchemes" : {
