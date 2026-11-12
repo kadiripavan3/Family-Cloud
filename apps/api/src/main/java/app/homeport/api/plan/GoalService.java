@@ -101,6 +101,12 @@ public class GoalService {
             @Schema(nullable = true, description = "Where it reads its number, when not by hand")
             GoalSource source,
 
+            @Schema(description = "What it counts: money, or a plain number of something")
+            GoalUnit unit,
+
+            @Schema(description = "What is counted, when it isn't money: books, stars")
+            String unitWords,
+
             @Schema(description = "Who put something in, whoever began first coming first")
             List<PersonBrief> people,
 
@@ -469,6 +475,8 @@ public class GoalService {
                             standing.line(),
                             standing.pace().reached(),
                             goal.detail().sourceKind(),
+                            goal.detail().unit(),
+                            goal.detail().unitWords(),
                             standing.people(),
                             standing.cheer(),
                             goal.thing().updatedAt(),

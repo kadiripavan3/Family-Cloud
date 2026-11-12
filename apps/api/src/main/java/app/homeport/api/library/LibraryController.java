@@ -12,7 +12,7 @@ import app.homeport.api.library.LibraryService.CheckResponse;
 import app.homeport.api.library.LibraryService.CommentResponse;
 import app.homeport.api.library.LibraryService.HashCheck;
 import app.homeport.api.library.LibraryService.ItemChange;
-import app.homeport.api.library.LibraryService.ItemResponse;
+import app.homeport.api.library.LibraryService.LibraryItemResponse;
 import app.homeport.api.library.LibraryService.MomentResponse;
 import app.homeport.api.library.LibraryService.NewItems;
 import app.homeport.api.library.LibraryService.SelectResult;
@@ -170,7 +170,7 @@ class LibraryController {
             operationId = "getLibraryItem",
             summary = "One photo, video or document with everything its screen shows, and what stands either side of"
                     + " it under the wall's narrowing you came from")
-    ItemResponse get(
+    LibraryItemResponse get(
             @Me UUID me,
             @PathVariable UUID id,
             @RequestParam(required = false) ThingKind kind,
@@ -187,7 +187,7 @@ class LibraryController {
 
     @PatchMapping("/library/{id}")
     @Operation(operationId = "changeLibraryItem", summary = "Change a caption, or when and where it was taken")
-    ItemResponse change(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody ItemChange request) {
+    LibraryItemResponse change(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody ItemChange request) {
         return library.change(id, me, request);
     }
 

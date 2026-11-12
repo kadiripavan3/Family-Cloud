@@ -149,9 +149,9 @@ class FairAndFunTest extends FunBoardTest {
         assertThat(JsonPath.<Integer>read(full, "$.view.count")).isEqualTo(3);
         assertThat(JsonPath.<Object>read(full, "$.view.pulled")).isNull();
         assertThat(JsonPath.<Object>read(full, "$.view.asked")).isNull();
-        // No weather source, and no calendar to say who is free: the jar doesn't make either up.
+        // No weather source: the jar doesn't make one up. The calendar says who is free: nobody has anything on.
         assertThat(JsonPath.<Object>read(full, "$.view.weather")).isNull();
-        assertThat(JsonPath.<Object>read(full, "$.view.everyoneFree")).isNull();
+        assertThat(JsonPath.<Boolean>read(full, "$.view.everyoneFree")).isTrue();
         assertThat(glance(nora, jar)).isEqualTo("3 ideas in the jar");
 
         // An hour, for free, indoors: only the den. Shaking again finds nothing else, so it is the den again.

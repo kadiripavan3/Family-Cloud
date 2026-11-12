@@ -50,14 +50,19 @@ class VaultSeed implements Seeder {
         UUID mias = item(w, "linds", "nora", "Mia's passport", "id", "", today.plusDays(264), "ok", "some");
         share(w, mias, w.member("linds", "alex"), false);
         about(w, mias, w.member("linds", "mia"));
+        // The Library's scan of this passport links to it: "Kept in the Vault".
+        w.thing("vault/mias-passport", mias);
         UUID alexs = item(w, "linds", "alex", "Alex's passport", "id", "", today.plusDays(905), "ok", "me");
         about(w, alexs, w.member("linds", "alex"));
         UUID leos = item(w, "linds", "nora", "Leo's ID card", "id", "", today.plusDays(1120), "ok", "some");
         share(w, leos, w.member("linds", "alex"), false);
         about(w, leos, w.member("linds", "leo"));
 
-        // Wi‑Fi and codes: the house's, for everyone in The Linds.
-        item(w, "linds", "nora", "Home Wi‑Fi", "wifi", "Lind-Home", null, "ok", "circle");
+        // Wi‑Fi and codes: the house's, for everyone in The Linds. The page "Wi‑Fi and smart home" in Notes
+        // shows the Wi‑Fi as a live block.
+        w.thing(
+                "vault/home-wifi",
+                item(w, "linds", "nora", "Home Wi‑Fi", "wifi", "Linds-Home-5G", null, "ok", "circle"));
         item(w, "linds", "alex", "Front door code", "code", "home", null, "ok", "circle");
         item(w, "linds", "nora", "Bike lock", "code", "shed", null, "ok", "me");
 

@@ -38,8 +38,14 @@ class EventSources implements GlanceSource, GuestView {
                 event.detail(), LocalDate.now(PlanSql.storedZone(event.detail().timeZone())));
     }
 
-    /** When it is next: the day it happens (the next time round for one that repeats), its time, and how it repeats. */
+    /**
+     * When it is next: the day it happens (the next time round for one that repeats), its time, and how it
+     * repeats. Something that lasts several days says them all: "3 to 17 April".
+     */
     static String when(EventRow e, LocalDate today) {
+        if (e.repeat() == null && e.endsOn().isAfter(e.startsOn())) {
+            return Words.days(e.startsOn(), e.endsOn(), today);
+        }
         LocalDate day = e.repeat() == null
                 ? e.startsOn()
                 : e.repeat().nextOnOrAfter(e.startsOn(), today).orElse(e.startsOn());

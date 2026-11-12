@@ -455,6 +455,10 @@ class LindsBoardsSeed implements Seeder {
                 }
             }
         }
+        // "10 stars pay €2 into Mia's skates fund": the wheel and that goal in Plan know of each other, when
+        // Plan's sample data is there.
+        w.thing("board/chore-wheel", wheel);
+        w.link("board/chore-wheel", "goal/skates-fund");
     }
 
     private void tick(UUID wheel, UUID job, String whose, String pressedBy, LocalDate day, int hour) {

@@ -356,8 +356,7 @@ public class JotService {
                 };
         PlaceSuggestionResponse place = item.as() != ReadAs.EVENT
                 ? null
-                : eventStore
-                        .lastPlace(circleId, me, item.title(), today.plusDays(1))
+                : lastPlace(circleId, me, item, told)
                         .map(words -> new PlaceSuggestionResponse(words, words + ", from last time"))
                         .orElse(null);
         return new ReadItemResponse(
@@ -384,6 +383,15 @@ public class JotService {
                 item.code(),
                 place,
                 item.pieces());
+    }
+
+    /**
+     * Where the last event like this one was, among those the person may see: "Barber Miha" for the next
+     * haircut. The reading suggests it, and a jot that becomes an event is filed there.
+     */
+    private Optional<String> lastPlace(UUID circleId, UUID me, Item item, Told told) {
+        return eventStore.lastPlace(
+                circleId, me, item.title(), told.context().today().plusDays(1));
     }
 
     /** What the reader is told about one person in one circle. */
@@ -531,7 +539,8 @@ public class JotService {
                                                 on,
                                                 item.endTime(),
                                                 told.zone().getId()),
-                                        null,
+                                        // Where the last one like it was: what the reading showed is what is filed.
+                                        lastPlace(circleId, me, item, told).orElse(null),
                                         null,
                                         null,
                                         item.remindMinutes(),

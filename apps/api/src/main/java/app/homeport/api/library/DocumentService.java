@@ -148,6 +148,11 @@ public class DocumentService {
             @Schema(description = "True when the phone sent the words inside it, so it can be searched")
             boolean hasText,
 
+            @Schema(
+                    description = "The words inside it as they are kept: what \"change the words\" starts with. Empty"
+                            + " when the phone sent none.")
+            String text,
+
             @Schema(description = "What was read from the words, to show and to correct")
             List<Fact> facts,
 
@@ -297,6 +302,7 @@ public class DocumentService {
                         ? media.urlFor(item.pictureKey())
                         : item.contentType().startsWith("image/") ? media.urlFor(item.fileKey()) : null,
                 !text.isBlank(),
+                text,
                 facts(reading),
                 reading.dates().stream()
                         .map(d -> new FoundDay(d.label(), d.date()))

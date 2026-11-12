@@ -373,6 +373,23 @@ public class EventService {
         return get(eventId, me, null);
     }
 
+    /**
+     * Takes the signed-in person's own answer back: they haven't answered again. They stay on the event.
+     * Someone who was never on it, or has no answer, changes nothing.
+     */
+    @Transactional
+    public EventResponse unanswer(UUID eventId, UUID me) {
+        ThingRow row = things.require(eventId, me, ThingKind.EVENT);
+        Optional<GuestRow> mine = events.guests(List.of(eventId)).stream()
+                .filter(guest -> me.equals(guest.userId()))
+                .findFirst();
+        if (mine.isPresent() && mine.get().answer() != null) {
+            events.changeGuest(mine.get().id(), "", mine.get().part(), null);
+            thingStore.touch(row.id());
+        }
+        return get(eventId, me, null);
+    }
+
     /** The event a guest row belongs to, for someone who may see it. To anyone else the row isn't there. */
     private ThingRow guestsEvent(GuestRow guest, UUID me) {
         try {

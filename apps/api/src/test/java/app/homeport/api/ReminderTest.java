@@ -190,7 +190,10 @@ class ReminderTest extends PlanTestBase {
         assertThat(JsonPath.<List<Boolean>>read(plan, "$.days[*].entries[0].done"))
                 .containsExactly(true, false, false);
         assertThat(JsonPath.<List<Boolean>>read(plan, "$.days[*].entries[0].canTick"))
-                .containsExactly(false, true, false);
+                .as("today's tick can be taken away, tomorrow's round can be ticked, the day after's isn't due yet")
+                .containsExactly(true, true, false);
+        assertThat(JsonPath.<List<String>>read(plan, "$.days[*].entries[0].dueOn"))
+                .containsExactly("2026-11-11", "2026-11-12", "2026-11-13");
         assertThat(JsonPath.<Boolean>read(fetch("/v1/reminders/" + id + "?day=2026-11-12", nora), "$.done"))
                 .isFalse();
 
