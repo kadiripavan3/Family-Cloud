@@ -14,7 +14,7 @@ import org.springframework.core.env.Profiles;
  * for building and testing. One setting must never be enough to switch them on where real people are: they
  * work only together with the {@code local} or {@code test} profile, and the API refuses to start otherwise.
  *
- * <p>It also refuses a switch set to a word it doesn't know ({@code journey.video.mode=muxx}): otherwise that part
+ * <p>It also refuses a switch set to a word it doesn't know ({@code homeport.push.mode=exp}): otherwise that part
  * of the API would quietly not exist.
  *
  * <p>It runs as soon as the settings are known, before anything connects to the database (it is listed in
@@ -30,13 +30,11 @@ public class LocalModeGuard implements ApplicationListener<ApplicationEnvironmen
 
     /** Every switch and the words it understands. A word it doesn't know is a typing mistake, not "off". */
     private static final Map<String, List<String>> MODES = Map.of(
+            "homeport.journey.mode", List.of("http", "off", "local"),
             "homeport.auth.mode", List.of("supabase", "local"),
             "homeport.media.mode", List.of("r2", "local"),
-            "homeport.video.mode", List.of("mux", "off", "local"),
-            "homeport.places.mode", List.of("device", "local"),
             "homeport.push.mode", List.of("expo", "off", "local"),
             "homeport.email.mode", List.of("resend", "off", "local"),
-            "homeport.moderation.mode", List.of("rekognition", "off", "local"),
             "homeport.apple.mode", List.of("apple", "off"));
 
     static void check(Environment environment) {
@@ -61,23 +59,17 @@ public class LocalModeGuard implements ApplicationListener<ApplicationEnvironmen
         if ("local".equals(environment.getProperty("homeport.media.mode"))) {
             on.add("homeport.media.mode=local (uploads on this computer's disk)");
         }
-        if ("local".equals(environment.getProperty("homeport.places.mode"))) {
-            on.add("homeport.places.mode=local (a place search from a bundled list)");
-        }
-        if ("local".equals(environment.getProperty("homeport.video.mode"))) {
-            on.add("homeport.video.mode=local (clips served from this computer's disk, unconverted)");
-        }
-        if ("local".equals(environment.getProperty("homeport.moderation.mode"))) {
-            on.add("homeport.moderation.mode=local (no photo is ever checked)");
-        }
         if (environment.getProperty("homeport.seed.enabled", Boolean.class, false)) {
-            on.add("homeport.seed.enabled=true (sample people and journeys)");
+            on.add("homeport.seed.enabled=true (the sample people and what they keep)");
         }
         if ("local".equals(environment.getProperty("homeport.push.mode"))) {
             on.add("homeport.push.mode=local (pushes are only written to the log; nobody's phone gets them)");
         }
         if ("local".equals(environment.getProperty("homeport.email.mode"))) {
             on.add("homeport.email.mode=local (emails are only written to the log)");
+        }
+        if ("local".equals(environment.getProperty("homeport.journey.mode"))) {
+            on.add("homeport.journey.mode=local (sample journeys stand in for Journey; nothing is asked of it)");
         }
         if (!on.isEmpty()) {
             throw new IllegalStateException(

@@ -1,4 +1,4 @@
-# The Homeport API on Fly.io. docs/08-connect-services.md has the steps; in short:
+# The Homeport API on Fly.io. docs/09-connect-services.md has the steps (this file is step 3); in short:
 #   fly apps create <a name of your own>     (then put it on the next line)
 #   fly secrets set ...                      (every secret the runbook lists)
 #   fly deploy                               (or let the "Deploy" GitHub Action do it)
@@ -30,17 +30,15 @@ kill_timeout = "60s"
   HOMEPORT_FORWARD_HEADERS = "framework"
   # ...and where each request really came from. Wrong passwords are counted by this, not by anything the caller writes.
   HOMEPORT_CLIENT_ADDRESS_HEADER = "Fly-Client-IP"
-  # Not connected yet. Remove each line when its step in docs/08-connect-services.md is done
-  # (6: clips, 7: push notifications, 8: email, 9: the automatic photo check).
-  HOMEPORT_VIDEO_MODE = "off"
+  # Not connected yet. Remove each line when its step in docs/09-connect-services.md is done
+  # (6: push notifications, 7: email).
   HOMEPORT_PUSH_MODE = "off"
   HOMEPORT_EMAIL_MODE = "off"
-  HOMEPORT_MODERATION_MODE = "off"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # One machine that is always on: jobs (the weekly digest, reminders) run inside the API.
+  # One machine that is always on: jobs (reminders, the Sunday summary, exports) run inside the API.
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1

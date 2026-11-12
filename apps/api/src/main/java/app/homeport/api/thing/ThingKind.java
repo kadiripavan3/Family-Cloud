@@ -26,7 +26,9 @@ public enum ThingKind {
     GOAL(Place.PLAN),
     BILL(Place.MONEY),
     SHEET(Place.MONEY),
-    SPLIT(Place.MONEY);
+    SPLIT(Place.MONEY),
+    /** A short clip recorded for the circle by someone who is away on a journey. Kept with the photos and videos. */
+    GOODNIGHT(Place.LIBRARY);
 
     private final Place place;
 

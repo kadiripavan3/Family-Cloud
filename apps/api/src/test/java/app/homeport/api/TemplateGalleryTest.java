@@ -204,7 +204,9 @@ class TemplateGalleryTest extends BoardTest {
 
         assertThat(start(nora, circle, "who_pays_what", "{\"clientId\":\"%s\"}".formatted(id()), 409))
                 .contains("“Who pays what” is coming with the next update");
-        start(nora, circle, "teleporter", "{\"clientId\":\"%s\"}".formatted(id()), 400);
+        // A word that is no template is answered in the gallery's own sentence, not as an id nobody has.
+        assertThat(start(nora, circle, "teleporter", "{\"clientId\":\"%s\"}".formatted(id()), 400))
+                .contains("That isn't a template we have");
         start(stranger, circle, "good_jar", "{\"clientId\":\"%s\"}".formatted(id()), 404);
         // Settings that the template needs are asked for in its own words.
         assertThat(start(nora, circle, "open_when", "{\"clientId\":\"%s\"}".formatted(id()), 400))

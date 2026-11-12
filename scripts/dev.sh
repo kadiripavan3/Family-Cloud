@@ -17,7 +17,7 @@ elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
   docker compose up -d --wait db
 else
   echo "No database found. Start Docker Desktop and run this again."
-  echo "To use your own PostgreSQL instead, see docs/07-run-locally.md."
+  echo "To use your own PostgreSQL instead, see docs/08-run-locally.md."
   exit 1
 fi
 

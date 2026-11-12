@@ -52,6 +52,15 @@ class BoardSeedTest extends ApiTest {
         }
     }
 
+    private String thingId(String kind, String title) {
+        return jdbc.sql("select id from things where kind = :kind and title = :title")
+                .param("kind", kind)
+                .param("title", title)
+                .query(java.util.UUID.class)
+                .single()
+                .toString();
+    }
+
     private String boardOf(String token, String circle, String template) throws Exception {
         String boards = fetch("/v1/circles/" + circle + "/boards?template=" + template, token);
         assertThat(JsonPath.<Integer>read(boards, "$.items.length()"))
@@ -94,15 +103,19 @@ class BoardSeedTest extends ApiTest {
 
         // 5.8 The wheel as it stands this week, and the stars so far.
         String wheel = boardOf(alex, circle, "chore_wheel");
-        // (The bins are not on the wheel: the family takes turns at those with a reminder in Plan, and the
-        // same job in both places stood on Today twice. Nora has this week off.)
         assertThat(JsonPath.<List<String>>read(wheel, "$.view.jobs[*].name"))
-                .containsExactly("Laundry", "Set the table", "Feed Biscuit");
+                .containsExactly("Bins and recycling", "Laundry", "Set the table", "Feed Biscuit");
         assertThat(JsonPath.<List<String>>read(wheel, "$.view.jobs[*].who.name"))
-                .containsExactly("Alex", "Mia", "Leo");
+                .containsExactly("Nora", "Alex", "Mia", "Leo");
+        assertThat(JsonPath.<String>read(wheel, "$.view.jobs[0].when")).isEqualTo("Tuesday and Friday evening");
         assertThat(JsonPath.<List<Integer>>read(wheel, "$.view.people[2:4].stars"))
                 .containsExactly(34, 21);
-        assertThat(JsonPath.<Boolean>read(wheel, "$.view.jobs[2].doneToday")).isTrue();
+        assertThat(JsonPath.<Boolean>read(wheel, "$.view.jobs[3].doneToday")).isTrue();
+        assertThat(JsonPath.<Boolean>read(wheel, "$.view.jobs[0].complete")).isFalse();
+        // The bins and Biscuit are also reminders in Plan, and each of the two jobs names its reminder.
+        assertThat(JsonPath.<List<String>>read(wheel, "$.view.jobs[*].reminderId"))
+                .containsExactly(
+                        thingId("reminder", "Take the bins out"), null, null, thingId("reminder", "Feed Biscuit"));
         assertThat(JsonPath.<String>read(wheel, "$.view.stars.into")).isEqualTo("Mia's skates fund");
 
         // 5.9 The capsule: four things sealed inside, hidden from Mia, opening on her 18th birthday.
@@ -232,10 +245,15 @@ class BoardSeedTest extends ApiTest {
         assertThat(JsonPath.<List<String>>read(door, "$.view.comparisons"))
                 .containsExactly("Mia was Leo's height in the spring of " + (TODAY.getYear() - 3) + ".");
 
-        // Today and the glances come from the same boards.
-        assertThat(fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora))
-                .contains("Astrid answered, by talking")
-                .contains("Set the table");
+        // Today and the glances come from the same boards. A job that is also a reminder stands there once: the
+        // bins as Plan's "Take the bins out" on the evening it is due, as the wheel's own line on any other day.
+        String day = fetch("/v1/circles/" + circle + "/today?day=" + TODAY, nora);
+        assertThat(day).contains("Astrid answered, by talking").contains("Set the table");
+        assertThat(JsonPath.<List<String>>read(
+                        day, "$.items[?(@.title == 'Take the bins out' || @.title == 'Bins and recycling')].title"))
+                .hasSize(1);
+        assertThat(JsonPath.<List<String>>read(day, "$.items[?(@.title == 'Feed Biscuit')].title"))
+                .hasSize(1);
         assertThat(JsonPath.<List<String>>read(fetch("/v1/circles/" + circle + "/boards", nora), "$.items[*].glance"))
                 .contains(
                         "143 good things · opens 31 Dec",

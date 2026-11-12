@@ -195,7 +195,7 @@ public class LibraryService {
             Integer total) {}
 
     /** One photo, video or document with everything its screen shows. */
-    public record ItemResponse(
+    public record LibraryItemResponse(
             ItemRow item,
 
             @Schema(nullable = true, description = "Its picture at full size")
@@ -766,7 +766,7 @@ public class LibraryService {
      * Everything the photo's screen shows, and what stands either side of it for swiping: in the wall's order,
      * under the same narrowing the person came from (a moment, an album, only videos).
      */
-    public ItemResponse get(UUID id, UUID me, WallQuery query) {
+    public LibraryItemResponse get(UUID id, UUID me, WallQuery query) {
         Item item = requireItem(id, me);
         UUID circleId = item.thing().circleId();
         MemberRow mine = circles.me(circleId, me);
@@ -787,7 +787,7 @@ public class LibraryService {
         Map<UUID, ItemRow> rows =
                 rows(circleId, me, all).stream().collect(Collectors.toMap(ItemRow::id, Function.identity()));
 
-        return new ItemResponse(
+        return new LibraryItemResponse(
                 rows.get(id),
                 media.urlFor(item.fullKey()),
                 item.fileName(),
@@ -819,7 +819,7 @@ public class LibraryService {
 
     /** Changes a caption, or when and where it was taken. Whoever may change the thing can. */
     @Transactional
-    public ItemResponse change(UUID id, UUID me, ItemChange change) {
+    public LibraryItemResponse change(UUID id, UUID me, ItemChange change) {
         Item item = requireEdit(id, me);
         if (change.title() != null) {
             thingStore.retitle(id, change.title().trim());

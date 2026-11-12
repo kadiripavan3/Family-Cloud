@@ -143,6 +143,20 @@ public class ActivityStore {
         }
     }
 
+    /**
+     * Takes back the lines of one kind that one member made about these things: for news that is said better
+     * by another line (a journey's book "was added" gives way to "was kept from Journey").
+     */
+    void takeBack(ActivityKind kind, Collection<UUID> thingIds, UUID memberId) {
+        if (!thingIds.isEmpty()) {
+            jdbc.sql("delete from activity where kind = :kind and member_id = :member and thing_id in (:things)")
+                    .param("kind", kind.code())
+                    .param("member", memberId)
+                    .param("things", thingIds)
+                    .update();
+        }
+    }
+
     private static String text(UUID id) {
         return id == null ? null : id.toString();
     }

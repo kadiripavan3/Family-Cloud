@@ -263,6 +263,8 @@ class KindsSeedTest extends ApiTest {
         assertThat(JsonPath.<List<String>>read(today, "$.items[*].title"))
                 .containsExactly("You're owed for Lisbon weekend");
         assertThat(JsonPath.<String>read(today, "$.items[0].lead")).isEqualTo("€64");
+        assertThat(JsonPath.<String>read(today, "$.items[0].note")).isEqualTo("Lea €44 · Kai €20");
+        assertThat(JsonPath.<String>read(today, "$.items[0].action.label")).isEqualTo("Remind");
         assertThat(JsonPath.<List<String>>read(today, "$.fresh[?(@.title == 'Where next?')].note"))
                 .containsExactly("Porto it is");
         assertThat(JsonPath.<List<String>>read(today, "$.fresh[?(@.title == 'Where next?')].pill"))

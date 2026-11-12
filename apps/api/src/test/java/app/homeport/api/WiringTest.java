@@ -49,6 +49,34 @@ class WiringTest extends TiesTestBase {
                 .containsExactly("€84");
         assertThat(JsonPath.<List<String>>read(his, "$.days[*].entries[*].title"))
                 .containsExactly("Electricity");
+        // On the calendar the bill has what it has on Today: its Pay, the day and the amount to send with it.
+        String electricity = "$.days[?(@.day == '" + due + "')].entries[?(@.title == 'Electricity')]";
+        assertThat(JsonPath.<List<String>>read(his, electricity + ".action.label"))
+                .containsExactly("Pay");
+        assertThat(JsonPath.<List<String>>read(his, electricity + ".action.act"))
+                .containsExactly("pay");
+        assertThat(JsonPath.<List<String>>read(his, electricity + ".due.on")).containsExactly(due.toString());
+        assertThat(JsonPath.<List<String>>read(his, electricity + ".due.amount"))
+                .containsExactly("€84.20");
+        assertThat(JsonPath.<List<String>>read(his, electricity + ".due.note")).containsExactly("Your half is €42.10");
+        assertThat(JsonPath.<List<Boolean>>read(his, electricity + ".repeats")).containsExactly(false);
+        // He pays his half from there: nothing is left for him to do, and the button goes. Hers stays.
+        send(
+                HttpMethod.PUT,
+                "/v1/bills/"
+                        + JsonPath.<List<String>>read(his, electricity + ".thingId")
+                                .get(0) + "/paid",
+                alex,
+                "{\"dueOn\":\"%s\"}".formatted(due),
+                200);
+        assertThat(JsonPath.<List<Object>>read(
+                        fetch("/v1/circles/" + circle + "/plan?day=" + TODAY + "&days=7", alex),
+                        electricity + ".action"))
+                .containsOnlyNulls();
+        assertThat(JsonPath.<List<String>>read(
+                        fetch("/v1/circles/" + circle + "/plan?day=" + TODAY + "&days=7", nora),
+                        electricity + ".action.label"))
+                .containsExactly("Pay");
         // The month has a day with something on it for both of them.
         String month =
                 fetch("/v1/circles/" + circle + "/month?month=" + due.toString().substring(0, 7), alex);

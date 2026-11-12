@@ -62,7 +62,7 @@ exports.run = async function run(ctx) {
   };
   /** Leaves the screen with this heading, and waits until it has gone: the next press is for the screen underneath. */
   const back = async (heading) => {
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('heading', { name: heading, exact: true }).waitFor({ state: 'detached' });
   };
   /** Opens Home on Plan and waits for the day's list. */
@@ -269,8 +269,7 @@ exports.run = async function run(ctx) {
     await T('19:00 · Tue and Fri · takes turns').waitFor();
     await T('You asked someone').waitFor();
     await R('button', { name: 'Nudge Alex about Book the car service' }).waitFor();
-    // (The drawn example of one that was done, "Feed Biscuit · Done at 7:40 · 1 star", is checked again once the
-    // sample data holds it again.)
+    await T('Done at 7:40 · 1 star').waitFor();
     await T('When someone is there').waitFor();
     await T("When you're near the post office").waitFor();
     await T(/^In the phone app, the phone watches for these places/).waitFor();
@@ -279,7 +278,7 @@ exports.run = async function run(ctx) {
     await T('When someone is there').waitFor({ state: 'detached' });
     await T('Book the car service').waitFor();
     await R('tab', { name: 'Done' }).click();
-    await T('Nothing ticked yet').or(R('checkbox', { name: /, done\. Take the tick off$/ })).first().waitFor();
+    await R('checkbox', { name: 'Feed Biscuit, done. Take the tick off', checked: true }).waitFor();
     await shot('reminders-done');
     await R('tab', { name: /^Yours/ }).click();
     // A reminder, opened: when, how often, whose turn it is.
@@ -456,10 +455,17 @@ exports.run = async function run(ctx) {
     await L('A few words').fill('birthday money');
     await shot('goal-add-money');
     await R('button', { name: 'Add', exact: true }).click();
+    // (This goal reads its number from a sheet in Money: what is added here is a row of that sheet, so the two
+    // can never disagree.)
     await T('Nora added €25').waitFor();
-    // (This goal reads its number from a sheet in Money. Whether adding here moves the ring is being settled
-    // in the API; until it is, only the line is checked, and the ring's two figures are checked again after.)
+    await T('€5,625 of €8,000').waitFor();
+    await T('€2,375 to go').waitFor();
     await shot('goal-added');
+    // Where its number is read from opens: the sheet in Money.
+    await R('button', { name: /^Reads “Saved” in Norway budget/ }).click();
+    await R('heading', { name: 'Norway budget' }).waitFor({ timeout: 20000 });
+    await back('Norway budget');
+    await R('heading', { name: 'Norway 2027' }).waitFor();
     // Taking it back puts the goal where it was.
     await R('button', { name: /^Nora added €25\..*Take it back$/ }).click();
     await R('button', { name: 'Take it back', exact: true }).click();

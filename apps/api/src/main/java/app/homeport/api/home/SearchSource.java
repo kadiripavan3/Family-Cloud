@@ -6,12 +6,14 @@ import java.util.UUID;
 
 /**
  * How one place answers a search inside what it keeps (the words of a page, the text in a scan). Titles are
- * searched for every kind without this; a source adds what only it can find. It returns ids only: who may
- * see each thing is checked afterwards, in one place, for all of them.
+ * searched for every kind without this; a source adds what only it can find.
  *
- * <p>What a source is trusted with is its own secrets inside a thing the viewer may see: a line of a list
- * that is kept from them, a letter they haven't opened. It is told who is looking, and finds for that
- * person only what they may read there.
+ * <p>A source is told who is looking, and looks only through what that person may see: its query joins
+ * {@code things t} with {@code Rules.sees("t", ":me")} before its limit, so the handful it may return isn't
+ * used up by things the person would never be shown (forty newer pages that are someone else's alone must
+ * not hide the one page they may read). It also keeps its own secrets inside a thing the viewer may see: a
+ * line of a list that is kept from them, a letter they haven't opened. Home checks every id once more
+ * before it answers.
  */
 public interface SearchSource {
 

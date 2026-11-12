@@ -161,7 +161,7 @@ export function picture(id = 'pic-1'): BoardMedia {
 // ---------- 5.8 the chore wheel ----------
 
 export function job(over: Partial<ChoreWheelJob> = {}): ChoreWheelJob {
-  return { id: 'job-bins', name: 'Bins and recycling', emoji: '🗑️', when: 'Tuesday and Friday evening', timesAWeek: 2, who: noraBrief, next: alexBrief, doneThisWeek: 0, doneOn: [], doneToday: false, complete: false, lastDoneAt: null, ...over };
+  return { id: 'job-bins', name: 'Bins and recycling', emoji: '🗑️', when: 'Tuesday and Friday evening', timesAWeek: 2, who: noraBrief, next: alexBrief, doneThisWeek: 0, doneOn: [], doneToday: false, complete: false, lastDoneAt: null, reminderId: null, ...over };
 }
 
 /** Week 46 as the drawing has it: Nora's bins not done, Alex's laundry done, Mia part of the way, Leo done this morning. */

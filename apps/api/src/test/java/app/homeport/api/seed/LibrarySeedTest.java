@@ -104,7 +104,14 @@ class LibrarySeedTest extends ApiTest {
                 .startsWith(saturday.getYear());
         String albums = fetch("/v1/circles/" + circle + "/albums", nora);
         assertThat(JsonPath.<List<String>>read(albums, "$.items[*].title"))
-                .containsExactlyInAnyOrder("Summer " + lastAugust(), "Mia", "Biscuit", "For the photo book");
+                // The Library's own four, and the two journeys the link with Journey keeps in its sample data.
+                .containsExactlyInAnyOrder(
+                        "Summer " + lastAugust(),
+                        "Mia",
+                        "Biscuit",
+                        "For the photo book",
+                        "Iceland ring road",
+                        "Java and Bali by train");
         assertThat(JsonPath.<List<String>>read(albums, "$.items[?(@.title == 'Biscuit')].note"))
                 .containsExactly("mostly asleep");
         assertThat(JsonPath.<List<String>>read(albums, "$.items[?(@.origin == 'person')].person.name"))
@@ -112,7 +119,8 @@ class LibrarySeedTest extends ApiTest {
         String places = fetch("/v1/circles/" + circle + "/library/places", nora);
         assertThat(JsonPath.<String>read(places, "$.list[0].name")).isEqualTo("Lake Bled");
         assertThat(JsonPath.<Integer>read(places, "$.list[0].visits")).isEqualTo(3);
-        assertThat(JsonPath.<Integer>read(places, "$.countries")).isEqualTo(3);
+        // Slovenia, the Philippines and Türkiye, and Iceland from the journey that was kept.
+        assertThat(JsonPath.<Integer>read(places, "$.countries")).isEqualTo(4);
 
         // Files: the passport knows the day it runs out and when to be reminded; the car runs out in 19 days.
         LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Ljubljana")); // the day the sample data counts from

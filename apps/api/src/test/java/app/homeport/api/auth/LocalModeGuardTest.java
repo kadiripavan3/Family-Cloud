@@ -40,6 +40,23 @@ class LocalModeGuardTest {
     }
 
     @Test
+    void theStandInForJourneyNeedsTheLocalProfileAndItsSwitchKnowsThreeWords() {
+        MockEnvironment sample = new MockEnvironment().withProperty("homeport.journey.mode", "local");
+        assertThatThrownBy(() -> LocalModeGuard.check(sample))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("homeport.journey.mode=local");
+        for (String real : new String[] {"http", "off"}) {
+            MockEnvironment connected = new MockEnvironment().withProperty("homeport.journey.mode", real);
+            assertThatCode(() -> LocalModeGuard.check(connected)).doesNotThrowAnyException();
+        }
+        MockEnvironment typo = new MockEnvironment().withProperty("homeport.journey.mode", "on");
+        typo.setActiveProfiles("local");
+        assertThatThrownBy(() -> LocalModeGuard.check(typo))
+                .hasMessageContaining("homeport.journey.mode=on")
+                .hasMessageContaining("http, off, local");
+    }
+
+    @Test
     void theSameSettingsAreFineOnADevelopersComputerAndInTests() {
         MockEnvironment local = new MockEnvironment().withProperty("homeport.auth.mode", "local");
         local.setActiveProfiles("local");
@@ -52,18 +69,17 @@ class LocalModeGuardTest {
 
     @Test
     void aSwitchSetToAWordNobodyKnowsStopsTheApiFromStartingAndSaysWhatItCanBe() {
-        MockEnvironment typo = new MockEnvironment().withProperty("homeport.video.mode", "muxx");
+        MockEnvironment typo = new MockEnvironment().withProperty("homeport.push.mode", "exp");
         typo.setActiveProfiles("local");
         assertThatThrownBy(() -> LocalModeGuard.check(typo))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("homeport.video.mode=muxx")
-                .hasMessageContaining("mux, off, local");
+                .hasMessageContaining("homeport.push.mode=exp")
+                .hasMessageContaining("expo, off, local");
         // Switched off is a word it knows, with or without the local profile.
         MockEnvironment later = new MockEnvironment()
-                .withProperty("homeport.video.mode", "off")
                 .withProperty("homeport.push.mode", "off")
                 .withProperty("homeport.email.mode", "off")
-                .withProperty("homeport.moderation.mode", "off");
+                .withProperty("homeport.journey.mode", "off");
         assertThatCode(() -> LocalModeGuard.check(later)).doesNotThrowAnyException();
     }
 }
