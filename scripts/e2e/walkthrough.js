@@ -25,6 +25,11 @@ const STEPS = path.join(__dirname, 'steps');
   const milestones = fs.readdirSync(STEPS).filter((file) => /^\d\d-[\w-]+\.js$/.test(file) && (only.length === 0 || only.includes(file.replace(/\.js$/, '')))).sort();
   const ctx = await start(out, scheme);
   try {
+    // Every part starts on the welcome screen. The first part opens it; without that part, it is opened here.
+    if (only.length && !only.includes('01-spine')) {
+      await ctx.page.goto(ctx.WEB_URL + '/');
+      await ctx.T('Get started').waitFor({ timeout: 20000 });
+    }
     for (const file of milestones) {
       console.log('milestone', file);
       await require(path.join(STEPS, file)).run(ctx);
