@@ -1,0 +1,57 @@
+package app.homeport.api.list;
+
+import app.homeport.api.common.Sql;
+import app.homeport.api.guest.GuestView;
+import app.homeport.api.home.SearchSource;
+import app.homeport.api.thing.Place;
+import app.homeport.api.thing.ThingKind;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Component;
+
+/** What checklists bring to the rest: a search inside their lines, and how a guest reads one. */
+@Component
+class ChecklistSources implements SearchSource, GuestView {
+
+    private final JdbcClient jdbc;
+    private final ChecklistStore lists;
+
+    ChecklistSources(JdbcClient jdbc, ChecklistStore lists) {
+        this.jdbc = jdbc;
+        this.lists = lists;
+    }
+
+    @Override
+    public Place place() {
+        return Place.NOTES;
+    }
+
+    @Override
+    public List<Found> find(UUID circleId, String words, int limit) {
+        return jdbc.sql("""
+            select distinct on (i.thing_id) i.thing_id, i.text from checklist_items i join things t on t.id = i.thing_id
+            where t.circle_id = :circle and i.text ilike :pattern order by i.thing_id, i.position limit :limit
+            """)
+                .param("circle", circleId)
+                .param("pattern", Sql.anywhere(words))
+                .param("limit", limit)
+                .query((rs, n) -> new Found(rs.getObject("thing_id", UUID.class), rs.getString("text")))
+                .list();
+    }
+
+    @Override
+    public ThingKind kind() {
+        return ThingKind.CHECKLIST;
+    }
+
+    @Override
+    public Card show(UUID thingId) {
+        return new Card(
+                "List",
+                lists.items(thingId).stream()
+                        .map(i -> (i.doneAt() == null ? "☐ " : "☑ ") + i.text())
+                        .collect(Collectors.joining("\n")));
+    }
+}

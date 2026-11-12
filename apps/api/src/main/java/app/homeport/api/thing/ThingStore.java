@@ -238,6 +238,42 @@ public class ThingStore {
                 .list();
     }
 
+    // ---------- links ----------
+
+    public void link(UUID from, UUID to) {
+        jdbc.sql("insert into thing_links (from_id, to_id) values (:from, :to) on conflict do nothing")
+                .param("from", from)
+                .param("to", to)
+                .update();
+    }
+
+    public void unlink(UUID a, UUID b) {
+        jdbc.sql("delete from thing_links where (from_id = :a and to_id = :b) or (from_id = :b and to_id = :a)")
+                .param("a", a)
+                .param("b", b)
+                .update();
+    }
+
+    /** What a thing is linked to, from either end, as far as the viewer may see it. Oldest link first. */
+    public List<ThingRow> linked(UUID id, UUID me) {
+        return jdbc.sql("select " + COLUMNS + """
+             from things t join (
+               select to_id as other, created_at from thing_links where from_id = :id
+               union all select from_id, created_at from thing_links where to_id = :id) l on l.other = t.id
+             where\s""" + Rules.sees("t", ":me") + " order by l.created_at, t.id limit 50")
+                .param("id", id)
+                .param("me", me)
+                .query(ThingStore::row)
+                .list();
+    }
+
+    public List<UUID> aboutIds(UUID id) {
+        return jdbc.sql("select member_id from thing_about where thing_id = :id")
+                .param("id", id)
+                .query(UUID.class)
+                .list();
+    }
+
     // ---------- lists ----------
 
     /**

@@ -179,6 +179,58 @@ public class ThingService {
         things.delete(id);
     }
 
+    // ---------- links, and who it is about ----------
+
+    /** What a thing is linked to, as far as the viewer may see it. */
+    public List<ThingBrief> linked(UUID id, UUID me) {
+        require(id, me);
+        return briefs(things.linked(id, me));
+    }
+
+    /** Links two things in the same circle. Whoever may change the first and see the second can. */
+    @Transactional
+    public void link(UUID id, UUID otherId, UUID me) {
+        ThingRow row = require(id, me);
+        ThingRow other = require(otherId, me);
+        if (!row.canEdit()) {
+            throw new ApiProblem(HttpStatus.FORBIDDEN, "view_only", "You can look at this, but not change it.");
+        }
+        if (!row.circleId().equals(other.circleId()) || id.equals(otherId)) {
+            throw ApiProblem.badRequest("cant_link", "Those two can't be linked.");
+        }
+        things.link(id, otherId);
+    }
+
+    @Transactional
+    public void unlink(UUID id, UUID otherId, UUID me) {
+        ThingRow row = require(id, me);
+        if (!row.canEdit()) {
+            throw new ApiProblem(HttpStatus.FORBIDDEN, "view_only", "You can look at this, but not change it.");
+        }
+        things.unlink(id, otherId);
+    }
+
+    /** Says who a thing is about, so it shows on their page. Anyone who may change it can; pets count too. */
+    @Transactional
+    public void setAbout(UUID id, UUID me, List<UUID> memberIds) {
+        ThingRow row = require(id, me);
+        if (!row.canEdit()) {
+            throw new ApiProblem(HttpStatus.FORBIDDEN, "view_only", "You can look at this, but not change it.");
+        }
+        Set<UUID> inCircle =
+                members.of(List.of(row.circleId())).stream().map(MemberRow::id).collect(Collectors.toSet());
+        List<UUID> chosen =
+                memberIds == null ? List.of() : memberIds.stream().distinct().toList();
+        if (!inCircle.containsAll(chosen)) {
+            throw ApiProblem.badRequest("not_in_circle", "Choose people from this circle.");
+        }
+        things.setAbout(id, chosen);
+    }
+
+    public List<UUID> about(UUID id) {
+        return things.aboutIds(id);
+    }
+
     // ---------- chips ----------
 
     public Map<UUID, AudienceChip> chips(List<ThingRow> rows) {

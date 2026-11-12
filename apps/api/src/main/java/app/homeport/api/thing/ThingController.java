@@ -54,4 +54,36 @@ class ThingController {
     void delete(@Me UUID me, @PathVariable UUID id) {
         things.delete(id, me);
     }
+
+    record AboutRequest(
+            @jakarta.validation.constraints.NotNull List<UUID> memberIds) {}
+
+    @GetMapping("/things/{id}/links")
+    @Operation(
+            operationId = "getLinks",
+            summary = "What a thing is linked to: a bill's login, an event's list. Fifty at most.")
+    List<ThingBrief> links(@Me UUID me, @PathVariable UUID id) {
+        return things.linked(id, me);
+    }
+
+    @PutMapping("/things/{id}/links/{otherId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "linkThings", summary = "Link two things in the same circle")
+    void link(@Me UUID me, @PathVariable UUID id, @PathVariable UUID otherId) {
+        things.link(id, otherId, me);
+    }
+
+    @DeleteMapping("/things/{id}/links/{otherId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "unlinkThings", summary = "Take a link between two things away")
+    void unlink(@Me UUID me, @PathVariable UUID id, @PathVariable UUID otherId) {
+        things.unlink(id, otherId, me);
+    }
+
+    @PutMapping("/things/{id}/about")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "saveAbout", summary = "Say who a thing is about, so it shows on their page")
+    void about(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody AboutRequest request) {
+        things.setAbout(id, me, request.memberIds());
+    }
 }

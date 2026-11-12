@@ -17,10 +17,12 @@ create table settings (
   updated_at       timestamptz not null default now()
 );
 
--- A file someone uploaded: a photo (kept in three sizes next to the original), a video, a document or a sound.
+-- A file someone uploaded: a photo (kept in three sizes), a video, a document or a sound.
+-- owner_id is the signed-in person's id. It doesn't point at profiles: someone signing up uploads their
+-- picture before their profile exists. Deleting an account removes its uploads by hand (MediaStore.deleteOwnedBy).
 create table media (
   id            uuid primary key,
-  owner_id      uuid not null references profiles(id) on delete cascade,
+  owner_id      uuid not null,
   kind          text not null check (kind in ('photo', 'video', 'file', 'audio')),
   status        text not null default 'pending' check (status in ('pending', 'working', 'ready', 'failed')),
   content_type  text not null,

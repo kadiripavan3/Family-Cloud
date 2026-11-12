@@ -151,11 +151,16 @@ public class MediaStore {
                 .update();
     }
 
-    /** Uploads that were started and never finished within a day. */
+    /**
+     * Uploads nobody will use: started and never finished within a day, or sent by someone who signed in and
+     * never made a profile.
+     */
     public List<UUID> neverFinished(int limit) {
         return jdbc.sql("""
-            select id from media where status in ('pending', 'working', 'failed') and created_at < now() - interval '1 day'
-            order by created_at limit :limit
+            select m.id from media m where m.created_at < now() - interval '1 day'
+              and (m.status in ('pending', 'working', 'failed')
+                   or not exists (select 1 from profiles p where p.id = m.owner_id))
+            order by m.created_at limit :limit
             """).param("limit", limit).query(UUID.class).list();
     }
 

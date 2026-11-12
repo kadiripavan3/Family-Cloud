@@ -16,6 +16,9 @@
     "name" : "guest passes",
     "description" : "Chosen things for someone outside the circle, for a set time"
   }, {
+    "name" : "checklists",
+    "description" : "Lists you tick, changed one line at a time"
+  }, {
     "name" : "me",
     "description" : "The signed-in person and their profile"
   }, {
@@ -38,6 +41,62 @@
     "description" : "Circles and the people in them"
   } ],
   "paths" : {
+    "/v1/things/{id}/links/{otherId}" : {
+      "put" : {
+        "tags" : [ "things" ],
+        "summary" : "Link two things in the same circle",
+        "operationId" : "linkThings",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "otherId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "things" ],
+        "summary" : "Take a link between two things away",
+        "operationId" : "unlinkThings",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "otherId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/things/{id}/audience" : {
       "get" : {
         "tags" : [ "things" ],
@@ -98,6 +157,37 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/things/{id}/about" : {
+      "put" : {
+        "tags" : [ "things" ],
+        "summary" : "Say who a thing is about, so it shows on their page",
+        "operationId" : "saveAbout",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AboutRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -580,6 +670,73 @@
         }
       }
     },
+    "/v1/checklists" : {
+      "post" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Start a list",
+        "operationId" : "createChecklist",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewChecklistRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChecklistResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/checklists/{id}/items" : {
+      "post" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Add a line to the end of a list",
+        "operationId" : "addChecklistItem",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/local-auth/token" : {
       "post" : {
         "tags" : [ "local-auth" ],
@@ -844,6 +1001,127 @@
         }
       }
     },
+    "/v1/checklists/{id}" : {
+      "get" : {
+        "tags" : [ "checklists" ],
+        "summary" : "A list with its lines",
+        "operationId" : "getChecklist",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChecklistResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Rename a list",
+        "operationId" : "renameChecklist",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RenameRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChecklistResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/checklist-items/{itemId}" : {
+      "delete" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Remove a line. Removing one that is gone is fine.",
+        "operationId" : "removeChecklistItem",
+        "parameters" : [ {
+          "name" : "itemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Tick a line, change it or move it",
+        "operationId" : "changeChecklistItem",
+        "parameters" : [ {
+          "name" : "itemId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ItemChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ItemResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/things/{id}" : {
       "get" : {
         "tags" : [ "things" ],
@@ -887,6 +1165,37 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/things/{id}/links" : {
+      "get" : {
+        "tags" : [ "things" ],
+        "summary" : "What a thing is linked to: a bill's login, an event's list. Fifty at most.",
+        "operationId" : "getLinks",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ThingBrief"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1089,6 +1398,77 @@
           }
         }
       }
+    },
+    "/v1/circles/{id}/checklists" : {
+      "get" : {
+        "tags" : [ "checklists" ],
+        "summary" : "The lists in a circle you can see, last changed first",
+        "operationId" : "getChecklists",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageChecklistRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/checklists/{id}/done" : {
+      "delete" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Clear the ticked lines of a list",
+        "operationId" : "clearDoneItems",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChecklistResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -1248,7 +1628,20 @@
       },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page" ]
+        "enum" : [ "page", "checklist" ]
+      },
+      "AboutRequest" : {
+        "type" : "object",
+        "properties" : {
+          "memberIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        },
+        "required" : [ "memberIds" ]
       },
       "CircleResponse" : {
         "type" : "object",
@@ -1787,6 +2180,176 @@
         },
         "required" : [ "id", "kind", "title" ]
       },
+      "NewChecklistRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "Lines to start with",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 300,
+              "minLength" : 0
+            },
+            "maxItems" : 100,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "circleId", "clientId", "title" ]
+      },
+      "ChecklistResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemResponse"
+            }
+          }
+        },
+        "required" : [ "canEdit", "chip", "circleId", "done", "id", "items", "left", "mine", "title", "updatedAt" ]
+      },
+      "ItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "A small line under it: Alex bought them"
+          },
+          "section" : {
+            "type" : "string",
+            "description" : "The heading it stands under, or empty: Dairy, Gift ideas"
+          },
+          "amountCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "A price or a budget, in cents"
+          },
+          "done" : {
+            "type" : "boolean"
+          },
+          "doneAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "doneBy" : {
+            "description" : "Who ticked it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "assignedTo" : {
+            "description" : "Whose job it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addedBy" : {
+            "description" : "Who added it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "addedBy", "amountCents", "assignedTo", "done", "doneAt", "doneBy", "id", "note", "section", "text" ]
+      },
+      "NewItemRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "section" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 0
+          },
+          "assignedTo" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "clientId", "text" ]
+      },
       "TokenRequest" : {
         "type" : "object",
         "properties" : {
@@ -1919,6 +2482,66 @@
           },
           "removeCover" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "RenameRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "title" ]
+      },
+      "ItemChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 1
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "section" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 0
+          },
+          "removeAmount" : {
+            "type" : "boolean"
+          },
+          "assignedTo" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "unassign" : {
+            "type" : "boolean"
+          },
+          "done" : {
+            "type" : "boolean",
+            "description" : "True to tick it, false to take the tick away"
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Move it to just before this line"
+          },
+          "toEnd" : {
+            "type" : "boolean",
+            "description" : "Move it to the end"
           }
         }
       },
@@ -2186,6 +2809,55 @@
           },
           "chip" : {
             "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      },
+      "ChecklistRow" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageChecklistRow" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ChecklistRow"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
           }
         }
       }
