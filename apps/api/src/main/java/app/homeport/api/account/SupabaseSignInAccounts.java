@@ -29,7 +29,7 @@ class SupabaseSignInAccounts implements SignInAccounts {
                 || project.serviceKey() == null
                 || project.serviceKey().isBlank()) {
             throw new IllegalStateException(
-                    "Deleting an account needs the Supabase project's secret key. Set SUPABASE_SERVICE_KEY (see docs/08-connect-services.md).");
+                    "Deleting an account needs the Supabase project's secret key. Set SUPABASE_SERVICE_KEY (see docs/09-connect-services.md, step 1).");
         }
         this.supabase = Http.client()
                 .baseUrl(project.url().trim().replaceAll("/+$", "") + "/auth/v1")

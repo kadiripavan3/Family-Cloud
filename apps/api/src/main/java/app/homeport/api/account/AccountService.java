@@ -3,6 +3,8 @@ package app.homeport.api.account;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.media.MediaService;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -163,9 +165,18 @@ public class AccountService {
                         "Your Homeport account is deleted. Your sign-in is untouched, so Journey goes on as it was.");
     }
 
-    /** True when the account was deleted a while ago and its sign-in is, or should soon be, gone. */
-    public boolean wasDeleted(UUID userId) {
-        return accounts.wasDeleted(userId);
+    /**
+     * True for a sign-in that belongs to an account deleted since: one made before the account was deleted, on a
+     * phone that is still signed in. It is refused, so a phone left signed in can't bring the account back. A
+     * sign-in made after the deletion is a person coming back and starts a new account: with "only Homeport"
+     * the sign-in they share with Journey is kept, and it must not lock them out of Homeport for good.
+     *
+     * @param signedInAt when this sign-in was made (a token says so to the second); unknown counts as before
+     */
+    public boolean wasDeleted(UUID userId, Instant signedInAt) {
+        return accounts.deletedAt(userId)
+                .map(deleted -> signedInAt == null || !signedInAt.isAfter(deleted.truncatedTo(ChronoUnit.SECONDS)))
+                .orElse(false);
     }
 
     /** Removes the sign-ins of deleted accounts that couldn't be removed at the time. Returns how many went. */

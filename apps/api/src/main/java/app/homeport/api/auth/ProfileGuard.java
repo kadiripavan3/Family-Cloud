@@ -51,11 +51,12 @@ class ProfileGuard implements HandlerInterceptor, WebMvcConfigurer {
         if (request.getMethod().equals("OPTIONS")) {
             return true;
         }
-        UUID me = MeResolver.current().id();
+        CurrentUser who = MeResolver.current();
+        UUID me = who.id();
         if (profiles.exists(me)) {
             return true;
         }
-        if (accounts.wasDeleted(me)) {
+        if (accounts.wasDeleted(me, who.signedInAt())) {
             throw ApiProblem.unauthorized(
                     "account_deleted", "This account was deleted. Sign in again to start a new one.");
         }

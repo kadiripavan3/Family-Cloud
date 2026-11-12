@@ -51,7 +51,7 @@ class BillController {
         this.circles = circles;
     }
 
-    record ShareRequest(
+    record BillShareRequest(
             @NotNull(message = "Choose who pays.") UUID memberId,
 
             @Schema(description = "Their part of the whole: 1 and 1 is half each. Left out: 1.") @Min(1) @Max(1000000)
@@ -114,7 +114,7 @@ class BillController {
             Audience audience,
 
             @Schema(description = "Who pays. Left out: you pay all of it.") @Size(max = 30)
-            List<@Valid ShareRequest> shares) {}
+            List<@Valid BillShareRequest> shares) {}
 
     record BillChangeRequest(
             @Size(min = 1, max = 200, message = "Keep the name to 200 characters or fewer.")
@@ -152,7 +152,7 @@ class BillController {
 
             @Schema(description = "Who pays, all of them: this replaces the shares there were")
             @Size(min = 1, max = 30, message = "Someone has to pay it.")
-            List<@Valid ShareRequest> shares) {}
+            List<@Valid BillShareRequest> shares) {}
 
     record PaidRequest(
             @Schema(
@@ -170,7 +170,7 @@ class BillController {
             @Schema(description = "False to take it back. Left out: true.")
             Boolean paid) {}
 
-    record ReadRequest(
+    record ReadBillRequest(
             @Schema(description = "The lines of text the phone read off the photo or the PDF, top to bottom")
             @NotEmpty(message = "There was no text to read.")
             @Size(max = 400, message = "That is too much text for one bill.")
@@ -227,7 +227,7 @@ class BillController {
         return found == null ? null : new ReadTextResponse(found.value(), found.line(), found.lineNumber());
     }
 
-    private static List<ShareInput> shares(List<ShareRequest> shares) {
+    private static List<ShareInput> shares(List<BillShareRequest> shares) {
         return shares == null
                 ? null
                 : shares.stream()
@@ -328,7 +328,7 @@ class BillController {
             operationId = "readBill",
             summary =
                     "Read a bill from the text of a photo or a PDF: who to pay, how much, by when. It suggests; nothing is saved.")
-    BillReadingResponse read(@Me UUID me, @Valid @RequestBody ReadRequest request) {
+    BillReadingResponse read(@Me UUID me, @Valid @RequestBody ReadBillRequest request) {
         Reading reading = BillReader.read(request.lines(), request.day() == null ? LocalDate.now() : request.day());
         Found<Long> amount = reading.amountCents();
         Found<LocalDate> due = reading.dueOn();

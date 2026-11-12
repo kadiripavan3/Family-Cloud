@@ -1,6 +1,7 @@
 package app.homeport.api.plan;
 
 import app.homeport.api.circle.MemberKind;
+import app.homeport.api.home.TodaySource.TodayAction;
 import app.homeport.api.home.TodaySource.TodayDue;
 import app.homeport.api.home.TodaySource.TodayItem;
 import app.homeport.api.plan.EventStore.Event;
@@ -73,13 +74,40 @@ public class PlanService {
             @Schema(nullable = true, description = "For something that can be ticked: whether it is. Null otherwise.")
             Boolean done,
 
-            @Schema(description = "True when the signed-in person may tick it here. Send the line's day as dueOn.")
+            @Schema(
+                    description = "True when the signed-in person may tick it here, or, for a line that is done, take"
+                            + " its tick away again. Send dueOn with the tick.")
             boolean canTick,
+
+            @Schema(
+                    nullable = true,
+                    description = "For a job: the due day to send with a tick, or with taking one away. For a job"
+                            + " that is done it is the due day that was ticked, which need not be the day the line"
+                            + " stands on, and is null for a job that had no day. Null for anything else.")
+            LocalDate dueOn,
 
             @Schema(description = "The small line under the title: Weekdays · Alex drives")
             String note,
 
             NoteIcon noteIcon,
+
+            @Schema(
+                    description = "True for something that comes round again, also on a line that is done, where"
+                            + " the note no longer says so")
+            boolean repeats,
+
+            @Schema(
+                    nullable = true,
+                    description = "Its button, when there is something to do right here: a bill on the day it is"
+                            + " due has its Pay, as on Today. Null for an event or a reminder.")
+            TodayAction action,
+
+            @Schema(
+                    nullable = true,
+                    description = "For a line another place brought that is due rather than on (a bill): the day,"
+                            + " the amount to the cent, and the small line Activity uses. Send its day as dueOn"
+                            + " with the button's act. Null for an event or a reminder (a reminder has dueOn).")
+            TodayDue due,
 
             @Schema(nullable = true, description = "Whose it is, for the coloured dot. Null: everyone's.")
             WhoseResponse whose,
@@ -149,7 +177,11 @@ public class PlanService {
             List<UUID> concerns,
             List<String> avatars,
             int minute,
-            boolean forMe) {}
+            boolean forMe,
+            LocalDate dueOn,
+            boolean repeats,
+            TodayAction action,
+            TodayDue due) {}
 
     private final EventStore events;
     private final ReminderStore reminders;
@@ -242,17 +274,22 @@ public class PlanService {
                 continue;
             }
             // A reminder that is the viewer's to tick is due; an event is on. What comes round again says so.
-            boolean due = line.kind() == ThingKind.REMINDER && line.canTick() && !Boolean.TRUE.equals(line.done());
+            // One that is done says which due day was ticked, so its tick can be taken away from here without
+            // asking the reminder first (a job that had no day has none to say).
+            boolean reminder = line.kind() == ThingKind.REMINDER;
+            boolean done = Boolean.TRUE.equals(line.done());
+            LocalDate dueOn = !reminder || !line.canTick() ? null : done ? line.dueOn() : line.day();
             items.add(new TodayItem(
                             line.thingId(),
                             line.kind(),
                             line.title(),
                             line.todayNote(),
-                            line.kind() == ThingKind.REMINDER ? null : line.lead(),
+                            reminder ? null : line.lead(),
                             line.done(),
                             line.minute(),
                             line.avatars().stream().limit(2).toList())
-                    .with(null, line.icon() == NoteIcon.REPEAT, due ? new TodayDue(line.day(), null, null) : null));
+                    .with(null, line.repeats(), dueOn == null ? null : new TodayDue(dueOn, null, null))
+                    .tickedHere(reminder && line.canTick()));
         }
         return items;
     }
@@ -373,7 +410,11 @@ public class PlanService {
                             concerns,
                             avatars,
                             timed ? minutes(e.startTime()) : 0,
-                            true));
+                            true,
+                            null,
+                            e.repeat() != null,
+                            null,
+                            null));
                 }
             }
         }
@@ -409,7 +450,13 @@ public class PlanService {
                 }
             }
         }
-        for (Ticked ticked : reminders.ticked(circleId, me, from, to)) {
+        List<Ticked> ticks = reminders.ticked(circleId, me, from, to);
+        List<UUID> tickedIds =
+                ticks.stream().map(t -> t.detail().id()).distinct().toList();
+        // Only a reminder's last tick can be taken away, by whoever could have made it.
+        Set<UUID> lastTicks = reminders.lastTicks(tickedIds);
+        Map<UUID, List<UUID>> tickedFor = reminders.people(tickedIds);
+        for (Ticked ticked : ticks) {
             ReminderRow r = ticked.detail();
             LocalDate due = ticked.tick().dueOn();
             LocalDate day = due != null && !due.isBefore(from) && !due.isAfter(to)
@@ -442,7 +489,12 @@ public class PlanService {
                     r.dueTime() == null ? null : Words.time(r.dueTime()),
                     null,
                     true,
-                    false,
+                    lastTicks.contains(ticked.tick().id())
+                            && (ticked.thing().canEdit()
+                                    || (mine != null
+                                            && tickedFor
+                                                    .getOrDefault(r.id(), List.of())
+                                                    .contains(mine))),
                     doneNote,
                     NoteIcon.NONE,
                     Words.dots(who == null || did.equals(mine) ? null : who.name(), doneNote),
@@ -450,7 +502,11 @@ public class PlanService {
                     did == null ? List.of() : List.of(did),
                     who == null || did.equals(mine) || who.avatarUrl() == null ? List.of() : List.of(who.avatarUrl()),
                     r.dueTime() == null ? 1440 : minutes(r.dueTime()),
-                    forMe));
+                    forMe,
+                    ticked.tick().dueOn(),
+                    r.repeat() != null,
+                    null,
+                    null));
         }
     }
 
@@ -500,7 +556,11 @@ public class PlanService {
                                 .limit(3)
                                 .toList(),
                 r.dueTime() == null ? 1440 : minutes(r.dueTime()),
-                yours || thing.mine());
+                yours || thing.mine(),
+                day,
+                r.repeat() != null,
+                null,
+                null);
     }
 
     /**
@@ -545,7 +605,11 @@ public class PlanService {
                     line.concerns(),
                     line.avatars(),
                     line.minute(),
-                    line.forMe()));
+                    line.forMe(),
+                    line.dueOn(),
+                    line.repeats(),
+                    null,
+                    null));
         }
         return lines;
     }
@@ -571,7 +635,11 @@ public class PlanService {
                 whoseItIs,
                 item.avatarUrls() == null ? List.of() : item.avatarUrls(),
                 item.minute(),
-                true);
+                true,
+                null,
+                item.repeats(),
+                item.action(),
+                item.due());
     }
 
     // ---------- small pieces ----------
@@ -619,8 +687,12 @@ public class PlanService {
                 line.leadEnd(),
                 line.done(),
                 line.canTick(),
+                line.dueOn(),
                 line.note(),
                 line.icon(),
+                line.repeats(),
+                line.action(),
+                line.due(),
                 line.whose(),
                 line.avatars(),
                 line.minute(),

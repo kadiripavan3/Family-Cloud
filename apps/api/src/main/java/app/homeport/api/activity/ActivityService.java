@@ -416,8 +416,15 @@ public class ActivityService {
                 }
                 case KEPT -> {
                     sentence.clear();
-                    sentence.add(title(thing));
-                    sentence.add(words(" " + (row.words().isBlank() ? "was kept from Journey" : row.words())));
+                    if (thing != null) {
+                        sentence.add(title(thing));
+                        sentence.add(words(" " + (row.words().isBlank() ? "was kept from Journey" : row.words())));
+                    } else if (row.words().isBlank()) {
+                        continue;
+                    } else {
+                        // About nothing that is kept here: a draft that left for Journey. The words are the sentence.
+                        sentence.add(words(row.words()));
+                    }
                 }
                 case DUE -> {
                     continue; // never kept
@@ -498,6 +505,7 @@ public class ActivityService {
             case BILL -> "Bill";
             case SHEET -> "Sheet";
             case SPLIT -> "Shared costs";
+            case GOODNIGHT -> "Goodnight";
         };
     }
 

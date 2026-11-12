@@ -7,6 +7,9 @@ import app.homeport.api.board.BoardStore.BoardRow;
 import app.homeport.api.common.ApiProblem;
 import app.homeport.api.common.Keyset;
 import app.homeport.api.common.Page;
+import app.homeport.api.notify.Outbox;
+import app.homeport.api.notify.Push;
+import app.homeport.api.notify.PushKind;
 import app.homeport.api.thing.Audience;
 import app.homeport.api.thing.ThingKind;
 import app.homeport.api.thing.ThingService;
@@ -90,13 +93,21 @@ public class BoardService {
     private final BoardStore store;
     private final Boards boards;
     private final ActivityLog activity;
+    private final Outbox outbox;
 
-    BoardService(ThingService things, ThingStore thingStore, BoardStore store, Boards boards, ActivityLog activity) {
+    BoardService(
+            ThingService things,
+            ThingStore thingStore,
+            BoardStore store,
+            Boards boards,
+            ActivityLog activity,
+            Outbox outbox) {
         this.things = things;
         this.thingStore = thingStore;
         this.store = store;
         this.boards = boards;
         this.activity = activity;
+        this.outbox = outbox;
     }
 
     // ---------- a board ----------
@@ -265,7 +276,26 @@ public class BoardService {
         rulesOf(scene).act(scene, what, Fields.of(body));
         thingStore.touch(boardId);
         tell(scene, false);
+        nudge(scene);
         return get(boardId, me, day, null);
+    }
+
+    /**
+     * Queues the nudges a template asked for ({@link Scene#nudge}), in the transaction of the verb, so one is
+     * told exactly when it is remembered. A day's nudge to one person about one board has one key: however
+     * often it is asked for, their phone hears it once.
+     */
+    private void nudge(Scene scene) {
+        for (Scene.Nudge nudge : scene.nudges()) {
+            Person to = scene.person(nudge.memberId());
+            if (to == null || to.userId() == null || to.left()) {
+                continue; // a child, a pet, or someone who has left: no phone to tell
+            }
+            outbox.tell(Push.to(to.userId(), PushKind.NUDGE, nudge.title(), nudge.body(), "/board/" + scene.boardId())
+                    .about(scene.circleId(), scene.boardId())
+                    .by(scene.myId())
+                    .once("nudge:" + scene.boardId() + ":" + nudge.memberId() + ":" + scene.today()));
+        }
     }
 
     /**

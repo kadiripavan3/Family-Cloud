@@ -482,8 +482,8 @@ class FindDate implements BoardRules {
     }
 
     /**
-     * A nudge is remembered, once a day for each person, and shown on their Today. No push is sent from
-     * here: a board's verbs run inside one database transaction, and nothing outside is waited on in one.
+     * A nudge is remembered, once a day for each person, shown on their Today, and told to their phone: it is
+     * queued here, in the verb's own transaction, and leaves through the outbox like every push.
      */
     private static void nudge(Scene scene, Fields sent) {
         UUID member = scene.inCircle(sent.id("memberId"));
@@ -510,6 +510,10 @@ class FindDate implements BoardRules {
                     EntryDraft.of(NUDGE).by(scene.myId()).forMember(member).done(scene.now(), scene.myId()),
                     Scene.derivedId(scene.boardId(), "nudge " + member));
         }
+        scene.nudge(
+                member,
+                scene.title(),
+                "A gentle nudge from " + scene.firstName(scene.myId()) + ": tap the days you can.");
     }
 
     /** The day goes into the calendar as an event with everyone on it. Setting the same day twice makes one event. */

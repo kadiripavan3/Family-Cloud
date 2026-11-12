@@ -129,7 +129,7 @@ class ActivityController {
         return asks.ask(id, me, request.until(), Boolean.TRUE.equals(request.once()), request.clientId());
     }
 
-    record AnswerRequest(
+    record AskAnswerRequest(
             @NotNull(message = "Say yes or not now.") Boolean allow) {}
 
     @PutMapping("/asks/{id}")
@@ -140,7 +140,7 @@ class ActivityController {
                     + " first share the item with them (PUT /v1/vault/items/{id}/sharing, with a key wrapped for"
                     + " them and the until or once they asked for), then say allow here. Until they can really"
                     + " open it, allow is refused with not_opened_yet.")
-    AskResponse answer(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody AnswerRequest request) {
+    AskResponse answer(@Me UUID me, @PathVariable UUID id, @Valid @RequestBody AskAnswerRequest request) {
         return asks.answer(id, me, request.allow());
     }
 

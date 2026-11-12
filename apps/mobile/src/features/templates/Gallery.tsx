@@ -26,7 +26,8 @@ import { StartSheet } from './StartSheet';
 /**
  * 5.6 Templates. The gallery for the current circle: every template the API serves, this kind of circle's
  * own first, behind the chips the kind gets ("All 53", "For two 16"), with LIVE on the ones that do work.
- * The magnifier searches the cards' names and lines. A card opens the sheet that starts it.
+ * The magnifier searches the cards' names and lines. A card opens the sheet that starts it, and stays
+ * marked afterwards; until one is pressed, the first card is the marked one.
  */
 export function Gallery() {
   const { colors } = useTheme();
@@ -40,8 +41,12 @@ export function Gallery() {
   const [searching, setSearching] = useState(false);
   const [typed, setTyped] = useState('');
   const [chosen, setChosen] = useState<TemplateCard | null>(null);
+  /** The card that was pressed last: it stays marked after its sheet has closed. */
+  const [marked, setMarked] = useState<string | null>(null);
 
   const cards = gallery ? cardsOf(gallery, filter, searching ? typed : '') : [];
+  // One card is always the marked one, as the drawings have it: the one pressed last, or the first of what is shown.
+  const on = cards.some((card) => card.template === marked) ? marked : (cards[0]?.template ?? null);
   const rows: TemplateCard[][] = [];
   for (let index = 0; index < cards.length; index += 2) rows.push(cards.slice(index, index + 2));
 
@@ -109,7 +114,15 @@ export function Gallery() {
                 // Two to a row, as tall as the taller of the two.
                 <View key={pair[0]!.template} style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
                   {pair.map((card) => (
-                    <Card key={card.template} card={card} on={card.template === chosen?.template} onPress={() => setChosen(card)} />
+                    <Card
+                      key={card.template}
+                      card={card}
+                      on={card.template === on}
+                      onPress={() => {
+                        setMarked(card.template ?? null);
+                        setChosen(card);
+                      }}
+                    />
                   ))}
                   {pair.length === 1 ? <View style={{ flex: 1 }} /> : null}
                 </View>
@@ -131,6 +144,9 @@ function Card({ card, on, onPress }: { card: TemplateCard; on: boolean; onPress:
     <Tap
       accessibilityRole="button"
       accessibilityLabel={say.card(card.name ?? '', card.line ?? '', !!card.live)}
+      accessibilityState={{ selected: on }}
+      // Said this way, a browser hears which card is the marked one as well: the web takes no `accessibilityState`.
+      aria-selected={on}
       onPress={onPress}
       // The chosen card's line is half a point thicker: the padding gives that half point back, so nothing moves.
       style={{ flex: 1, gap: 4, padding: on ? 15.5 : 16, borderRadius: radius.cardLarge, backgroundColor: colors.bg, borderWidth: on ? 2 : 1.5, borderColor: on ? colors.text : colors.line }}>

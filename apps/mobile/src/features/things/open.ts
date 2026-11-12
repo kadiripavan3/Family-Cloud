@@ -20,7 +20,8 @@ export function thingHref(thing: Opens): Href {
  */
 export function useOpenThing(): (thing: Opens) => void {
   const router = useRouter();
-  return useCallback((thing: Opens) => router.push(thingHref(thing)), [router]);
+  // What has no id is not a thing (a card that only says something): pressing it opens nothing.
+  return useCallback((thing: Opens) => (thing.id ? router.push(thingHref(thing)) : undefined), [router]);
 }
 
 /** True for what the API uses as an id. An address like "/new/whatever" has none, and is simply not there. */

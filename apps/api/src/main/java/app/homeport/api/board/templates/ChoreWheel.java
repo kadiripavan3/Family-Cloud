@@ -44,7 +44,13 @@ import org.springframework.stereotype.Component;
  * whoever pressed it: a child's tick is pressed on a parent's phone. Stars are never taken back when a job is
  * retired; removing a job only takes it off the wheel.
  *
- * <p>Nothing here is secret: everyone who sees the wheel sees all of it.
+ * <p><b>A job that has its reminder.</b> A family that is reminded of a job by Plan ("Take the bins out",
+ * tonight, taking turns) can say so on the job: it names its reminder. The two stay what they are (the wheel
+ * says whose week it is and counts the stars, the reminder rings), and Today lists the job once: where the
+ * reminder is on someone's list, the wheel's own line for that job is not.
+ *
+ * <p>Nothing here is secret: everyone who sees the wheel sees all of it. (Which reminder a job has is said
+ * only to someone who may see that reminder.)
  */
 @Component
 class ChoreWheel implements BoardRules {
@@ -77,7 +83,7 @@ class ChoreWheel implements BoardRules {
             @Schema(nullable = true, description = "What they pay into, in the family's words")
             String into) {}
 
-    record Job(String name, String emoji, String when, Integer timesAWeek, Boolean retired) {
+    record Job(String name, String emoji, String when, Integer timesAWeek, Boolean retired, UUID reminderId) {
         int times() {
             return timesAWeek == null ? 1 : timesAWeek;
         }
@@ -144,7 +150,13 @@ class ChoreWheel implements BoardRules {
             boolean complete,
 
             @Schema(nullable = true, description = "When it was last ticked in the week shown")
-            Instant lastDoneAt) {}
+            Instant lastDoneAt,
+
+            @Schema(
+                    nullable = true,
+                    description = "The reminder in Plan that rings for this job, when it has one you may see. Today"
+                            + " then lists the job once, as the reminder.")
+            UUID reminderId) {}
 
     @Override
     public Template template() {
@@ -166,7 +178,8 @@ class ChoreWheel implements BoardRules {
         return List.of(
                 "settings: people (member ids in the wheel's order; left out: everyone in the circle), stars"
                         + " ({stars, cents, currency, into} or null)",
-                "entry job: name, emoji, when (words), timesAWeek (1 to 7)",
+                "entry job: name, emoji, when (words), timesAWeek (1 to 7), reminderId (a reminder of this circle"
+                        + " that rings for the job, or null for none)",
                 "verb tick: jobId, done (true or false; left out: true), day (a date; left out: today)",
                 "show: any day of the week to show, as a date. Left out: this week.");
     }
@@ -277,9 +290,12 @@ class ChoreWheel implements BoardRules {
         Map<UUID, List<EntryRow>> ticks = scene.between(TICK, monday, monday.plusDays(6)).stream()
                 .filter(t -> t.parentId() != null)
                 .collect(Collectors.groupingBy(EntryRow::parentId));
+        List<EntryRow> rows = jobs(scene);
+        Set<UUID> reminders = scene.seenAmong(
+                rows.stream().map(row -> row.as(Job.class).reminderId()).toList());
         List<ChoreWheelJob> shown = new ArrayList<>();
         int index = 0;
-        for (EntryRow row : jobs(scene)) {
+        for (EntryRow row : rows) {
             Job job = row.as(Job.class);
             List<EntryRow> done = ticks.getOrDefault(row.id(), List.of());
             shown.add(new ChoreWheelJob(
@@ -298,7 +314,8 @@ class ChoreWheel implements BoardRules {
                             .map(EntryRow::doneAt)
                             .filter(Objects::nonNull)
                             .max(Comparator.naturalOrder())
-                            .orElse(null)));
+                            .orElse(null),
+                    job.reminderId() != null && reminders.contains(job.reminderId()) ? job.reminderId() : null));
             index++;
         }
         return shown;
@@ -315,7 +332,7 @@ class ChoreWheel implements BoardRules {
 
     // ---------- changing it ----------
 
-    private static Job job(Fields sent, Job now) {
+    private static Job job(Scene scene, Fields sent, Job now) {
         String name = sent.text("name", 80, now.name());
         if (name == null) {
             throw ApiProblem.badRequest("missing_name", "Give the job a name.");
@@ -325,7 +342,8 @@ class ChoreWheel implements BoardRules {
                 sent.text("emoji", 16, now.emoji()),
                 sent.text("when", 80, now.when()),
                 sent.count("timesAWeek", 1, 7, now.times()),
-                now.retired());
+                now.retired(),
+                sent.has("reminderId") ? scene.pointsAt(sent.id("reminderId"), ThingKind.REMINDER) : now.reminderId());
     }
 
     @Override
@@ -336,7 +354,9 @@ class ChoreWheel implements BoardRules {
                     throw ApiProblem.conflict("too_many", "Twenty jobs is as many as a wheel holds.");
                 }
                 yield scene.add(
-                        EntryDraft.of(JOB).by(scene.myId()).doc(job(sent, new Job(null, null, null, null, null))),
+                        EntryDraft.of(JOB)
+                                .by(scene.myId())
+                                .doc(job(scene, sent, new Job(null, null, null, null, null, null))),
                         clientId);
             }
             default -> throw BoardRules.unknownKind();
@@ -348,7 +368,7 @@ class ChoreWheel implements BoardRules {
         if (!entry.is(JOB)) {
             throw BoardRules.unknownKind();
         }
-        scene.save(entry, EntryDraft.from(entry).doc(job(sent, entry.as(Job.class))));
+        scene.save(entry, EntryDraft.from(entry).doc(job(scene, sent, entry.as(Job.class))));
     }
 
     /** A job is taken off the wheel, not deleted: the stars earned for it stay earned. */
@@ -358,7 +378,9 @@ class ChoreWheel implements BoardRules {
             Job job = entry.as(Job.class);
             scene.save(
                     entry,
-                    EntryDraft.from(entry).doc(new Job(job.name(), job.emoji(), job.when(), job.timesAWeek(), true)));
+                    EntryDraft.from(entry)
+                            .doc(new Job(
+                                    job.name(), job.emoji(), job.when(), job.timesAWeek(), true, job.reminderId())));
         } else {
             scene.remove(entry.id());
         }
@@ -435,22 +457,29 @@ class ChoreWheel implements BoardRules {
                 + jobs.stream().filter(ChoreWheelJob::complete).count() + " of " + jobs.size() + " done";
     }
 
-    /** The viewer's own jobs this week, and those of the children they tick for. */
+    /**
+     * The viewer's own jobs this week, and those of the children they tick for. A job that has its reminder
+     * says so on its line, and Home leaves the line out where that reminder is on the same list.
+     */
     @Override
     public List<TodayItem> today(Scene scene) {
         ChoreWheelSettings settings = scene.settings(ChoreWheelSettings.class);
         return jobsOf(scene, settings, MealPlan.monday(scene.today())).stream()
                 .filter(job -> job.who() != null && scene.iStandInFor(job.who().memberId()))
                 .map(job -> new TodayItem(
-                        scene.boardId(),
-                        ThingKind.BOARD,
-                        job.name(),
-                        (scene.isMe(job.who().memberId()) ? "Your" : job.who().name() + "'s") + " job this week"
-                                + (job.when() == null ? "" : " · " + job.when()),
-                        null,
-                        job.complete() || job.doneToday(),
-                        1440,
-                        scene.avatars(job.who().memberId())))
+                                scene.boardId(),
+                                ThingKind.BOARD,
+                                job.name(),
+                                (scene.isMe(job.who().memberId())
+                                                ? "Your"
+                                                : job.who().name() + "'s")
+                                        + " job this week"
+                                        + (job.when() == null ? "" : " · " + job.when()),
+                                null,
+                                job.complete() || job.doneToday(),
+                                1440,
+                                scene.avatars(job.who().memberId()))
+                        .alsoKeptAs(job.reminderId()))
                 .toList();
     }
 

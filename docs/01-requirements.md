@@ -191,15 +191,70 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 
 ## Questions for you
 
-1. **The top row.** Are these the right six places, in the right order? Is anything you use daily more than one tap away?
-2. **What is the first version?** All six places is a big build. My suggested order is below. Does anything wait for a second version?
-3. **How private is private?** Call 4 above. If you want the service unable to read notes and photos too, some features have to go or move onto the phone.
-4. **Will it cost money?** Storing a family's full-size photos and videos has a real monthly cost. A free amount with a paid family plan is the usual answer.
-5. **Faces.** Grouping photos by who is in them is what makes "every photo of Mia" magic. It is also sensitive, most of all with children. On the phone only, off by default, or not at all?
-6. **Children who use the app themselves.** Something I should have raised sooner. A child shown as a profile that a parent looks after (Mia's page, her photos, her jobs) is one thing. A child under 13 signing in on their own tablet, as the "child's view" screen (4.6) and the Sleeps widget suggest, is another: most countries have rules about that, and Journey itself is 13 and over. The simple route is the first: children are profiles, and anything a child ticks is ticked on a parent's phone. Which do you want?
-7. **Forwarding an email in.** It needs a service that receives mail for the app, which Journey doesn't have. Worth it for the first version, or later?
-8. **Which keepsakes and perks first?** Thirty-one are drawn across the four kinds of circle. They are templates, so they can arrive a few at a time. Tell me your favourites.
-9. **Reading what you type or say.** “Type it”, Jot, a scanned bill and a school letter all turn loose words into an event, a bill or a list. By rules on the phone (private, free, right for the common cases) or by an AI service (better with anything free-form, costs per use, and the words leave the phone)? [The build plan](06-build-plan.md#calls-i-need-from-you) starts with rules.
+Everything that is open after the build of 12 Nov, in one place. The build went ahead on the defaults (decision 6), so nothing here is blocking; each answer changes something that is already there. The order inside each part is how much it matters.
+
+### Only you can do these, before real people use it
+
+1. **An outside review of the Vault.** It is built and tested, and it is honest on its screens about what it protects. A password manager still needs someone outside to try to break it. [The protocol](07-vault-protocol.md) lists the questions to put to them (20 to 32 are from the build).
+2. **The name.** Homeport has had a web search, not a legal check. A live US trade mark (7625469) and a June 2026 application (99888477) use the word; the official registers, the two stores and the domain are not checked. See [The name](03-name.md).
+3. **The accounts.** Apple Developer Program, and Homeport added to Journey's Supabase, Cloudflare, Fly.io, Expo and Resend. [Connect the real services](09-connect-services.md) has every step; none of it has been run.
+4. **The first build on a phone.** Face ID, the widgets, the camera and background backup have never run on one. [The checklist](06-build-plan.md#the-first-build-on-a-phone-what-to-check) says what to try.
+5. **The legal pages** (privacy, terms) are drafts and need someone qualified to read them.
+6. **The photos.** The built-in pictures are stock photos. The ones that show people have to be replaced or cleared before the stores.
+7. **Your go-ahead for the changes inside Journey.** The link is built on Homeport's side against a stand-in. [What Journey needs](10-journey-changes.md) lists ten changes in order; three need a decision from you first: whether someone in your circle can be invited to a journey without following you (6), a circle as who can see a journey (8), and whether the two servers may ever talk to each other directly, which one Sunday summary for both apps would need (10).
+
+### Decisions about the product
+
+8. **Children who use the app themselves.** Built as profiles a parent looks after: nobody under 13 signs in, and what a child ticks is ticked on a parent's phone. Say so if you want children signing in; it brings children's privacy rules with it.
+9. **Reading what you type or say.** Built with rules on our own side: right for dates, amounts, names and shopping, rough on anything free-form, and always shown for you to correct. An AI service would read better, costs per use, and the words leave the phone.
+10. **Faces.** None. "Every photo Mia is in" is every photo someone tagged her in.
+11. **How private is private?** Only the Vault can't be read by the service. Everything else is private to the people you chose, and readable by the service so that search, reminders from documents and scans work.
+12. **Who can open a photo or a scan by its address.** Files are kept under long random addresses, as in Journey: whoever holds an address can open that file without signing in, also after it was un-shared. For passports and bills you may want addresses that expire instead (a little slower). See [Connect the real services](09-connect-services.md), step 2.
+13. **The Vault in a browser.** The browser preview keeps the scrambled key in the browser's storage behind a passcode. Fine for trying it; should a real web version of the Vault exist at all?
+14. **Will it cost money?** No plans or limits are built. "48 of 200 GB · family plan" is drawn; the 200 GB is a setting and nothing is refused when it is passed.
+15. **Six templates are marked LIVE and have no drawing:** Date ideas, Who pays what, Names (couples); Cleaning rota, Bills by nights, Move-in photos (flats). They say "Coming with the next update". Shall I draw and build them, or mark them as later?
+16. **Usage numbers.** Journey's analytics (PostHog) were left out on purpose for an app that holds a family's papers; crash reports (Sentry) are optional. Say so if you want analytics.
+17. **Deleting your account.** The sign-in is shared with Journey, so "Delete my account" removes what you keep in Homeport and leaves the sign-in, unless you choose "Journey too". Journey's own data is Journey's to delete; until the two can tell each other, the app sends you there to finish.
+18. **What Today lists.** Every event you may see, also one you are not on (Alex's school run shows on Nora's Today). Only your own, or the family's?
+19. **A job that is on the chore wheel and is also a reminder** (the bins). They are linked so Today shows it once. Ticking the reminder does not tick the wheel or earn its star. Should one tick do both?
+20. **Journey on a couple's and a family's Today.** "Alex is on a journey" shows wherever Alex is in the circle; the couple's drawing has no such card. Keep it?
+21. **A goal that reads a sheet.** What you add on the goal's page is written into the sheet as a row, so the two never disagree; that needs the right to change the sheet.
+22. **Services that are stand-ins.** Speech to text (Grandma's stories typed out), the weather ("Dry until 4"), the phone's location ("when he lands", "near the shop"), mail forwarded in, a leak check for passwords, a map, reading a scan with the camera, recording inside the app. Each needs a service or a library chosen; tell me which matter first.
+
+### Calls I made while building, each yours to overturn
+
+| Where | What I chose | Why |
+|---|---|---|
+| Invitations | A link to join ends in a part nobody can guess (`…/join/the-linds-x7k2m9qa`), not the bare name as drawn | A guessable link would let a stranger ask to join |
+| Invitations | The email is written to the log until email is connected; the link is there to send yourself | No email account yet |
+| Reminders | A reminder with a day and no time is pushed at 9:00 | It has to be some time |
+| Jot | A line that looks like a code is held back and kept as plain text until you decide; it doesn't expire | So nothing secret is filed in a list by mistake |
+| Vault | "Can use, can't keep" is a rule of the app (shown once, then hidden), and says so; nothing fills a password into other apps | Filling in is separate phone work |
+| Vault | No way to start a Vault over after losing the key with no helpers | Any reset would be a back door |
+| Vault | People without their own sign-in (a child) can't be shared with | Nothing can be sealed for them |
+| Time capsule | Once sealed nobody reads the words, the writer included | It is a capsule |
+| The good things jar | You can read your own slips before it opens | The drawing says nobody can; your own seemed harmless |
+| Tucked notes | The other person's Today says a note is waiting and from whom, never its words | The couple's Today is drawn that way |
+| Secret Santa | A draw is refused when the rules would let someone work out who has them; it needs three names, and only people who sign in | Otherwise it isn't secret |
+| Where next?, the awards | Votes stay private until the vote closes; a tie in the awards has several winners | Open votes sway votes |
+| The fair share | "Close to even" means within 53 to 47 | It needed a number |
+| The guest book | A guest's line waits until a flatmate lets it in; at most 30 wait | A page on the open web gets abused |
+| Leaving | Someone others take out of a circle keeps their private things, unseen, for when they come back; leaving yourself deletes them | Being removed shouldn't destroy your things |
+| Export | Pages as text and simple web pages, sheets as CSV with their formulas as text; not PDF or Excel. The Vault and the templates are not in it | Ordinary formats that open anywhere; the Vault can only be exported on the phone |
+| Pushes | Keeping a journey, telling one and a trip starting are in Activity, not pushed; a goodnight is pushed at bedtime | The photos of a kept journey already arrive as one notification |
+| Money | The third figure on Money's first card is the largest single debt, not a sum | The drawing's three numbers can't all be true together |
+| Money | A bill's lines are typed or pasted, then read; the sheet templates are the seven the API has; reading Excel in is not built | The camera's text reading waits for the phone build |
+| Limits | Folders 50 deep, 20 pins a person, 500 blocks a page; 120 changes a minute and 5,000 uploads a day; photos as JPEG or PNG | Round numbers to stop runaway use. The upload limit will be hit by a first backup of a big camera roll and should rise for that |
+| Words | People are named where a drawing says "he" or "she" ("Alex has paid", "Lena would like …") | The app doesn't know anyone's pronouns |
+
+### Where a drawing and the app differ
+
+- **Sample numbers.** Counts follow the sample data and the day it was added, not the drawn figures (48 pages, 51 photos, "All 53").
+- **The loan screen** says "2 years 11 months sooner" in the drawing; by whole payment dates it is 2 years 10 months. The other figures match.
+- **Activity's "Iceland ring road was kept"** is dated April where the Library draws it and "Sun" where Activity draws it. It is April in the sample, which Activity forgets after 90 days.
+- **The Sunday summary's row for someone's journey under way** ("Lofoten by bike · Day 6 of 9") is not built: the nightly job can't ask Journey as you (question 7, change 10).
+- **Every template's bar** has the More button next to the drawn one, and the audience chip moves into More where the bar is full.
+- **The QR codes** (the Vault key, the code by the door) are drawn by our own code and were never scanned by a real reader from here. Scan each once with your phone.
 
 ## A suggested order
 

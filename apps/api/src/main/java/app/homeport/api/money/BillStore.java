@@ -458,16 +458,18 @@ public class BillStore {
         return places;
     }
 
-    /** Bills of a circle whose payee, note or reference holds these words. */
-    public List<Map.Entry<UUID, String>> search(UUID circleId, String pattern, int limit) {
+    /** Bills of a circle the viewer may see whose payee, note or reference holds these words. */
+    public List<Map.Entry<UUID, String>> search(UUID circleId, UUID me, String pattern, int limit) {
         return jdbc.sql("""
             select b.thing_id, case when b.payee ilike :pattern then b.payee when b.reference ilike :pattern
                      then b.reference else left(b.note, 90) end as found
             from bills b join things t on t.id = b.thing_id
             where t.circle_id = :circle and (b.payee ilike :pattern or b.note ilike :pattern or b.reference ilike :pattern)
-            order by t.updated_at desc limit :limit
+              and\s""" + Rules.sees("t", ":me") + """
+             order by t.updated_at desc limit :limit
             """)
                 .param("circle", circleId)
+                .param("me", me)
                 .param("pattern", pattern)
                 .param("limit", limit)
                 .query((rs, n) -> Map.entry(rs.getObject("thing_id", UUID.class), rs.getString("found")))

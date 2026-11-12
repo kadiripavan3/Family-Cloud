@@ -135,6 +135,13 @@ class LeavingTest extends TiesTestBase {
         assertThat(count("select count(*) from profiles where display_name = 'Alex'"))
                 .isZero();
         send(HttpMethod.GET, "/v1/me", alex, null, 401);
+        // The phone that was signed in stays shut out. Signing in again is Alex coming back: the sign-in was
+        // kept for Journey, so he starts a new, empty account here instead of being locked out for good.
+        Thread.sleep(1100);
+        String back = person("Alex");
+        assertThat(JsonPath.<String>read(fetch("/v1/me", back), "$.profile.displayName"))
+                .isEqualTo("Alex");
+        assertThat(fetch("/v1/circles", back)).isEqualTo("[]");
 
         // Journey too: where this API may remove the sign-in (it may, here), it is gone as well.
         String both = send(HttpMethod.DELETE, "/v1/me?journeyToo=true", kai, null, 200);

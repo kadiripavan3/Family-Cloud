@@ -65,7 +65,7 @@ public class R2Storage implements MediaStorage {
                 || publicUrl.isBlank()) {
             throw new IllegalStateException(
                     "homeport.media.mode is 'r2' but its settings are incomplete. Set R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID,"
-                            + " R2_SECRET_ACCESS_KEY and R2_PUBLIC_URL (see docs/08-connect-services.md).");
+                            + " R2_SECRET_ACCESS_KEY and R2_PUBLIC_URL (see docs/09-connect-services.md, step 2).");
         }
         StaticCredentialsProvider keys =
                 StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId, secretAccessKey));

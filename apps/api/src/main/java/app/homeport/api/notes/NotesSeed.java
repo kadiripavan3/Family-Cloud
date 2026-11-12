@@ -105,7 +105,19 @@ class NotesSeed implements Seeder {
         folders.file(wifi, nora, manual, null, false);
         clear(w, wifi);
         pages.change(wifi, nora, null, null, "📶");
-        live(w, wifi, nora, "linds", "Linds-Home-5G", "Home Wi‑Fi", "Home Wi-Fi");
+        // The Wi‑Fi block on top is live from the Vault. The Vault's sample data may come before this or after
+        // it: the block is put first on the page whenever the Wi‑Fi is there, and left out when it never is.
+        w.whenThing("vault/home-wifi", item -> {
+            if (sees(item, nora)) {
+                blocks.add(
+                        wifi,
+                        nora,
+                        new NewBlock(BlockKind.LIVE, null, null, null, true, item, null, null, null, null, null),
+                        null);
+                // Whenever it arrives, the page still says "Edited by Alex · 2h ago".
+                when(w.jdbc(), wifi, "2 hours", w.member("linds", "alex"));
+            }
+        });
         write(wifi, nora, words(BlockKind.HEADING, "If the internet drops"));
         BlockResponse drops = blocks.add(
                 wifi,

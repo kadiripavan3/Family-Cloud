@@ -12,7 +12,7 @@ import java.util.UUID;
  * never knows what they keep. A place tells only what this person may see.
  *
  * <p>This is also where the other app comes in. "From Journey" on the summary is a {@link Section} that the
- * Journey link will bring once it is built; until then nothing brings one, and the summary has none.
+ * link with Journey brings ({@code JourneyDigest}) in a week in which something came through it.
  */
 public interface DigestSource {
 

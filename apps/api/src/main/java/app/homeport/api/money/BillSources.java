@@ -64,7 +64,7 @@ class BillSources implements TodaySource, SearchSource, GlanceSource, PlanSource
                         // A bill the bank pays by itself has nothing to tap; the others can be marked paid from the
                         // row.
                         .with(
-                                bill.pays() == PaidHow.BY_HAND ? new TodayAction("Pay", "pay") : null,
+                                bill.pays() == PaidHow.BY_HAND ? TodayAction.PAY : null,
                                 bill.repeat() != Repeat.ONCE,
                                 new TodayDue(
                                         bill.dueOn(), Cash.exact(bill.amountCents(), bill.currency()), share(bill))))
@@ -113,7 +113,9 @@ class BillSources implements TodaySource, SearchSource, GlanceSource, PlanSource
                                                 .limit(2)
                                                 .toList())
                                 .with(
-                                        null,
+                                        // As on Today: one the bank pays by itself has nothing to tap, and one
+                                        // whose own share is paid has nothing left to do.
+                                        bill.pays() == PaidHow.BY_HAND && !bill.mySharePaid() ? TodayAction.PAY : null,
                                         bill.repeat() != Repeat.ONCE,
                                         new TodayDue(
                                                 bill.dueOn(),
@@ -168,7 +170,7 @@ class BillSources implements TodaySource, SearchSource, GlanceSource, PlanSource
 
     @Override
     public List<Found> find(UUID circleId, UUID me, String words, int limit) {
-        return bills.search(circleId, Sql.anywhere(words), limit).stream()
+        return bills.search(circleId, me, Sql.anywhere(words), limit).stream()
                 .map(found -> new Found(found.getKey(), found.getValue()))
                 .toList();
     }

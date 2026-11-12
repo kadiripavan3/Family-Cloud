@@ -1,7 +1,7 @@
 name: Deploy
 
 # Puts the API on Fly.io: after CI has passed on the main branch, or by hand from the Actions tab.
-# It needs one secret in the repository's settings: FLY_API_TOKEN (see docs/08-connect-services.md).
+# It needs one secret in the repository's settings: FLY_API_TOKEN (see docs/09-connect-services.md, step 3).
 # Until that secret exists, the job says so and does nothing.
 
 on:
@@ -31,7 +31,7 @@ jobs:
           CONNECTED: ${{ secrets.FLY_API_TOKEN != '' }}
         run: |
           if [ "$CONNECTED" != "true" ]; then
-            echo "FLY_API_TOKEN is not set, so there is nowhere to deploy to yet. See docs/08-connect-services.md."
+            echo "FLY_API_TOKEN is not set, so there is nowhere to deploy to yet. See docs/09-connect-services.md, step 3."
           fi
           echo "yes=$CONNECTED" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4

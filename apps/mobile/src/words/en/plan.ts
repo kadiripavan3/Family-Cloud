@@ -372,7 +372,7 @@ export const plan = {
     /** Where the number is read from. */
     source: {
       note: 'Change it there and the ring moves',
-      sheetSoon: 'Sheets arrive with Money. Until then this goal counts what is put in here by hand.',
+      sheetSoon: "The sheet this goal reads can't be opened from here: it isn't shared with you, or it is gone. Until it can be read, the goal counts what is put in here by hand.",
       journeySoon: 'This goal follows a challenge in the sister app. The link between the two apps arrives later; until then it counts what is put in here by hand.',
     },
     steps: { line: (done: number, all: number) => `${done} of ${all} steps done` },

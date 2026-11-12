@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,8 +16,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -89,6 +92,30 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
             }
         }
         return super.handleHttpMessageNotReadable(ex, headers, status, request);
+    }
+
+    /**
+     * An id in the address that isn't an id ({@code /v1/sheets/nothing-here}) names nothing, so the answer is
+     * the same as for an id nobody has: not found. A word in the question part that can't be read
+     * ({@code ?limit=many}) stays what it is, a request we couldn't read.
+     *
+     * <p>A word from a fixed set is neither: {@code /templates/teleporter/start} and {@code ?place=attic} are
+     * answered in the set's own sentence ("That isn't a template we have."), written where the set is defined.
+     */
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        for (Throwable cause = ex.getCause(); cause != null; cause = cause.getCause()) {
+            if (cause instanceof ApiProblem problem) {
+                return ResponseEntity.status(problem.status())
+                        .body(problem(problem.status(), problem.code(), problem.getMessage()));
+            }
+        }
+        if (ex instanceof MethodArgumentTypeMismatchException mismatch
+                && mismatch.getParameter().hasParameterAnnotation(PathVariable.class)) {
+            return handleExceptionInternal(ex, null, headers, HttpStatus.NOT_FOUND, request);
+        }
+        return super.handleTypeMismatch(ex, headers, status, request);
     }
 
     /**

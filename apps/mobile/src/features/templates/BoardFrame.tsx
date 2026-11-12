@@ -46,6 +46,11 @@ type Props = {
   chipLook?: { icon: (color: string) => ReactNode; label: string };
   /** Round buttons of the template's own, before More: search. */
   actions?: ReactNode;
+  /**
+   * Drawn in place of the bar, for a page whose top is the template's own (a box to ask in, with Cancel,
+   * where the question is the page). The template then gives the way back itself and puts `BoardMore` in it.
+   */
+  bar?: ReactNode;
   /** The template's own rows on the More sheet, above Rename and Delete. */
   menu?: MenuRow[];
   /** Pinned under the page and above the keyboard: the one big button with its small print, or a box to type in. */
@@ -70,7 +75,7 @@ const FLOATING_ROOM = 104;
  * every board can do (who can see it, a new name, deleting it for its owner) and the template's own rows.
  * A template's screen draws only what is inside.
  */
-export function BoardFrame({ board, title, subtitle, chip = 'bar', chipLook, actions, menu, footer, floating, scroll = true, tone = 'page', problem, children }: Props) {
+export function BoardFrame({ board, title, subtitle, chip = 'bar', chipLook, actions, bar, menu, footer, floating, scroll = true, tone = 'page', problem, children }: Props) {
   const theme = useTheme();
   const stage = tone === 'stage';
   const colors = stage ? darkTheme.colors : theme.colors;
@@ -124,7 +129,7 @@ export function BoardFrame({ board, title, subtitle, chip = 'bar', chipLook, act
     <SafeAreaView style={{ flex: 1, backgroundColor: stage ? colors.black : colors.bg }}>
       {stage ? <LightStatusBar /> : null}
       <AvoidKeyboard style={{ flex: 1 }}>
-        {stage ? null : <AppBar title={title} subtitle={subtitle} trailing={trailing} />}
+        {stage ? null : (bar ?? <AppBar title={title} subtitle={subtitle} trailing={trailing} />)}
         {scroll ? (
           <ScrollView
             style={{ flex: 1 }}

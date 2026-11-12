@@ -75,7 +75,7 @@ class BoardController {
             @Schema(description = "The settings to change. A name that is left out keeps its value.")
             Map<String, Object> settings) {}
 
-    record NewEntryRequest(
+    record NewBoardEntryRequest(
             @NotNull(message = "Something went wrong on our side. Try again.")
             UUID clientId,
 
@@ -188,7 +188,7 @@ class BoardController {
     EntryAddedResponse add(
             @Me UUID me,
             @PathVariable UUID id,
-            @Valid @RequestBody NewEntryRequest request,
+            @Valid @RequestBody NewBoardEntryRequest request,
             @Parameter(description = DAY) @RequestParam(required = false) LocalDate day) {
         return boards.add(id, me, request.kind(), request.fields(), request.clientId(), day);
     }

@@ -65,8 +65,10 @@ class PlanSampleDataTest extends ApiTest {
                 .containsExactly(2);
         assertThat(JsonPath.<List<String>>read(home, "$.items[?(@.title == 'Take the bins out')].note"))
                 .containsExactly("Tonight · your turn");
-        // (Feeding Biscuit comes to Today from the chore wheel, where it is Leo's job: Plan no longer keeps it too.)
-        assertThat(JsonPath.<List<String>>read(home, "$.items[*].title")).doesNotContain("Feed Biscuit");
+        assertThat(JsonPath.<List<Boolean>>read(home, "$.items[?(@.title == 'Feed Biscuit')].done"))
+                .containsExactly(true);
+        assertThat(JsonPath.<List<String>>read(home, "$.items[?(@.title == 'Feed Biscuit')].note"))
+                .containsExactly("Leo · Done at 7:40 · 1 star");
 
         // Plan: the day's list, and Saturday with the haircut and the dinner.
         String plan = fetch("/v1/circles/" + linds + "/plan?day=" + today + "&days=1", nora);
@@ -114,13 +116,18 @@ class PlanSampleDataTest extends ApiTest {
                         + (today.getDayOfWeek() == DayOfWeek.THURSDAY ? "tomorrow" : "Friday"));
         assertThat(JsonPath.<List<String>>read(reminders, "$.asked[?(@.title == 'Book the car service')].note"))
                 .containsExactly("Asked on Monday · not done yet");
-        // (Feeding Biscuit is Leo's job on the chore wheel, not also a reminder: it stood on Today twice.)
-        assertThat(JsonPath.<List<String>>read(reminders, "$.asked[*].title")).doesNotContain("Feed Biscuit");
+        assertThat(JsonPath.<List<String>>read(reminders, "$.asked[?(@.title == 'Feed Biscuit')].note"))
+                .containsExactly("Done at 7:40 · 1 star");
+        // ...and under Done, where what was ticked is kept.
+        assertThat(JsonPath.<List<String>>read(
+                        fetch("/v1/circles/" + linds + "/reminders/done", nora), "$.items[*].title"))
+                .contains("Feed Biscuit");
         assertThat(JsonPath.<List<String>>read(reminders, "$.places[*].note"))
                 .containsExactly("When you're near the post office", "When Alex is near the shop · Groceries attached");
         assertThat(JsonPath.<String>read(
                         fetch("/v1/circles/" + linds + "/search?q=passport", nora), "$.hits[0].thing.glance"))
-                .isEqualTo("2 Jan · Alex");
+                .as("next year's day says its year")
+                .isEqualTo("2 Jan " + (today.getYear() + 1) + " · Alex");
 
         // Goals: the five rings, Norway first, and its own screen.
         String goals = fetch("/v1/circles/" + linds + "/goals?day=" + today, nora);

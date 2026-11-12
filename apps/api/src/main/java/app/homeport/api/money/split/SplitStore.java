@@ -353,15 +353,16 @@ public class SplitStore {
 
     // ---------- search ----------
 
-    /** Splits of a circle with an expense whose name holds these words. */
-    public List<Map.Entry<UUID, String>> search(UUID circleId, String pattern, int limit) {
+    /** Splits of a circle the viewer may see with an expense whose name holds these words. */
+    public List<Map.Entry<UUID, String>> search(UUID circleId, UUID me, String pattern, int limit) {
         return jdbc.sql("""
             select distinct on (e.thing_id) e.thing_id, e.title
             from split_expenses e join things t on t.id = e.thing_id
-            where t.circle_id = :circle and e.title ilike :pattern
-            order by e.thing_id, e.spent_on desc limit :limit
+            where t.circle_id = :circle and e.title ilike :pattern and\s""" + Rules.sees("t", ":me") + """
+             order by e.thing_id, e.spent_on desc limit :limit
             """)
                 .param("circle", circleId)
+                .param("me", me)
                 .param("pattern", pattern)
                 .param("limit", limit)
                 .query((rs, n) -> Map.entry(rs.getObject("thing_id", UUID.class), rs.getString("title")))

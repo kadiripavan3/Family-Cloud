@@ -26,7 +26,7 @@ The spine: the pieces every place builds on. Their names and signatures are fixe
 - **The current circle** (`src/features/circles/current.ts`). A person is in up to twenty circles and looks at one at a time. `useCircle()` gives the current `CircleResponse` (its kind, its people, `myRole`, `iRunIt`, `startsAs`); `useCircles()` gives all of them; `const switchTo = useSwitchCircle(); switchTo(id)` changes it for every screen at once. The choice is remembered on the phone for each account and is the first circle until one is picked. Everything under `src/app/(app)` can call `useCircle()`: someone with a profile and no circle is sent to `/setup` by `app/(app)/_layout.tsx` before any of it is drawn. (`useCircleIfAny()` is for the few screens outside it.) Small helpers on a circle are in `features/circles/members.ts`: `membersOf`, `headcount`, `circleLine` ("Family · 4 people and Biscuit"), `isYoung`.
 - **Words that depend on the kind of circle** come from `words.kinds[circle.kind]` (`src/words/en/kinds.ts`) and never from a ternary in a screen: `emoji` (👪 ❤️ 🏠 🤝, and 🔒 for a circle of one), `name` ("Housemates"), `short` ("Flat"), `called` ("the flat"), `calledFirst`, `everyone(circle.name)` ("Everyone in The Linds", "The two of you"), `chip(circle.name)`, `startsAs`. A sentence of your own that differs by kind is keyed by kind in your own catalog file, the same way.
 - **Home's shell** (`src/app/(app)/(tabs)/index.tsx`) draws the search pill with the round circle button and the row of six places, and under them the chosen place. The place is part of the address: `/?place=money`; `placeHref('money')` (`features/home/places.ts`) is the link to it from anywhere. Each place is one component with no props in its own folder, and its builder replaces that one file: `features/today/TodayHome.tsx`, `features/plan/PlanHome.tsx`, `features/notes/NotesHome.tsx`, `features/library/LibraryHome.tsx`, `features/money/MoneyHome.tsx`, `features/vault/VaultHome.tsx`. The pill and the row stay put; the place gets the rest of the screen (`flex: 1`), reads `useCircle()`, scrolls by itself (a `ScrollView`, or a `List` for something long) and leaves `TAB_BAR_ROOM` under its last row. It is drawn afresh when the circle changes. The pill opens `/search?place=<place>`. For a teen or a child the shell draws Money and the Vault as shut (`isShut`), so those two never have to check.
-- **Today** (`src/features/today`) draws whatever the API's Today holds for the current circle, the same way whoever sent it: the summary card, then `cards` (`TodayCards.tsx`: what a circle's own templates have to say today; a row with a figure or an emoji in front, a title, a line, and a button when the card has an `action`; a small picture card when it has a picture), then the day's list from `items` (a time, an amount or a tick in front; at its end the button the API gives the line, in the API's word (`LineButton`, from `action`: "Pay", for the day in `due`), else the faces, else the small mark of something that comes round again (`RepeatMark`, from `repeats`)), then what is new from `fresh`. A place gets onto Today by sending these from the API (`TodaySource`), never by editing Today. A card or a row opens its thing by its kind.
+- **Today** (`src/features/today`) draws whatever the API's Today holds for the current circle, the same way whoever sent it and whatever the kind of circle. `partsOf` (`about.ts`) lays the `cards` out by what each one carries: the first card that is only words is the headline beside the ring ("Friday is yours to plan"; where nobody sent one, the day's own list is summed up there, as in a family); the cards before the first one with a picture are lines of the day's list, after the `items` (a time, a day, an amount, a tick or the kind's icon in front; a card has its figure or its emoji there, and its button when it has an `action`); from the first card with a picture on they stand in the rail, with what is new from `fresh`, under the kind's own heading (`words.today.section`: "New in the library", "The two of you", "From the crew"). A line about a split has a button of its own (`SplitButton`: Remind among several people, Settle between two and for whoever owes). A flat's Today mounts `features/flat/RunningLow` under the list. A place gets onto Today by sending these from the API (`TodaySource`), never by editing Today. A card or a row opens its thing by its kind. A line the API gives a button ends in it (`LineButton`: a bill's "Pay", in the API's word and for the day it is due), and a line that comes round again in the repeat mark (`RepeatMark`).
 - **Opening a thing of any kind** (`src/features/things/open.ts`): `const open = useOpenThing(); open(thing)`, or `thingHref(thing)` for a link. The address is the kind with dashes and the id, by convention and with no table to add to: a `page` is at `/page/<id>`, a `vault_item` at `/vault-item/<id>`. Build the screen at `src/app/(app)/<kind>/[id].tsx` and every list of mixed things (search, Today, a person's page, links, a guest pass) opens it. Until then the address lands on `src/app/(app)/[kind]/[id].tsx`, which shows the thing's title and chip and says it arrives with its place.
 - **A thing as a row** (`src/features/things/ThingRow.tsx`): `<ThingRow thing={brief} />` draws a `ThingBrief` with an icon by its kind, its title, its `glance` line and its audience chip, and opens it when pressed. `line` replaces the second line (what a search found), `look="grouped"` is the row inside a `RowGroup` card (an arrow at the end, `first` for the top one), `trailing` and `onPress` replace the end and the press. The icon of a kind is one line in `features/things/kinds.ts` and its word one line in `words.things` (`src/words/en/things.ts`); a kind that is in neither gets a plain file icon and is called "a thing".
 - **Who can see a thing** (`src/features/sharing`): `<AudienceChip thing={thing} />` on any answer that has `id`, `circleId`, `mine` and `chip` (a page, a list, a `ThingBrief`). It draws the lock and "Only you", the pictures and "Alex and you", the circle's emoji and name, or the crossed eye and "Not Mia", and pressing it opens the one `AudienceSheet` for that thing (the three choices, what each person may do, hiding it from someone until a day; read-only for someone who isn't its owner). After saving, the sheet calls `cache.audienceChanged(...)`, which writes the new chip onto every loaded copy of the thing and asks its lists again; a place does nothing. Pass `quiet` for a chip inside a row that is pressed itself.
@@ -105,24 +105,6 @@ Milestone 1, the spine: circles, people and sharing.
 | 12.3 Privacy and security | `/settings/security` | Face ID and the Vault's timer are remembered on the phone; "Hide details in notifications" is the account's own setting (`hideDetails`). |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
-Milestone 5, Money: bills, sheets, the loan planner and splitting costs. Every amount, share, total and formula result comes from the API; the app only writes them (`lib/money`).
-
-| Screen (design) | Address | |
-|---|---|---|
-| 8.1 Money | `/?place=money` | The month's card, what is due soonest, the sheets as a rail, and the circle's splits under them. |
-| The lists of bills | `/money/bills`, `/money/bills?show=subscriptions` | To pay, paid, subscriptions. Not drawn. |
-| 8.2 A bill | `/bill/<id>` | "Pay" on Today's line is `PayBillButton` (`features/money/PayBill`), in the word and for the due day the API sends with the line. |
-| Adding and changing a bill | `/new/bill`, `/money/bill?id=<id>` | Not drawn. |
-| 8.3 Scan a bill | `/money/scan`, `?bill=<id>`, `?split=<id>` | A picked picture and typed or pasted lines stand in for the camera and its text reading. |
-| 8.4 Sheets | `/money/sheets`, `/new/sheet` | The templates are the API's. |
-| 8.5 A sheet | `/sheet/<id>` | It asks again every few seconds: "Alex is here too". |
-| 8.6 A row, as a card | `/money/row/<id>` | A box is saved when it is left, with only that cell. |
-| 8.7 A formula you can read | `/money/formula?sheet=<id>&tab=<id>` | `&tile=`, `&column=` for one that is there; `&as=tile` or `&as=column` for a new one. |
-| 8.8 Template: loan planner | `/money/loan` | The savings plan has no such screen yet: its template starts as its sheet. |
-| 8.9 Splitting with friends | `/split/<id>`, `/money/splits` | |
-
-A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out). Every `List` holds its rows while another screen covers it (`src/ui/useWhileInFront`, used by `List` itself): a covered list keeps the rows it had until it is looked at again, because in a browser the list trips ("not enough layouts") when a row goes while it is covered, as when a sheet opened from it is deleted. No screen has to do anything for it.
-
 Milestone 2, the Library: photos, videos and documents (`src/features/library`).
 
 | Screen (design) | Address | |
@@ -158,6 +140,58 @@ Milestone 3, Plan: the calendar, events, reminders, goals. Its pieces are in `sr
 | A new event, reminder, goal | `/new/event` (`?day=`), `/new/reminder`, `/new/goal` | Not drawn. The first two have a line on top that leads to Type it. |
 
 Plan's pieces that other screens use: `useTick()` and `Tick` (ticking a reminder from any list, for the due day the line is for; `TodayTick` is the tick on Today: for the day the line says it is due (`due.on`), and where a line says none, as a ticked one doesn't, the reminder itself is asked first), `ComingUp` (a person's page), `PlanEntry` and `DayHeader` (one line of a day), `WhenSheet`, `RepeatSheet`, `RemindSheet` and `PeopleSheet` (picking a day and time, how often, how long ahead, and people of the circle), `readTime` and `readCents` (`features/plan/times`: a time and an amount the way people type them), and `useNotice()` (a sentence that answers a press and goes by itself).
+
+Milestone 3, Jot: adding something without opening the app (`src/features/jot`; what runs outside the app is in `native/jot` and `plugins/`, built in only with `JOT_NATIVE=1`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 14.2 The jot bar, 14.4 It files itself | `/jot`, `/jot/filed` | A line is read by the API's rules and filed; "what was filed" undoes or moves it. A line that looks like a code is held back and can go to the Vault. |
+| 14.6 Say it all at once | `/jot/voice` | Typed words stand in for the microphone in a browser. |
+| 14.7 Share into it | `/jot/share` | What another app shares. In a browser, a pasted text. |
+| 14.1 Widgets, 14.3 The pinned note, 14.5 The Lock Screen | `/jot/widgets`, `/jot/pinned`, `/jot/lock` | Pictures of what the phone build adds, with what each can and can't do. Their code has never run on a phone. |
+| 14.8 Every way in | `/jot/ways` | Reached from You, Settings. |
+
+Milestone 4, Notes: spaces, folders, pages, lists (`src/features/notes`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 5.1 Notes | `/?place=notes` | Pinned, spaces, lately, not filed. |
+| 5.2 A space | `/folder/<id>` | A space or any folder; folders inside folders open in place. "Templates" opens the gallery. |
+| 5.3 A page, 5.4 Add to a page | `/page/<id>` | Blocks changed one at a time. A list in a page ticks in place; a live block shows another thing as it stands and opens it; a password's "Copy" opens it in the Vault. A page that is a kept journey is drawn as its book (milestone 10). |
+| 5.5 A shared list, 13.2 Offline | `/checklist/<id>` | Changes are written on the phone first and sent in order when there is a connection (`features/notes/changes`). An open list or page asks again every few seconds. |
+| New | `/new/note`, `/new/checklist` | Take `?folder=`. |
+
+Milestones 4, 7 and 8, the templates that do work. Every one is a board at `/board/<id>`, started from the gallery at `/templates`; "Adding a template" above is how each was added.
+
+| Where its files are | Templates |
+|---|---|
+| `src/features/templates` | Weekly meal plan, chore wheel, time capsule |
+| `src/features/keepsakes` | Open when…, the birthday interview, things they said, same spot every year, Grandma's stories (with her own web page), the good things jar, the doorframe |
+| `src/features/perks` | Whose turn?, the piggy bank, secret missions, the Saturday jar, sleeps until…, where is it?, habit charts |
+| `src/features/couple` | Our story, tucked notes, the anniversary questions, mystery date, both said yes, the fair share |
+| `src/features/flat` | The kitty, a fairer split, heads-up, heard in the kitchen, the guest book (with its page at the door), everyone who's lived here; and "Running low" on a flat's Today |
+| `src/features/crew` | When can everyone? (with its page by link), Secret Santa, where next?, the dictionary, predictions, the awards, a goal you walk together |
+
+- **Today is one screen for every kind of circle** (`src/features/today`): it draws what the API's Today holds. The first card that is only words is the headline beside the ring; the day's things and the other cards are lines of one list (`TodayLine`), a line about shared costs or a bill with its button; cards with a picture stand in a rail with what is new.
+- Six templates are marked LIVE in the galleries and have no drawing of their own yet (Date ideas, Who pays what, Names; Cleaning rota, Bills by nights, Move-in photos): they say "Coming with the next update" and can't be started.
+
+Milestone 5, Money: bills, sheets, the loan planner and splitting costs. Every amount, share, total and formula result comes from the API; the app only writes them (`lib/money`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 8.1 Money | `/?place=money` | The month's card, what is due soonest, the sheets as a rail, and the circle's splits under them. |
+| The lists of bills | `/money/bills`, `/money/bills?show=subscriptions` | To pay, paid, subscriptions. Not drawn. |
+| 8.2 A bill | `/bill/<id>` | "Pay" on Today's line is `PayBillButton` (`features/money/PayBill`), in the word and for the due day the API sends with the line. |
+| Adding and changing a bill | `/new/bill`, `/money/bill?id=<id>` | Not drawn. |
+| 8.3 Scan a bill | `/money/scan`, `?bill=<id>`, `?split=<id>` | A picked picture and typed or pasted lines stand in for the camera and its text reading. |
+| 8.4 Sheets | `/money/sheets`, `/new/sheet` | The templates are the API's. |
+| 8.5 A sheet | `/sheet/<id>` | It asks again every few seconds: "Alex is here too". |
+| 8.6 A row, as a card | `/money/row/<id>` | A box is saved when it is left, with only that cell. |
+| 8.7 A formula you can read | `/money/formula?sheet=<id>&tab=<id>` | `&tile=`, `&column=` for one that is there; `&as=tile` or `&as=column` for a new one. |
+| 8.8 Template: loan planner | `/money/loan` | The savings plan has no such screen yet: its template starts as its sheet. |
+| 8.9 Splitting with friends | `/split/<id>`, `/money/splits` | |
+
+A place's own pieces live in its folder: Money's are `features/money/` (`parts.tsx` for what several of its screens draw, `lines.ts` for the lines under a bill or an expense, `sheet/` for the grid, the cells by kind, the formula chips and `formula.ts`, which writes a formula from chips and never works one out). Its lists read their rows through `useWhileInFront`: a list that another screen covers keeps the rows it had until it is looked at again, because in a browser the list trips ("not enough layouts") when a row goes while it is covered, as when a sheet opened from it is deleted.
 
 Milestone 6, the Vault. Its contract is `docs/07-vault-protocol.md`; its cryptography is in `src/features/vault/crypto/` (no React, no API calls, a test file for each) and what the phone does with keys, step by step, in `src/features/vault/actions.ts`.
 
