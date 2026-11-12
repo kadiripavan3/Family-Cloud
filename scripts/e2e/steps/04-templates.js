@@ -14,6 +14,8 @@ exports.run = async function run(ctx) {
   let nora;
   let linds;
   const asNora = (method, address, body) => ctx.api(nora, method, address, body);
+  /** Puts the sheet that is up away, the way a person does: by tapping the dimmed page above it. */
+  const closeSheet = (phone) => phone.R('button', { name: 'Close', exact: true }).click({ position: { x: 24, y: 24 } });
   /** The sample board of a template in The Linds, as Nora sees it today. */
   const sampleBoard = async (template, title) => {
     const boards = (await asNora('GET', `/v1/circles/${linds.id}/boards?template=${template}&limit=50`)).items;
@@ -71,7 +73,7 @@ exports.run = async function run(ctx) {
     await T("It can't be started yet. Every template without this note can.").waitFor();
     if (await R('button', { name: 'Start', exact: true }).isVisible().catch(() => false)) throw new Error('a template that is not ready offers Start');
     await shot('templates-not-ready');
-    await page.keyboard.press('Escape');
+    await closeSheet(ctx);
     await T('Coming with the next update').waitFor({ state: 'detached' });
   });
 
@@ -156,7 +158,7 @@ exports.run = async function run(ctx) {
     await R('checkbox', { name: 'Lemon', checked: true }).waitFor();
     await T('At home already').waitFor();
     await shot('meal-plan-meal');
-    await page.keyboard.press('Escape');
+    await closeSheet(ctx);
     await T(`${before + 4} ingredients go to Groceries`).waitFor();
   });
 

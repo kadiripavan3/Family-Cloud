@@ -80,8 +80,11 @@ describe('15.3 Things they said', () => {
     list.mockImplementation((_id: string, params: { q?: string }) => (params.q === 'moon' ? pageOf([quoteMoon]) : params.q ? pageOf([]) : notYet()));
     await render(inApp(<Board />));
     const user = userEvent.setup();
+    // A chip that was chosen before doesn't narrow the search.
+    await user.press(screen.getByRole('button', { name: 'With a voice' }));
     await user.press(screen.getByRole('button', { name: 'Search what they said' }));
     await user.type(screen.getByLabelText('Search what they said'), 'moon');
+    expect(list).toHaveBeenLastCalledWith(BOARD_ID, expect.objectContaining({ q: 'moon', filter: undefined, member: undefined }), expect.anything());
     expect(screen.getByText('“The moon is following our car.”')).toBeOnTheScreen();
     expect(screen.queryByText("“I'm not tired. My eyes are just heavy.”")).toBeNull();
     await user.type(screen.getByLabelText('Search what they said'), 'zz');

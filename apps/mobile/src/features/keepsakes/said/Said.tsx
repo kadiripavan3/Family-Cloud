@@ -54,9 +54,11 @@ export function Said({ board }: BoardScreenProps<SaidView, SaidSettings>) {
   const [searching, setSearching] = useState(false);
   const [typed, setTyped] = useState('');
   const q = searching && typed.trim().length >= 2 ? typed.trim() : undefined;
-  const plain = !filter.member && !filter.voice && !q;
+  // A search looks through everything that was said, whatever chip was chosen before it.
+  const shown: Filter = searching ? {} : filter;
+  const plain = !shown.member && !shown.voice && !q;
 
-  const asked = useGetBoardEntriesInfinite(board.id, { kind: 'quote', member: filter.member, filter: filter.voice ? 'voice' : undefined, q, day: today() }, { query: paged });
+  const asked = useGetBoardEntriesInfinite(board.id, { kind: 'quote', member: shown.member, filter: shown.voice ? 'voice' : undefined, q, day: today() }, { query: paged });
   // One template's list holds that template's own: on this board every entry is a quote.
   const loaded = rows(asked.data) as SaidQuote[] | undefined;
   // Everyone's newest thirty came with the board: they are there before the list has answered.
