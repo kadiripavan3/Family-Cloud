@@ -5,8 +5,10 @@ import { onPhone } from '@/test/phone';
 
 import { Button } from '../Button';
 import { Dots } from '../Dots';
+import { EmojiTabs } from '../EmojiTabs';
 import { Field } from '../Field';
 import { Tap } from '../Motion';
+import { Segmented } from '../Segmented';
 import { Sheet } from '../Sheet';
 import { Toggle } from '../Toggle';
 import { WordTabs } from '../WordTabs';
@@ -154,5 +156,45 @@ describe('WordTabs', () => {
     expect(screen.getByRole('tab', { name: 'People' })).not.toBeSelected();
     await userEvent.setup().press(screen.getByRole('tab', { name: 'People' }));
     expect(onChange).toHaveBeenCalledWith('people');
+  });
+});
+
+describe('Segmented', () => {
+  const roles = [
+    { id: 'child', label: 'Child' },
+    { id: 'teen', label: 'Teen' },
+    { id: 'adult', label: 'Adult' },
+  ] as const;
+
+  it('shows which one is chosen and says which one was pressed', async () => {
+    const onChange = jest.fn();
+    await render(<Segmented label="Role" options={roles} value="child" onChange={onChange} />);
+    expect(screen.getByRole('radio', { name: 'Child', checked: true })).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: 'Teen', checked: false })).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('radio', { name: 'Adult' }));
+    expect(onChange).toHaveBeenCalledWith('adult');
+  });
+
+  it('can be shown without being changeable', async () => {
+    const onChange = jest.fn();
+    await render(<Segmented label="Role" options={roles} value="teen" onChange={onChange} locked />);
+    await userEvent.setup().press(screen.getByRole('radio', { name: 'Adult' }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('radio', { name: 'Teen', checked: true })).toBeOnTheScreen();
+  });
+});
+
+describe('EmojiTabs', () => {
+  const tabs = [
+    { id: 'today', label: 'Today', emoji: '🏡' },
+    { id: 'plan', label: 'Plan', emoji: '📅' },
+  ] as const;
+
+  it('has one tab chosen, and says which one was pressed', async () => {
+    const onChange = jest.fn();
+    await render(<EmojiTabs six tabs={tabs} value="today" onChange={onChange} />);
+    expect(screen.getByRole('tab', { name: 'Today', selected: true })).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('tab', { name: 'Plan' }));
+    expect(onChange).toHaveBeenCalledWith('plan');
   });
 });

@@ -13,14 +13,23 @@ type Props = {
   header?: ReactNode;
   /** The one way on from here, if the screen has one. */
   action?: ReactNode;
+  /** True for a part of a screen (one of Home's places under the row of six) instead of a whole one. */
+  part?: boolean;
 };
 
 /**
  * Stands in for a whole screen that is still to be built from its design: it says which screen this is and
  * that it is on its way. Each use goes when its screen arrives; when none is left, so does this file.
  */
-export function NotBuiltYet({ title, header, action }: Props) {
+export function NotBuiltYet({ title, header, action, part }: Props) {
   const { colors } = useTheme();
+  if (part) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: 24, paddingBottom: 120 }}>
+        <EmptyState emoji="🛠️" title={title} body={words.states.notBuilt} action={action} />
+      </View>
+    );
+  }
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       {header}

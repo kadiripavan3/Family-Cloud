@@ -23,3 +23,6 @@ export function pending() {
 export function failed(error: unknown) {
   return { data: undefined, isPending: false, isError: true, error, isFetching: false, isRefetching: false, isPaused: false, refetch: jest.fn() };
 }
+
+// The spine's own made-up answers (circles, their people, things): every test can use them.
+export * from './spine';

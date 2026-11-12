@@ -16,11 +16,13 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { makeQueryClient } from '@/api/client';
-import { useGetMe } from '@/api/generated/homeport';
+import { useGetCircles, useGetMe } from '@/api/generated/homeport';
 import { useOnline, watchConnection, watchFocus } from '@/api/online';
 import { OnboardingProvider, useOnboarding } from '@/auth/onboarding';
 import { SessionProvider, useSession } from '@/auth/session';
+import { useChosenCircleKnown } from '@/features/circles/current';
 import { startCrashReports } from '@/features/crashes/crashes';
+import { AskAboutNotifications } from '@/features/notifications/AskAboutNotifications';
 import { linksKnowSession } from '@/lib/links';
 import { useTheme } from '@/theme';
 import { loadAppearance } from '@/theme/appearance';
@@ -55,7 +57,10 @@ export default function RootLayout() {
   );
 }
 
-/** Decides which part of the app a person sees: sign-in, the sign-up steps (their profile, then a circle), or the app itself. */
+/**
+ * Decides which part of the app a person sees: sign-in, the sign-up steps (their profile, then a circle), or
+ * the app itself. Someone with a profile and no circle is sent on to set one up by the app's own layout.
+ */
 function App() {
   const theme = useTheme();
   const session = useSession();
@@ -74,11 +79,17 @@ function App() {
     PlusJakartaSans_800ExtraBold,
   });
 
-  // The app opens as soon as it knows who this is: from the API, or from what the phone kept of the last run
-  // (then without waiting for anyone). Only while the answer is on its way does the splash screen stay.
-  const known = me.data !== undefined;
-  const asking = signedIn && me.isPending && me.fetchStatus === 'fetching';
-  const ready = fontsLoaded && session.status !== 'loading' && !asking;
+  // The app opens as soon as it knows who this is and which circles they are in: from the API, or from what
+  // the phone kept of the last run (then without waiting for anyone). Only while an answer is on its way
+  // does the splash screen stay. A new person's circles are asked for behind the sign-up steps, which stay.
+  const hasProfile = !!me.data?.profile;
+  const circles = useGetCircles({ query: { enabled: signedIn && hasProfile } });
+  const needsCircles = hasProfile && !onboarding.active;
+  const known = me.data !== undefined && (!needsCircles || circles.data !== undefined);
+  const asking = signedIn && ((me.isPending && me.fetchStatus === 'fetching') || (needsCircles && circles.isPending && circles.fetchStatus === 'fetching'));
+  // Which circle they were in last is remembered on the phone, for each account.
+  const circleKnown = useChosenCircleKnown(signedIn ? (me.data?.id ?? null) : null);
+  const ready = fontsLoaded && session.status !== 'loading' && !asking && (circleKnown || !signedIn || me.data === undefined);
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);
@@ -97,33 +108,41 @@ function App() {
         <Txt color="muted" center>
           {online ? words.states.cantOpen.unreachable.body : words.states.cantOpen.offline}
         </Txt>
-        <Button label={words.common.tryAgain} block loading={me.isRefetching} onPress={() => void me.refetch()} style={{ marginTop: 12 }} />
+        <Button
+          label={words.common.tryAgain}
+          block
+          loading={me.isRefetching || circles.isRefetching}
+          onPress={() => {
+            if (me.data === undefined) void me.refetch();
+            else void circles.refetch();
+          }}
+          style={{ marginTop: 12 }}
+        />
         <Button label={words.common.signOut} variant="quiet" block onPress={() => void session.signOut()} />
       </View>
     );
   }
 
-  // A new person stays in the sign-up steps until the last one, even though their profile exists after the first.
-  const hasProfile = !!me.data?.profile;
-  const stage = !signedIn ? 'auth' : !hasProfile || onboarding.active ? 'signUp' : 'app';
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+      {/* The order matters: when the screen someone is on closes to them (they signed in, or out), they land on the first group that is open. */}
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={stage === 'auth'}>
+        <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
-        <Stack.Protected guard={stage === 'signUp'}>
+        {/* A new person's profile. It stays underneath until the last sign-up step is done, so Back from setting up a circle has somewhere to go. */}
+        <Stack.Protected guard={signedIn && (!hasProfile || onboarding.active)}>
           <Stack.Screen name="(onboarding)" />
         </Stack.Protected>
-        {/* Setting up a circle needs someone to set it up for: it opens once the profile is made. */}
-        <Stack.Protected guard={stage === 'signUp' && hasProfile}>
+        {/* The app itself, and making or joining a circle, need someone to do it for: they open once the profile is made. */}
+        <Stack.Protected guard={signedIn && hasProfile}>
+          <Stack.Screen name="(app)" />
           <Stack.Screen name="(setup)" />
         </Stack.Protected>
-        <Stack.Protected guard={stage === 'app'}>
-          <Stack.Screen name="(app)" />
-        </Stack.Protected>
       </Stack>
+      {/* The question about notifications, asked once, at a moment when there is something to hear about. */}
+      {signedIn && hasProfile ? <AskAboutNotifications /> : null}
     </ThemeProvider>
   );
 }

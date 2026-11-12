@@ -21,11 +21,18 @@ const CODE = '123456';
  *   T, R, L              find by text, by role, by label: always the last match (see below)
  *   step(name, fn)       one named part of the walk; the first that fails ends it and leaves a screenshot
  *   shot(name)           a numbered screenshot of the app
+ *   signIn(email)        from the welcome screen into the app, as someone who has an account (nora@example.com
+ *                        is the sample person); signOut() goes back to the welcome screen
+ *   second(name)         a second, new person on a second phone, signed in: { page, T, R, L, shot, signOut,
+ *                        close, name, email, token }. For the steps where sharing matters: what one shares,
+ *                        the other must or must not find
  *   webPage, opened      a web page the API serves: by its address, or as the tab a tap opens
  *   api(token, …)        a call to the API, as someone else or as nobody
- *   signUp(name)         another person, made through the API: signed in, with a profile
+ *   signUp(name)         another person, made through the API: signed in there, with a profile
  *   errors               what went wrong on the way; `expectNotFound = true` while a "not there" is meant
  *   tag                  a few letters that are different in every run, for emails that must be new
+ *
+ * Every steps file starts signed out, on the welcome screen, and ends there.
  */
 async function start(out, scheme) {
   const tag = Math.random().toString(36).slice(2, 7);
@@ -34,26 +41,58 @@ async function start(out, scheme) {
   const errors = [];
   const ctx = { out, scheme, tag, browser, page, errors, expectNotFound: false, API_URL, WEB_URL, IMG, CODE };
 
-  page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-  page.on('console', (m) => {
-    if (m.type() === 'error' && !(ctx.expectNotFound && /404/.test(m.text()))) errors.push('console: ' + m.text().slice(0, 300));
-  });
-  page.on('response', (r) => {
-    if (r.status() >= 400 && r.url().startsWith(API_URL) && !(ctx.expectNotFound && r.status() === 404)) errors.push(`http ${r.status()} ${r.request().method()} ${r.url()}`);
-  });
-
-  // Screens underneath the current one stay in the page on the web, so always take the last (topmost) match.
-  ctx.T = (...a) => page.getByText(...a).last();
-  ctx.R = (...a) => page.getByRole(...a).last();
-  ctx.L = (...a) => page.getByLabel(...a).last();
+  // What goes wrong on any phone of the walk is kept: errors in the page, and answers of the API that are not a yes.
+  const watch = (phonePage) => {
+    phonePage.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+    phonePage.on('console', (m) => {
+      if (m.type() === 'error' && !(ctx.expectNotFound && /404/.test(m.text()))) errors.push('console: ' + m.text().slice(0, 300));
+    });
+    phonePage.on('response', (r) => {
+      if (r.status() >= 400 && r.url().startsWith(API_URL) && !(ctx.expectNotFound && r.status() === 404)) errors.push(`http ${r.status()} ${r.request().method()} ${r.url()}`);
+    });
+  };
+  watch(page);
 
   let n = 0;
   const file = (name) => `${out}/${scheme}-${String((n += 1)).padStart(2, '0')}-${name}.png`;
-  ctx.shot = async (name) => {
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: file(name) });
-    console.log('shot', name, page.url());
+
+  /**
+   * What the steps use of one phone: the ways to find things on it, a screenshot, signing in and out.
+   * Screens underneath the current one stay in the page on the web, so finding always takes the last
+   * (topmost) match.
+   */
+  const phone = (phonePage) => {
+    const T = (...a) => phonePage.getByText(...a).last();
+    const R = (...a) => phonePage.getByRole(...a).last();
+    const L = (...a) => phonePage.getByLabel(...a).last();
+    const shot = async (name) => {
+      await phonePage.waitForTimeout(900);
+      await phonePage.screenshot({ path: file(name) });
+      console.log('shot', name, phonePage.url());
+    };
+    /** From the welcome screen into the app, as someone who has an account already. Ends on Home, or on setting up a circle for someone who is in none. */
+    const signIn = async (email) => {
+      await R('button', { name: 'I already have an account' }).click();
+      await R('button', { name: 'Continue with email' }).click();
+      await L('Email', { exact: true }).fill(email);
+      await R('button', { name: 'Send code' }).click();
+      await T('Check your email').waitFor();
+      await L('6-digit code').fill(CODE);
+      await phonePage.getByRole('tab', { name: 'Home' }).or(phonePage.getByRole('button', { name: 'Just me for now' })).last().waitFor({ timeout: 20000 });
+    };
+    /** From anywhere under the tabs back to the welcome screen. */
+    const signOut = async () => {
+      await R('tab', { name: 'You' }).click();
+      await T('Export and leaving').waitFor();
+      const logOut = phonePage.getByRole('button', { name: 'Log out' });
+      // Log out is on You, or one page further in, under "Export and leaving".
+      if (!(await logOut.last().isVisible().catch(() => false))) await R('button', { name: /^Export and leaving/ }).click();
+      await logOut.last().click();
+      await T('Get started').waitFor({ timeout: 20000 });
+    };
+    return { page: phonePage, T, R, L, shot, signIn, signOut };
   };
+  Object.assign(ctx, phone(page));
 
   // A failure names its step and the line of the steps file that was waiting, and leaves a screenshot.
   ctx.step = async (name, fn) => {
@@ -69,6 +108,28 @@ async function start(out, scheme) {
       console.log(`ERRORS SO FAR: ${JSON.stringify(errors.slice(-12))}`);
       throw new Error(`${name}${where ? ` (${where}, line ${line})` : ''}: ${e.message.split('\n')[0]}`);
     }
+  };
+
+  /**
+   * A second, new person on a second phone: made through the API (an account and a profile), then signed in
+   * through the screens of their own browser. They are in no circle yet, so they land on setting one up;
+   * `await them.page.goto(WEB_URL + '/join/<code>')` takes them to an invitation. `close()` puts their
+   * phone away and deletes their account, so a run leaves nobody behind in the sample circles.
+   */
+  ctx.second = async (name) => {
+    const who = await ctx.signUp(name);
+    const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: SHARPNESS, colorScheme: scheme, permissions: ['clipboard-read', 'clipboard-write'] });
+    const theirs = await context.newPage();
+    watch(theirs);
+    const them = phone(theirs);
+    await theirs.goto(WEB_URL + '/');
+    await them.T('Get started').waitFor({ timeout: 20000 });
+    await them.signIn(who.email);
+    const close = async () => {
+      await context.close();
+      await ctx.api(who.token, 'DELETE', '/v1/me').catch(() => undefined);
+    };
+    return { ...who, ...them, close };
   };
 
   // The web pages the API serves (an invitation, the legal pages) open in a tab of their own.

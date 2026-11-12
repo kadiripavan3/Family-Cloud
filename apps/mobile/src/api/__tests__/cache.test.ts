@@ -1,27 +1,28 @@
-import { QueryClient } from '@tanstack/react-query';
+import { newClient } from '@/test/phone';
+import { alex, audience, checklist, coupleCircle, linds, me, mia, nora, page, settings, sharedWithSome, soloCircle, thing } from '@/test/samples';
 
-import { me, nora, settings } from '@/test/samples';
-
-import { cacheFor } from '../cache';
+import { cacheFor, PARTS } from '../cache';
+import { chipOf } from '../cache/spine';
+import { toolsFor } from '../cache/tools';
 import { more, paged, rows } from '../pages';
-
-/** A client that keeps what it is given and sets no timers, so the test run can end. */
-const newClient = () => new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, retry: false } } });
 
 describe('what the app does with loaded data after a change', () => {
   it('shows a saved profile at once, and asks again only for what says who the person is', async () => {
     const client = newClient();
     client.setQueryData(['/v1/me'], me(null));
     client.setQueryData(['/v1/me/settings'], settings());
-    client.setQueryData(['/v1/circles'], { items: [] });
+    client.setQueryData(['/v1/circles'], []);
+    client.setQueryData(['/v1/circles/c-linds/today'], {});
 
     await cacheFor(client).profileSaved(nora);
 
     expect(client.getQueryData(['/v1/me'])).toEqual(me(nora));
     expect(client.getQueryState(['/v1/me'])?.isInvalidated).toBe(true);
     expect(client.getQueryState(['/v1/me/settings'])?.isInvalidated).toBe(true);
+    // Their name and picture stand in every circle they are in.
+    expect(client.getQueryState(['/v1/circles'])?.isInvalidated).toBe(true);
     // A list that says nothing about the person is left alone.
-    expect(client.getQueryState(['/v1/circles'])?.isInvalidated).toBe(false);
+    expect(client.getQueryState(['/v1/circles/c-linds/today'])?.isInvalidated).toBe(false);
   });
 
   it('does not make up a signed-in person when the profile is saved before "who is this" was answered', async () => {
@@ -45,6 +46,144 @@ describe('what the app does with loaded data after a change', () => {
     await cacheFor(client).everything();
     expect(client.getQueryState(['/v1/me'])?.isInvalidated).toBe(true);
     expect(client.getQueryState(['/v1/circles'])?.isInvalidated).toBe(true);
+  });
+});
+
+const ID = '11111111-1111-4111-8111-111111111111';
+const stale = (client: ReturnType<typeof newClient>, key: unknown[]) => client.getQueryState(key)?.isInvalidated;
+
+describe('every place adds its own changes', () => {
+  it('in its own file, and no two places use the same name', () => {
+    const client = newClient();
+    const names = Object.entries(PARTS).flatMap(([part, make]) => Object.keys(make(toolsFor(client))).map((name) => ({ part, name })));
+    const twice = names.filter((one) => names.some((other) => other.name === one.name && other.part !== one.part));
+    expect(twice).toEqual([]);
+    expect(Object.keys(PARTS)).toEqual(['spine', 'plan', 'jot', 'notes', 'templates', 'library', 'money', 'vault', 'keepsakes', 'perks', 'couple', 'flat', 'crew', 'together', 'activity']);
+    // What a screen gets from `useCache()` is all of them together.
+    const cache = cacheFor(client) as Record<string, unknown>;
+    for (const { name } of names) expect(typeof cache[name]).toBe('function');
+    expect(typeof cache.everything).toBe('function');
+  });
+});
+
+describe('a thing of any kind', () => {
+  const loadedEverywhere = () => {
+    const client = newClient();
+    client.setQueryData(['/v1/pages/' + ID], page());
+    client.setQueryData(['/v1/things/' + ID + '/audience'], audience());
+    client.setQueryData(['/v1/things/' + ID + '/links'], []);
+    client.setQueryData(['/v1/circles/c-linds/today', { day: '2026-11-11' }], { items: [], fresh: [] });
+    client.setQueryData(['/v1/circles/c-linds/search', { q: 'wifi' }], { words: 'wifi', hits: [{ thing: thing(), snippet: null }] });
+    client.setQueryData(['infinite', '/v1/circles/c-linds/pages'], { pages: [{ items: [{ id: ID, title: 'Wi‑Fi and smart home', chip: page().chip }], nextCursor: null }], pageParams: [undefined] });
+    client.setQueryData(['/v1/circles/c-couple/today'], { items: [], fresh: [] });
+    client.setQueryData(['/v1/members/m-mia'], { member: mia, kept: [thing()] });
+    client.setQueryData(['/v1/me/settings'], settings());
+    return client;
+  };
+
+  it('that was changed is asked for again wherever it shows, and nothing else is', async () => {
+    const client = loadedEverywhere();
+    await cacheFor(client).thingChanged({ id: ID, circleId: 'c-linds' });
+    for (const key of [['/v1/pages/' + ID], ['/v1/things/' + ID + '/links'], ['/v1/circles/c-linds/today', { day: '2026-11-11' }], ['/v1/circles/c-linds/search', { q: 'wifi' }], ['infinite', '/v1/circles/c-linds/pages'], ['/v1/members/m-mia']]) {
+      expect(stale(client, key)).toBe(true);
+    }
+    expect(stale(client, ['/v1/circles/c-couple/today'])).toBe(false);
+    expect(stale(client, ['/v1/me/settings'])).toBe(false);
+  });
+
+  it("that was made is asked for by its circle's lists", async () => {
+    const client = loadedEverywhere();
+    await cacheFor(client).thingMade('c-linds');
+    expect(stale(client, ['/v1/circles/c-linds/today', { day: '2026-11-11' }])).toBe(true);
+    expect(stale(client, ['infinite', '/v1/circles/c-linds/pages'])).toBe(true);
+    expect(stale(client, ['/v1/circles/c-couple/today'])).toBe(false);
+    expect(stale(client, ['/v1/pages/' + ID])).toBe(false);
+  });
+
+  it('that was deleted is dropped, and the lists that held it are asked for again', async () => {
+    const client = loadedEverywhere();
+    await cacheFor(client).thingDeleted({ id: ID, circleId: 'c-linds' });
+    expect(client.getQueryData(['/v1/pages/' + ID])).toBeUndefined();
+    expect(client.getQueryData(['/v1/things/' + ID + '/audience'])).toBeUndefined();
+    expect(stale(client, ['/v1/circles/c-linds/search', { q: 'wifi' }])).toBe(true);
+    expect(stale(client, ['/v1/members/m-mia'])).toBe(true);
+  });
+
+  it('shows its new audience on every loaded copy at once, and asks the lists again', async () => {
+    const client = loadedEverywhere();
+    await cacheFor(client).audienceChanged(sharedWithSome);
+    const chip = { audience: 'some', people: [{ memberId: 'm-alex', name: 'Alex Strand', avatarUrl: null }, { memberId: 'm-mia', name: 'Mia', avatarUrl: null }], hiddenFrom: [] };
+    expect(chipOf(sharedWithSome)).toEqual(chip);
+    expect(client.getQueryData<{ chip: unknown; body: string }>(['/v1/pages/' + ID])).toMatchObject({ chip, body: 'Network: Lind-Home' });
+    expect(client.getQueryData<{ hits: { thing: { chip: unknown } }[] }>(['/v1/circles/c-linds/search', { q: 'wifi' }])?.hits[0]?.thing.chip).toEqual(chip);
+    expect(client.getQueryData<{ pages: { items: { chip: unknown; title: string }[] }[] }>(['infinite', '/v1/circles/c-linds/pages'])?.pages[0]?.items[0]).toMatchObject({ chip, title: 'Wi‑Fi and smart home' });
+    expect(client.getQueryData<{ kept: { chip: unknown }[] }>(['/v1/members/m-mia'])?.kept[0]?.chip).toEqual(chip);
+    // The sheet itself has just been read.
+    expect(client.getQueryData(['/v1/things/' + ID + '/audience'])).toEqual(sharedWithSome);
+    expect(stale(client, ['/v1/things/' + ID + '/audience'])).toBe(false);
+    expect(stale(client, ['/v1/circles/c-linds/today', { day: '2026-11-11' }])).toBe(true);
+    expect(stale(client, ['/v1/circles/c-couple/today'])).toBe(false);
+  });
+
+  it('says "Not Mia" on its chip while it is hidden from her, and nothing about anyone for "Only you"', () => {
+    const hidden = { ...sharedWithSome, audience: 'circle' as const, people: sharedWithSome.people.map((person) => (person.memberId === 'm-mia' ? { ...person, access: 'none' as const, hidden: true, hiddenThrough: '2026-12-04' } : person)) };
+    expect(chipOf(hidden)).toEqual({ audience: 'circle', people: [], hiddenFrom: ['Mia'] });
+    expect(chipOf(audience())).toEqual({ audience: 'me', people: [], hiddenFrom: [] });
+  });
+
+  it('keeps a saved page and a saved list as the API sent them', async () => {
+    const client = loadedEverywhere();
+    const saved = page({ title: 'Wi‑Fi', body: 'New words' });
+    await cacheFor(client).pageSaved(saved);
+    expect(client.getQueryData(['/v1/pages/' + ID])).toEqual(saved);
+    expect(stale(client, ['/v1/circles/c-linds/search', { q: 'wifi' }])).toBe(true);
+
+    const list = checklist();
+    await cacheFor(client).checklistSaved(list);
+    expect(client.getQueryData(['/v1/checklists/' + list.id])).toEqual(list);
+    expect(client.getQueryState(['/v1/checklists/' + list.id])?.isInvalidated).toBe(false);
+  });
+});
+
+describe('circles and their people', () => {
+  it('a circle that was started or joined is there at once', async () => {
+    const client = newClient();
+    client.setQueryData(['/v1/circles'], [linds]);
+    client.setQueryData(['/v1/me/overview'], { circles: ['The Linds'] });
+    await cacheFor(client).circleJoined(coupleCircle);
+    expect(client.getQueryData(['/v1/circles'])).toEqual([linds, coupleCircle]);
+    expect(stale(client, ['/v1/me/overview'])).toBe(true);
+    // Joining twice doesn't list it twice.
+    await cacheFor(client).circleJoined(coupleCircle);
+    expect(client.getQueryData(['/v1/circles'])).toEqual([linds, coupleCircle]);
+  });
+
+  it('a circle that changed is written over its old copy', async () => {
+    const client = newClient();
+    client.setQueryData(['/v1/circles'], [linds, soloCircle]);
+    const renamed = { ...linds, name: 'Lind and Strand', kind: 'couple' as const };
+    await cacheFor(client).circleChanged(renamed);
+    expect(client.getQueryData(['/v1/circles'])).toEqual([renamed, soloCircle]);
+  });
+
+  it('a person who was added or changed is written into their circle and their own page', async () => {
+    const client = newClient();
+    client.setQueryData(['/v1/circles'], [linds]);
+    client.setQueryData(['/v1/members/m-mia'], { member: mia, kept: [] });
+    const older = { ...mia, facts: ['Shoes 34'] };
+    await cacheFor(client).memberSaved(older);
+    expect(client.getQueryData<{ member: unknown }>(['/v1/members/m-mia'])?.member).toEqual(older);
+    expect(client.getQueryData<(typeof linds)[]>(['/v1/circles'])?.[0]?.members.find((one) => one.id === 'm-mia')).toEqual(older);
+    expect(stale(client, ['/v1/circles'])).toBe(true);
+  });
+
+  it('a person who was taken out is forgotten, and the circles are asked for again', async () => {
+    const client = newClient();
+    client.setQueryData(['/v1/circles'], [linds]);
+    client.setQueryData(['/v1/members/m-alex'], { member: alex, kept: [] });
+    await cacheFor(client).memberRemoved(alex);
+    expect(client.getQueryData(['/v1/members/m-alex'])).toBeUndefined();
+    expect(stale(client, ['/v1/circles'])).toBe(true);
   });
 });
 

@@ -1,7 +1,8 @@
 // Milestone 1, the spine, as far as it is built: welcome, how it works, signing in with a new email and the
-// test code, creating a profile with a photo, the stand-in for setting up a circle, Home and the other tabs,
-// You, appearance, logging out; then signing in again as the same person, the notification settings, and
-// deleting the account.
+// test code, creating a profile with a photo, the stand-in for setting up a circle (a circle of one), Home
+// with its six places and the sheet that changes circles, the other tabs, You, appearance, logging out;
+// then signing in again as the same person, the notification settings, and deleting the account. Last, as
+// Nora with the sample circles: changing circles, a thing opened by its address, and the audience sheet.
 const path = require('path');
 
 exports.run = async function run(ctx) {
@@ -73,22 +74,44 @@ exports.run = async function run(ctx) {
   });
 
   await step('setup', async () => {
-    // Setting up a circle is still to be built: its place ends sign-up with one button.
+    // Setting up a circle is still to be built: its place offers a circle of one, and Home opens on it.
     await T('Set up a circle').waitFor({ timeout: 20000 });
     await shot('setup');
-    await R('button', { name: 'Go to Home' }).click();
+    await R('button', { name: 'Just me for now' }).click();
   });
 
   await step('home', async () => {
-    await R('tab', { name: 'Home' }).waitFor();
-    await R('heading', { name: 'Home' }).waitFor();
+    // The search pill, the row of six places with Today chosen, and Today under it.
+    await R('tab', { name: 'Home' }).waitFor({ timeout: 20000 });
+    await R('tab', { name: 'Today', selected: true }).waitFor();
+    await T('Find anything').waitFor();
+    for (const place of ['Plan', 'Notes', 'Library', 'Money', 'Vault']) await R('tab', { name: place, selected: false }).waitFor();
     await shot('home');
+    // The place that is showing is part of the address, and the pill says what a search from there finds.
+    await R('tab', { name: 'Money' }).click();
+    await R('tab', { name: 'Money', selected: true }).waitFor();
+    await T('Search money').waitFor();
+    await page.waitForURL(/[?&]place=money/);
+    await shot('home-money');
+    await R('tab', { name: 'Today' }).click();
+    await T('Find anything').waitFor();
+    await page.waitForURL((url) => !url.search.includes('place='));
     // Losing the connection shows a calm strip across the top; it goes when the connection is back.
     await page.context().setOffline(true);
     await T("You're offline").waitFor();
     await shot('offline');
     await page.context().setOffline(false);
     await T("You're offline").waitFor({ state: 'detached' });
+  });
+
+  await step('circle-switch', async () => {
+    // The round button in the pill is the circle you are in: here the circle of one.
+    await R('button', { name: 'Just me. Change circle' }).click();
+    await T('Your circles').waitFor();
+    await T('New circle').waitFor();
+    await shot('circle-switch');
+    await R('button', { name: /^Just me/ }).click();
+    await T('Your circles').waitFor({ state: 'detached' });
   });
 
   await step('tabs', async () => {
@@ -142,7 +165,8 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'I already have an account' }).click();
     await T('Log in or sign up').waitFor();
     await signInByEmail();
-    await R('heading', { name: 'Home' }).waitFor({ timeout: 20000 });
+    await R('tab', { name: 'Home' }).waitFor({ timeout: 20000 });
+    await T('Find anything').waitFor();
     await R('tab', { name: 'You' }).click();
     await T('Nora Lind', { exact: true }).waitFor();
   });
@@ -176,5 +200,54 @@ exports.run = async function run(ctx) {
     await R('button', { name: 'Delete my account' }).click();
     await T('Get started').waitFor({ timeout: 20000 });
     await shot('after-delete');
+  });
+
+  // As Nora, who is in three circles of three kinds (the sample people).
+  let nora;
+  await step('nora-circles', async () => {
+    await ctx.signIn('nora@example.com');
+    // Home opens on her first circle, the family.
+    await R('button', { name: 'The Linds. Change circle' }).click();
+    await R('button', { name: 'The Linds. Family · 4 people and Biscuit. You are here' }).waitFor();
+    await R('button', { name: 'Nora and Alex. Couple · 2 people' }).waitFor();
+    await shot('circle-switch-nora');
+    // Another circle is another Home, and it stays the current one on every tab.
+    await R('button', { name: 'Lisbon crew. Friends · 5 people' }).click();
+    await R('button', { name: 'Lisbon crew. Change circle' }).waitFor();
+    await R('tab', { name: 'People' }).click();
+    await R('tab', { name: 'Home' }).click();
+    await R('button', { name: 'Lisbon crew. Change circle' }).click();
+    await R('button', { name: /^The Linds\./ }).click();
+    await R('button', { name: 'The Linds. Change circle' }).waitFor();
+    nora = (await ctx.api(null, 'POST', '/local-auth/token', { email: 'nora@example.com', code: CODE })).accessToken;
+  });
+
+  // (This loads the app afresh, so it comes last.)
+  await step('a-thing-by-its-address', async () => {
+    const circles = await ctx.api(nora, 'GET', '/v1/circles');
+    const linds = circles.find((circle) => circle.name === 'The Linds');
+    const pages = (await ctx.api(nora, 'GET', `/v1/circles/${linds.id}/pages`)).items;
+    const wifi = pages.find((one) => one.chip.audience === 'some');
+    // A thing is at /<its kind>/<its id>. Until its place builds that screen, it says what it is and waits.
+    await page.goto(`${WEB_URL}/page/${wifi.id}`);
+    await R('heading', { name: wifi.title }).waitFor({ timeout: 20000 });
+    await T(/^This is a page\. It opens here once Notes is built/).waitFor();
+    await shot('thing-to-come');
+    // Its chip says who sees it, and opens the one sheet that changes that.
+    await R('button', { name: /^Seen by: Alex, Mia and you/ }).click();
+    await T('Who can see this?').waitFor();
+    await R('radio', { name: /^Some people/, checked: true }).waitFor();
+    await R('button', { name: 'Alex: Can edit. Change' }).waitFor();
+    await R('button', { name: 'Mia: Can view. Change' }).waitFor();
+    await R('button', { name: "Leo: Can't see it. Change" }).waitFor();
+    await shot('audience');
+    await R('button', { name: 'Done' }).click();
+    await T('Who can see this?').waitFor({ state: 'detached' });
+    // An address that is no thing's has no screen.
+    await page.goto(`${WEB_URL}/page/nothing-here`);
+    await T("There's nothing at this address").waitFor({ timeout: 20000 });
+    await R('button', { name: 'Go to Home' }).click();
+    await R('button', { name: 'The Linds. Change circle' }).waitFor({ timeout: 20000 });
+    await ctx.signOut();
   });
 };

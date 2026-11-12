@@ -21,8 +21,8 @@ const MOST_TEXT = 1_500_000;
 /** How long after a change the phone's copy is written. Changes in between are written together. */
 const WRITE_AFTER_MS = 3000;
 
-/** Always kept, whatever else was read since: without these the app can't open. */
-const NEEDED = ['/v1/me'];
+/** Always kept, whatever else was read since: without these (who you are, and your circles) the app can't open. */
+const NEEDED = ['/v1/me', '/v1/circles'];
 /**
  * Never kept, by how the address starts. Nothing yet. What belongs here as it is built: searches, addresses
  * that hold a one-time invitation, and everything of the Vault, which must not be written to the phone in

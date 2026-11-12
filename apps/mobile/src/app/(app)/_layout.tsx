@@ -1,8 +1,8 @@
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Redirect, Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
+import { useCircles } from '@/features/circles/current';
 import { OfflineStrip } from '@/features/navigation/OfflineStrip';
-import { AskAboutNotifications } from '@/features/notifications/AskAboutNotifications';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 import { takeLink } from '@/lib/links';
 
@@ -13,8 +13,18 @@ export { ErrorBoundary } from '@/features/navigation/ErrorBoundary';
 // and Close still have somewhere to go: Home.
 export const unstable_settings = { anchor: '(tabs)' };
 
-/** Everything a signed-in person sees: the four tabs, and the screens that open on top of them. */
+/**
+ * Everything a signed-in person sees: the four tabs, and the screens that open on top of them. All of it is
+ * about a circle, so someone who is in none is sent to set one up (or to the invitation that brought them)
+ * before any of it is drawn. That is why every screen in here can call `useCircle()`.
+ */
 export default function AppLayout() {
+  const circles = useCircles();
+  if (circles.length === 0) return <Redirect href="/setup" />;
+  return <SignedInApp />;
+}
+
+function SignedInApp() {
   const router = useRouter();
 
   // A tapped notification opens its screen; a phone that said yes stays connected.
@@ -29,17 +39,13 @@ export default function AppLayout() {
   }, [pathname, router]);
 
   return (
-    <>
-      {/* Without a connection a strip across the top says so, and the screens make room for it. */}
-      <OfflineStrip>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          {/* What the + button opens is a sheet on an iPhone, over the tab it was opened from. */}
-          <Stack.Screen name="plus" options={{ presentation: 'modal' }} />
-        </Stack>
-      </OfflineStrip>
-      {/* The question about notifications, asked once, at a moment when there is something to hear about. */}
-      <AskAboutNotifications />
-    </>
+    // Without a connection a strip across the top says so, and the screens make room for it.
+    <OfflineStrip>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        {/* What the + button opens is a sheet on an iPhone, over the tab it was opened from. */}
+        <Stack.Screen name="plus" options={{ presentation: 'modal' }} />
+      </Stack>
+    </OfflineStrip>
   );
 }
