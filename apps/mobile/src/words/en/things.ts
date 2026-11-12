@@ -14,7 +14,6 @@ const KINDS: Record<string, { name: string; a: string }> = {
   document: { name: 'Document', a: 'a document' },
   album: { name: 'Album', a: 'an album' },
   folder: { name: 'Folder', a: 'a folder' },
-  board: { name: 'Template page', a: 'a page made from a template' },
   split: { name: 'Split', a: 'a split of costs' },
   moment: { name: 'Moment', a: 'a moment' },
   bill: { name: 'Bill', a: 'a bill' },
@@ -22,6 +21,7 @@ const KINDS: Record<string, { name: string; a: string }> = {
   vault_item: { name: 'Vault item', a: 'something in the Vault' },
   password: { name: 'Password', a: 'a password' },
   keepsake: { name: 'Keepsake', a: 'a keepsake' },
+  board: { name: 'Template', a: 'a template' },
 };
 
 export const things = {

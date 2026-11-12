@@ -120,3 +120,42 @@ export function nextBirthday(birthday: string, from: string = today()): { day: s
   const day = toISODate(next);
   return { day, inDays: daysBetween(from, day) };
 }
+
+/** "Fri": the weekday of a day, short. */
+export function formatWeekdayShort(day: string): string {
+  return words.dates.weekdayShort(fromISODate(day).getDay());
+}
+
+/** "Friday": the weekday of a day, written out. */
+export function formatWeekdayLong(day: string): string {
+  return words.dates.weekdayLong(fromISODate(day).getDay());
+}
+
+/** "9 to 15 November": a stretch of days, such as a week. */
+export function formatRange(from: string, to: string): string {
+  const [start, end] = [fromISODate(from), fromISODate(to)];
+  return words.dates.range(start.getDate(), start.getMonth(), end.getDate(), end.getMonth());
+}
+
+/** "4 December 2034": a day written out, always with its year. */
+export function formatDayFull(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.dayLong(date.getDate(), date.getMonth(), date.getFullYear());
+}
+
+/** "4 December": the day of the year a date falls on, without its year: a birthday. */
+export function formatDayOfYear(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.dayLong(date.getDate(), date.getMonth());
+}
+
+/** "Nov 26": the month and year of a day, as short as they go. */
+export function formatMonthAndYear(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.monthAndYear(date.getMonth(), date.getFullYear());
+}
+
+/** The Monday of the week a day is in. */
+export function mondayOf(day: string): string {
+  return addDays(day, -((fromISODate(day).getDay() + 6) % 7));
+}

@@ -9,6 +9,7 @@
 // Before running: the API on port 8080 with the local profile, and the web build served on 8081
 // (`node scripts/e2e/serve.js <dist> 8081`). Other addresses: set API_URL and WEB_URL, and build the web
 // app with EXPO_PUBLIC_API_URL set to the same API address.
+// To run some parts only, name their files without ".js": ONLY=04-templates,07-keepsakes node scripts/e2e/walkthrough.js …
 // usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>
 // While building one part, run only its steps: ONLY=03-jot node scripts/e2e/walkthrough.js <outDir> light
 // (several: ONLY=03-jot,03-plan). The whole walk-through is the same command without ONLY.
