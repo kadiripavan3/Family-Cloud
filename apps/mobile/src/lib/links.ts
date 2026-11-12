@@ -12,6 +12,15 @@ const SHARED = new RegExp(`^/(${Object.keys(SCREENS).join('|')})/([^/?#]+)`);
 const IN_APP = new RegExp(`^/(${Object.values(SCREENS).join('|')})/[^/?#]+`);
 
 /**
+ * Screens the phone's own parts open with the app's own scheme (`homeport://jot`): the jot bar, from a
+ * widget's line, a quick-settings tile or a long press on the icon; voice, from "Hey Siri, jot…"; and the
+ * share screen, from another app's share button. They are not web pages, so `screenFor` leaves them as they
+ * come and the router opens them; they are listed here so one that arrives before the person has signed in
+ * is remembered like an invitation, and opened once they are in.
+ */
+const OWN = /^\/jot(\/(voice|share))?\/?([?#].*)?$/;
+
+/**
  * The screen for a link that opened the app: "https://homeport.app/join/the-linds" becomes "/join/the-linds".
  * Anything that isn't one of the shared pages is handed back as it came.
  *
@@ -29,7 +38,7 @@ export function screenFor(link: string, host: string | null = linkHost): string 
 
 /** True for a link to something inside the app that needs a signed-in person. */
 function isAppScreen(path: string): boolean {
-  return IN_APP.test(path);
+  return IN_APP.test(path) || OWN.test(path);
 }
 
 const KEEP_FOR = 30 * 60 * 1000;
@@ -48,7 +57,7 @@ export function linksKnowSession(isSignedIn: boolean): void {
  * they are in. For someone who is signed in already nothing is remembered: the link has just been opened.
  */
 export function rememberLink(path: string, now = Date.now()): void {
-  if (!signedIn && isAppScreen(path)) waiting = { path: path.replace(/[?#].*$/, ''), at: now };
+  if (!signedIn && isAppScreen(path)) waiting = { path: path.replace(/[?#].*$/, '').replace(/(.)\/$/, '$1'), at: now };
 }
 
 /** The remembered screen, handed over once. Null when there is none or it has been waiting too long to still be meant. */

@@ -32,7 +32,10 @@ export function usePushNotifications() {
         if (!mounted) return;
         void connectThisPhone();
 
-        const open = (response: { notification: { request: { identifier: string; content: { data?: Record<string, unknown> | null } } } }) => {
+        const open = (response: { actionIdentifier: string; notification: { request: { identifier: string; content: { data?: Record<string, unknown> | null } } } }) => {
+          // Only a plain tap opens a screen. A button on a notification, or words typed into one (the pinned
+          // note's line), is an answer given without opening the app: Jot hears those itself.
+          if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
           const { identifier, content } = response.notification.request;
           if (identifier === lastOpened) return;
           lastOpened = identifier;

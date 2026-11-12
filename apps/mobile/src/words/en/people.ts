@@ -2,19 +2,15 @@
 import { mark, type Rich } from '../rich';
 import { formatList, plural } from './plural';
 
-/** What is shared in a circle, counted by what people call it: pages and lists are "notes". */
-const COUNTED: Record<string, [one: string, many: string]> = {
-  photo: ['photo', 'photos'],
-  video: ['photo', 'photos'],
-  page: ['note', 'notes'],
-  checklist: ['note', 'notes'],
-  event: ['event', 'events'],
-  reminder: ['reminder', 'reminders'],
-  bill: ['bill', 'bills'],
-  sheet: ['sheet', 'sheets'],
-  vault_item: ['password', 'passwords'],
-  password: ['password', 'passwords'],
-};
+/**
+ * What the sentence about a circle counts, as in the drawing: photos (and videos), notes (pages, lists and
+ * pages made from a template) and passwords (what is in the Vault). By the API's kinds of thing.
+ */
+const COUNTED: { one: string; many: string; kinds: readonly string[] }[] = [
+  { one: 'photo', many: 'photos', kinds: ['photo', 'video'] },
+  { one: 'note', many: 'notes', kinds: ['page', 'checklist', 'board'] },
+  { one: 'password', many: 'passwords', kinds: ['vault_item'] },
+];
 
 const number = (count: number) => count.toLocaleString('en-US');
 
@@ -28,24 +24,21 @@ export const people = {
   /**
    * The sentence under the circle chips: "Family · since March 2024 · 3,180 photos, 214 notes and 31
    * passwords shared here." The numbers are marked "bold". `shared` is how many things of each kind are
-   * shared with the reader in the circle.
+   * shared with the reader in the circle; the sentence counts the three the drawing names.
    */
   summary: (kind: string, since: string, shared: Record<string, number>): Rich => {
-    const totals = new Map<string, { one: string; many: string; count: number }>();
-    for (const [what, count] of Object.entries(shared)) {
-      if (count <= 0) continue;
-      const [one, many] = COUNTED[what] ?? ['other thing', 'other things'];
-      const total = totals.get(many) ?? { one, many, count: 0 };
-      total.count += count;
-      totals.set(many, total);
-    }
     const start = `${kind} · since ${since}`;
-    const counts = [...totals.values()];
-    if (counts.length === 0) return [`${start} · nothing shared here yet.`];
+    const counts = COUNTED.map((what) => ({ ...what, count: what.kinds.reduce((sum, one) => sum + (shared[one] ?? 0), 0) })).filter((what) => what.count > 0);
+    if (counts.length === 0) {
+      // Nothing of the three, but something: a bill, an event.
+      const all = Object.values(shared).reduce((sum, count) => sum + count, 0);
+      if (all === 0) return [`${start} · nothing shared here yet.`];
+      return [`${start} · `, mark('bold', number(all)), ` ${all === 1 ? 'thing' : 'things'} shared here.`];
+    }
     const parts: (string | ReturnType<typeof mark>)[] = [`${start} · `];
-    counts.forEach((total, index) => {
+    counts.forEach((what, index) => {
       if (index > 0) parts.push(index === counts.length - 1 ? ' and ' : ', ');
-      parts.push(mark('bold', number(total.count)), ` ${total.count === 1 ? total.one : total.many}`);
+      parts.push(mark('bold', number(what.count)), ` ${what.count === 1 ? what.one : what.many}`);
     });
     parts.push(' shared here.');
     return parts;
@@ -86,7 +79,9 @@ export const people = {
     },
     facts: { edit: 'Edit', add: 'Add a fact', title: (name: string) => `About ${name}`, hint: 'Short facts worth having to hand: a shoe size, a class, an allergy.', field: 'A fact', placeholder: 'Shoes 33', addButton: 'Add', remove: (fact: string) => `Remove ${fact}`, save: 'Save' },
     comingUp: 'Coming up',
-    comingUpEmpty: 'Nothing yet. Events and reminders about them show here once Plan is built.',
+    /** Their photos and videos, as one row: "8 photos of Mia". */
+    photos: (count: number, name: string) => (count === 1 ? `1 photo of ${name}` : `${number(count)} photos of ${name}`),
+    photosNote: 'In the Library',
     kept: (name: string) => `Kept for ${name}`,
     keptYou: 'Kept for you',
     keptEmpty: (name: string) => `Nothing yet. Whatever is kept about ${name} and shared with you shows here.`,

@@ -164,7 +164,8 @@ public class BoardStore {
     /** Everyone who is or was in a circle, in the order the circle lists its people. */
     public List<Person> people(UUID circleId) {
         return jdbc.sql("""
-            select m.id, m.user_id, m.name, m.kind, m.role, m.status, a.storage_key as avatar_key, m.birthday
+            select m.id, m.user_id, m.name, m.kind, m.role, m.status, a.storage_key as avatar_key, m.birthday,
+              m.created_at, m.left_at
             from members m left join media a on a.id = m.avatar_media_id and a.status = 'ready'
             where m.circle_id = :circle
             order by case when m.kind = 'pet' then 5 else array_position(array['owner','adult','teen','child','guest'], m.role) end,
@@ -179,7 +180,9 @@ public class BoardStore {
                         Role.read(rs.getString("role")),
                         MemberStatus.read(rs.getString("status")),
                         rs.getString("avatar_key"),
-                        rs.getObject("birthday", LocalDate.class)))
+                        rs.getObject("birthday", LocalDate.class),
+                        Sql.instant(rs, "created_at"),
+                        Sql.instant(rs, "left_at")))
                 .list();
     }
 

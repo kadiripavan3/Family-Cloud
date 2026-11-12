@@ -15,16 +15,18 @@ export const STRIP_HEIGHT = 30;
 
 /**
  * Screens that say "you're offline" in their own words, with what it means there (a shared list says that
- * its ticks are saved and will catch up). The strip would only say it twice. None is built yet: a screen
- * that does this adds its address here.
+ * its ticks are saved and will catch up). The strip would only say it twice. A screen that does this adds
+ * its address here: so far a list and a page, which keep working without a connection (13.2 Offline).
  */
-const SAYS_SO_ITSELF: RegExp[] = [];
+const SAYS_SO_ITSELF: RegExp[] = [/^\/checklist\/[^/]+$/, /^\/page\/[^/]+$/];
 
 /**
  * Screens whose top is a photo or the dark stage, with a light status bar. There the strip is dark as well,
- * so the clock and the battery above it stay readable. None is built yet inside the signed-in app.
+ * so the clock and the battery above it stay readable. Jot's screens on a photo (the bar, what was filed,
+ * voice, and the pictures of the widgets, the pinned note and the Lock Screen), and a photo or a video in the
+ * Library's viewer.
  */
-const DARK_ON_TOP: RegExp[] = [];
+const DARK_ON_TOP: RegExp[] = [/^\/jot(\/(filed|voice|pinned|widgets|lock))?$/, /^\/(photo|video)\/[^/]+$/];
 
 type Props = {
   children: ReactNode;

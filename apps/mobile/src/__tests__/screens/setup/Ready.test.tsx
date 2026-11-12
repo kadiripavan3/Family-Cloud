@@ -75,7 +75,7 @@ describe('2.4 All set', () => {
 
   it.each([
     [/^Add this week/, '/new/event'],
-    [/^Start from a template/, { pathname: '/', params: { place: 'notes' } }],
+    [/^Start from a template/, '/templates'],
     [/^Keep your first password/, '/new/password'],
   ])('a shortcut ends setting up and opens its screen on top of Home: %s', async (name, to) => {
     await render(onPhone(<Ready />));

@@ -1,4 +1,27 @@
-import { addDays, ageOn, atTime, daysBetween, formatComingDay, formatDay, formatDayLong, formatSpan, formatTime, formatWeekday, fromISODate, nextBirthday, timeAgo, today, toISODate } from '@/lib/dates';
+import {
+  addDays,
+  ageOn,
+  atTime,
+  daysBetween,
+  formatComingDay,
+  formatDay,
+  formatDayFull,
+  formatDayLong,
+  formatDayOfYear,
+  formatMonthAndYear,
+  formatRange,
+  formatSpan,
+  formatTime,
+  formatWeekday,
+  formatWeekdayLong,
+  formatWeekdayShort,
+  fromISODate,
+  mondayOf,
+  nextBirthday,
+  timeAgo,
+  today,
+  toISODate,
+} from '@/lib/dates';
 
 describe('dates', () => {
   it('keeps a day the same through text and back', () => {
@@ -72,5 +95,31 @@ describe('days and times that are coming up', () => {
     expect(nextBirthday('2016-12-04', from)).toEqual({ day: '2026-12-04', inDays: 23 });
     expect(nextBirthday('2016-11-11', from)).toEqual({ day: '2026-11-11', inDays: 0 });
     expect(nextBirthday('2020-03-14', from)).toEqual({ day: '2027-03-14', inDays: 123 });
+  });
+});
+
+describe('a week on a board, and a mark on a ruler', () => {
+  it('names a weekday, short and written out', () => {
+    expect(formatWeekdayShort('2026-11-11')).toBe('Wed');
+    expect(formatWeekdayLong('2026-11-15')).toBe('Sunday');
+  });
+
+  it('writes a stretch of days in one month or across two', () => {
+    expect(formatRange('2026-11-09', '2026-11-15')).toBe('9 to 15 November');
+    expect(formatRange('2026-11-30', '2026-12-06')).toBe('30 November to 6 December');
+  });
+
+  it('writes a day out with its year, and a month as short as it goes', () => {
+    expect(formatDayFull('2034-12-04')).toBe('4 December 2034');
+    expect(formatDayOfYear('2016-12-04')).toBe('4 December');
+    expect(formatMonthAndYear('2026-11-02')).toBe('Nov 26');
+    expect(formatMonthAndYear('2005-01-31')).toBe('Jan 05');
+  });
+
+  it('finds the Monday of a week from any of its days', () => {
+    expect(mondayOf('2026-11-11')).toBe('2026-11-09');
+    expect(mondayOf('2026-11-09')).toBe('2026-11-09');
+    expect(mondayOf('2026-11-15')).toBe('2026-11-09');
+    expect(mondayOf('2026-11-01')).toBe('2026-10-26');
   });
 });

@@ -52,6 +52,37 @@ export function formatDayLong(day: string): string {
   return words.dates.dayLong(date.getDate(), date.getMonth(), yearIfNotThis(date));
 }
 
+/** "November 2026" for the month "2026-11", or for any day in it. */
+export function formatMonth(month: string): string {
+  const date = fromISODate(`${month.slice(0, 7)}-01`);
+  return words.dates.month(date.getMonth(), date.getFullYear());
+}
+
+/** "November" for the month "2026-11": its name alone, where the year stands beside it. */
+export function formatMonthName(month: string): string {
+  return words.dates.monthName(fromISODate(`${month.slice(0, 7)}-01`).getMonth());
+}
+
+/** "Nov 2028" for a day in that month: when the month is all that matters. */
+export function formatMonthShort(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.monthShort(date.getMonth(), date.getFullYear());
+}
+
+/** "Sat 7 Nov", or "Tue 24 Sep 2019" when it isn't this year: the day something was taken or added. */
+export function formatWeekdayPast(day: string): string {
+  const date = fromISODate(day);
+  const short = words.dates.dayWithWeekday(date.getDay(), date.getDate(), date.getMonth());
+  const year = yearIfNotThis(date);
+  return year === undefined ? short : words.dates.withYear(short, year);
+}
+
+/** "11:42" from "2026-11-07T11:42:00": the clock where a photo was taken, wherever the phone is now. */
+export function formatClock(local: string): string | null {
+  const match = /T(\d{2}):(\d{2})/.exec(local);
+  return match ? words.dates.time(Number(match[1]), Number(match[2])) : null;
+}
+
 /** "just now", "5 min ago", "2h ago", "yesterday", "4 days ago" or a date. */
 export function timeAgo(instant: string, now: Date = new Date()): string {
   const then = new Date(instant);
@@ -119,4 +150,103 @@ export function nextBirthday(birthday: string, from: string = today()): { day: s
   if (toISODate(next) < from) next = new Date(on.getFullYear() + 1, born.getMonth(), born.getDate());
   const day = toISODate(next);
   return { day, inDays: daysBetween(from, day) };
+}
+
+/** "Fri": the weekday of a day, short. */
+export function formatWeekdayShort(day: string): string {
+  return words.dates.weekdayShort(fromISODate(day).getDay());
+}
+
+/** "Friday": the weekday of a day, written out. */
+export function formatWeekdayLong(day: string): string {
+  return words.dates.weekdayLong(fromISODate(day).getDay());
+}
+
+/** "9 to 15 November": a stretch of days, such as a week. */
+export function formatRange(from: string, to: string): string {
+  const [start, end] = [fromISODate(from), fromISODate(to)];
+  return words.dates.range(start.getDate(), start.getMonth(), end.getDate(), end.getMonth());
+}
+
+/** "4 December 2034": a day written out, always with its year. */
+export function formatDayFull(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.dayLong(date.getDate(), date.getMonth(), date.getFullYear());
+}
+
+/** "4 December": the day of the year a date falls on, without its year: a birthday. */
+export function formatDayOfYear(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.dayLong(date.getDate(), date.getMonth());
+}
+
+/** "Nov 26": the month and year of a day, as short as they go. */
+export function formatMonthAndYear(day: string): string {
+  const date = fromISODate(day);
+  return words.dates.monthAndYear(date.getMonth(), date.getFullYear());
+}
+
+/** The Monday of the week a day is in. */
+export function mondayOf(day: string): string {
+  return addDays(day, -((fromISODate(day).getDay() + 6) % 7));
+}
+
+/** The day after today. */
+export function tomorrow(): string {
+  return addDays(today(), 1);
+}
+
+/** Which day of the week a day is, Monday first: 0 for a Monday, 6 for a Sunday. */
+export function weekdayOf(day: string): number {
+  return (fromISODate(day).getDay() + 6) % 7;
+}
+
+/** "Sat 14 Nov", or "Sat 2 Jan 2027" when it isn't this year: a day on a calendar, with its day of the week. */
+export function formatWeekdayDay(day: string): string {
+  return words.dates.weekdayDay(fromISODate(day).getDay(), formatDay(day));
+}
+
+/** "Today" or "Tomorrow" for those two days; null for any other, which is called by its date. */
+export function nearName(day: string): string | null {
+  const away = daysBetween(today(), day);
+  return away === 0 ? words.dates.today : away === 1 ? words.dates.tomorrow : null;
+}
+
+/** A time of day as the API sends it ("07:30") the way a calendar writes it: "7:30". */
+export function formatTimeOfDay(time: string): string {
+  const [hours, minutes] = time.split(':');
+  return `${Number(hours)}:${(minutes ?? '00').padStart(2, '0')}`;
+}
+
+/** "10:00", or "10:00 to 10:30" for something with an end. */
+export function formatClocks(time: string, endTime?: string | null): string {
+  return endTime ? words.dates.fromTo(formatTimeOfDay(time), formatTimeOfDay(endTime)) : formatTimeOfDay(time);
+}
+
+/** A time of day so many minutes later, on the same day: "10:00" and 30 give "10:30". It stops at the end of the day. */
+export function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = Math.min(Math.max((h ?? 0) * 60 + (m ?? 0) + minutes, 0), 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** The month a day is in, as the API names months: "2026-11". */
+export function monthOf(day: string): string {
+  return day.slice(0, 7);
+}
+
+/** The month so many months later (or earlier): "2026-12" and 1 give "2027-01". */
+export function addMonths(month: string, count: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const date = new Date(y!, (m ?? 1) - 1 + count, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** The time zone the phone is in, as the API takes it: "Europe/Ljubljana". UTC when the phone won't say. */
+export function phoneTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
 }

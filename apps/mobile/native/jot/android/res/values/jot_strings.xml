@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEVER RUN. Copied into the Android project by plugins/withJotAndroid.js; first built on a phone build made with JOT_NATIVE=1. See ../../../README.md. -->
+<!-- The words the widgets, the tile and the shortcut show. The same words as src/words/en/jot.ts, kept here because the phone reads them without the app. -->
+<resources>
+  <string name="jot_name">Jot</string>
+  <string name="jot_line">Milk, a reminder, a thought…</string>
+  <string name="jot_mic">Say it all at once</string>
+  <string name="jot_list_name">Groceries</string>
+  <string name="jot_left">%1$d left</string>
+  <string name="jot_today">Today</string>
+  <string name="jot_shortcut">Jot something down</string>
+  <string name="jot_widget_about">Add something without opening the app.</string>
+  <string name="jot_list_about">Tick the shopping list without opening the app.</string>
+  <string name="jot_today_about">What is next today.</string>
+  <style name="JotChip">
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginEnd">6dp</item>
+    <item name="android:paddingStart">10dp</item>
+    <item name="android:paddingEnd">11dp</item>
+    <item name="android:paddingTop">7dp</item>
+    <item name="android:paddingBottom">7dp</item>
+    <item name="android:maxLines">1</item>
+    <item name="android:background">@drawable/jot_chip</item>
+    <item name="android:textColor">@color/jot_accent_text</item>
+    <item name="android:textSize">13sp</item>
+    <item name="android:textStyle">bold</item>
+  </style>
+  <style name="JotRow">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">9dp</item>
+    <item name="android:drawablePadding">9dp</item>
+    <item name="android:gravity">center_vertical</item>
+    <item name="android:maxLines">1</item>
+    <item name="android:ellipsize">end</item>
+    <item name="android:textColor">@color/jot_text</item>
+    <item name="android:textSize">14sp</item>
+  </style>
+</resources>

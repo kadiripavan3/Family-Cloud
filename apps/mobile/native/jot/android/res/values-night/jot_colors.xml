@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEVER RUN. Copied into the Android project by plugins/withJotAndroid.js; first built on a phone build made with JOT_NATIVE=1. See ../../../README.md. -->
+<!-- The app's colours for its widgets, from design/tokens.json (dark). -->
+<resources>
+  <color name="jot_surface">#18181E</color>
+  <color name="jot_fill">#202027</color>
+  <color name="jot_text">#F5F5F7</color>
+  <color name="jot_muted">#A3A3AE</color>
+  <color name="jot_accent">#FFC21A</color>
+  <color name="jot_accent_soft">#33290A</color>
+  <color name="jot_accent_text">#FFD46A</color>
+</resources>

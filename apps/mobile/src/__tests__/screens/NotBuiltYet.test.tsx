@@ -2,16 +2,8 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import Activity from '@/app/(app)/(tabs)/activity';
 import NewBill from '@/app/(app)/new/bill';
-import NewEvent from '@/app/(app)/new/event';
-import NewGoal from '@/app/(app)/new/goal';
-import NewPhotos from '@/app/(app)/new/photos';
-import NewReminder from '@/app/(app)/new/reminder';
-import NewScan from '@/app/(app)/new/scan';
 import NewSheet from '@/app/(app)/new/sheet';
-import { LibraryHome } from '@/features/library/LibraryHome';
 import { MoneyHome } from '@/features/money/MoneyHome';
-import { NotesHome } from '@/features/notes/NotesHome';
-import { PlanHome } from '@/features/plan/PlanHome';
 import { onPhone } from '@/test/phone';
 
 const mockRouter = { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) };
@@ -29,9 +21,6 @@ describe('the screens that are still to be built', () => {
   });
 
   it.each([
-    ['Plan', <PlanHome key="plan" />],
-    ['Notes', <NotesHome key="notes" />],
-    ['Library', <LibraryHome key="library" />],
     ['Money', <MoneyHome key="money" />],
   ])("%s, one of Home's places, says which place it is and that it is on its way", async (name, place) => {
     await render(onPhone(place));
@@ -40,13 +29,8 @@ describe('the screens that are still to be built', () => {
   });
 
   it.each([
-    ['Photos', <NewPhotos key="photos" />],
-    ['Scan', <NewScan key="scan" />],
-    ['Event', <NewEvent key="event" />],
-    ['Reminder', <NewReminder key="reminder" />],
     ['Bill', <NewBill key="bill" />],
     ['Sheet', <NewSheet key="sheet" />],
-    ['Goal', <NewGoal key="goal" />],
   ])('%s, one of the things the + sheet opens, says what it is and closes', async (name, page) => {
     await render(onPhone(page));
     expect(screen.getByRole('header', { name })).toBeOnTheScreen();

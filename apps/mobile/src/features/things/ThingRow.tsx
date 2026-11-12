@@ -45,7 +45,7 @@ export function ThingRow({ thing, line, look = 'tile', first, trailing, onPress,
   const open = useOpenThing();
   const kind = kindOf(thing.kind);
   const Icon = kind.icon;
-  const title = thing.title?.trim() || words.things.untitled;
+  const title = words.things.titleOr(thing.title, thing.kind);
   const second = line ?? thing.glance ?? null;
   const tile = look === 'tile';
   return (

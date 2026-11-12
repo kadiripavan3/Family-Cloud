@@ -85,6 +85,15 @@ class BoardSources implements GlanceSource, TodaySource, SearchSource, GuestView
     }
 
     @Override
+    public List<TodayCard> cards(UUID me, UUID circleId, LocalDate day) {
+        List<TodayCard> cards = new ArrayList<>();
+        for (Scene scene : scenes(store.seenIn(circleId, me), me, day)) {
+            cards.addAll(rules(scene).cards(scene));
+        }
+        return cards;
+    }
+
+    @Override
     public List<FreshCard> fresh(UUID me, UUID circleId) {
         List<FreshCard> cards = new ArrayList<>();
         for (Scene scene : scenes(store.seenIn(circleId, me), me, null)) {

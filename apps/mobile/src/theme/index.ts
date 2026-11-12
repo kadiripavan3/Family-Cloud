@@ -1,3 +1,4 @@
+import { createContext, createElement, type ReactNode, use } from 'react';
 import { type TextStyle, useColorScheme } from 'react-native';
 
 import { useAppearance } from './appearance';
@@ -43,11 +44,24 @@ export function themeFor(scheme: Scheme): Theme {
   return { scheme, colors: palettes[scheme], shadow: shadows[scheme], radius, space, layout, type };
 }
 
-/** The theme in use: the person's own choice of light or dark, or else what the phone is set to. */
+/** Set around a part of the app that is drawn in one scheme whatever the phone or the person says. */
+const Forced = createContext<Scheme | null>(null);
+
+/** The theme in use: the person's own choice of light or dark, or else what the phone is set to. Inside `AlwaysDark` it is the dark one. */
 export function useTheme(): Theme {
   const system = useColorScheme() === 'dark' ? 'dark' : 'light';
   const chosen = useAppearance();
-  return themeFor(chosen === 'system' ? system : chosen);
+  const forced = use(Forced);
+  return themeFor(forced ?? (chosen === 'system' ? system : chosen));
+}
+
+/**
+ * Everything inside is drawn dark, in light mode too: for a screen laid over a photo, where the page's own
+ * colours can't be read (the jot bar, and the pictures of the Home Screen and the Lock Screen). Buttons,
+ * switches, text and sheets inside it follow, because they all read `useTheme()`.
+ */
+export function AlwaysDark({ children }: { children: ReactNode }) {
+  return createElement(Forced, { value: 'dark' }, children);
 }
 
 /** Always-dark theme, for screens that sit on a full-bleed photo. */

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEVER RUN. Copied into the Android project by plugins/withJotAndroid.js; first built on a phone build made with JOT_NATIVE=1. See ../../../README.md. -->
+<!-- The small widget of design 14.1 with the shopping list: its name, how many are left, three lines to tick. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="14dp" android:background="@drawable/jot_card">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+    <TextView android:id="@+id/jot_list_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="1" android:ellipsize="end" android:textColor="@color/jot_text" android:textSize="15sp" android:textStyle="bold" />
+    <TextView android:id="@+id/jot_list_left" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/jot_muted" android:textSize="12sp" android:textStyle="bold" />
+  </LinearLayout>
+  <TextView android:id="@+id/jot_row_1" style="@style/JotRow" />
+  <TextView android:id="@+id/jot_row_2" style="@style/JotRow" />
+  <TextView android:id="@+id/jot_row_3" style="@style/JotRow" />
+</LinearLayout>

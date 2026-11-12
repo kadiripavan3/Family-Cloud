@@ -3,10 +3,12 @@ import { useRef, useState } from 'react';
 
 import { useCache } from '@/api/cache';
 import { useCircle } from '@/features/circles/current';
+import { takeHeldCode } from '@/features/jot/heldCode';
 import { useUnsaved } from '@/features/navigation/useUnsaved';
 import { thingHref } from '@/features/things/open';
 import { createItem, type ItemDraft } from '@/features/vault/actions';
 import { VaultScreen } from '@/features/vault/Gate';
+import { draftFromHeld } from '@/features/vault/held';
 import { emptyDraft, ItemForm, readyToSave } from '@/features/vault/ItemForm';
 import { isDrawer } from '@/features/vault/look';
 import { problemOf } from '@/features/vault/problems';
@@ -37,7 +39,10 @@ function Form() {
   const cache = useCache();
   const circle = useCircle();
   const asked = useLocalSearchParams<{ category?: string }>().category;
-  const [draft, setDraft] = useState<ItemDraft>(() => emptyDraft(isDrawer(asked) ? asked : 'login'));
+  // A code Jot held back arrives in memory, once (never in the address): the form starts with it, and Jot
+  // forgets its own copy when the item is saved.
+  const [held] = useState(takeHeldCode);
+  const [draft, setDraft] = useState<ItemDraft>(() => (held ? draftFromHeld(held.words) : emptyDraft(isDrawer(asked) ? asked : 'login')));
   const [wrong, setWrong] = useState<'title' | 'totp' | null>(null);
   const clientId = useRef(newClientId());
   const saving = useSecretAction();
@@ -59,6 +64,9 @@ function Form() {
       void cache.vaultItemMade(item);
     });
     if (!saved || !id) return;
+    // The Vault has it now: the jot that held it in the clear is taken back. If that fails the jot stays
+    // held back, and "What was filed" still offers to forget it.
+    await held?.kept().catch(() => undefined);
     unsaved.release();
     router.replace(thingHref({ kind: 'vault_item', id }));
   };

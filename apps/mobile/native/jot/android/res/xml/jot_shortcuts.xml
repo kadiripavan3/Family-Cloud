@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEVER RUN. Copied into the Android project by plugins/withJotAndroid.js; first built on a phone build made with JOT_NATIVE=1. See ../../../README.md. -->
+<!-- A long press on the app's icon offers "Jot": it opens the jot bar. __PACKAGE__ is written over with the app's package. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <shortcut android:shortcutId="jot" android:enabled="true" android:icon="@drawable/ic_jot_tile" android:shortcutShortLabel="@string/jot_name" android:shortcutLongLabel="@string/jot_shortcut">
+    <intent android:action="android.intent.action.VIEW" android:targetPackage="__PACKAGE__" android:data="homeport://jot" />
+  </shortcut>
+</shortcuts>
