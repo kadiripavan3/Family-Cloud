@@ -149,6 +149,17 @@ public class R2Storage implements MediaStorage {
         }
     }
 
+    /** Sent from the file itself, so an export of a gigabyte never has to fit in memory. */
+    @Override
+    public void put(String storageKey, java.nio.file.Path file, String contentType) throws IOException {
+        try {
+            s3.putObject(
+                    put -> put.bucket(bucket).key(storageKey).contentType(contentType), RequestBody.fromFile(file));
+        } catch (S3Exception e) {
+            throw new IOException("Could not store " + storageKey, e);
+        }
+    }
+
     /** Removing a file that is already gone is not an error (the store answers the same either way). */
     @Override
     public void delete(String storageKey) {

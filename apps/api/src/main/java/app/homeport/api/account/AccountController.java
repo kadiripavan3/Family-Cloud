@@ -4,6 +4,7 @@ import app.homeport.api.account.AccountService.SettingsChange;
 import app.homeport.api.account.AccountService.SettingsResponse;
 import app.homeport.api.auth.Me;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -67,9 +69,17 @@ class AccountController {
     }
 
     @DeleteMapping("/me")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(operationId = "deleteAccount", summary = "Delete your account and everything in it, for good")
-    void delete(@Me UUID me) {
-        account.delete(me);
+    @Operation(
+            operationId = "deleteAccount",
+            summary = "Delete your account and everything in it, for good. You choose: only Homeport, or Journey too.")
+    AccountService.AccountDeletedResponse delete(
+            @Me UUID me,
+            @Parameter(
+                            description = "False (or left out): only Homeport, the sign-in you share with Journey is"
+                                    + " never touched. True: the sign-in too, where this API may remove it;"
+                                    + " otherwise the answer says that Journey's own Delete account does that part.")
+                    @RequestParam(defaultValue = "false")
+                    boolean journeyToo) {
+        return account.delete(me, journeyToo);
     }
 }

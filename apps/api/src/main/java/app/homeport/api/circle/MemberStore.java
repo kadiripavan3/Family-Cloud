@@ -204,6 +204,34 @@ public class MemberStore {
                 .update();
     }
 
+    /**
+     * Removes what only this member could see in their circle: it leaves with them. With a Library that can
+     * be many photos, each with files to queue for removal, so it is given room to take longer than a
+     * statement usually may.
+     */
+    public int deleteOnlyTheirs(UUID id) {
+        jdbc.sql(Sql.ROOM_FOR_A_JOB).update();
+        return jdbc.sql("delete from things where owner_id = :id and audience = 'me'")
+                .param("id", id)
+                .update();
+    }
+
+    /** How many things in their circle only this member can see. */
+    public int onlyTheirs(UUID id) {
+        return jdbc.sql("select count(*) from things where owner_id = :id and audience = 'me'")
+                .param("id", id)
+                .query(Integer.class)
+                .single();
+    }
+
+    /** How many things this member made that others can see. */
+    public int sharedBy(UUID id) {
+        return jdbc.sql("select count(*) from things where owner_id = :id and audience <> 'me'")
+                .param("id", id)
+                .query(Integer.class)
+                .single();
+    }
+
     public void makeOwner(UUID id) {
         jdbc.sql("update members set role = 'owner' where id = :id")
                 .param("id", id)
