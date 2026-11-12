@@ -56,6 +56,13 @@ export function SameSpot({ board }: BoardScreenProps<SameSpotView, SameSpotSetti
     return () => clearTimeout(timer);
   }, [playAt, years]);
 
+  /** Runs through the years from the first, or stops. When it is over, this year's place is back. */
+  const play = () => {
+    if (years < 2) return setNotice(say.playNote);
+    setLooking(null);
+    setPlayAt(playing ? null : 0);
+  };
+
   /** Shows one year in place of the camera, or the camera again. Whatever was playing stops. */
   const look = (year: number | null) => {
     setPlayAt(null);
@@ -161,7 +168,7 @@ export function SameSpot({ board }: BoardScreenProps<SameSpotView, SameSpotSetti
         <RoundButton
           label={playing ? say.stop : say.play}
           tone="photo"
-          onPress={() => (years > 1 ? setPlayAt(playing ? null : 0) : setNotice(say.playNote))}
+          onPress={play}
           icon={(color) => (playing ? <Pause size={20} color={color} /> : <Play size={20} color={color} />)}
         />
       </View>

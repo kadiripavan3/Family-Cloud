@@ -33,7 +33,7 @@ export function BlobHead({ emoji, title, line, progress, tight }: BlobProps) {
         </Txt>
       ) : null}
       {progress === undefined ? null : (
-        <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(progress) }} style={{ width: 180, height: 6, marginTop: 8, borderRadius: radius.pill, overflow: 'hidden', backgroundColor: colors.fill2 }}>
+        <View accessible accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(progress) }} style={{ width: 180, height: 6, marginTop: 8, borderRadius: radius.pill, overflow: 'hidden', backgroundColor: colors.fill2 }}>
           <View style={{ width: `${Math.min(Math.max(progress, 0), 100)}%`, height: 6, borderRadius: radius.pill, backgroundColor: colors.accent }} />
         </View>
       )}
