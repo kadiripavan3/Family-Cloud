@@ -1,11 +1,12 @@
 {
-  "phase": "Building · milestone 1 of 11",
+  "phase": "Building · milestone 1 of 11 done",
   "updated": "2026-11-12",
-  "summary": "You said go on 12 Nov: every milestone, on the plan's defaults, under the name **Homeport**. The build has started. The API's spine is done and tested (circles, members, the one sharing rule, pages, lists, guest passes); the app's foundation runs; the six places are being built side by side. This page is updated at the end of each milestone.",
+  "summary": "**Milestone 1 is done:** sign-in, setting up a circle of any kind, people, the one sharing rule with its chip and sheet, a child's view, guest passes, Today, search and You, each built from its drawing and walked through in a browser in light and dark, as two people where sharing matters. The API for all six places is also built and tested together (845 tests). Their screens are being built now: Library, Plan and Jot, Notes, Money, the Vault and the first templates.",
   "next": [
     "Nothing is needed from you while the build runs. Each milestone ends with a short report in the chat and an update here.",
+    "The build stops when the account's usage limit is reached, as it did once on 12 Nov. Nothing is lost when that happens; it carries on when you say so.",
     "When it is done you get one list of every open question, in one place.",
-    "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude). Your first three are answered by screen groups 14 to 16 but stay open until then."
+    "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude)."
   ],
   "open": [
     {
@@ -50,6 +51,10 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-12",
+      "text": "**Milestone 1 is built and tested.** 24 screens: welcome, sign-in, the setup for each kind of circle, Home with Today, the circle switcher, search, the + sheet, People, a person's page, the audience sheet, a page hidden from one person, guest passes with the guest's own web page, a child's view, You and its settings. The walk-through signs up new people, sets up a family, a couple, a flat and a crew, and checks as a second person that a private page can't be found on Today, in search or by its address until it is shared. 547 app tests and 845 API tests pass. Two faults it found in the API were fixed: a circle with ticked lists could not be deleted, and the web page for Grandma's stories refused its own form."
+    },
     {
       "date": "2026-11-12",
       "text": "**The build has started**, on your go-ahead. The app is called **Homeport** everywhere. Done so far: the API's spine (79 tests, among them every way to reach a thing agreeing on who may see it) and the app's foundation from Journey's (225 tests, a walk-through in light and dark)."
