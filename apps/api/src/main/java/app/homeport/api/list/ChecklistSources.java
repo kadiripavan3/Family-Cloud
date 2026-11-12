@@ -12,7 +12,11 @@ import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
-/** What checklists bring to the rest: a search inside their lines, how a guest reads one, and "4 of 9 done". */
+/**
+ * What checklists bring to the rest: a search inside their lines, how a guest reads one, and "4 of 9 done".
+ * A line that is kept from someone is left out of the search and of what a guest reads, and out of the
+ * count of whoever it is kept from.
+ */
 @Component
 class ChecklistSources implements SearchSource, GuestView, GlanceSource {
 
@@ -33,7 +37,8 @@ class ChecklistSources implements SearchSource, GuestView, GlanceSource {
     public List<Found> find(UUID circleId, String words, int limit) {
         return jdbc.sql("""
             select distinct on (i.thing_id) i.thing_id, i.text from checklist_items i join things t on t.id = i.thing_id
-            where t.circle_id = :circle and i.text ilike :pattern order by i.thing_id, i.position limit :limit
+            where t.circle_id = :circle and i.text ilike :pattern and\s""" + ChecklistStore.shownToAll("i") + """
+             order by i.thing_id, i.position limit :limit
             """)
                 .param("circle", circleId)
                 .param("pattern", Sql.anywhere(words))
@@ -51,14 +56,14 @@ class ChecklistSources implements SearchSource, GuestView, GlanceSource {
     public Card show(UUID thingId) {
         return new Card(
                 "List",
-                lists.items(thingId).stream()
+                lists.itemsForAll(thingId).stream()
                         .map(i -> (i.doneAt() == null ? "☐ " : "☑ ") + i.text())
                         .collect(Collectors.joining("\n")));
     }
 
     @Override
     public java.util.Map<UUID, String> glances(List<UUID> thingIds, UUID me) {
-        return lists.tallies(thingIds).entrySet().stream()
+        return lists.tallies(thingIds, me).entrySet().stream()
                 .collect(Collectors.toMap(
                         java.util.Map.Entry::getKey,
                         e -> e.getValue().done() + " of "

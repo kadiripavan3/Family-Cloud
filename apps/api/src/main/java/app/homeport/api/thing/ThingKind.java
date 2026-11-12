@@ -16,7 +16,9 @@ public enum ThingKind {
     PHOTO(Place.LIBRARY),
     VIDEO(Place.LIBRARY),
     DOCUMENT(Place.LIBRARY),
-    ALBUM(Place.LIBRARY);
+    ALBUM(Place.LIBRARY),
+    /** A space or a folder in Notes: a space is a folder at the top. */
+    FOLDER(Place.NOTES);
 
     private final Place place;
 

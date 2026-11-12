@@ -16,11 +16,26 @@
     "name" : "guest passes",
     "description" : "Chosen things for someone outside the circle, for a set time"
   }, {
+    "name" : "notes",
+    "description" : "What the Notes screens list"
+  }, {
     "name" : "checklists",
     "description" : "Lists you tick, changed one line at a time"
   }, {
     "name" : "library",
     "description" : "Every photo, video and document, from everyone"
+  }, {
+    "name" : "folders",
+    "description" : "Spaces and folders: where things are filed, and what you pinned"
+  }, {
+    "name" : "things",
+    "description" : "What every kind of thing shares: who can see it"
+  }, {
+    "name" : "home",
+    "description" : "What Home shows across every place"
+  }, {
+    "name" : "media",
+    "description" : "Uploading photos, videos, documents and recordings"
   }, {
     "name" : "files",
     "description" : "Scans and documents, and what was read inside them"
@@ -31,25 +46,56 @@
     "name" : "local-auth",
     "description" : "Test sign-in. Exists only in local mode."
   }, {
-    "name" : "things",
-    "description" : "What every kind of thing shares: who can see it"
-  }, {
     "name" : "albums",
     "description" : "Albums made by hand, albums that fill themselves, and folders of files"
   }, {
-    "name" : "home",
-    "description" : "What Home shows across every place"
-  }, {
-    "name" : "media",
-    "description" : "Uploading photos, videos, documents and recordings"
-  }, {
     "name" : "pages",
-    "description" : "Pages of words"
+    "description" : "Pages: a title, and blocks in order"
   }, {
     "name" : "circles",
     "description" : "Circles and the people in them"
   } ],
   "paths" : {
+    "/v1/things/{id}/pin" : {
+      "put" : {
+        "tags" : [ "folders" ],
+        "summary" : "Pin a thing to the top of your Notes. Twenty at most.",
+        "operationId" : "pinThing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "folders" ],
+        "summary" : "Take a pin away",
+        "operationId" : "unpinThing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/v1/things/{id}/links/{otherId}" : {
       "put" : {
         "tags" : [ "things" ],
@@ -102,6 +148,70 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/v1/things/{id}/folder" : {
+      "get" : {
+        "tags" : [ "folders" ],
+        "summary" : "Where a thing is filed: the way to it from its space",
+        "operationId" : "getFiling",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Filing"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "folders" ],
+        "summary" : "Move a thing into a folder, out of one, or to another place in the order",
+        "operationId" : "fileThing",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FilingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Filing"
+                }
+              }
+            }
           }
         }
       }
@@ -503,6 +613,44 @@
         }
       }
     },
+    "/v1/checklists/{id}/look" : {
+      "put" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Show or hide the ticked lines of a list, for you only",
+        "operationId" : "lookAtChecklist",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LookRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChecklistResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/pages" : {
       "post" : {
         "tags" : [ "pages" ],
@@ -525,6 +673,110 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pages/{id}/share-lists" : {
+      "post" : {
+        "tags" : [ "pages" ],
+        "summary" : "Give the lists drawn in a page that are yours the page's audience",
+        "operationId" : "sharePageLists",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SharedInside"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pages/{id}/changes" : {
+      "post" : {
+        "tags" : [ "pages" ],
+        "summary" : "Send the changes a phone kept while it had no signal, in order. Each gets its own answer; one for a block that was removed doesn't stop the rest. 200 at most.",
+        "operationId" : "sendPageChanges",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LateBlockChanges"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BlockAnswers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pages/{id}/blocks" : {
+      "post" : {
+        "tags" : [ "pages" ],
+        "summary" : "Add a block to a page: after another block, first, or at the end",
+        "operationId" : "addBlock",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewBlockRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -806,6 +1058,63 @@
         }
       }
     },
+    "/v1/folders" : {
+      "post" : {
+        "tags" : [ "folders" ],
+        "summary" : "Make a space, or a folder inside another",
+        "operationId" : "createFolder",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewFolderRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FolderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/folders/{id}/share-inside" : {
+      "post" : {
+        "tags" : [ "folders" ],
+        "summary" : "Give everything in a folder that is yours the folder's audience. Up to 500 things at once.",
+        "operationId" : "shareFolderContents",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SharedInside"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles" : {
       "get" : {
         "tags" : [ "circles" ],
@@ -1027,6 +1336,44 @@
         }
       }
     },
+    "/v1/checklists/{id}/changes" : {
+      "post" : {
+        "tags" : [ "checklists" ],
+        "summary" : "Send the changes a phone kept while it had no signal, in order. Each gets its own answer; one that came too late doesn't stop the rest. 200 at most.",
+        "operationId" : "sendChecklistChanges",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LateLineChanges"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LineAnswers"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/albums" : {
       "post" : {
         "tags" : [ "albums" ],
@@ -1150,9 +1497,16 @@
     "/v1/pages/{id}" : {
       "get" : {
         "tags" : [ "pages" ],
-        "summary" : "One page",
+        "summary" : "One page with its blocks. Ask again with If-None-Match to hear 304 while nothing changed.",
         "operationId" : "getPage",
         "parameters" : [ {
+          "name" : "If-None-Match",
+          "in" : "header",
+          "description" : "The ETag of the answer you already have, as it came (in double quotes)",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
           "name" : "id",
           "in" : "path",
           "required" : true,
@@ -1171,12 +1525,15 @@
                 }
               }
             }
+          },
+          "304" : {
+            "description" : "Nothing changed since the version you sent. There is no body."
           }
         }
       },
       "patch" : {
         "tags" : [ "pages" ],
-        "summary" : "Change a page's title or its words",
+        "summary" : "Change a page's title or emoji, or all its words at once",
         "operationId" : "changePage",
         "parameters" : [ {
           "name" : "id",
@@ -1204,6 +1561,63 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/page-blocks/{blockId}" : {
+      "delete" : {
+        "tags" : [ "pages" ],
+        "summary" : "Remove a block. Removing one that is gone is fine.",
+        "operationId" : "removeBlock",
+        "parameters" : [ {
+          "name" : "blockId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "pages" ],
+        "summary" : "Change one block of a page, or move it",
+        "operationId" : "changeBlock",
+        "parameters" : [ {
+          "name" : "blockId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BlockChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BlockResponse"
                 }
               }
             }
@@ -1413,6 +1827,70 @@
         }
       }
     },
+    "/v1/folders/{id}" : {
+      "get" : {
+        "tags" : [ "folders" ],
+        "summary" : "A space or folder: its name, who sees it, and how much is in it that you may see",
+        "operationId" : "getFolder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FolderResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "folders" ],
+        "summary" : "Rename a space or folder, or change its emoji",
+        "operationId" : "changeFolder",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FolderChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FolderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/documents/{id}" : {
       "get" : {
         "tags" : [ "files" ],
@@ -1561,9 +2039,16 @@
     "/v1/checklists/{id}" : {
       "get" : {
         "tags" : [ "checklists" ],
-        "summary" : "A list with its lines",
+        "summary" : "A list with its lines. Ask again with If-None-Match to hear 304 while nothing changed.",
         "operationId" : "getChecklist",
         "parameters" : [ {
+          "name" : "If-None-Match",
+          "in" : "header",
+          "description" : "The ETag of the answer you already have, as it came (in double quotes)",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
           "name" : "id",
           "in" : "path",
           "required" : true,
@@ -1582,12 +2067,15 @@
                 }
               }
             }
+          },
+          "304" : {
+            "description" : "Nothing changed since the version you sent. There is no body."
           }
         }
       },
       "patch" : {
         "tags" : [ "checklists" ],
-        "summary" : "Rename a list",
+        "summary" : "Rename a list, or change its emoji, its currency or whether it is a shopping list",
         "operationId" : "renameChecklist",
         "parameters" : [ {
           "name" : "id",
@@ -1602,7 +2090,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RenameRequest"
+                "$ref" : "#/components/schemas/ChecklistChangeRequest"
               }
             }
           },
@@ -1944,6 +2432,49 @@
         }
       }
     },
+    "/v1/folders/{id}/items" : {
+      "get" : {
+        "tags" : [ "notes" ],
+        "summary" : "What is in a space or folder that you may see, in the order people gave it",
+        "operationId" : "getFolderItems",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageNoteItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/circles/{id}/today" : {
       "get" : {
         "tags" : [ "home" ],
@@ -2088,6 +2619,136 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PagePageRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/notes" : {
+      "get" : {
+        "tags" : [ "notes" ],
+        "summary" : "The home of Notes: the circle's spaces with their counts, your pins, and what changed lately",
+        "operationId" : "getNotes",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotesHome"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/notes/unfiled" : {
+      "get" : {
+        "tags" : [ "notes" ],
+        "summary" : "The pages and lists that aren't filed in any folder you may see, last changed first",
+        "operationId" : "getUnfiledNotes",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageNoteItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/circles/{id}/linkable" : {
+      "get" : {
+        "tags" : [ "notes" ],
+        "summary" : "What can be put on a page as a live block: the circle's things you may see, by kind and words",
+        "operationId" : "getLinkable",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "kind",
+          "in" : "query",
+          "description" : "Only this kind of thing: a bill, an event, a sheet. Left out: every kind.",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          }
+        }, {
+          "name" : "q",
+          "in" : "query",
+          "description" : "Words from its title",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageThingBrief"
                 }
               }
             }
@@ -2580,7 +3241,7 @@
     "/v1/checklists/{id}/done" : {
       "delete" : {
         "tags" : [ "checklists" ],
-        "summary" : "Clear the ticked lines of a list",
+        "summary" : "Clear the ticked lines of a list. A line that repeats stays, to come back.",
         "operationId" : "clearDoneItems",
         "parameters" : [ {
           "name" : "id",
@@ -2637,6 +3298,57 @@
   },
   "components" : {
     "schemas" : {
+      "FilingRequest" : {
+        "type" : "object",
+        "properties" : {
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder to put it in. Null takes it out of its folder; a folder then becomes a space."
+          },
+          "after" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Put it just after this thing. Left out, with atStart left out too: at the end, or where it is when it stays in its folder."
+          },
+          "atStart" : {
+            "type" : "boolean",
+            "description" : "True to put it first"
+          }
+        }
+      },
+      "Crumb" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Filing" : {
+        "type" : "object",
+        "properties" : {
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder it is in. Null when it isn't filed, for you."
+          },
+          "breadcrumb" : {
+            "type" : "array",
+            "description" : "The way to it from its space: Home, House manual. Empty when it isn't filed.",
+            "items" : {
+              "$ref" : "#/components/schemas/Crumb"
+            }
+          }
+        }
+      },
       "Access" : {
         "type" : "string",
         "enum" : [ "edit", "view", "none" ]
@@ -2792,7 +3504,7 @@
       },
       "ThingKind" : {
         "type" : "string",
-        "enum" : [ "page", "checklist", "photo", "video", "document", "album" ]
+        "enum" : [ "page", "checklist", "photo", "video", "document", "album", "folder" ]
       },
       "AboutRequest" : {
         "type" : "object",
@@ -3041,33 +3753,14 @@
         },
         "required" : [ "authorizationCode" ]
       },
-      "NewPageRequest" : {
+      "LookRequest" : {
         "type" : "object",
         "properties" : {
-          "clientId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "title" : {
-            "type" : "string",
-            "maxLength" : 200,
-            "minLength" : 0
-          },
-          "body" : {
-            "type" : "string",
-            "maxLength" : 100000,
-            "minLength" : 0
-          },
-          "audience" : {
-            "$ref" : "#/components/schemas/Audience",
-            "description" : "Left out: what the circle's kind starts things as"
+          "showTicked" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "circleId", "clientId" ]
+        "required" : [ "showTicked" ]
       },
       "AudienceChip" : {
         "type" : "object",
@@ -3091,7 +3784,7 @@
           }
         }
       },
-      "PageResponse" : {
+      "ChecklistResponse" : {
         "type" : "object",
         "properties" : {
           "id" : {
@@ -3103,9 +3796,6 @@
             "format" : "uuid"
           },
           "title" : {
-            "type" : "string"
-          },
-          "body" : {
             "type" : "string"
           },
           "updatedAt" : {
@@ -3120,9 +3810,230 @@
           },
           "chip" : {
             "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemResponse"
+            }
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The currency of its amounts, as three letters: EUR"
+          },
+          "aisles" : {
+            "type" : "boolean",
+            "description" : "True for a shopping list: a new line finds its aisle, and the aisles keep their order"
+          },
+          "version" : {
+            "type" : "string",
+            "description" : "Changes whenever anything in this answer would. It is also the answer's ETag: send that back as If-None-Match to be told 304 while nothing has changed."
+          },
+          "sumCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Every amount added up, in cents. Null when no line has one."
+          },
+          "sumDoneCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The amounts of the ticked lines added up"
+          },
+          "sections" : {
+            "type" : "array",
+            "description" : "The headings in the order to show them, each with its own counts and sum",
+            "items" : {
+              "$ref" : "#/components/schemas/ListSection"
+            }
+          },
+          "here" : {
+            "type" : "array",
+            "description" : "Who else is in the list right now",
+            "items" : {
+              "$ref" : "#/components/schemas/ListHand"
+            }
+          },
+          "suggestions" : {
+            "type" : "array",
+            "description" : "What this list held most often before and doesn't hold now. Eight at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/ListSuggestion"
+            }
+          },
+          "showTicked" : {
+            "type" : "boolean",
+            "description" : "Your own choice for this list: whether ticked lines are shown"
+          },
+          "pinned" : {
+            "type" : "boolean",
+            "description" : "True when you pinned it"
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder it is in, when you may see that folder"
+          },
+          "breadcrumb" : {
+            "type" : "array",
+            "description" : "The way to it from its space: Home, House manual",
+            "items" : {
+              "$ref" : "#/components/schemas/Crumb"
+            }
+          },
+          "editedBy" : {
+            "description" : "Who changed it last",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "editedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
           }
         },
-        "required" : [ "body", "canEdit", "chip", "circleId", "id", "mine", "title", "updatedAt" ]
+        "required" : [ "aisles", "breadcrumb", "canEdit", "chip", "circleId", "currency", "done", "editedAt", "editedBy", "emoji", "folderId", "here", "id", "items", "left", "mine", "pinned", "sections", "showTicked", "suggestions", "sumCents", "sumDoneCents", "title", "updatedAt", "version" ]
+      },
+      "Did" : {
+        "type" : "string",
+        "enum" : [ "added", "ticked" ]
+      },
+      "ItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string",
+            "description" : "A small line under it: Alex bought them"
+          },
+          "section" : {
+            "type" : "string",
+            "description" : "The heading it stands under, or empty: Dairy, Gift ideas"
+          },
+          "amountCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "A price or a budget, in cents"
+          },
+          "done" : {
+            "type" : "boolean"
+          },
+          "doneAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "doneBy" : {
+            "description" : "Who ticked it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "assignedTo" : {
+            "description" : "Whose job it is",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addedBy" : {
+            "description" : "Who added it",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it was added"
+          },
+          "repeats" : {
+            "description" : "Set for a line that comes back by itself after it was ticked",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Repeats"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "hiddenFrom" : {
+            "type" : "array",
+            "description" : "The first names of people this line is kept from. They don't get the line at all.",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "addedAt", "addedBy", "amountCents", "assignedTo", "done", "doneAt", "doneBy", "hiddenFrom", "id", "note", "repeats", "section", "text" ]
+      },
+      "ListHand" : {
+        "type" : "object",
+        "properties" : {
+          "who" : {
+            "$ref" : "#/components/schemas/PersonBrief"
+          },
+          "did" : {
+            "$ref" : "#/components/schemas/Did"
+          },
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ListSection" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "The heading. Empty for the lines under no heading."
+          },
+          "left" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "done" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sumCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The amounts under it added up, in cents. Null when no line has one."
+          }
+        }
+      },
+      "ListSuggestion" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string"
+          },
+          "section" : {
+            "type" : "string"
+          }
+        }
       },
       "PersonBrief" : {
         "type" : "object",
@@ -3139,9 +4050,525 @@
           }
         }
       },
+      "Repeats" : {
+        "type" : "string",
+        "enum" : [ "weekly", "monthly" ]
+      },
+      "NewPageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "body" : {
+            "type" : "string",
+            "description" : "Words to start with: they become the page's first block of text",
+            "maxLength" : 100000,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder to file it in. Left out: not filed."
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "circleId", "clientId" ]
+      },
+      "BlockKind" : {
+        "type" : "string",
+        "enum" : [ "paragraph", "heading", "bullet", "checklist", "photo", "file", "place", "live" ]
+      },
+      "BlockResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/BlockKind"
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "The words: of a text block, under a photo or a file, or naming a place"
+          },
+          "marks" : {
+            "type" : "array",
+            "description" : "For text: what is bold, a link or a name, as ranges over the text",
+            "items" : {
+              "$ref" : "#/components/schemas/Mark"
+            }
+          },
+          "thing" : {
+            "description" : "For a list or a live block: the thing it shows, as it stands now. Null when you may not see it.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "checklist" : {
+            "description" : "For a list you may see: the list with its lines, to draw and tick here",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChecklistResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "unseen" : {
+            "type" : "boolean",
+            "description" : "True when it shows something you can't see: draw a quiet placeholder, nothing more"
+          },
+          "media" : {
+            "description" : "For a photo or a file",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MediaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "checklist", "id", "kind", "lat", "lng", "marks", "media", "text", "thing", "unseen", "updatedAt" ]
+      },
+      "Mark" : {
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Where it starts in the text, from 0"
+          },
+          "end" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Where it ends: the place just after its last character"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MarkKind"
+          },
+          "url" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a link: the address, starting with http:// or https://"
+          },
+          "memberId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For a name: the member it is"
+          }
+        }
+      },
+      "MarkKind" : {
+        "type" : "string",
+        "enum" : [ "bold", "italic", "strike", "link", "mention" ]
+      },
       "MediaKind" : {
         "type" : "string",
         "enum" : [ "photo", "video", "file", "audio" ]
+      },
+      "MediaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/MediaKind"
+          },
+          "url" : {
+            "type" : "string",
+            "description" : "A picture: the photo itself, or null for a file with no picture"
+          },
+          "thumbUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "The same picture, small, for lists and grids"
+          },
+          "fileUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a video, a document or a recording: the file itself"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "width" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "height" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "durationSeconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "bytes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "bytes", "contentType", "durationSeconds", "fileName", "fileUrl", "height", "id", "kind", "thumbUrl", "url", "width" ]
+      },
+      "PageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string",
+            "description" : "The page's plain words, written from its blocks. Search and guests read these."
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string",
+            "description" : "Changes whenever anything in this answer would. It is also the answer's ETag: send that back as If-None-Match to be told 304 while nothing has changed."
+          },
+          "editedBy" : {
+            "description" : "Who changed it last",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "editedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder it is in, when you may see that folder"
+          },
+          "breadcrumb" : {
+            "type" : "array",
+            "description" : "The way to it from its space: Home, House manual",
+            "items" : {
+              "$ref" : "#/components/schemas/Crumb"
+            }
+          },
+          "pinned" : {
+            "type" : "boolean",
+            "description" : "True when you pinned it"
+          },
+          "blocks" : {
+            "type" : "array",
+            "description" : "What the page is made of, in order. 500 at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/BlockResponse"
+            }
+          }
+        },
+        "required" : [ "blocks", "body", "breadcrumb", "canEdit", "chip", "circleId", "editedAt", "editedBy", "emoji", "folderId", "id", "mine", "pinned", "title", "updatedAt", "version" ]
+      },
+      "ThingBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done"
+          }
+        }
+      },
+      "SharedInside" : {
+        "type" : "object",
+        "properties" : {
+          "changed" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things inside now have the folder's audience"
+          },
+          "notYours" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many things inside you can see but aren't yours to share"
+          }
+        }
+      },
+      "BlockChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/BlockKind",
+            "description" : "A paragraph, a heading and a bullet can become one another"
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 100000,
+            "minLength" : 0
+          },
+          "marks" : {
+            "type" : "array",
+            "description" : "Send the marks with the text they belong to. New text without marks has none.",
+            "items" : {
+              "$ref" : "#/components/schemas/Mark"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "removePoint" : {
+            "type" : "boolean",
+            "description" : "True to take the point of a place away and keep its words"
+          },
+          "after" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Move it to just after this block (its id, or the clientId it was added with)"
+          },
+          "atStart" : {
+            "type" : "boolean",
+            "description" : "True to move it to the top"
+          }
+        }
+      },
+      "ChangeOp" : {
+        "type" : "string",
+        "enum" : [ "add", "change", "remove" ]
+      },
+      "LateBlockChange" : {
+        "type" : "object",
+        "properties" : {
+          "op" : {
+            "$ref" : "#/components/schemas/ChangeOp"
+          },
+          "blockId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For change and remove: the block, by its id or by the clientId it was added with"
+          },
+          "add" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/NewBlockRequest",
+            "description" : "For add: the new block, as it would be sent to add it"
+          },
+          "change" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/BlockChangeRequest",
+            "description" : "For change: what to change, as it would be sent to change it"
+          }
+        },
+        "required" : [ "op" ]
+      },
+      "LateBlockChanges" : {
+        "type" : "object",
+        "properties" : {
+          "changes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LateBlockChange"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "changes" ]
+      },
+      "NewBlockRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/BlockKind"
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "The words: of a text block, under a photo or a file, or naming a place",
+            "maxLength" : 100000,
+            "minLength" : 0
+          },
+          "marks" : {
+            "type" : "array",
+            "description" : "For text: what is bold, a link or a name",
+            "items" : {
+              "$ref" : "#/components/schemas/Mark"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          },
+          "after" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Put it just after this block (its id, or the clientId it was added with). Left out, or when that block is gone: at the end."
+          },
+          "atStart" : {
+            "type" : "boolean",
+            "description" : "True to put it first"
+          },
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For a live block: the thing to show. For a list: an existing list to draw here; left out, a new list is started in the page."
+          },
+          "mediaId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For a photo or a file: your own finished upload, made for this block"
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double",
+            "description" : "For a place: its point on the map, with lng"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "For a new list: its name. Left out: the page's title.",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "For a new list: lines to start with",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 300,
+              "minLength" : 0
+            },
+            "maxItems" : 100,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "clientId", "kind" ]
+      },
+      "BlockAnswer" : {
+        "type" : "object",
+        "properties" : {
+          "outcome" : {
+            "$ref" : "#/components/schemas/Outcome"
+          },
+          "blockId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The block it was about, when there is one"
+          },
+          "said" : {
+            "type" : [ "string", "null" ],
+            "description" : "What happened, in a sentence, when it wasn't simply done"
+          }
+        }
+      },
+      "BlockAnswers" : {
+        "type" : "object",
+        "properties" : {
+          "answers" : {
+            "type" : "array",
+            "description" : "One answer for each change, in the order they were sent",
+            "items" : {
+              "$ref" : "#/components/schemas/BlockAnswer"
+            }
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageResponse",
+            "description" : "The page as it stands now"
+          }
+        }
+      },
+      "Outcome" : {
+        "type" : "string",
+        "enum" : [ "done", "gone", "refused" ]
       },
       "StartUploadRequest" : {
         "type" : "object",
@@ -3613,6 +5040,103 @@
           }
         }
       },
+      "NewFolderRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "parentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder to make it in. Left out: a new space."
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 0
+          },
+          "audience" : {
+            "$ref" : "#/components/schemas/Audience",
+            "description" : "Left out: what the circle's kind starts things as"
+          }
+        },
+        "required" : [ "circleId", "clientId", "title" ]
+      },
+      "FolderResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "space" : {
+            "type" : "boolean",
+            "description" : "True for a space: a folder at the top (or one whose parent you can't see)"
+          },
+          "parentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder it is in. Null for a space."
+          },
+          "breadcrumb" : {
+            "type" : "array",
+            "description" : "The folders above it, from its space down. Empty for a space.",
+            "items" : {
+              "$ref" : "#/components/schemas/Crumb"
+            }
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean",
+            "description" : "True when you may rename it, put things into it and change their order"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "folders" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many folders are inside it, at any depth, that you may see"
+          },
+          "pages" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many pages, lists and other things are inside it, at any depth, that you may see"
+          },
+          "pinned" : {
+            "type" : "boolean",
+            "description" : "True when you pinned it"
+          }
+        },
+        "required" : [ "breadcrumb", "canEdit", "chip", "circleId", "emoji", "folders", "id", "mine", "pages", "parentId", "pinned", "space", "title", "updatedAt" ]
+      },
       "NewCircleRequest" : {
         "type" : "object",
         "properties" : {
@@ -3796,110 +5320,29 @@
             },
             "maxItems" : 100,
             "minItems" : 0
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The folder to file it in. Left out: not filed."
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The currency of its amounts, three letters. Left out: EUR.",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "aisles" : {
+            "type" : "boolean",
+            "description" : "True for a shopping list: each new line finds its aisle"
           }
         },
         "required" : [ "circleId", "clientId", "title" ]
-      },
-      "ChecklistResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "title" : {
-            "type" : "string"
-          },
-          "updatedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "mine" : {
-            "type" : "boolean"
-          },
-          "canEdit" : {
-            "type" : "boolean"
-          },
-          "chip" : {
-            "$ref" : "#/components/schemas/AudienceChip"
-          },
-          "left" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "done" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "items" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ItemResponse"
-            }
-          }
-        },
-        "required" : [ "canEdit", "chip", "circleId", "done", "id", "items", "left", "mine", "title", "updatedAt" ]
-      },
-      "ItemResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "text" : {
-            "type" : "string"
-          },
-          "note" : {
-            "type" : "string",
-            "description" : "A small line under it: Alex bought them"
-          },
-          "section" : {
-            "type" : "string",
-            "description" : "The heading it stands under, or empty: Dairy, Gift ideas"
-          },
-          "amountCents" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
-            "description" : "A price or a budget, in cents"
-          },
-          "done" : {
-            "type" : "boolean"
-          },
-          "doneAt" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
-          "doneBy" : {
-            "description" : "Who ticked it",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "assignedTo" : {
-            "description" : "Whose job it is",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "addedBy" : {
-            "description" : "Who added it",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PersonBrief"
-            }, {
-              "type" : "null"
-            } ]
-          }
-        },
-        "required" : [ "addedBy", "amountCents", "assignedTo", "done", "doneAt", "doneBy", "id", "note", "section", "text" ]
       },
       "NewItemRequest" : {
         "type" : "object",
@@ -3920,6 +5363,7 @@
           },
           "section" : {
             "type" : "string",
+            "description" : "The heading to put it under. Left out: where this line went last time, or its aisle in a shopping list.",
             "maxLength" : 60,
             "minLength" : 0
           },
@@ -3932,9 +5376,163 @@
           "assignedTo" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "repeats" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Repeats",
+            "description" : "Set for a line that comes back after it was ticked"
+          },
+          "hideFrom" : {
+            "type" : "array",
+            "description" : "Members to keep this line from. They don't get the line at all.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
           }
         },
         "required" : [ "clientId", "text" ]
+      },
+      "ItemChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 1
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "section" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "maximum" : 100000000000,
+            "minimum" : 0
+          },
+          "removeAmount" : {
+            "type" : "boolean"
+          },
+          "assignedTo" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "unassign" : {
+            "type" : "boolean"
+          },
+          "done" : {
+            "type" : "boolean",
+            "description" : "True to tick it, false to take the tick away"
+          },
+          "before" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Move it to just before this line"
+          },
+          "toEnd" : {
+            "type" : "boolean",
+            "description" : "Move it to the end"
+          },
+          "repeats" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Repeats",
+            "description" : "Make it come back after it was ticked"
+          },
+          "stopRepeating" : {
+            "type" : "boolean",
+            "description" : "True to stop it coming back"
+          },
+          "hideFrom" : {
+            "type" : "array",
+            "description" : "Members to keep this line from. An empty list shows it to everyone again.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 30,
+            "minItems" : 0
+          }
+        }
+      },
+      "LateLineChange" : {
+        "type" : "object",
+        "properties" : {
+          "op" : {
+            "$ref" : "#/components/schemas/ChangeOp"
+          },
+          "itemId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "For change and remove: the line, by its id or by the clientId it was added with"
+          },
+          "add" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/NewItemRequest",
+            "description" : "For add: the new line, as it would be sent to add it"
+          },
+          "change" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ItemChangeRequest",
+            "description" : "For change: what to change, as it would be sent to change it"
+          }
+        },
+        "required" : [ "op" ]
+      },
+      "LateLineChanges" : {
+        "type" : "object",
+        "properties" : {
+          "changes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LateLineChange"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "changes" ]
+      },
+      "LineAnswer" : {
+        "type" : "object",
+        "properties" : {
+          "outcome" : {
+            "$ref" : "#/components/schemas/Outcome"
+          },
+          "itemId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The line it was about, when there is one"
+          },
+          "said" : {
+            "type" : [ "string", "null" ],
+            "description" : "What happened, in a sentence, when it wasn't simply done"
+          }
+        }
+      },
+      "LineAnswers" : {
+        "type" : "object",
+        "properties" : {
+          "answers" : {
+            "type" : "array",
+            "description" : "One answer for each change, in the order they were sent",
+            "items" : {
+              "$ref" : "#/components/schemas/LineAnswer"
+            }
+          },
+          "list" : {
+            "$ref" : "#/components/schemas/ChecklistResponse",
+            "description" : "The list as it stands now"
+          }
+        }
       },
       "NewAlbum" : {
         "type" : "object",
@@ -4138,7 +5736,13 @@
           },
           "body" : {
             "type" : "string",
+            "description" : "All the page's words at once: they take the place of its text blocks. To change one part of a page, change that block.",
             "maxLength" : 100000,
+            "minLength" : 0
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 32,
             "minLength" : 0
           }
         }
@@ -4231,6 +5835,21 @@
           "removePlace" : {
             "type" : "boolean",
             "description" : "True to forget where it was taken"
+          }
+        }
+      },
+      "FolderChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "emoji" : {
+            "type" : "string",
+            "maxLength" : 32,
+            "minLength" : 0
           }
         }
       },
@@ -4492,45 +6111,6 @@
           }
         }
       },
-      "ThingBrief" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "circleId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "kind" : {
-            "$ref" : "#/components/schemas/ThingKind"
-          },
-          "place" : {
-            "$ref" : "#/components/schemas/Place"
-          },
-          "title" : {
-            "type" : "string"
-          },
-          "updatedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "mine" : {
-            "type" : "boolean"
-          },
-          "canEdit" : {
-            "type" : "boolean"
-          },
-          "chip" : {
-            "$ref" : "#/components/schemas/AudienceChip"
-          },
-          "glance" : {
-            "type" : [ "string", "null" ],
-            "description" : "Where it stands, in a few words: 4 of 9 done"
-          }
-        }
-      },
       "CircleChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -4552,63 +6132,26 @@
           }
         }
       },
-      "RenameRequest" : {
+      "ChecklistChangeRequest" : {
         "type" : "object",
         "properties" : {
           "title" : {
             "type" : "string",
             "maxLength" : 200,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "title" ]
-      },
-      "ItemChangeRequest" : {
-        "type" : "object",
-        "properties" : {
-          "text" : {
-            "type" : "string",
-            "maxLength" : 300,
             "minLength" : 1
           },
-          "note" : {
+          "emoji" : {
             "type" : "string",
-            "maxLength" : 300,
+            "maxLength" : 32,
             "minLength" : 0
           },
-          "section" : {
+          "currency" : {
             "type" : "string",
-            "maxLength" : 60,
+            "maxLength" : 3,
             "minLength" : 0
           },
-          "amountCents" : {
-            "type" : "integer",
-            "format" : "int64",
-            "maximum" : 100000000000,
-            "minimum" : 0
-          },
-          "removeAmount" : {
+          "aisles" : {
             "type" : "boolean"
-          },
-          "assignedTo" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "unassign" : {
-            "type" : "boolean"
-          },
-          "done" : {
-            "type" : "boolean",
-            "description" : "True to tick it, false to take the tick away"
-          },
-          "before" : {
-            "type" : "string",
-            "format" : "uuid",
-            "description" : "Move it to just before this line"
-          },
-          "toEnd" : {
-            "type" : "boolean",
-            "description" : "Move it to the end"
           }
         }
       },
@@ -4817,6 +6360,103 @@
           },
           "alreadyIn" : {
             "type" : "boolean"
+          }
+        }
+      },
+      "NoteItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "circleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "$ref" : "#/components/schemas/ThingKind"
+          },
+          "place" : {
+            "$ref" : "#/components/schemas/Place"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mine" : {
+            "type" : "boolean"
+          },
+          "canEdit" : {
+            "type" : "boolean"
+          },
+          "chip" : {
+            "$ref" : "#/components/schemas/AudienceChip"
+          },
+          "glance" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where it stands, in a few words: 4 of 9 done, €12,400"
+          },
+          "editedBy" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/PersonBrief",
+            "description" : "For a page or a list: who changed it last"
+          },
+          "editedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "left" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a list: how many lines are left, of those you may see"
+          },
+          "done" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a list: how many lines are ticked"
+          },
+          "here" : {
+            "type" : "array",
+            "description" : "For a list: who else is in it right now",
+            "items" : {
+              "$ref" : "#/components/schemas/ListHand"
+            }
+          },
+          "folders" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a folder: how many folders are inside it that you may see"
+          },
+          "pages" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "For a folder: how many pages and lists are inside it that you may see"
+          },
+          "pinned" : {
+            "type" : "boolean",
+            "description" : "True when you pinned it"
+          }
+        }
+      },
+      "PageNoteItem" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NoteItem"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
           }
         }
       },
@@ -5046,6 +6686,52 @@
           },
           "chip" : {
             "$ref" : "#/components/schemas/AudienceChip"
+          }
+        }
+      },
+      "NotesHome" : {
+        "type" : "object",
+        "properties" : {
+          "spaces" : {
+            "type" : "array",
+            "description" : "The circle's spaces that you may see, in their order. A hundred at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/FolderResponse"
+            }
+          },
+          "pinned" : {
+            "type" : "array",
+            "description" : "What you pinned, in the order you pinned it. Twenty at most.",
+            "items" : {
+              "$ref" : "#/components/schemas/NoteItem"
+            }
+          },
+          "recent" : {
+            "type" : "array",
+            "description" : "The ten pages and lists that changed last",
+            "items" : {
+              "$ref" : "#/components/schemas/NoteItem"
+            }
+          },
+          "unfiled" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many pages and lists aren't filed in any folder you may see"
+          }
+        }
+      },
+      "PageThingBrief" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ThingBrief"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ],
+            "description" : "Send this back as `cursor` to get the next page. Null on the last page."
           }
         }
       },

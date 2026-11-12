@@ -241,9 +241,22 @@ class SpineSeed implements Seeder {
                 .param("audience", audience)
                 .update();
         w.jdbc()
-                .sql("insert into pages (thing_id, body) values (:id, :body)")
+                .sql("insert into pages (thing_id, body, edited_by, edited_at) values (:id, :body, :owner, now())")
                 .param("id", id)
                 .param("body", body.strip())
+                .param("owner", w.member(circle, owner))
+                .update();
+        // A page is built from blocks: these words are its first one. Notes' own sample data gives the pages of
+        // the screens the blocks they are drawn with.
+        w.jdbc()
+                .sql("""
+            insert into page_blocks (id, page_id, kind, text, position, added_by)
+            values (:block, :id, 'paragraph', :body, 1, :owner)
+            """)
+                .param("block", UUID.randomUUID())
+                .param("id", id)
+                .param("body", body.strip())
+                .param("owner", w.member(circle, owner))
                 .update();
         return id;
     }

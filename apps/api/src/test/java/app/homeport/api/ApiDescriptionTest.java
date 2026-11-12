@@ -91,6 +91,8 @@ class ApiDescriptionTest extends ApiTest {
         join(nora, circle, alex);
         String child = addMember(nora, circle, "Mia", "child");
         String page = page(nora, circle, "Gift list", "me");
+        String list = privateThing(nora, "/v1/checklists", circle, "Gift ideas");
+        String folder = privateThing(nora, "/v1/folders", circle, "Nora's work");
         String pass = JsonPath.read(
                 send(
                         HttpMethod.POST,
@@ -133,9 +135,9 @@ class ApiDescriptionTest extends ApiTest {
 
         // Every id a stranger must learn nothing from, and the ones Alex must learn nothing from although he is in the
         // circle.
-        List<String> forStranger = new ArrayList<>(List.of(circle, child, page, pass, album));
+        List<String> forStranger = new ArrayList<>(List.of(circle, child, page, pass, album, list, folder));
         forStranger.addAll(library);
-        List<String> forAlex = new ArrayList<>(List.of(page, album));
+        List<String> forAlex = new ArrayList<>(List.of(page, album, list, folder));
         forAlex.addAll(library);
         List<String> gaveAway = new ArrayList<>();
         for (String name : operations().keySet()) {
@@ -170,6 +172,19 @@ class ApiDescriptionTest extends ApiTest {
                         : id.equals(page)
                                 ? "a page's id"
                                 : id.equals(pass) ? "a guest pass's id" : "the id of a thing " + id;
+    }
+
+    /** Makes something only its maker can see, of the kind this route makes. Returns its id. */
+    private String privateThing(String token, String route, String circle, String title) throws Exception {
+        return JsonPath.read(
+                send(
+                        HttpMethod.POST,
+                        route,
+                        token,
+                        "{\"clientId\":\"%s\",\"circleId\":\"%s\",\"title\":\"%s\",\"audience\":\"me\"}"
+                                .formatted(id(), circle, title),
+                        201),
+                "$.id");
     }
 
     /** True when the route answers with something: neither "not found" nor "forbidden". */
