@@ -1,6 +1,7 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
+import { useJoinedElsewhere } from '@/features/circles/useJoinedElsewhere';
 import { takeLink } from '@/lib/links';
 
 // A screen that breaks while drawing shows a friendly page with a way to try again.
@@ -19,5 +20,7 @@ export default function SetupLayout() {
     const link = takeLink();
     if (link && link !== pathname) router.replace(link);
   }, [pathname, router]);
+  // Someone who got into a circle elsewhere meanwhile is taken Home instead of being left on "Who is it for?".
+  useJoinedElsewhere();
   return <Stack screenOptions={{ headerShown: false }} />;
 }

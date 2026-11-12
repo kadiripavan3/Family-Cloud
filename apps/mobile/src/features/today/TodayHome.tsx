@@ -7,7 +7,6 @@ import { type CircleResponse, type FreshCard, type TodayItem, type TodayResponse
 import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
-import { PayBillButton } from '@/features/money/PayBill';
 import { TodayTick } from '@/features/plan/TodayTick';
 import { kindOf } from '@/features/things/kinds';
 import { useOpenThing } from '@/features/things/open';
@@ -30,7 +29,9 @@ import { Txt } from '@/ui/Txt';
 import { words } from '@/words';
 
 import { stillOn } from './about';
+import { hasLineButton, LineButton } from './LineButton';
 import { newThingHref } from './newThings';
+import { RepeatMark } from './RepeatMark';
 import { TodayCards } from './TodayCards';
 
 /** How many of the day's things the summary names before it counts the rest. */
@@ -152,9 +153,9 @@ function DayRow({ item, first }: { item: TodayItem; first: boolean }) {
           </Txt>
         ) : null}
       </View>
-      {item.kind === 'bill' && item.thingId ? (
-        // A bill's line ends in "Pay": Money's own button, which marks the person's share as paid or opens the payee's page.
-        <PayBillButton billId={item.thingId} title={item.title ?? ''} />
+      {hasLineButton(item) ? (
+        // A line the API gives a button ends in it, in the API's own word ("Pay"): see `LineButton`.
+        <LineButton item={item} />
       ) : item.avatarUrls?.length ? (
         <View style={{ flexDirection: 'row' }}>
           {item.avatarUrls.slice(0, 2).map((uri, index) => (
@@ -163,7 +164,10 @@ function DayRow({ item, first }: { item: TodayItem; first: boolean }) {
             </View>
           ))}
         </View>
-      ) : null}
+      ) : (
+        // Nothing else to end in: the small mark of something that comes round again, when it does.
+        <RepeatMark item={item} />
+      )}
     </Tap>
   );
 }

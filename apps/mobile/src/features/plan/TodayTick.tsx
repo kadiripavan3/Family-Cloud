@@ -13,6 +13,8 @@ export function TodayTick({ item }: { item: TodayItem }) {
   const ticks = useTick();
   const id = item.thingId;
   if (!id) return null;
-  // Today doesn't say which due day a line is for: `useTick` asks the reminder itself before it changes anything.
-  return <Tick label={item.title ?? ''} done={ticks.shown(id, null, item.done)} onChange={(done) => ticks.tick({ id, done })} />;
+  // A line that is still to do says which day it is due (`due.on`): the tick is for that day. A ticked line
+  // doesn't say, so for taking a tick away `useTick` asks the reminder itself before it changes anything.
+  const dueOn = item.due?.on ?? null;
+  return <Tick label={item.title ?? ''} done={ticks.shown(id, dueOn, item.done)} onChange={(done) => ticks.tick({ id, done, dueOn })} />;
 }
