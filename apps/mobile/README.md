@@ -145,11 +145,11 @@ Milestone 3, Jot: adding something without opening the app (`src/features/jot`; 
 
 | Screen (design) | Address | |
 |---|---|---|
-| 14.2 The jot bar, 14.6 Filed for you | `/jot`, `/jot/filed` | A line is read by the API's rules and filed; "what was filed" undoes or moves it. A line that looks like a code is held back and can go to the Vault. |
-| 14.4 Voice | `/jot/voice` | Typed words stand in for the microphone in a browser. |
-| 14.7 Share into Homeport | `/jot/share` | What another app shares. In a browser, a pasted text. |
+| 14.2 The jot bar, 14.4 It files itself | `/jot`, `/jot/filed` | A line is read by the API's rules and filed; "what was filed" undoes or moves it. A line that looks like a code is held back and can go to the Vault. |
+| 14.6 Say it all at once | `/jot/voice` | Typed words stand in for the microphone in a browser. |
+| 14.7 Share into it | `/jot/share` | What another app shares. In a browser, a pasted text. |
 | 14.1 Widgets, 14.3 The pinned note, 14.5 The Lock Screen | `/jot/widgets`, `/jot/pinned`, `/jot/lock` | Pictures of what the phone build adds, with what each can and can't do. Their code has never run on a phone. |
-| Ways in | `/jot/ways` | Reached from You, Settings. |
+| 14.8 Every way in | `/jot/ways` | Reached from You, Settings. |
 
 Milestone 4, Notes: spaces, folders, pages, lists (`src/features/notes`).
 
@@ -157,8 +157,8 @@ Milestone 4, Notes: spaces, folders, pages, lists (`src/features/notes`).
 |---|---|---|
 | 5.1 Notes | `/?place=notes` | Pinned, spaces, lately, not filed. |
 | 5.2 A space | `/folder/<id>` | A space or any folder; folders inside folders open in place. "Templates" opens the gallery. |
-| 5.3 A page, 5.4 Blocks | `/page/<id>` | Blocks changed one at a time. A list in a page ticks in place; a live block shows another thing as it stands and opens it; a password's "Copy" opens it in the Vault. A page that is a kept journey is drawn as its book (milestone 10). |
-| 5.5 A checklist, 13.2 Offline | `/checklist/<id>` | Changes are written on the phone first and sent in order when there is a connection (`features/notes/changes`). An open list or page asks again every few seconds. |
+| 5.3 A page, 5.4 Add to a page | `/page/<id>` | Blocks changed one at a time. A list in a page ticks in place; a live block shows another thing as it stands and opens it; a password's "Copy" opens it in the Vault. A page that is a kept journey is drawn as its book (milestone 10). |
+| 5.5 A shared list, 13.2 Offline | `/checklist/<id>` | Changes are written on the phone first and sent in order when there is a connection (`features/notes/changes`). An open list or page asks again every few seconds. |
 | New | `/new/note`, `/new/checklist` | Take `?folder=`. |
 
 Milestones 4, 7 and 8, the templates that do work. Every one is a board at `/board/<id>`, started from the gallery at `/templates`; "Adding a template" above is how each was added.
@@ -166,10 +166,10 @@ Milestones 4, 7 and 8, the templates that do work. Every one is a board at `/boa
 | Where its files are | Templates |
 |---|---|
 | `src/features/templates` | Weekly meal plan, chore wheel, time capsule |
-| `src/features/keepsakes` | Open when…, the birthday interview, what they said, same spot every year, Grandma's stories (with her own web page), the good things jar, the doorframe |
+| `src/features/keepsakes` | Open when…, the birthday interview, things they said, same spot every year, Grandma's stories (with her own web page), the good things jar, the doorframe |
 | `src/features/perks` | Whose turn?, the piggy bank, secret missions, the Saturday jar, sleeps until…, where is it?, habit charts |
-| `src/features/couple` | Our story, tucked notes, the anniversary, mystery date, both said yes, the fair share |
-| `src/features/flat` | The kitty, a fairer split, heads-up, heard in this flat, the guest book (with its page at the door), who lived here; and "Running low" on a flat's Today |
+| `src/features/couple` | Our story, tucked notes, the anniversary questions, mystery date, both said yes, the fair share |
+| `src/features/flat` | The kitty, a fairer split, heads-up, heard in the kitchen, the guest book (with its page at the door), everyone who's lived here; and "Running low" on a flat's Today |
 | `src/features/crew` | When can everyone? (with its page by link), Secret Santa, where next?, the dictionary, predictions, the awards, a goal you walk together |
 
 - **Today is one screen for every kind of circle** (`src/features/today`): it draws what the API's Today holds. The first card that is only words is the headline beside the ring; the day's things and the other cards are lines of one list (`TodayLine`), a line about shared costs or a bill with its button; cards with a picture stand in a rail with what is new.
