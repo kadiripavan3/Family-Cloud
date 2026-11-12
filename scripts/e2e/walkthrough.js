@@ -10,6 +10,7 @@
 // (`node scripts/e2e/serve.js <dist> 8081`). Other addresses: set API_URL and WEB_URL, and build the web
 // app with EXPO_PUBLIC_API_URL set to the same API address.
 // usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>
+//        ONLY=05-money node scripts/e2e/walkthrough.js <outDir> <light|dark>   (one steps file, while it is being built)
 const fs = require('fs');
 const path = require('path');
 const { start } = require('./lib');
@@ -20,9 +21,18 @@ const STEPS = path.join(__dirname, 'steps');
   const [out, scheme] = process.argv.slice(2);
   if (!out || !['light', 'dark'].includes(scheme)) throw new Error('usage: node scripts/e2e/walkthrough.js <outDir> <light|dark>');
   fs.mkdirSync(out, { recursive: true });
-  const milestones = fs.readdirSync(STEPS).filter((file) => /^\d\d-[\w-]+\.js$/.test(file)).sort();
+  const all = fs.readdirSync(STEPS).filter((file) => /^\d\d-[\w-]+\.js$/.test(file)).sort();
+  // While one part is being built: ONLY=05-money runs that file alone (several, with commas between them).
+  const only = (process.env.ONLY || '').split(',').map((name) => name.trim()).filter(Boolean);
+  const milestones = only.length ? all.filter((file) => only.includes(file.replace(/\.js$/, ''))) : all;
+  if (only.length && milestones.length !== only.length) throw new Error(`ONLY names a steps file that isn't there: ${only.join(', ')}`);
   const ctx = await start(out, scheme);
   try {
+    if (only.length) {
+      // Every steps file starts signed out, on the welcome screen. The first file opens it; without that file, this does.
+      await ctx.page.goto(ctx.WEB_URL + '/');
+      await ctx.T('Get started').waitFor({ timeout: 20000 });
+    }
     for (const file of milestones) {
       console.log('milestone', file);
       await require(path.join(STEPS, file)).run(ctx);

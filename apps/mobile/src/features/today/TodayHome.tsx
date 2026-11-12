@@ -7,6 +7,7 @@ import { type CircleResponse, type FreshCard, type TodayItem, type TodayResponse
 import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
+import { PayBillButton } from '@/features/money/PayBill';
 import { kindOf } from '@/features/things/kinds';
 import { useOpenThing } from '@/features/things/open';
 import { today } from '@/lib/dates';
@@ -141,7 +142,10 @@ function DayRow({ item, first }: { item: TodayItem; first: boolean }) {
           </Txt>
         ) : null}
       </View>
-      {item.avatarUrls?.length ? (
+      {item.kind === 'bill' && item.thingId ? (
+        // A bill's line ends in "Pay": Money's own button, which marks the person's share as paid or opens the payee's page.
+        <PayBillButton billId={item.thingId} title={item.title ?? ''} />
+      ) : item.avatarUrls?.length ? (
         <View style={{ flexDirection: 'row' }}>
           {item.avatarUrls.slice(0, 2).map((uri, index) => (
             <View key={uri} style={{ marginLeft: index === 0 ? 0 : -8 }}>

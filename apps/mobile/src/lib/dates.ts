@@ -72,6 +72,16 @@ export function formatWeekday(day: string): string {
   return words.dates.dayWithWeekday(date.getDay(), date.getDate(), date.getMonth());
 }
 
+/** "November": the name of the month a day is in. */
+export function formatMonthName(day: string): string {
+  return words.dates.monthName(fromISODate(day).getMonth());
+}
+
+/** "Nov": the same, where there is little room (under a bar of a chart). */
+export function formatMonthShort(day: string): string {
+  return words.dates.monthShort(fromISODate(day).getMonth());
+}
+
 /** "Today", "Tomorrow" or "Fri 4 Dec": a day that is coming up. */
 export function formatComingDay(day: string, from: string = today()): string {
   const diff = daysBetween(from, day);

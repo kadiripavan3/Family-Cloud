@@ -1,4 +1,4 @@
-import { Bell, Calendar, File, FileText, Gift, IdCard, Image, Images, KeyRound, type LucideIcon, Receipt, SquareCheck, Table, Target, Video } from 'lucide-react-native';
+import { Bell, Calendar, File, FileText, Gift, HandCoins, IdCard, Image, Images, KeyRound, type LucideIcon, Receipt, SquareCheck, Table, Target, Video } from 'lucide-react-native';
 
 import { words } from '@/words';
 
@@ -21,6 +21,7 @@ const ICONS: Record<string, LucideIcon> = {
   moment: Images,
   bill: Receipt,
   sheet: Table,
+  split: HandCoins,
   vault_item: KeyRound,
   password: KeyRound,
   id: IdCard,

@@ -18,6 +18,9 @@ export const dates = {
   },
   /** "April 2026": the month a calendar shows. */
   month: (month: number, year: number) => `${MONTHS[month]} ${year}`,
+  /** "April": a month by its name alone, and "Apr" where there is little room. */
+  monthName: (month: number) => MONTHS[month]!,
+  monthShort: (month: number) => MONTHS[month]!.slice(0, 3),
 
   // The day picker
   /** One letter for each day of the week, Monday first. */

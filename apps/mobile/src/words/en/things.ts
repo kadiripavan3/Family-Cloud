@@ -16,6 +16,7 @@ const KINDS: Record<string, { name: string; a: string }> = {
   moment: { name: 'Moment', a: 'a moment' },
   bill: { name: 'Bill', a: 'a bill' },
   sheet: { name: 'Sheet', a: 'a sheet' },
+  split: { name: 'Shared costs', a: 'a split of shared costs' },
   vault_item: { name: 'Vault item', a: 'something in the Vault' },
   password: { name: 'Password', a: 'a password' },
   keepsake: { name: 'Keepsake', a: 'a keepsake' },

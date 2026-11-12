@@ -12,6 +12,13 @@ const mockRouter = { push: jest.fn(), navigate: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/features/circles/current', () => ({ useCircle: jest.fn() }));
 jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn() }));
+// A bill's line ends in Money's own "Pay" button, which has its own test; here only that it is there matters.
+jest.mock('@/features/money/PayBill', () => ({ PayBillButton: (props: { billId: string; title: string }) => mockPay(props) }));
+
+function mockPay({ billId, title }: { billId: string; title: string }) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>{`Pay ${title} ${billId}`}</Text>;
+}
 
 const asked = jest.mocked(useGetToday) as unknown as jest.Mock;
 const DENTIST = 'aaaaaaaa-1111-4111-8111-111111111111';
@@ -59,6 +66,8 @@ describe('3.1 Today', () => {
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'checklist', id: BINS } });
     await user.press(screen.getByRole('button', { name: '€84. Electricity. Due tomorrow · split with Alex' }));
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'bill', id: BILL } });
+    // A bill's line carries "Pay" where the others carry faces.
+    expect(screen.getByText(`Pay Electricity ${BILL}`)).toBeOnTheScreen();
   });
 
   it('shows what is new as a rail of cards, and the way to the library', async () => {
