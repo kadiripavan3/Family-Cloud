@@ -1,10 +1,11 @@
 /**
- * A QR code for a short piece of text (the link behind the code by the door), worked out here because the
- * app may not add a library for it. It follows ISO/IEC 18004 for what a link needs and no more: the text
+ * A QR code for a short piece of text (the link behind the code by the door, a Vault key), worked out here
+ * because the app has no library for it. It follows ISO/IEC 18004 for what those need and no more: the text
  * as bytes, error correction level M (a code that is printed and taped by a door gets smudged), versions 1
  * to 10 (up to 213 bytes), and the mask that scores best by the standard's own four rules.
  *
- * The answer is the square of modules, true for a dark one, without the quiet zone around it.
+ * The answer is the square of modules, true for a dark one, without the quiet zone around it. Its test
+ * holds it to another encoder's codes, square for square.
  */
 
 /** For each version 1 to 10 at level M: error-correction codewords per block, then pairs of (how many blocks, data codewords in each). */

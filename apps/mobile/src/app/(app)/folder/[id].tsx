@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ellipsis, Folder, FolderInput, FolderPlus, Pencil, Pin, PinOff, Plus, Share2, Trash2 } from 'lucide-react-native';
+import { Ellipsis, Folder, FolderInput, FolderPlus, Luggage, Pencil, Pin, PinOff, Plus, Share2, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCache } from '@/api/cache';
 import { messageFor } from '@/api/fetcher';
 import { createFolder, type FolderResponse, type NoteItem, shareFolderContents, useGetFolder, useGetUnfiledNotesInfinite } from '@/api/generated/homeport';
+import { useTripIds, useTripOf } from '@/features/journeyLink/trip/dates';
+import { TripDatesSheet } from '@/features/journeyLink/trip/TripDatesSheet';
+import { TripSpace } from '@/features/journeyLink/trip/TripSpace';
 import { useLeave } from '@/features/navigation/useLeave';
 import { useNoteActions } from '@/features/notes/actions';
 import { FolderTree, type Tree } from '@/features/notes/FolderTree';
@@ -50,15 +53,18 @@ const NOT_FILED = 'unfiled';
  * lists that stand in no folder yet.
  */
 export default function FolderScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  return id === NOT_FILED ? <NotFiled /> : <Space id={id} />;
+  const { id, as } = useLocalSearchParams<{ id: string; as?: string }>();
+  return id === NOT_FILED ? <NotFiled /> : <Space id={id} plain={as === 'folder'} />;
 }
 
-function Space({ id }: { id: string }) {
+function Space({ id, plain }: { id: string; plain: boolean }) {
   const { colors } = useTheme();
   const asked = useGetFolder(id);
   const load = loadState(asked);
   const folder = asked.data;
+  // A folder that was given dates is a trip, with its three stages (10.7), unless it was opened "as a folder".
+  const kind = useTripOf(folder, plain);
+  if (folder && kind === 'trip') return <TripSpace folder={folder} />;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       {load.error ? (
@@ -66,7 +72,7 @@ function Space({ id }: { id: string }) {
           <AppBar />
           <PageProblem error={load.error} onRetry={load.retry} retrying={load.retrying} inset={false} />
         </>
-      ) : !folder ? (
+      ) : !folder || kind === 'asking' ? (
         <>
           <AppBar title={words.common.places.notes} />
           {load.offline ? (
@@ -87,13 +93,13 @@ function Space({ id }: { id: string }) {
           )}
         </>
       ) : (
-        <Loaded folder={folder} />
+        <Loaded folder={folder} trip={plain} />
       )}
     </SafeAreaView>
   );
 }
 
-function Loaded({ folder }: { folder: FolderResponse }) {
+function Loaded({ folder, trip }: { folder: FolderResponse; trip: boolean }) {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -102,11 +108,12 @@ function Loaded({ folder }: { folder: FolderResponse }) {
   const open = useOpenThing();
   const actions = useNoteActions();
   const circle = useCircleOf(folder.circleId);
+  const trips = useTripIds(folder.circleId);
   // Which folders are showing their insides is remembered on the phone, for each space.
   const [unfolded, setUnfolded] = useKept<string[]>(`homeport.notes.open.${folder.id}`, []);
   const [current, setCurrent] = useState<string | null>(null);
   const [held, setHeld] = useState<{ item: NoteItem; folderId: string; siblings: NoteItem[]; canOrder: boolean } | null>(null);
-  const [sheet, setSheet] = useState<'menu' | 'new' | 'rename' | 'folder' | 'move' | 'delete' | null>(null);
+  const [sheet, setSheet] = useState<'menu' | 'new' | 'rename' | 'folder' | 'move' | 'delete' | 'trip' | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const name = folder.title.trim() || words.things.untitled;
   const crumbs = folder.breadcrumb.map((crumb) => crumb.title?.trim() || words.things.untitled);
@@ -116,7 +123,8 @@ function Loaded({ folder }: { folder: FolderResponse }) {
     open: new Set(unfolded),
     current,
     myMemberId: circle?.myMemberId,
-    onToggle: (item) => setUnfolded(unfolded.includes(item.id ?? '') ? unfolded.filter((one) => one !== item.id) : [...unfolded, item.id ?? '']),
+    // A folder opens in place. One that is a trip has a page of its own (10.7), and opens there.
+    onToggle: (item) => (trips.has(item.id ?? '') ? router.push({ pathname: '/folder/[id]', params: { id: item.id ?? '' } }) : setUnfolded(unfolded.includes(item.id ?? '') ? unfolded.filter((one) => one !== item.id) : [...unfolded, item.id ?? ''])),
     onOpen: (item) => {
       setCurrent(item.id ?? null);
       open(item);
@@ -232,6 +240,8 @@ function Loaded({ folder }: { folder: FolderResponse }) {
         {folder.canEdit ? <SheetRow icon={(c) => <FolderPlus size={22} color={c} />} label={words.notes.name.newFolder(name)} onPress={() => setSheet('folder')} /> : null}
         {folder.canEdit ? <SheetRow icon={(c) => <Pencil size={22} color={c} />} label={words.notes.space.menu.nameAndEmoji} onPress={() => setSheet('rename')} /> : null}
         {folder.canEdit ? <SheetRow icon={(c) => <FolderInput size={22} color={c} />} label={words.notes.space.menu.move} onPress={() => setSheet('move')} /> : null}
+        {/* A folder with dates is a trip. One that is a trip already (opened here "as a folder") changes them on its own page. */}
+        {folder.canEdit && !trip ? <SheetRow icon={(c) => <Luggage size={22} color={c} />} label={words.together.trip.menu.make} onPress={() => setSheet('trip')} /> : null}
         {folder.mine ? (
           <SheetRow
             icon={(c) => <Share2 size={22} color={c} />}
@@ -255,6 +265,7 @@ function Loaded({ folder }: { folder: FolderResponse }) {
         onSubmit={(title, emoji) => actions.rename.mutateAsync({ thing: { ...folder, kind: 'folder' }, title, emoji })}
       />
       <MoveSheet thing={sheet === 'move' ? { ...folder, kind: 'folder' } : null} onClose={() => setSheet(null)} />
+      <TripDatesSheet visible={sheet === 'trip'} onClose={() => setSheet(null)} folder={folder} />
       <ConfirmSheet
         visible={sheet === 'delete'}
         onClose={() => setSheet(null)}

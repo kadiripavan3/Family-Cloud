@@ -19,6 +19,9 @@ jest.mock('@/api/cache', () => ({ useCache: () => mockCache, cacheFor: () => moc
 jest.mock('@/api/online', () => ({ useOnline: jest.fn(() => true) }));
 jest.mock('@/features/circles/current', () => ({ useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// Whether a page is a kept journey's book is asked of the link with Journey, which has its own test (together/JourneyBook).
+jest.mock('@/features/journeyLink/book/useBookOf', () => ({ useBookOf: () => mockBookOrPage }));
+jest.mock('@/features/journeyLink/book/JourneyBook', () => ({ JourneyBook: ({ pageId }: { pageId: string }) => mockBook(pageId) }));
 jest.mock('@/features/notes/changes/store', () => ({ changeStore: {} }));
 jest.mock('@/features/notes/MoveSheet', () => ({ MoveSheet: () => null }));
 jest.mock('@/features/notes/page/LinkPicker', () => ({ LinkPicker: () => null }));
@@ -62,6 +65,12 @@ const pressReturn = (label: string) => fireEvent(screen.getByLabelText(label), '
 const onPhone = () => inApp(<ChangesProvider store={memoryStore().store}>{<Page />}</ChangesProvider>);
 /** What the queue sent for the page, one change after another. */
 const sent = () => send.mock.calls.flatMap(([, body]) => body.changes);
+
+let mockBookOrPage: 'book' | 'page' | 'asking' = 'page';
+function mockBook(pageId: string) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>{`the book of ${pageId}`}</Text>;
+}
 
 describe('5.3 a page', () => {
   beforeEach(() => {
@@ -395,5 +404,30 @@ describe('5.3 a page', () => {
     await view.rerender(onPhone());
     expect(screen.getByRole('header', { name: "This isn't available" })).toBeOnTheScreen();
     expect(screen.getByText("That isn't there any more, or it isn't shared with you.")).toBeOnTheScreen();
+  });
+});
+
+describe('a page that is the book of a kept journey (10.4)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    asked.mockReturnValue(loaded(wifiPage()));
+  });
+  afterEach(() => {
+    mockBookOrPage = 'page';
+  });
+
+  it('is laid out as the book', async () => {
+    mockBookOrPage = 'book';
+    await render(onPhone());
+    expect(screen.getByText(`the book of ${mockId}`)).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Title')).toBeNull();
+  });
+
+  it("waits in a page's shape, with its Back, while it isn't known which of the two it is", async () => {
+    mockBookOrPage = 'asking';
+    await render(onPhone());
+    expect(screen.getByLabelText('Loading')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Title')).toBeNull();
   });
 });

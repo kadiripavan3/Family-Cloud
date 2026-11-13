@@ -69,16 +69,19 @@ function ActivityOf({ circle }: { circle: CircleResponse }) {
   const first = asked.data?.pages[0];
 
   // Opening the tab is what marks everything as seen. What was new then keeps its highlight while the tab
-  // is in front, and the API is told, so the dot on the tab goes.
+  // is in front, and the API is told, so the dot on the tab goes. The API is told only once it has answered:
+  // a list kept from last time is asked for again first, and "seen" sent ahead of that answer could reach
+  // the API before it, which would then call nothing in it new.
   const [stillFresh, setStillFresh] = useState<ReadonlySet<string>>(new Set());
   const { mutate: seen } = useMarkActivitySeen();
   const newIds = freshIds(asked.data);
+  const answered = !asked.isFetching;
   useFocusEffect(
     useCallback(() => {
-      if (!newIds) return;
+      if (!newIds || !answered) return;
       setStillFresh((now) => new Set([...now, ...newIds.split(',')]));
       seen({ id: circle.id }, { onSuccess: () => cache.activitySeen(circle.id) });
-    }, [newIds, seen, cache, circle.id]),
+    }, [newIds, answered, seen, cache, circle.id]),
   );
   // Leaving the tab forgets them; coming back asks again, for what others did meanwhile.
   const { refetch } = asked;

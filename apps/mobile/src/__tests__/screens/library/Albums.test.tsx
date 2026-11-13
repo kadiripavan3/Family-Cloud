@@ -106,7 +106,10 @@ describe('6.5 Albums', () => {
     expect(screen.getByRole('header', { name: 'No shared albums yet' })).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('tab', { name: 'From Journey, 3' }));
     expect(screen.getByRole('header', { name: 'Nothing from Journey yet' })).toBeOnTheScreen();
-    expect(screen.getByText('When Homeport and Journey are linked, what you keep from Journey lands here as an album of its originals.')).toBeOnTheScreen();
+    expect(screen.getByText('What you keep from Journey lands here as an album of its originals.')).toBeOnTheScreen();
+    // From there a journey can be kept.
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Keep a journey' }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith('/journey/keep');
   });
 
   it('asks for more as the end comes near', async () => {

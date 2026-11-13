@@ -539,11 +539,14 @@ async function newFamily(ctx) {
     await T('One account with Journey').waitFor();
     await T('Face ID on · Vault locks after 2 minutes').waitFor();
     await shot('you-new');
-    // The way to the other app says when it will open.
+    // The way to the other app is "Your apps" (10.1; walked in 10-journey). Someone new has no profile in Journey yet.
+    await T('No Journey profile yet. The account is ready for it.').waitFor();
     await R('button', { name: 'Switch to Journey' }).click();
-    await T(/^The other app, Journey, opens from here once both apps are on this phone\./).waitFor();
+    await R('heading', { name: 'Your apps' }).waitFor();
+    await T('What you tell · no profile yet').waitFor();
     await shot('you-swap');
-    await R('button', { name: 'Got it' }).click();
+    await page.mouse.click(195, 40);
+    await page.waitForTimeout(500);
     await R('button', { name: /^Storage and backup/ }).click();
     await R('heading', { name: 'Storage and backup' }).waitFor();
     await R('button', { name: 'Back', exact: true }).click();

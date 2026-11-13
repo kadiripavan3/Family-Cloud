@@ -503,9 +503,13 @@ public class TellService {
         return new Checking(outcome, items, candidates, children);
     }
 
-    /** A child of the circle: someone kept as a child, or with a child's or a teen's place in a family. */
+    /**
+     * A child of the circle: someone kept as a child, or with a child's or a teen's place in a family. A pet
+     * is kept with a child's place (it has no sign-in either) and is not one.
+     */
     static boolean isChild(MemberRow member) {
-        return member.kind() == MemberKind.CHILD || member.role() == Role.CHILD || member.role() == Role.TEEN;
+        return member.kind() != MemberKind.PET
+                && (member.kind() == MemberKind.CHILD || member.role() == Role.CHILD || member.role() == Role.TEEN);
     }
 
     public LeavingCheckResponse check(UUID id, UUID me) {

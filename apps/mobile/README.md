@@ -101,7 +101,7 @@ Milestone 1, the spine: circles, people and sharing.
 | 4.5 Guest pass | `/guest-pass/new`, `/guest-pass/<id>`, `/guest-passes` | The guest's side is a web page the API serves. |
 | 4.6 A child's view | `/person/<id>/access` | |
 | A page, a list | `/page/<id>`, `/checklist/<id>`, `/new/note`, `/new/checklist` | Simple and solid; they get richer with Notes. |
-| 12.1 You | `/you` | The numbers come from the API. The swap button and the line about Journey say when they will work. |
+| 12.1 You | `/you` | The numbers come from the API. The swap button and the line about Journey open "Your apps" (10.1). |
 | 12.3 Privacy and security | `/settings/security` | Face ID and the Vault's timer are remembered on the phone; "Hide details in notifications" is the account's own setting (`hideDetails`). |
 | Notifications and appearance | `/settings` | Leads to the two pages the foundation built. |
 
@@ -215,7 +215,7 @@ Milestone 9, what ties it together: Activity, asks, the Sunday summary, export a
 |---|---|---|
 | 11.1 Activity | `/activity`, `/activity?filter=asks` | The current circle's lines a page at a time, under Today, Earlier this week and Earlier; what is due stands under Today. Opening the tab marks everything as seen (the dot on the tab is `useActivityNews`). "Pay" marks the person's share; "Allow" shares the Vault item from this phone and then tells the API (`features/activity/asks.ts`); the line itself opens both answers. The gear: muting the circle, last week's summary, notification settings. |
 | 11.2 Notifications | (the phone's lock screen) | What a tapped notification opens, by the path each kind carries, is `features/notifications/target.ts`. What a notification says is the API's; "Hide details in notifications" on Privacy and security is saved to the account. |
-| 11.3 The Sunday summary | `/summary/<circleId>?week=<a day of the week>` | Everything on it is the API's. The gear holds its two switches. "From Journey" is drawn from `sections`, which stay empty until the two apps are linked. |
+| 11.3 The Sunday summary | `/summary/<circleId>?week=<a day of the week>` | Everything on it is the API's. The gear holds its two switches. "From Journey" is drawn from `sections`. |
 | Asking to see something | (on `/vault-item/<id>`) | `AskToSee`, under an item of someone else's that can't be opened (one look used up, stopped, or no key yet): ask, take the question back, ask again after "not now". |
 | 12.4 Export and leaving | `/settings/leaving`, `/settings/delete-account` | An export is asked for, shown while it is made, and opened when ready. "Export the Vault" says that it isn't built. Leaving asks with the API's numbers first. Deleting the account asks "only this app, or Journey too", and what the API says happened is shown on the welcome screen (`features/leaving/farewell`). Log out is here too. |
 | 3.2 Your circles | (a sheet on Home) | Each circle's line and what "Just me" counts come from `getCircleSwitcher`. |
@@ -223,6 +223,23 @@ Milestone 9, what ties it together: Activity, asks, the Sunday summary, export a
 - **A line of Activity is drawn as the API sends it** (`ActivityLineRow`): the sentence part by part with its bold parts, the faces, the emoji or an icon, the note, the picture, the buttons. The app writes only when ("12 min ago", "7:40", "Mon 18:02": `features/activity/when.ts`) and which label a line stands under.
 - **Allowing an ask handles keys**, so it runs as a secret action (`useSecretAction`), never through the data layer; with the Vault locked the sheet shows the Vault's own locked page and carries on by itself once it is unlocked.
 - **Someone who gets into a circle elsewhere** while the setup screens are open is taken Home when those screens come to the front again (`features/circles/useJoinedElsewhere`, called by the setup screens' layout).
+
+Milestone 10, with Journey: the link between the two apps (`src/features/journeyLink`). Journey itself is a stand-in in local mode; opening it needs both apps on a phone, and every "Open in Journey" says so where it can't (`useOpenJourney`).
+
+| Screen (design) | Address | |
+|---|---|---|
+| 10.1 One account, two apps | (a sheet: hold the You tab, or the swap button and the account row on You) | `AppSwitchSheet`, from `getJourneySwitch`. |
+| 10.2 In Journey: keep it | `homeport://keep?journey=<id>`, `/keep?journey=<id>` | Journey's own screen. Here only the link it opens: it lands on 10.3 (`lib/links.ts`). |
+| 10.3 What to keep | `/journey/keep/<journey id>` (`?trip=<folder id>` for a trip's book), `/journey/keep` | The four switches, the folder, who sees it; then the job with its progress, and what came home. The list of your journeys is not drawn. |
+| 10.4 A journey, kept as a book | `/page/<id>`, `/journey/kept` | A page that is a kept journey's book is drawn as one (`useBookOf`, `JourneyBook`); `?as=page` shows it the way Notes does. The list of kept journeys is not drawn. |
+| 10.5 Tell it as a journey | `/journey/tell/new?moment=<photo id>` or `?album=<id>`, then `/journey/tell/<draft id>` | `tellHref(...)` is the way in from anywhere; `tellOnly(ids)` first when only some of it is meant. Closing a draft throws it away. |
+| 10.6 Before it leaves home | `/journey/tell/<draft id>/check` | The three switches, what it starts as, every photo one by one, then sending with its progress. |
+| 10.7 A trip, start to finish | `/folder/<id>` | A folder that was given dates is drawn as a trip (`useTripOf`, `TripSpace`); `?as=folder` shows it the way Notes does. "Make it a trip" is in a folder's menu. |
+| 10.8 Journey, at home | `/` (Today), `/journey/at-home` | `TodayJourneyCard` draws the cards whose `look` is `journey_away` or `journey_on_this_day`; `useBedtimeHold` keeps a `goodnight` card back until bedtime. The page behind them (who is away, where home is, bedtime) is not drawn. |
+| 10.9 Goodnight from far away | `/goodnight/<id>` | Played by opening its file, as the Library's videos are. "Send one back" records with the phone's camera or takes a video file. |
+
+- **A job the API runs by itself** (keeping, sending) is followed with `useJourneyJob(started)` and drawn with `JobProgress`.
+- **A heart that can be a child's** (`HeartsSheet`): in a circle with people who have no phone, a heart on something from far away asks whose it is.
 
 ## The API's description
 

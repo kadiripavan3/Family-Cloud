@@ -18,7 +18,13 @@ const IN_APP = new RegExp(`^/(${Object.values(SCREENS).join('|')})/[^/?#]+`);
  * come and the router opens them; they are listed here so one that arrives before the person has signed in
  * is remembered like an invitation, and opened once they are in.
  */
-const OWN = /^\/jot(\/(voice|share))?\/?([?#].*)?$/;
+const OWN = /^\/(jot(\/(voice|share))?|journey\/keep\/[^/?#]+)\/?([?#].*)?$/;
+
+/**
+ * "Keep in Homeport" on Journey's recap opens `homeport://keep?journey=<id>`. The journey is part of the
+ * screen's address here ("/journey/keep/<id>"), so it survives being remembered through a sign-in.
+ */
+const KEEP = /^(?:[a-z][a-z0-9+.-]*:\/\/\/?|\/)keep\/?\?(?:[^#]*&)?journey=([^&#]+)/i;
 
 /**
  * The screen for a link that opened the app: "https://homeport.app/join/the-linds" becomes "/join/the-linds".
@@ -28,6 +34,8 @@ const OWN = /^\/jot(\/(voice|share))?\/?([?#].*)?$/;
  * address is only taken when it comes from there; a build that claims no address takes them from anywhere.
  */
 export function screenFor(link: string, host: string | null = linkHost): string {
+  const keep = KEEP.exec(link);
+  if (keep) return `/journey/keep/${keep[1]}`;
   const web = /^https?:\/\/([^/?#]+)(.*)$/i.exec(link);
   if (web && host && web[1]!.toLowerCase() !== host) return link;
   const path = web ? web[2]! : link;

@@ -4,10 +4,11 @@ import type { ReactNode } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { messageFor } from '@/api/fetcher';
-import { type CircleResponse, type FreshCard, type TodayItem, type TodayResponse, useGetToday } from '@/api/generated/homeport';
+import { type CircleResponse, type FreshCard, type TodayCard, type TodayItem, type TodayResponse, useGetToday } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
 import { headcount } from '@/features/circles/members';
 import { RunningLow } from '@/features/flat/RunningLow';
+import { JourneyOnToday } from '@/features/journeyLink/TodayJourneyCard';
 import { placeHref, TAB_BAR_ROOM } from '@/features/home/places';
 import { useNotice } from '@/features/plan/Notice';
 import { TodayTick } from '@/features/plan/TodayTick';
@@ -75,18 +76,23 @@ export function TodayHome() {
         contentContainerStyle={{ paddingBottom: TAB_BAR_ROOM }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={asked.isRefetching} onRefresh={() => void asked.refetch()} tintColor={colors.muted} />}>
-        {nothing ? <BrandNew circle={circle} /> : <Day data={data} circle={circle} say={say} />}
+        {nothing ? (
+          <BrandNew circle={circle} />
+        ) : (
+          // Journey's cards (a goodnight at bedtime, someone away, On this day) are drawn by the link with Journey, around the day.
+          <JourneyOnToday cards={data.cards}>{(rest) => <Day data={data} cards={rest} circle={circle} say={say} />}</JourneyOnToday>
+        )}
       </ScrollView>
       {notice}
     </View>
   );
 }
 
-/** The day itself: the headline card, the list, and the rail of what the circle keeps and what is new. */
-function Day({ data, circle, say }: { data: TodayResponse; circle: CircleResponse; say: (text: string) => void }) {
+/** The day itself: the headline card, the list, and the rail of what the circle keeps and what is new. `cards` are the day's cards that are Today's own to lay out. */
+function Day({ data, cards, circle, say }: { data: TodayResponse; cards: readonly TodayCard[]; circle: CircleResponse; say: (text: string) => void }) {
   const { colors } = useTheme();
   const router = useRouter();
-  const parts = partsOf(data.cards);
+  const parts = partsOf(cards);
   const all = data.left + data.done;
   const progress = all === 0 ? 0 : data.done / all;
   const emoji = words.today.summary.emoji[circle.kind];
@@ -94,7 +100,7 @@ function Day({ data, circle, say }: { data: TodayResponse; circle: CircleRespons
   const two = headcount(circle).people === 2;
   return (
     <>
-      {parts.headline ? <HeadlineCard card={parts.headline} progress={progress} emoji={emoji} /> : <Summary data={data} progress={progress} emoji={emoji} />}
+      {parts.headline ? <HeadlineCard card={parts.headline} progress={progress} emoji={emoji} /> : <Summary data={data} cards={cards} progress={progress} emoji={emoji} />}
 
       {data.items.length + parts.lines.length ? (
         <Card style={{ marginTop: 14, marginHorizontal: layout.barGutter, borderRadius: radius.card, overflow: 'hidden' }}>
@@ -136,9 +142,9 @@ function Day({ data, circle, say }: { data: TodayResponse; circle: CircleRespons
 }
 
 /** The headline card of a day nobody sent a headline for: its first things by their titles, and how much is left and done. */
-function Summary({ data, progress, emoji }: { data: TodayResponse; progress: number; emoji: string }) {
+function Summary({ data, cards, progress, emoji }: { data: TodayResponse; cards: readonly TodayCard[]; progress: number; emoji: string }) {
   // What the day is about: what is still on, or, on a day with nothing in the list, its first cards.
-  const about = data.items.length ? stillOn(data.items) : [...data.cards].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const about = data.items.length ? stillOn(data.items) : [...cards].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const titles = about.map((one) => one.title ?? '').filter(Boolean);
   return (
     <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 18, marginHorizontal: layout.barGutter, paddingVertical: 16, paddingLeft: 18, paddingRight: 16 }}>

@@ -16,12 +16,18 @@ jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/api/generated/homeport', () => ({ useGetJots: jest.fn(), useGetJotWays: () => ({ data: mockWays }), useGetChecklists: jest.fn(), jot: jest.fn(), undoJot: jest.fn(), moveJot: jest.fn() }));
 let mockWays = ways();
 
-const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+/** The middle of today on this machine's clock: "three hours ago" is then today at any hour the tests run. */
+const NOON = new Date(new Date().setHours(14, 0, 0, 0));
+const hoursAgo = (hours: number) => new Date(NOON.getTime() - hours * 3_600_000).toISOString();
+const justNow = <T extends object>(jot: T): T => ({ ...jot, createdAt: NOON.toISOString() });
 /** Three just now (one of them held back) and two from earlier today, the latest first. */
-const today = () => [plumberJot, eggsJot, codeJot, { ...noteJot, createdAt: hoursAgo(3) }, jotMade({ createdAt: hoursAgo(3.5) })];
+const today = () => [justNow(plumberJot), justNow(eggsJot), justNow(codeJot), { ...noteJot, createdAt: hoursAgo(3) }, jotMade({ createdAt: hoursAgo(3.5) })];
 const show = (items = today()) => jest.mocked(useGetJots).mockReturnValue(loaded({ items, nextCursor: null }) as unknown as ReturnType<typeof useGetJots>);
 
 describe('14.4 It files itself: what was filed today', () => {
+  // Only the clock is set (to the middle of today); every timer stays real.
+  beforeAll(() => jest.useFakeTimers({ now: NOON, doNotFake: ['hrtime', 'nextTick', 'performance', 'queueMicrotask', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'setImmediate', 'clearImmediate', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] }));
+  afterAll(() => jest.useRealTimers());
   beforeEach(() => {
     jest.clearAllMocks();
     mockWays = ways();

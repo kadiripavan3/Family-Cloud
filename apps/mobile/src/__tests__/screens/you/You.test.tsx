@@ -1,20 +1,29 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { useGetMe, useGetOverview, useGetStorage } from '@/api/generated/homeport';
+import { useGetJourneySwitch, useGetMe, useGetOverview, useGetStorage } from '@/api/generated/homeport';
 import You from '@/app/(app)/(tabs)/you';
 import { keep } from '@/lib/keep';
 import { forgetKeptChoices } from '@/lib/useKept';
 import { onPhone } from '@/test/phone';
 import { linds, loaded, me, nora, pending } from '@/test/samples';
+import { appSwitch } from '@/test/samples/together';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
-jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetOverview: jest.fn(), useGetStorage: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetOverview: jest.fn(), useGetStorage: jest.fn(), useGetJourneySwitch: jest.fn() }));
 jest.mock('@/features/circles/current', () => ({ useCircle: () => mockLinds }));
+// "Your apps" (10.1) has its own test (together/AppSwitch): here only that it opens matters.
+jest.mock('@/features/journeyLink/AppSwitchSheet', () => ({ AppSwitchSheet: ({ visible }: { visible: boolean }) => mockApps(visible) }));
+
+function mockApps(visible: boolean) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return visible ? <Text>the sheet of your apps</Text> : null;
+}
 jest.mock('@/lib/keep', () => ({ keep: { get: jest.fn(() => Promise.resolve(null)), set: jest.fn(() => Promise.resolve()), remove: jest.fn(() => Promise.resolve()) } }));
 
 const who = jest.mocked(useGetMe) as unknown as jest.Mock;
 const overview = jest.mocked(useGetOverview) as unknown as jest.Mock;
+const inJourney = jest.mocked(useGetJourneySwitch) as unknown as jest.Mock;
 const storage = jest.mocked(useGetStorage) as unknown as jest.Mock;
 const mockLinds = linds;
 const GB = 1024 ** 3;
@@ -26,6 +35,7 @@ describe('12.1 You', () => {
     jest.mocked(keep.get).mockResolvedValue(null);
     who.mockReturnValue(loaded(me()));
     overview.mockReturnValue(loaded({ circles: ['The Linds', 'Lisbon crew', 'Nora and Alex'], notes: 214, bytesKept: 48 * GB, phones: ['ios'] }));
+    inJourney.mockReturnValue(loaded(appSwitch()));
     storage.mockReturnValue(loaded({ usedBytes: 48 * GB, quotaBytes: 200 * GB }));
   });
 
@@ -93,21 +103,37 @@ describe('12.1 You', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/settings');
   });
 
-  it('the swap button says that Journey opens from here once both apps are on the phone', async () => {
+  it('the swap button opens "Your apps", the way to Journey', async () => {
     await render(onPhone(<You />));
-    const user = userEvent.setup();
-    await user.press(screen.getByRole('button', { name: 'Switch to Journey' }));
-    expect(screen.getByText("The other app, Journey, opens from here once both apps are on this phone. It's the same account: nothing to sign in to again.")).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Got it' }));
-    expect(screen.queryByRole('header', { name: 'Over to Journey' })).toBeNull();
+    expect(screen.queryByText('the sheet of your apps')).toBeNull();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Switch to Journey' }));
+    expect(screen.getByText('the sheet of your apps')).toBeOnTheScreen();
   });
 
-  it('draws the line about the one account, and says the link arrives later', async () => {
+  it('draws the line about the one account with what it holds in Journey, and opens "Your apps" from it', async () => {
     await render(onPhone(<You />));
     expect(screen.getByText('One account with Journey')).toBeOnTheScreen();
-    expect(screen.getByText('The link between the two apps arrives later')).toBeOnTheScreen();
-    await userEvent.setup().press(screen.getByRole('button', { name: 'One account with Journey' }));
-    expect(screen.getByText('What you post in Journey shows up here, and the way over there, once the link between the two apps is built.')).toBeOnTheScreen();
+    expect(screen.getByText('3 journeys · 58 following')).toBeOnTheScreen();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'One account with Journey. 3 journeys · 58 following' }));
+    expect(screen.getByText('the sheet of your apps')).toBeOnTheScreen();
+  });
+
+  it('says so when the account has no profile in Journey yet, when Journey could not be asked, and when this app runs without it', async () => {
+    inJourney.mockReturnValue(loaded(appSwitch({ journey: null })));
+    await render(onPhone(<You />));
+    expect(screen.getByText('No Journey profile yet. The account is ready for it.')).toBeOnTheScreen();
+    inJourney.mockReturnValue(loaded(appSwitch({ journey: null, note: 'Journey is not answering just now.' })));
+    await render(onPhone(<You />));
+    expect(screen.getByText('Journey is not answering just now.')).toBeOnTheScreen();
+    inJourney.mockReturnValue(loaded(appSwitch({ available: false, journey: null })));
+    await render(onPhone(<You />));
+    expect(screen.getByText('This Homeport runs without Journey. The two are linked when both are switched on.')).toBeOnTheScreen();
+  });
+
+  it('is quiet about Journey until it is known', async () => {
+    inJourney.mockReturnValue(pending());
+    await render(onPhone(<You />));
+    expect(screen.getByRole('button', { name: 'One account with Journey. –' })).toBeOnTheScreen();
   });
 
   it('writes what is kept in the unit that reads well', async () => {

@@ -9,11 +9,16 @@ import { TabBar } from '../TabBar';
 jest.mock('@/features/today/PlusSheet', () => ({ PlusSheet: ({ visible }: { visible: boolean }) => mockSheet(visible) }));
 jest.mock('@/api/generated/homeport', () => ({ useGetMe: jest.fn(), useGetUnreadActivity: jest.fn() }));
 jest.mock('@/features/circles/current', () => ({ useCircleIfAny: () => mockLinds }));
+// "Your apps" (10.1) has its own test (screens/together/AppSwitch): here only that holding You opens it.
+jest.mock('@/features/journeyLink/AppSwitchSheet', () => ({ AppSwitchSheet: ({ visible }: { visible: boolean }) => (visible ? mockWords('the sheet of your apps') : null) }));
 jest.mock('expo-blur', () => ({ BlurView: () => null }));
 
-function mockSheet(visible: boolean) {
+function mockWords(text: string) {
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return visible ? <Text>the sheet of things to add</Text> : null;
+  return <Text>{text}</Text>;
+}
+function mockSheet(visible: boolean) {
+  return visible ? mockWords('the sheet of things to add') : null;
 }
 
 const TABS = [
@@ -65,6 +70,23 @@ describe('the tab bar', () => {
     // A sheet over the tab that is open: the tab underneath stays where it was.
     expect(screen.getByText('the sheet of things to add')).toBeOnTheScreen();
     expect(navigateToTab).not.toHaveBeenCalled();
+  });
+
+  it('offers the other app when the You tab is held, from whichever tab is open, and opens You when it is pressed', async () => {
+    await render(bar(0));
+    const user = userEvent.setup();
+    expect(screen.queryByText('the sheet of your apps')).toBeNull();
+    await user.longPress(screen.getByRole('tab', { name: 'You' }));
+    expect(screen.getByText('the sheet of your apps')).toBeOnTheScreen();
+    expect(navigateToTab).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('tab', { name: 'You' }));
+    expect(navigateToTab).toHaveBeenCalledWith('you-key');
+  });
+
+  it('offers nothing when another tab is held', async () => {
+    await render(bar(0));
+    await userEvent.setup().longPress(screen.getByRole('tab', { name: 'People' }));
+    expect(screen.queryByText('the sheet of your apps')).toBeNull();
   });
 
   it('puts a dot on Activity while something in the current circle is new, and says so to a screen reader', async () => {

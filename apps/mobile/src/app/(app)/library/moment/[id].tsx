@@ -10,6 +10,7 @@ import { messageFor } from '@/api/fetcher';
 import { createAlbum, type MomentResponse, useGetMoment, useGetWallInfinite } from '@/api/generated/homeport';
 import { more, paged, rows } from '@/api/pages';
 import { selectHref, viewerHref } from '@/features/library/narrow';
+import { tellHref } from '@/features/journeyLink/tell/start';
 import { useToast } from '@/features/library/Toast';
 import { wallItems } from '@/features/library/types';
 import { MOMENT_SHAPES, type PhotoRow, photoRows } from '@/features/library/wallRows';
@@ -41,7 +42,7 @@ import { words } from '@/words';
 /**
  * 6.3 A moment: what was taken on one day at one place, by everyone in the circle who was there, put
  * together by itself. The chips show one person's photos; each photo carries who added it. From here it
- * becomes an album (all of it that you may see), or, once the two apps are linked, a story in Journey.
+ * becomes an album (all of it that you may see), or the draft of a journey to tell in Journey (10.5).
  * The address carries any one of its photos' ids.
  */
 export default function Moment() {
@@ -161,7 +162,7 @@ export default function Moment() {
           </Txt>
         </View>
         <Button label={says.turnInto.album} size="sm" variant="soft" inline loading={album.isPending} onPress={() => album.mutate(moment)} />
-        <Button label={says.turnInto.journey} size="sm" inline icon={(c) => <Route size={16} color={c} />} onPress={() => say(words.library.notYet.story)} />
+        <Button label={says.turnInto.journey} size="sm" inline icon={(c) => <Route size={16} color={c} />} onPress={() => router.push(tellHref({ moment: id, circleId: moment.circleId }))} />
       </GlassBar>
       {toast}
 

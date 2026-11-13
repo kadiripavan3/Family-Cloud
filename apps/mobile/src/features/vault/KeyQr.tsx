@@ -1,23 +1,19 @@
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { qrCode } from '@/lib/qr';
 import { radius, useTheme } from '@/theme';
 import { words } from '@/words';
 
-import { qrCode } from './qr';
-
-/** The light border a code needs around it to be read, in squares. */
-const QUIET = 2;
+/** The light border a code needs around it to be read, in squares (the standard asks for four). */
+const QUIET = 4;
 
 /** The Vault key as a QR code, on a tile: for a camera, or a photo that goes on paper. Drawn here from the text; nothing is fetched. */
 export function KeyQr({ text, size }: { text: string; size: number }) {
   const { colors } = useTheme();
-  let squares: boolean[][];
-  try {
-    squares = qrCode(text);
-  } catch {
-    return <View style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: colors.fill }} />;
-  }
+  const squares = qrCode(text);
+  // (A text too long for a code: a Vault key never is.)
+  if (!squares) return <View style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: colors.fill }} />;
   const side = squares.length + QUIET * 2;
   let path = '';
   squares.forEach((row, y) => {

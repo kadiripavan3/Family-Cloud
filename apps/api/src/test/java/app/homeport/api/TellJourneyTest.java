@@ -47,6 +47,8 @@ class TellJourneyTest extends JourneyApiTest {
         circle = circle(nora, "family", "The Linds");
         String alexMember = join(nora, circle, alex);
         mia = addMember(nora, circle, "Mia", "child");
+        // The dog has no sign-in either, and is nobody's child: a photo of him is not left out with the children's.
+        String biscuit = addMember(nora, circle, "Biscuit", "pet");
         onJourney(nora, "nora");
         send(
                 HttpMethod.PUT,
@@ -69,7 +71,8 @@ class TellJourneyTest extends JourneyApiTest {
         homeVideo = JsonPath.read(
                 addOne(nora, circle, long90, ",\"takenAt\":\"2026-11-07T10:50:00+01:00\"" + AT_THE_LAKE + FOR_ALL),
                 "$.items[0].item.id");
-        sunday = photo(nora, circle, "2026-11-08T09:00:00+01:00", AT_THE_LAKE + FOR_ALL);
+        sunday = photo(
+                nora, circle, "2026-11-08T09:00:00+01:00", AT_THE_LAKE + FOR_ALL + ",\"about\":[\"" + biscuit + "\"]");
         kitchen = photo(nora, circle, "2026-11-08T18:00:00+01:00", AT_HOME + FOR_ALL);
         // Thursday is two days before: Friday has nothing, so Thursday is not part of the weekend.
         photo(nora, circle, "2026-11-05T19:00:00+01:00", AT_HOME + FOR_ALL);

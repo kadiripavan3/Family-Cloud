@@ -10,6 +10,8 @@ import { coupleToday, RUN, SOMEDAY, STORY_BOARD, TUCKED_BOARD } from '@/test/sam
 
 const mockRouter = { push: jest.fn(), navigate: jest.fn() };
 const mockCache = { thingChanged: jest.fn(() => Promise.resolve()) };
+// The link with Journey draws its own cards around the day (together/OnJourney has its test): here it hands every card back.
+jest.mock('@/features/journeyLink/TodayJourneyCard', () => ({ JourneyOnToday: ({ cards, children }: { cards: unknown[]; children: (rest: unknown[]) => unknown }) => children(cards) }));
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/features/circles/current', () => ({ useCircle: jest.fn() }));

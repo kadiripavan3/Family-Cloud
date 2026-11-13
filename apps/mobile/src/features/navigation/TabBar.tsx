@@ -5,6 +5,7 @@ import { type ReactNode, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useGetMe } from '@/api/generated/homeport';
+import { AppSwitchSheet } from '@/features/journeyLink/AppSwitchSheet';
 import { useActivityNews } from '@/features/activity/useActivityNews';
 import { PlusSheet } from '@/features/today/PlusSheet';
 import { radius, useTheme } from '@/theme';
@@ -27,6 +28,7 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
   const { colors, scheme, shadow } = useTheme();
   const profile = useGetMe().data?.profile;
   const [adding, setAdding] = useState(false);
+  const [switching, setSwitching] = useState(false);
   // The dot on Activity: something in the current circle is new since it was last opened.
   const news = useActivityNews();
 
@@ -45,6 +47,8 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
         onPress={() => {
           if (!focused) navigateToTab(route.key);
         }}
+        // Holding the You tab offers the other app (10.1), as it does in Journey.
+        onLongPress={route.name === 'you' ? () => setSwitching(true) : undefined}
         style={{ width: 62, height: 56, alignItems: 'center', justifyContent: 'center', gap: 3 }}>
         {route.name === 'you' ? (
           // The You tab is the person's own picture, with a ring round it while the tab is open.
@@ -90,6 +94,7 @@ export function TabBar({ state, descriptors, navigateToTab, insets }: BottomTabB
       </View>
       {/* What the + button opens: a sheet over the tab it was pressed on. */}
       <PlusSheet visible={adding} onClose={() => setAdding(false)} />
+      <AppSwitchSheet visible={switching} onClose={() => setSwitching(false)} />
     </View>
   );
 }

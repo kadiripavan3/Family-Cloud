@@ -1,5 +1,5 @@
 /** 6 Library: photos, videos and documents, the ways of looking at them, and adding to them. Also 12.2 Storage and backup. */
-import { APP, JOURNEY } from './names';
+import { JOURNEY } from './names';
 import { formatList, plural, spelled } from './plural';
 
 /** 3180 becomes "3,180". */
@@ -70,8 +70,6 @@ export const library = {
 
   // Things that are drawn and can't work yet, said plainly when pressed
   notYet: {
-    story: `Turning this into a story arrives when ${APP} and ${JOURNEY} are linked.`,
-    send: `Sending these to ${JOURNEY} arrives when ${APP} and ${JOURNEY} are linked.`,
     map: "The map isn't built yet. For now your places are a list.",
     play: "That video couldn't be opened. Try its download button.",
   },
@@ -247,7 +245,7 @@ export const library = {
     none: {
       shared: { title: 'No shared albums yet', body: 'An album shared with the circle shows here: yours, and the ones others share with you.' },
       mine: { title: 'No albums of your own yet', body: 'An album only you can see shows here.' },
-      journey: { title: `Nothing from ${JOURNEY} yet`, body: `When ${APP} and ${JOURNEY} are linked, what you keep from ${JOURNEY} lands here as an album of its originals.` },
+      journey: { title: `Nothing from ${JOURNEY} yet`, body: `What you keep from ${JOURNEY} lands here as an album of its originals.` },
     },
     make: {
       title: 'New album',
@@ -461,8 +459,9 @@ export const library = {
     },
     journey: {
       title: `Kept from ${JOURNEY}`,
-      none: `Nothing yet. It fills when ${APP} and ${JOURNEY} are linked.`,
-      some: (count: number) => `${n(count)} ${count === 1 ? 'album' : 'albums'} of originals`,
+      none: `Nothing yet. Keep one from ${JOURNEY} and its photos land here.`,
+      /** "214 · 201 matched to photos you already had": how many came home, and how many of them were here already. */
+      some: (here: number, matched: number) => `${n(here)} · ${n(matched)} matched to photos you already had`,
     },
     freeUp: {
       title: 'Free up space on this phone',

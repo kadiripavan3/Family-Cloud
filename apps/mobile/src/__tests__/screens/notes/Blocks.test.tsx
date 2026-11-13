@@ -19,6 +19,9 @@ jest.mock('@/api/cache', () => ({ useCache: () => mockCache, cacheFor: () => moc
 jest.mock('@/api/online', () => ({ useOnline: jest.fn(() => true) }));
 jest.mock('@/features/circles/current', () => ({ useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// Whether a page is a kept journey's book is asked of the link with Journey, which has its own test (together/JourneyBook).
+jest.mock('@/features/journeyLink/book/useBookOf', () => ({ useBookOf: () => mockBookOrPage }));
+jest.mock('@/features/journeyLink/book/JourneyBook', () => ({ JourneyBook: ({ pageId }: { pageId: string }) => mockBook(pageId) }));
 jest.mock('@/features/notes/changes/store', () => ({ changeStore: {} }));
 jest.mock('@/features/notes/MoveSheet', () => ({ MoveSheet: () => null }));
 jest.mock('@/features/notes/page/send', () => ({ pickPhoto: jest.fn(), sendPhoto: jest.fn(), sendPickedFile: jest.fn() }));
@@ -60,6 +63,12 @@ const onPhone = () => inApp(<ChangesProvider store={memoryStore().store}>{<Page 
 async function add(user: ReturnType<typeof userEvent.setup>, tile: string) {
   await user.press(screen.getByRole('button', { name: 'Add to this page' }));
   await user.press(screen.getByRole('button', { name: tile }));
+}
+
+let mockBookOrPage: 'book' | 'page' | 'asking' = 'page';
+function mockBook(pageId: string) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>{`the book of ${pageId}`}</Text>;
 }
 
 describe('5.4 Add to a page', () => {

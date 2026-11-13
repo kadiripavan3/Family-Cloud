@@ -144,12 +144,12 @@ describe('9.1 The Vault, locked', () => {
   });
 
   it('while locked, still says that the trusted person asked, and saying no needs no key', async () => {
-    const asked = emergency({ state: 'asked', trusted: vaultPerson(), opensAt: '2026-11-14T10:00:00Z' });
+    const asked = emergency({ state: 'asked', trusted: vaultPerson(), opensAt: new Date(Date.now() + 5 * 86_400_000).toISOString() });
     needs.mockReturnValue(loaded(attention({ emergency: asked })));
     jest.mocked(refuseEmergency).mockResolvedValue(emergency({ state: 'ready', trusted: vaultPerson() }));
     await render(inApp(<VaultHome />));
     expect(screen.getByText('Alex asked to open your Vault')).toBeOnTheScreen();
-    expect(screen.getByText(/^It opens to them on Sat 14 Nov at \d\d:00 unless you say no\.$/)).toBeOnTheScreen();
+    expect(screen.getByText(/^It opens to them on \w{3} \d{1,2} \w{3} at \d\d:\d\d unless you say no\.$/)).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Say no. Alex asked to open your Vault' }));
     await waitFor(() => expect(mockCache.vaultEmergencyChanged).toHaveBeenCalled());
     expect(refuseEmergency).toHaveBeenCalled();

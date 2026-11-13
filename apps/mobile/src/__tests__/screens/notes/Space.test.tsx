@@ -22,6 +22,10 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchPar
 jest.mock('@/api/cache', () => ({ useCache: () => mockCache }));
 jest.mock('@/features/circles/current', () => ({ useCircles: () => [mockLinds], useCircleIfAny: () => mockLinds }));
 jest.mock('@/features/sharing/AudienceSheet', () => ({ AudienceSheet: () => null }));
+// Whether a folder is a trip is asked of the link with Journey, which has its own test (together/TripSpace).
+jest.mock('@/features/journeyLink/trip/dates', () => ({ useTripOf: () => mockTripOrFolder, useTripIds: () => mockTrips }));
+jest.mock('@/features/journeyLink/trip/TripSpace', () => ({ TripSpace: ({ folder: shown }: { folder: { title: string } }) => mockWords(`the trip ${shown.title}`) }));
+jest.mock('@/features/journeyLink/trip/TripDatesSheet', () => ({ TripDatesSheet: ({ visible }: { visible: boolean }) => (visible ? mockWords('the dates of the trip') : null) }));
 jest.mock('@/lib/keep', () => ({ keep: { get: jest.fn(() => Promise.resolve(null)), set: jest.fn(() => Promise.resolve()), remove: jest.fn(() => Promise.resolve()) } }));
 jest.mock('@/api/generated/homeport', () => ({
   useGetFolder: jest.fn(),
@@ -42,6 +46,12 @@ jest.mock('@/api/generated/homeport', () => ({
 jest.mock('@/lib/ids', () => ({ newClientId: () => 'client-1' }));
 
 const mockLinds = linds;
+let mockTripOrFolder: 'trip' | 'folder' | 'asking' = 'folder';
+let mockTrips = new Set<string>();
+function mockWords(text: string) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>{text}</Text>;
+}
 const mockMe = loaded(me());
 const asked = jest.mocked(useGetFolder) as unknown as jest.Mock;
 const inside = jest.mocked(useGetFolderItemsInfinite) as unknown as jest.Mock;
@@ -314,5 +324,49 @@ describe('what is not filed', () => {
     jest.mocked(useGetUnfiledNotesInfinite as unknown as jest.Mock).mockReturnValue(loadedPages([]));
     await render(inApp(<FolderScreen />));
     expect(screen.getByText('Everything is filed.')).toBeOnTheScreen();
+  });
+});
+
+describe('a folder that is a trip (10.7)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    forgetKeptChoices();
+    mockParams = { id: 'f-home' };
+    asked.mockReturnValue(loaded(home));
+    inside.mockImplementation((id: string) => loadedPages(HOLDS[id] ?? []));
+  });
+  afterEach(() => {
+    mockTripOrFolder = 'folder';
+    mockTrips = new Set();
+  });
+
+  it('is drawn as the trip, with its three stages', async () => {
+    mockTripOrFolder = 'trip';
+    await render(inApp(<FolderScreen />));
+    expect(screen.getByText('the trip Home')).toBeOnTheScreen();
+    expect(screen.queryByText('48 pages')).toBeNull();
+  });
+
+  it("waits in a folder's shape, with its Back, while it isn't known which of the two it is", async () => {
+    mockTripOrFolder = 'asking';
+    await render(inApp(<FolderScreen />));
+    expect(screen.getByLabelText('Loading')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
+  });
+
+  it('becomes one from its menu, by being given dates', async () => {
+    await render(inApp(<FolderScreen />));
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'More' }));
+    await user.press(screen.getByRole('button', { name: 'Make it a trip' }));
+    expect(screen.getByText('the dates of the trip')).toBeOnTheScreen();
+  });
+
+  it('opens a trip among its rows on the trip\'s own page, instead of unfolding it in place', async () => {
+    mockTrips = new Set(['f-manual']);
+    await render(inApp(<FolderScreen />));
+    await userEvent.setup().press(screen.getByRole('button', { name: /^House manual\./ }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/folder/[id]', params: { id: 'f-manual' } });
+    expect(screen.queryByRole('button', { name: /^Wi‑Fi and smart home/ })).toBeNull();
   });
 });

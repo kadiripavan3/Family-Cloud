@@ -14,6 +14,7 @@ import { thingHref } from '@/features/things/open';
 import { loadState } from '@/lib/loading';
 import { layout, useTheme } from '@/theme';
 import { AppBar } from '@/ui/AppBar';
+import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { List } from '@/ui/List';
 import { Loading } from '@/ui/Loading';
@@ -44,7 +45,7 @@ export default function Albums() {
 
   const none = (
     <View style={{ paddingTop: 56 }}>
-      <EmptyState emoji="📷" title={says.none[tab].title} body={says.none[tab].body} />
+      <EmptyState emoji="📷" title={says.none[tab].title} body={says.none[tab].body} action={tab === 'journey' ? <Button label={words.together.kept.add} onPress={() => router.push('/journey/keep')} /> : undefined} />
     </View>
   );
 
