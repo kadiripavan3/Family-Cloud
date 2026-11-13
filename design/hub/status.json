@@ -1,55 +1,64 @@
 {
-  "phase": "Building · milestones 1 to 9 of 11 done",
+  "phase": "Built · milestones 1 to 10 of 11; the last one needs your accounts and a phone",
   "updated": "2026-11-13",
-  "summary": "**Milestones 1 to 9 are done.** Everything drawn for a family, a couple, a flat and a group of friends is built from its drawing and walked through in a browser in light and dark: the six places, the 36 templates that do work, the Today of each kind of circle, Activity with asks, the Sunday summary, export and leaving. The walk-through uses 610 screens per run, as two or more people where something is private. The screens of the link with Journey are built too and are being walked through now. Every open question is in one place: [What it does](01-requirements.md#questions-for-you).",
+  "summary": "**Milestones 1 to 10 are built.** Every screen drawn for a family, a couple, a flat and a group of friends is built from its drawing and walked through in a browser, in light and dark, as two or more people where something is private: 648 screens a run. The API has 1127 tests and the app 2490. **Milestone 11, real services and real phones, is prepared and waits for you:** nothing has run on a phone or against a real service. Sign-in, storage, push, email and Journey itself are stand-ins on your own computer, every step to connect the real ones is written down, and the Vault needs an outside review before real passwords go in. Every open question is in one place: [What it does](01-requirements.md#questions-for-you).",
   "next": [
-    "Read the questions in “What it does”: seven things only you can do before real people use it, nineteen product decisions, and the calls I made while building.",
-    "Run it on your Mac ([docs/08](08-run-locally.md)) and tell me what is wrong.",
-    "The build stops when the account's usage limit is reached, as it did three times on 12 Nov. Nothing is lost when that happens; it carries on when you say so."
+    "Run it on your Mac: about 20 minutes to set up, then one command. The steps are in `docs/08-run-locally.md` in the repository. Sign in as nora@example.com with the code 123456.",
+    "Read the questions in [What it does](01-requirements.md#questions-for-you): seven things only you can do before real people use it, nineteen product decisions, and the calls I made while building.",
+    "Say whether I may make the ten changes inside Journey that the link needs (`docs/10-journey-changes.md`). Three of them need a decision from you first.",
+    "When you are ready for real services and a build on your iPhone: `docs/09-connect-services.md`, and the checklist for the first build in [the build plan](06-build-plan.md#the-first-build-on-a-phone-what-to-check)."
   ],
   "open": [
     {
-      "q": "Children who use the app themselves",
-      "a": "Children as profiles that a parent looks after are simple. A child under 13 signing in on their own device brings children's privacy rules with it in most countries (Journey is 13 and over). The build plan starts with **profiles only**: anything a child ticks is ticked on a parent's phone, and screen 4.6 becomes what a parent chooses to show. Say so if you want children signing in themselves."
-    },
-    {
-      "q": "Reading what you type or say",
-      "a": "“Type it”, Jot, a scanned bill and a school letter all turn loose words into an event, a bill or a list. The build plan does it **by rules on the phone**: private, free, right for dates, amounts, names and shopping, rough on anything free-form, and it always shows its reading for you to correct. An AI service would read better, costs per use, and the words leave the phone. Which do you want?"
-    },
-    {
-      "q": "Jot on an iPhone",
-      "a": "An iPhone will not keep a notification for ever or take typing inside a widget; an Android phone does more. I drew what each can really do: on iPhone a pinned note you press and hold to type in (it returns after each add), one-tap chips and ticks in widgets, voice, the Action Button and the share sheet. Is that close enough to what you pictured, or should the iPhone side lean harder on one of them?"
+      "q": "An outside review of the Vault",
+      "a": "It is built and tested, and its screens say plainly what it protects. A password manager still needs someone outside to try to break it before real secrets go in. The protocol page lists the questions to put to them."
     },
     {
       "q": "The name",
-      "a": "You chose **Homeport** on 12 Nov. It has had a web search, not a legal check: no family app by that name turned up, and US trademark listings show several HOMEPORT marks, one of them live and one applied for in June 2026 for other software. Have it checked properly, and decide the domain, before the stores. It is one setting if it has to change."
+      "a": "You chose **Homeport** on 12 Nov. It has had a web search, not a legal check: no family app by that name turned up, and US trade mark listings show several HOMEPORT marks, one of them live and one applied for in June 2026 for other software. Have it checked properly, and decide the domain, before the stores. It is one setting if it has to change."
+    },
+    {
+      "q": "The accounts, and the first build on a phone",
+      "a": "Nothing has run against a real service or on a phone. The Apple Developer Program and Homeport's own projects at the services Journey uses are yours to set up; every step is written down and none has been run. Face ID, the widgets, the camera and background backup run for the first time on that build, so expect fixes."
+    },
+    {
+      "q": "The changes inside Journey",
+      "a": "The link is built on Homeport's side against a stand-in with two sample journeys. Journey's own code needs ten changes before it is real. Three need a decision first: inviting someone from your circle to a journey without following you, a circle as who can see a journey, and whether the two servers may talk to each other directly."
+    },
+    {
+      "q": "Children who use the app themselves",
+      "a": "Built as profiles a parent looks after: nobody under 13 signs in, and what a child ticks is ticked on a parent's phone. Say so if you want children signing in themselves; it brings children's privacy rules with it."
+    },
+    {
+      "q": "Reading what you type or say",
+      "a": "“Type it”, Jot, a bill and a school letter are read **by rules on our own side**: right for dates, amounts, names and shopping, rough on anything free-form, and always shown for you to correct. An AI service would read better, costs per use, and the words go to that service. Which do you want?"
     },
     {
       "q": "How private is private?",
-      "a": "In this draft only the Vault is scrambled so that the service can't read it. Notes, photos and files are private to the people you choose but readable by the service, so that search inside scans, reminders from documents and moments can work. Scrambling everything is possible and switches those off."
+      "a": "Only the Vault is scrambled so that the service can't read it. Everything else is private to the people you chose and readable by the service, so that search, reminders from documents and scans work. Photos and scans sit under long random addresses, as in Journey: whoever holds an address can open that file. For passports and bills you may want addresses that expire."
     },
     {
-      "q": "Is there a paid plan?",
-      "a": "Keeping a family's full-size photos and videos costs roughly US$0.75 to 3 a month per family. A free amount with a family plan is the usual answer. The numbers are yours to set."
+      "q": "Will it cost money?",
+      "a": "No plans or limits are built. “48 of 200 GB · family plan” is drawn; the 200 GB is a setting and nothing is refused when it is passed. Keeping a family's full-size photos and videos costs roughly US$0.75 to 3 a month per family (worked out for the tech page, not a quote)."
     },
     {
-      "q": "What is the first version?",
-      "a": "The build plan builds everything that is drawn, in eleven milestones: circles and sharing, Library, Plan with Jot, Notes, Money, Vault, keepsakes, the other kinds of circle, what ties it together, the links with Journey, then real services and phones. Each can go to a few test circles before the next. Does anything wait for a second version?"
+      "q": "Six templates without a drawing",
+      "a": "Date ideas, Who pays what and Names for couples; Cleaning rota, Bills by nights and Move-in photos for flats. The gallery lists them and each says “Coming with the next update”. Shall I draw and build them, or mark them as later?"
     },
     {
-      "q": "The top row",
-      "a": "Today, Plan, Notes, Library, Money, Vault. Are these the right six, in the right order? Is anything you'd use daily more than one tap away?"
+      "q": "Services that are stand-ins",
+      "a": "Speech to text, the weather, the phone's location, mail forwarded in, a leak check for passwords, a map, reading a scan with the camera, recording inside the app. Each needs a service or a library chosen. Tell me which matter first."
     },
     {
-      "q": "Faces",
-      "a": "Grouping photos by who is in them is powerful and sensitive, most of all with children. On the phone only, off by default, or not at all? The build plan leaves it out: people are tagged by hand, and “every photo she is in” fills from the tags."
-    },
-    {
-      "q": "Forwarding an email in",
-      "a": "Send a booking, a bill or a school letter to the circle's own address and it arrives as an event or a bill. It needs a mail-receiving service that Journey doesn't have. First version, or later?"
+      "q": "The rest",
+      "a": "Smaller decisions (what Today lists, one tick for a chore that is also a reminder, On this day, drafts of a journey, what a new account's notifications show) and every call I made while building are in “What it does”, under Questions for you."
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-13",
+      "text": "**Milestone 10, with Journey, is built and tested, and milestone 11 is prepared as far as it goes without your accounts.** With Journey: one account for two apps, keeping a journey as a book with its photos, telling a moment or an album as a journey with a check of every photo before it leaves home, a trip from start to finish, “Alex is on a journey” and On this day on Today, and a goodnight from far away that waits for bedtime. All of it runs against a stand-in for Journey; Journey's own code is untouched. Getting ready: how to run it on your Mac, how to connect each real service, what Journey needs, and the checklist for the first build on a phone are written. The API checks its own settings when it starts and says what is missing. Four faults the last walk-throughs found were fixed: Activity told the API “seen” before the list had answered, so a question that had just come in could lose its “New” mark; a thing that was just deleted was asked for once more while its page closed; a pet was counted among the children when a journey is checked before it leaves home; and the stand-in's pictures did not load. Both QR codes now come from one encoder, which a test holds to another encoder's codes, square for square."
+    },
     {
       "date": "2026-11-13",
       "text": "**Milestones 7, 8 and 9 are built and tested.** Fair and fun: whose turn, the piggy bank, secret missions, the Saturday jar, sleeps until, where is it, habit charts. For couples: our story, tucked notes, the anniversary questions, mystery date, both said yes, the fair share. For housemates: the kitty, a fairer split, heads-up, heard in the kitchen, the guest book with its page at the door, everyone who's lived here. For friends: when can everyone (also by link), Secret Santa, where next, the dictionary, predictions, the awards, a goal you walk together. Each kind of circle has its own Today. What is secret stays secret on the other person's phone, and the walk-through checks that as that person. What ties it together: Activity with its filters and asks (allowing one shares the password from your phone), pushes through one outbox that never names what you can't see, the Sunday summary, export, leaving a circle, and deleting the account with “only Homeport, or Journey too”. Two faults the walk-through found on the way were fixed: someone who deleted only Homeport could never come back, and a made-up address said “couldn't read that” in place of “not available”."

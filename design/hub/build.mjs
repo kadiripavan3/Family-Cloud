@@ -28,7 +28,20 @@ if (process.argv.includes('--files')) {
 }
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const inline = (md) => new Marked().parseInline(String(md));
+// A line of the status: its links to the docs lead to the hub's own pages, as the docs' links do.
+const inline = (md) => {
+  const marked = new Marked();
+  marked.use({
+    renderer: {
+      link(href, title, text) {
+        const r = rewriteHref(href, 'overview');
+        if (!r) return text; // a repo file the hub doesn't show: keep the words, drop the link
+        return `<a href="${esc(r.href)}"${r.external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
+      },
+    },
+  });
+  return marked.parseInline(String(md));
+};
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MONTHS[m - 1]} ${y}`; };
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
