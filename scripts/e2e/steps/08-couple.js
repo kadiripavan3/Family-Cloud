@@ -839,7 +839,7 @@ exports.run = async function run(ctx) {
     // The kitty is the headline; the day's things come first, then the cards with their figures and buttons.
     const { parts } = await checkToday(kai, flat, 'New in the flat');
     if (!parts.headline || parts.headline.look !== 'kitty') throw new Error("the flat's Today doesn't open on the kitty");
-    await R('button', { name: /^Fri\. My sister's staying, Friday to Sunday\./ }).waitFor();
+    await R('button', { name: /^(Fri|Now)\. My sister's staying, Friday to Sunday\./ }).waitFor();
     await R('checkbox', { name: 'Bins out' }).waitFor();
     await shot('flat-today');
     // A button on a card opens the board it is about: answering and paying are done there.
