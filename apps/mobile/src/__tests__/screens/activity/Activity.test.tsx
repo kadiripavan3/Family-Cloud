@@ -120,6 +120,19 @@ describe('11.1 Activity', () => {
     expect(mockSeen).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for the API\'s answer before saying "seen": a list kept from last time is being asked for again', async () => {
+    // What was kept from the last visit calls a line new, and the list is on its way again: "seen" sent now
+    // could reach the API before that, and nothing in the answer would be new any more.
+    asked.mockReturnValue({ ...activityAsked([activityPage({ items: [wheelLine, { ...photosLine, fresh: true }], fresh: 1 })]), isFetching: true });
+    const view = await render(inApp(<Activity />));
+    expect(mockSeen).not.toHaveBeenCalled();
+    // The answer: an ask came in meanwhile. Now the API is told, and both are marked as new.
+    asked.mockReturnValue(activityAsked([activityPage({ items: [askLine, photosLine, wheelLine] })]));
+    await view.rerender(inApp(<Activity />));
+    expect(mockSeen).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /^New\. Alex asks to see/ })).toBeOnTheScreen();
+  });
+
   it('tells the API nothing when nothing is new', async () => {
     asked.mockReturnValue(activityAsked([activityPage({ items: [wheelLine], fresh: 0 })]));
     await render(inApp(<Activity />));
