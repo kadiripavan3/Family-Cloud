@@ -130,7 +130,7 @@ exports.run = async function run(ctx) {
     for (const day of [...before.view.days, ...after.view.days]) for (const meal of day.meals) if (meal.name === 'Baked salmon' || meal.name.startsWith('Walk-through')) await asNora('DELETE', `/v1/board-entries/${meal.id}`);
     await asNora('PATCH', `/v1/boards/${before.id}`, { settings: { cookingFor: 4, toGroceries: true } });
 
-    await openFromGallery(/^Weekly meal plan\. Does work/, /^Weekly meal plan\. \d+ dinners? this week/);
+    await openFromGallery(/^Weekly meal plan\. Does work/, /^Weekly meal plan\. (\d+ dinners? this week|Tonight: )/);
     await R('heading', { name: 'Weekly meal plan' }).waitFor({ timeout: 20000 });
     // The week with its dinners and who cooks, the recipes as chips, and the two rows that do the work.
     for (const weekday of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) await T(weekday, { exact: true }).waitFor();
