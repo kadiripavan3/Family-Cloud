@@ -1,8 +1,9 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import { createCircle, useGetToday } from '@/api/generated/homeport';
+import { createCircle, useGetCircleSwitcher } from '@/api/generated/homeport';
 import { inApp } from '@/test/phone';
-import { coupleCircle, crewCircle, linds, loaded, soloCircle, todayAnswer } from '@/test/samples';
+import { coupleCircle, crewCircle, linds, loaded, pending, soloCircle } from '@/test/samples';
+import { switcher } from '@/test/samples/activity';
 
 import { CircleSwitchSheet } from '../CircleSwitchSheet';
 import { useCircle, useCircles } from '../current';
@@ -13,10 +14,10 @@ const mockJoined = jest.fn(() => Promise.resolve());
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock('../current', () => ({ useCircle: jest.fn(), useCircles: jest.fn(), useSwitchCircle: () => mockSwitch }));
 jest.mock('@/api/cache', () => ({ useCache: () => ({ circleJoined: mockJoined }) }));
-jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn(), createCircle: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetCircleSwitcher: jest.fn(), createCircle: jest.fn() }));
 jest.mock('@/lib/ids', () => ({ newClientId: () => 'client-1' }));
 
-const today = jest.mocked(useGetToday) as unknown as jest.Mock;
+const asked = jest.mocked(useGetCircleSwitcher) as unknown as jest.Mock;
 const make = jest.mocked(createCircle);
 
 describe('3.2 Your circles', () => {
@@ -25,17 +26,33 @@ describe('3.2 Your circles', () => {
     jest.clearAllMocks();
     jest.mocked(useCircles).mockReturnValue([linds, crewCircle, coupleCircle]);
     jest.mocked(useCircle).mockReturnValue(linds);
-    today.mockReturnValue(loaded(todayAnswer({ onlyYou: 38 })));
+    asked.mockReturnValue(loaded(switcher()));
   });
 
-  it('lists the circles with their kind and their people, and says which one you are in', async () => {
+  it("lists the circles, each with the line the API writes for it, and says which one you are in", async () => {
     await render(inApp(<CircleSwitchSheet visible onClose={onClose} />));
+    expect(asked).toHaveBeenCalledWith({ query: { enabled: true, staleTime: 0 } });
     expect(screen.getByRole('header', { name: 'Your circles' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'The Linds. Family · 4 people and Biscuit. You are here' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Lisbon crew. Friends · 5 people' })).toBeOnTheScreen();
+    // What a place adds to a circle's line ("you're owed €64", from Money) comes with it.
+    expect(screen.getByRole('button', { name: "Lisbon crew. Friends · 5 people · you're owed €64" })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Nora and Alex. Couple · 2 people' })).toBeOnTheScreen();
-    expect(screen.getByText('38 things only you can see')).toBeOnTheScreen();
+    // What "Just me" counts is the API's too: everything only you can see, in all your circles.
+    expect(screen.getByRole('button', { name: 'Just me. 38 things only you can see' })).toBeOnTheScreen();
     expect(screen.getByText('Family, friends, housemates, a club')).toBeOnTheScreen();
+  });
+
+  it('says what the phone knows already while the lines are on their way, and no count it does not know', async () => {
+    asked.mockReturnValue(pending());
+    await render(inApp(<CircleSwitchSheet visible onClose={onClose} />));
+    expect(screen.getByRole('button', { name: 'The Linds. Family · 4 people and Biscuit. You are here' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Lisbon crew. Friends · 5 people' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Just me' })).toBeOnTheScreen();
+  });
+
+  it('asks nothing while it is closed', async () => {
+    await render(inApp(<CircleSwitchSheet visible={false} onClose={onClose} />));
+    expect(asked).toHaveBeenCalledWith({ query: { enabled: false, staleTime: 0 } });
   });
 
   it('makes the circle you press the current one, and closes', async () => {

@@ -68,9 +68,9 @@ describe('10.8 Journey, at home: on Today', () => {
 
   it('draws a card that is no thing (no id, no kind) without handing it to Today, and the rest in their order', async () => {
     await render(inApp(<Cards cards={[pastCard, kitty, awayCard, goodnightCard]} />));
-    // The goodnight (after bedtime) and the kitty are Today's to draw, each in its place around Alex's card.
-    expect(screen.getByText('Today draws: Goodnight from Alex')).toBeOnTheScreen();
+    // The kitty is Today's to draw; the goodnight (after bedtime) stands first, as a line with its "Play".
     expect(screen.getByText('Today draws: The kitty is low')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Play. Goodnight from Alex' })).toBeOnTheScreen();
     expect(screen.getByText('Alex is on a journey')).toBeOnTheScreen();
     expect(screen.getByText('On this day')).toBeOnTheScreen();
   });
@@ -158,7 +158,8 @@ describe('10.8 Journey, at home: on Today', () => {
     await act(async () => {
       jest.advanceTimersByTime(31_000);
     });
-    expect(screen.getByText('Today draws: Goodnight from Alex, The kitty is low')).toBeOnTheScreen();
+    expect(screen.getByText('Goodnight from Alex')).toBeOnTheScreen();
+    expect(screen.getByText('Today draws: The kitty is low')).toBeOnTheScreen();
   });
 
   it('asks Journey at home for nothing when Today has none of its cards', async () => {

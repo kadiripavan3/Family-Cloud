@@ -263,7 +263,6 @@ class MoneySeed implements Seeder {
         UUID alex = w.member("linds", "alex");
         UUID mia = w.member("linds", "mia");
         UUID leo = w.member("linds", "leo");
-        LocalDate monthStart = today.withDayOfMonth(1);
 
         // Norway budget: three tabs, changed by Alex today. Its "Saved" tile is what the Norway goal reads.
         UUID norway = sheet(w, "nora", "Norway budget", "circle", SheetTemplate.TRIP_BUDGET, "alex", 0);
@@ -316,29 +315,24 @@ class MoneySeed implements Seeder {
                                         RowDef.of(july.plusDays(2), "Kayaks on the fjord", units(140)),
                                         RowDef.of(july.plusDays(3), "Ferry to Balestrand", units(85)),
                                         RowDef.of(july.plusDays(4), "A day with nothing in it", null))),
+                        // What was put aside, row by row: the table "Saved" adds up, and so the lines the Norway
+                        // goal shows as who put in what (the same story Plan's sample data keeps by hand for a
+                        // goal whose sheet isn't there).
                         SheetTemplate.savings(
                                 8000,
                                 List.of(
-                                        RowDef.of(
-                                                monthStart.minusMonths(5),
-                                                List.of(nora),
-                                                units(2000),
-                                                "From the old holiday account"),
-                                        RowDef.of(monthStart.minusMonths(5), List.of(alex), units(2000), ""),
-                                        RowDef.of(monthStart.minusMonths(3), List.of(nora), units(400), ""),
-                                        RowDef.of(monthStart.minusMonths(2), List.of(alex), units(400), ""),
-                                        RowDef.of(
-                                                monthStart.minusMonths(1),
-                                                List.of(nora),
-                                                units(345),
-                                                "Sold the old bike"),
-                                        RowDef.of(monthStart.minusMonths(1), List.of(alex), units(300), ""),
-                                        RowDef.of(
-                                                monthStart.minusDays(2),
-                                                List.of(mia),
-                                                units(5),
-                                                "From her pocket money"),
-                                        RowDef.of(monthStart, List.of(alex), units(150), "Payday")))),
+                                        RowDef.of(today.minusDays(240), List.of(nora), units(380), ""),
+                                        RowDef.of(today.minusDays(210), List.of(alex), units(550), ""),
+                                        RowDef.of(today.minusDays(180), List.of(nora), units(480), ""),
+                                        RowDef.of(today.minusDays(150), List.of(alex), units(660), ""),
+                                        RowDef.of(today.minusDays(120), List.of(nora), units(250), ""),
+                                        RowDef.of(today.minusDays(95), List.of(leo), units(3), "from his piggy bank"),
+                                        RowDef.of(today.minusDays(60), List.of(nora), units(880), ""),
+                                        RowDef.of(today.minusDays(45), List.of(alex), units(600), ""),
+                                        RowDef.of(today.minusDays(30), List.of(nora), units(792), ""),
+                                        RowDef.of(today.minusDays(20), List.of(alex), units(850), ""),
+                                        RowDef.of(today.minusDays(12), List.of(mia), units(5), "from her pocket money"),
+                                        RowDef.of(today.minusDays(10), List.of(alex), units(150), "payday")))),
                 nora);
         // The receipt on the cabins' row.
         UUID receipt = w.photo("nora", "coffee-receipt.jpg");

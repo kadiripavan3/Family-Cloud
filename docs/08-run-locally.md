@@ -86,6 +86,8 @@ Journey and Homeport both want port 8080 for their API and 8081 for the app. Run
 2. Run `HomeportApiApplication` with the active profile `local`, in debug mode if you like.
 3. Start `./scripts/dev.sh` afterwards. It sees the API is already running and uses yours.
 
+The sample people live by Ljubljana's clock unless told otherwise. `dev.sh` tells the API your Mac's time zone; when you start the API from your IDE and you are not on Central European time, add the environment variable `HOMEPORT_SEED_ZONE` (for example `America/New_York`) to the run configuration before the first start, or the sample family's "today" is off by a day for part of yours.
+
 Every endpoint can be tried in a browser at http://localhost:8080/swagger-ui.html. To call the ones under `/v1`, get a token from `POST /local-auth/token` (`{"email": "nora@example.com", "code": "123456"}`) and paste it into **Authorize**.
 
 Where to put a breakpoint: every request comes in through a controller (`…Controller`), the rules are in the service next to it, and all SQL is in the `…Store` next to that. Who may see what is written once, in `common/Rules.java`. `CLAUDE.md` has the map.

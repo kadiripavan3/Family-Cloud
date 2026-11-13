@@ -27,6 +27,12 @@ import org.springframework.stereotype.Component;
  *   <li><b>A photo at a time.</b> A burst of photos is one push, sent ten minutes after its first photo.
  *   <li><b>What only changes a count</b>: a tick on a list, a line added, a heart. Activity shows those;
  *       nobody's phone buzzes for them.
+ *   <li><b>A goodnight before bedtime.</b> One recorded during the day waits for the circle's bedtime on the
+ *       evening it is meant for, and is then told once to everyone else who may see it.
+ *   <li><b>A journey as such.</b> A journey kept from Journey, a trip that became one, a draft that left for
+ *       it: Activity has a line for each. The photos a kept journey brings are told as the one burst they are.
+ *   <li><b>A second nudge the same day.</b> A nudge about a template (find a date: "tap the days you can") is
+ *       told once a day for each person and board, whoever asks and however often.
  * </ul>
  */
 @Component

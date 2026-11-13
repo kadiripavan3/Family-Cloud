@@ -2,6 +2,7 @@ package app.homeport.api.account;
 
 import app.homeport.api.account.AccountService.SettingsResponse;
 import app.homeport.api.common.Sql;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -103,11 +104,12 @@ public class AccountStore {
                 .update();
     }
 
-    public boolean wasDeleted(UUID userId) {
-        return jdbc.sql("select exists (select 1 from deleted_accounts where id = :id)")
+    /** When this account was deleted, if it was (and not long enough ago to be forgotten). */
+    public Optional<Instant> deletedAt(UUID userId) {
+        return jdbc.sql("select deleted_at from deleted_accounts where id = :id")
                 .param("id", userId)
-                .query(Boolean.class)
-                .single();
+                .query((row, n) -> row.getTimestamp(1).toInstant())
+                .optional();
     }
 
     /** Deleted accounts whose sign-in is still there and due for another try. Each is put off as it is taken. */

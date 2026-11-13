@@ -132,11 +132,12 @@ describe('9.5 If something happens', () => {
   });
 
   it('when the trusted person asked, says when it opens and lets the owner say no', async () => {
-    asked.mockReturnValue(loaded(on({ state: 'asked', askedAt: '2026-11-12T10:00:00Z', opensAt: '2026-11-14T10:00:00Z' })));
+    // (Five days off, so the day is said by its date at whatever hour the tests run, not as "tomorrow".)
+    asked.mockReturnValue(loaded(on({ state: 'asked', askedAt: new Date().toISOString(), opensAt: new Date(Date.now() + 5 * 86_400_000).toISOString() })));
     jest.mocked(refuseEmergency).mockResolvedValue(on());
     await render(inApp(<EmergencyAccess />));
     expect(screen.getByText('Alex asked')).toBeOnTheScreen();
-    expect(screen.getByText(/^It opens to them on Sat 14 Nov at \d\d:00 unless you say no\. Saying no ends this request, not the arrangement/)).toBeOnTheScreen();
+    expect(screen.getByText(/^It opens to them on \w{3} \d{1,2} \w{3} at \d\d:\d\d unless you say no\. Saying no ends this request, not the arrangement/)).toBeOnTheScreen();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Say no' }));
     await waitFor(() => expect(mockCache.vaultEmergencyChanged).toHaveBeenCalledWith(expect.objectContaining({ state: 'ready' })));
     expect(refuseEmergency).toHaveBeenCalled();

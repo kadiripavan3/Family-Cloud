@@ -1,5 +1,6 @@
 package app.homeport.api.list;
 
+import app.homeport.api.common.Rules;
 import app.homeport.api.common.Sql;
 import app.homeport.api.guest.GuestView;
 import app.homeport.api.home.SearchSource;
@@ -37,7 +38,7 @@ class ChecklistSources implements SearchSource, GuestView, GlanceSource {
     public List<Found> find(UUID circleId, UUID me, String words, int limit) {
         return jdbc.sql("""
             select distinct on (i.thing_id) i.thing_id, i.text from checklist_items i join things t on t.id = i.thing_id
-            where t.circle_id = :circle and i.text ilike :pattern and\s""" + ChecklistStore.shownTo("i", ":me") + """
+            where t.circle_id = :circle and i.text ilike :pattern and\s""" + Rules.sees("t", ":me") + " and " + ChecklistStore.shownTo("i", ":me") + """
              order by i.thing_id, i.position limit :limit
             """)
                 .param("circle", circleId)

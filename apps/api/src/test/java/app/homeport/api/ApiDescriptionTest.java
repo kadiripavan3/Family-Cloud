@@ -3,15 +3,34 @@ package app.homeport.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import app.homeport.api.board.BoardRules;
+import app.homeport.api.board.Boards;
 import com.jayway.jsonpath.JsonPath;
+import io.swagger.v3.oas.annotations.Hidden;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.RecordComponent;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,6 +50,13 @@ class ApiDescriptionTest extends ApiTest {
             throw new java.io.UncheckedIOException(e);
         }
     }
+
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping")
+    RequestMappingHandlerMapping routes;
+
+    @Autowired
+    Boards boards;
 
     /** Operations that create something and take no clientId, each with the reason that is good enough. */
     private static final Map<String, String> CREATES_WITHOUT_CLIENT_ID =
@@ -71,6 +97,98 @@ class ApiDescriptionTest extends ApiTest {
         assertThat(wrong)
                 .as("operations that answer 201 without a clientId (add one, or the reason it needs none)")
                 .isEmpty();
+    }
+
+    /**
+     * The description names a record by its short name: `LibraryService.ItemResponse` and
+     * `ChecklistService.ItemResponse` would both be "ItemResponse", only one of them would be written down,
+     * and the app's generated client would read the other one wrongly without anyone noticing. So every
+     * record, enum and other type of ours that a route takes or answers with (and every shape a board's
+     * template brings) has to have a short name of its own.
+     */
+    @Test
+    void noTwoDifferentRecordsGetTheSameNameInTheDescription() {
+        Map<String, Set<String>> byName = new TreeMap<>();
+        Set<Type> seen = new HashSet<>();
+        routes.getHandlerMethods().forEach((route, handler) -> {
+            Method method = handler.getMethod();
+            if (!handler.getBeanType().getPackageName().startsWith(OURS)
+                    || AnnotatedElementUtils.hasAnnotation(handler.getBeanType(), Hidden.class)
+                    || AnnotatedElementUtils.hasAnnotation(method, Hidden.class)) {
+                return;
+            }
+            named(method.getGenericReturnType(), byName, seen);
+            for (Parameter parameter : method.getParameters()) {
+                // What is sent as JSON, and the fixed sets of words in an address (?place=vault).
+                if (parameter.isAnnotationPresent(RequestBody.class)
+                        || parameter.getType().isEnum()) {
+                    named(parameter.getParameterizedType(), byName, seen);
+                }
+            }
+        });
+        for (BoardRules template : boards.all()) {
+            for (Class<?> shape : new Class<?>[] {template.settingsType(), template.viewType(), template.entryType()}) {
+                if (shape != null) {
+                    named(shape, byName, seen);
+                }
+            }
+        }
+        assertThat(byName).as("the types the routes take and answer with").containsKeys("CircleResponse", "Audience");
+        byName.values().removeIf(classes -> classes.size() < 2);
+        assertThat(byName)
+                .as("short names that two different types share in the description (rename one of each)")
+                .isEmpty();
+    }
+
+    private static final String OURS = "app.homeport.api";
+
+    /** Notes this type and every type of ours inside it under the short name the description would give it. */
+    private static void named(Type type, Map<String, Set<String>> byName, Set<Type> seen) {
+        if (type == null || !seen.add(type)) {
+            return;
+        }
+        if (type instanceof ParameterizedType generic) {
+            named(generic.getRawType(), byName, seen);
+            for (Type argument : generic.getActualTypeArguments()) {
+                named(argument, byName, seen);
+            }
+        } else if (type instanceof GenericArrayType array) {
+            named(array.getGenericComponentType(), byName, seen);
+        } else if (type instanceof WildcardType wildcard) {
+            for (Type bound : wildcard.getUpperBounds()) {
+                named(bound, byName, seen);
+            }
+        } else if (type instanceof Class<?> one) {
+            if (one.isArray()) {
+                named(one.getComponentType(), byName, seen);
+                return;
+            }
+            if (!one.getPackageName().startsWith(OURS)) {
+                return;
+            }
+            byName.computeIfAbsent(one.getSimpleName(), name -> new TreeSet<>()).add(one.getName());
+            if (one.isRecord()) {
+                for (RecordComponent part : one.getRecordComponents()) {
+                    named(part.getGenericType(), byName, seen);
+                }
+            } else if (!one.isEnum()) {
+                // Anything else is written down by what it lets be read: its getters, and the kinds it can be.
+                for (Method getter : one.getMethods()) {
+                    if (getter.getParameterCount() == 0
+                            && !Modifier.isStatic(getter.getModifiers())
+                            && getter.getDeclaringClass().getPackageName().startsWith(OURS)
+                            && (getter.getName().startsWith("get")
+                                    || getter.getName().startsWith("is"))) {
+                        named(getter.getGenericReturnType(), byName, seen);
+                    }
+                }
+                if (one.isSealed()) {
+                    for (Class<?> kind : one.getPermittedSubclasses()) {
+                        named(kind, byName, seen);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -282,6 +400,13 @@ class ApiDescriptionTest extends ApiTest {
         assertThat(gaveAway)
                 .as("routes that answered someone who may not see the thing")
                 .isEmpty();
+
+        // An id that isn't one names nothing: the answer is "not found", as for an id nobody has, whatever the
+        // route. A question part that can't be read is still a request we couldn't read.
+        send(HttpMethod.GET, "/v1/pages/nothing-here", nora, null, 404);
+        send(HttpMethod.GET, "/v1/things/nothing-here", nora, null, 404);
+        send(HttpMethod.GET, "/v1/circles/nothing-here/today?day=2026-11-12", nora, null, 404);
+        send(HttpMethod.GET, "/v1/circles/" + circle + "/today?day=someday", nora, null, 400);
 
         // The one thing a stranger may ask about with nothing but a link: what circle the link is for.
         assertThat(fetch("/v1/join/" + code, stranger)).contains("The Linds").doesNotContain("Mia");

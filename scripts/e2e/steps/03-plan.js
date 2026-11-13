@@ -62,7 +62,7 @@ exports.run = async function run(ctx) {
   };
   /** Leaves the screen with this heading, and waits until it has gone: the next press is for the screen underneath. */
   const back = async (heading) => {
-    await R('button', { name: 'Back' }).click();
+    await R('button', { name: 'Back', exact: true }).click();
     await R('heading', { name: heading, exact: true }).waitFor({ state: 'detached' });
   };
   /** Opens Home on Plan and waits for the day's list. */
@@ -455,18 +455,22 @@ exports.run = async function run(ctx) {
     await L('A few words').fill('birthday money');
     await shot('goal-add-money');
     await R('button', { name: 'Add', exact: true }).click();
+    // (This goal reads its number from a sheet in Money: what is added here is a row of that sheet, so the two
+    // can never disagree.)
     await T('Nora added €25').waitFor();
     await T('€5,625 of €8,000').waitFor();
     await T('€2,375 to go').waitFor();
     await shot('goal-added');
-    // Where its number is read from can't be opened yet, and says why.
+    // Where its number is read from opens: the sheet in Money.
     await R('button', { name: /^Reads “Saved” in Norway budget/ }).click();
-    await T(/^Sheets arrive with Money\./).waitFor();
+    await R('heading', { name: 'Norway budget' }).waitFor({ timeout: 20000 });
+    await back('Norway budget');
+    await R('heading', { name: 'Norway 2027' }).waitFor();
     // Taking it back puts the goal where it was.
     await R('button', { name: /^Nora added €25\..*Take it back$/ }).click();
     await R('button', { name: 'Take it back', exact: true }).click();
-    await T('€2,400 to go').waitFor();
     await T('Nora added €25').waitFor({ state: 'detached' });
+    await T('€2,400 to go').waitFor();
     // A goal that is counted by hand has "Add one" instead.
     await back('Norway 2027');
     await R('button', { name: /^Read 20 books\./ }).click();

@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.MonthDay;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -441,6 +440,9 @@ class FunSeed implements Seeder {
                         "fund", Map.of("name", "Skates fund", "stars", 50),
                         "spendGoalCents", 2000,
                         "giveGoalCents", 1500));
+        // Its skates fund is the goal "Mia's skates fund" in Plan, which counts the same 34 stars.
+        w.thing("board/mias-piggy-bank", board);
+        w.link("board/mias-piggy-bank", "goal/skates-fund");
         LocalDate sunday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
         // Spend €8.40, Save €12.00, Give €3.00; 34 stars paid in towards the 50 of the skates fund.
         money(
@@ -1275,8 +1277,7 @@ class FunSeed implements Seeder {
 
         // Friday is hers to plan. All he gets is a time and a hint, and two clues that open on the day.
         LocalDate friday = today.with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
-        Instant start =
-                friday.atTime(20, 0).atZone(ZoneId.of("Europe/Ljubljana")).toInstant();
+        Instant start = friday.atTime(20, 0).atZone(SeedWorld.HOME).toInstant();
         UUID date = add(
                 "nora",
                 board,
@@ -1550,11 +1551,11 @@ class FunSeed implements Seeder {
                         couple,
                         "Run together",
                         new When(
-                                LocalDate.now(ZoneId.of("Europe/Ljubljana")),
+                                LocalDate.now(SeedWorld.HOME),
                                 LocalTime.of(7, 0),
                                 null,
                                 LocalTime.of(7, 40),
-                                "Europe/Ljubljana"),
+                                SeedWorld.HOME_ZONE),
                         null,
                         "Week 3 of couch to 5K",
                         null,

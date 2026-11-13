@@ -52,6 +52,18 @@ describe('what Plan puts on other screens', () => {
       expect(mockRouter.push).not.toHaveBeenCalled();
     });
 
+    it('ticks the day the line says it is due, without asking the reminder first, when Today says which day that is', async () => {
+      today.mockReturnValue(loaded({ ...aDay, items: [{ ...aDay.items[1]!, repeats: true, due: { on: '2026-11-10', amount: null, note: null } }] }));
+      const ticked = reminder({ done: true });
+      jest.mocked(tickReminder).mockResolvedValue(ticked);
+      await render(inApp(<TodayHome />));
+      await userEvent.setup().press(screen.getByRole('checkbox', { name: 'Take the bins out', checked: false }));
+      await waitFor(() => expect(mockCache.reminderSaved).toHaveBeenCalledWith(ticked));
+      // Still open from Tuesday: that is the day the tick is for.
+      expect(tickReminder).toHaveBeenCalledWith(ids.bins, { done: true, dueOn: '2026-11-10', day: '2026-11-11' });
+      expect(getReminder).not.toHaveBeenCalled();
+    });
+
     it('does not tick the next time round when the list had not caught up with a tick given elsewhere', async () => {
       today.mockReturnValue(loaded(aDay));
       // It was ticked on Plan a moment ago: it is due on Friday now, and done for today.

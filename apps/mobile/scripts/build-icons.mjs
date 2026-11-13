@@ -1,7 +1,7 @@
-// Copies the 3D icons from design/hub/icons3d (the source the designs use) into the app, and writes the
-// list the app looks them up in. Run `npm run icons` after adding or removing an icon. The output is committed.
+// Copies the 3D icons from design/hub/icons3d (the source the designs use) into the app, adds the ones the
+// API's sample data uses, and writes the list the app looks them up in. Run `npm run icons` after adding or removing an icon. The output is committed.
 // The icons are Microsoft's Fluent Emoji (MIT licence); each file is named by its emoji's code points.
-import { copyFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,8 +11,32 @@ const to = join(here, '../assets/icons3d');
 
 rmSync(to, { recursive: true, force: true });
 mkdirSync(to, { recursive: true });
-const files = readdirSync(from).filter((f) => f.endsWith('.webp')).sort();
-for (const file of files) copyFileSync(join(from, file), join(to, file));
+const drawn = readdirSync(from).filter((f) => f.endsWith('.webp')).sort();
+for (const file of drawn) copyFileSync(join(from, file), join(to, file));
+
+// The sample data and the lists the API makes (a bill's kind, a sheet's template, the ideas in a jar) use
+// emoji no screen draws. Those get their 3D icon too, straight from the Fluent Emoji package the hub installs
+// (`npm ci --prefix design/hub`), so the sample circles look like the drawings. Without the package they are
+// skipped, and the app draws them as plain emoji, as it does any emoji a person picks that has no icon here.
+const pkg = join(here, '../../../design/hub/node_modules/@lobehub/fluent-emoji-3d/assets');
+const api = join(here, '../../api/src/main/java');
+const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}][\u{FE0F}\u{200D}\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]*/gu;
+const javaFiles = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => (entry.isDirectory() ? javaFiles(join(dir, entry.name)) : entry.name.endsWith('.java') ? [join(dir, entry.name)] : []));
+const sampled = new Set();
+if (existsSync(pkg) && existsSync(api)) {
+  for (const file of javaFiles(api)) {
+    for (const emoji of readFileSync(file, 'utf8').match(EMOJI) ?? []) {
+      const points = [...emoji].map((char) => char.codePointAt(0).toString(16));
+      // The package names some with their "as a picture" mark (fe0f) and some without.
+      const name = [points.join('-'), points.filter((point) => point !== 'fe0f').join('-')].find((one) => existsSync(join(pkg, `${one}.webp`)));
+      if (name && !drawn.includes(`${name}.webp`)) sampled.add(`${name}.webp`);
+    }
+  }
+  for (const file of sampled) copyFileSync(join(pkg, file), join(to, file));
+} else {
+  console.warn('The Fluent Emoji package is not installed (npm ci --prefix design/hub): only the icons the screens draw were copied.');
+}
+const files = [...drawn, ...sampled].sort();
 
 const emojiOf = (file) => String.fromCodePoint(...file.replace('.webp', '').split('-').map((hex) => parseInt(hex, 16)));
 const lines = files.map((file) => `  ${JSON.stringify(emojiOf(file))}: require('../../assets/icons3d/${file}'),`);
@@ -24,4 +48,4 @@ ${lines.join('\n')}
 };
 `;
 writeFileSync(join(here, '../src/ui/icons3d.ts'), out);
-console.log(`${files.length} 3D icons copied.`);
+console.log(`${files.length} 3D icons copied (${drawn.length} the screens draw, ${sampled.size} more for the sample data).`);

@@ -112,10 +112,19 @@ describe('7.7 A goal', () => {
     expect(removeGoalEntry).toHaveBeenCalledWith('e-1');
   });
 
-  it('says plainly why the sheet its number is read from cannot be opened yet', async () => {
+  it('opens the sheet its number is read from, and says why when it cannot', async () => {
+    const source = { kind: 'sheet' as const, ref: 'norway-budget/saved', line: 'Reads “Saved” in Norway budget', live: true, thingId: 's-norway', thingKind: 'sheet' as const };
+    asked.mockReturnValue(loaded(goal({ source })));
+    const { unmount } = await render(inApp(<GoalPage />));
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'Reads “Saved” in Norway budget. Change it there and the ring moves' }));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'sheet', id: 's-norway' } });
+    await unmount();
+    // A sheet that isn't shared with this person has no id to open.
+    asked.mockReturnValue(loaded(goal()));
     await render(inApp(<GoalPage />));
-    await userEvent.setup().press(screen.getByRole('button', { name: 'Reads “Saved” in Norway budget. Change it there and the ring moves' }));
-    expect(await screen.findByText('Sheets arrive with Money. Until then this goal counts what is put in here by hand.')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Reads “Saved” in Norway budget. Change it there and the ring moves' }));
+    expect(await screen.findByText(/^The sheet this goal reads can't be opened from here/)).toBeOnTheScreen();
   });
 
   it('changes it, shows who can see it, and deletes it after asking', async () => {

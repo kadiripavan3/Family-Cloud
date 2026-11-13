@@ -10,7 +10,7 @@ let mockParams: { place?: string } = {};
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => mockParams }));
 jest.mock('@/features/circles/current', () => ({ useCircle: jest.fn(), useCircles: jest.fn(), useSwitchCircle: () => jest.fn() }));
 jest.mock('@/api/cache', () => ({ useCache: () => ({}) }));
-jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn(() => mockToday), createCircle: jest.fn() }));
+jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn(() => mockToday), useGetCircleSwitcher: jest.fn(() => ({ data: undefined })), createCircle: jest.fn() }));
 // Each place is its own component; here only which one stands under the row matters.
 jest.mock('@/features/today/TodayHome', () => ({ TodayHome: () => mockPlace('the place Today') }));
 jest.mock('@/features/plan/PlanHome', () => ({ PlanHome: () => mockPlace('the place Plan') }));

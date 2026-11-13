@@ -9,7 +9,7 @@ import {
   type BoardResponse,
   changeBoard,
   changeBoardEntry,
-  type NewEntryRequest,
+  type NewBoardEntryRequest,
   removeBoardEntry,
   useGetBoard,
 } from '@/api/generated/homeport';
@@ -52,12 +52,7 @@ type Change =
 
 type Done = { board: BoardResponse | null; entryId: string | null };
 
-/**
- * The API's description has two requests called `NewEntryRequest` (a goal's and a board's), and the
- * generated client kept the goal's. What a board takes is `{ clientId, kind, fields }` (`BoardController`),
- * so it is sent as that; this is the one place that knows.
- */
-const newEntry = (entry: { clientId: string; kind: string; fields: Fields }) => entry as unknown as NewEntryRequest;
+const newEntry = (entry: { clientId: string; kind: string; fields: Fields }): NewBoardEntryRequest => entry;
 
 /**
  * Every way a board is changed, the same for all templates: add an entry, change one, remove one, do one of

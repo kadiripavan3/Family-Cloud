@@ -17,8 +17,13 @@ elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
   docker compose up -d --wait db
 else
   echo "No database found. Start Docker Desktop and run this again."
-  echo "To use your own PostgreSQL instead, see docs/07-run-locally.md."
+  echo "To use your own PostgreSQL instead, see docs/08-run-locally.md."
   exit 1
+fi
+
+# The sample people keep this computer's clock, so their "today" is yours (see SeedWorld.HOME).
+if [ -z "${HOMEPORT_SEED_ZONE:-}" ] && [ -L /etc/localtime ]; then
+  export HOMEPORT_SEED_ZONE="$(readlink /etc/localtime | sed 's|.*/zoneinfo/||')"
 fi
 
 # 2. The API (skipped when you already run it yourself, for example from your IDE)

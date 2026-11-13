@@ -258,6 +258,7 @@ export function documentAnswer(over: Partial<DocumentResponse> = {}): DocumentRe
     contentType: 'image/jpeg',
     pictureUrl: 'https://files.test/mia-s-passport.jpg',
     hasText: true,
+    text: 'P<SVNLIND<<MIA\nL898902C3',
     facts: [
       { label: 'Number', text: 'L898902C3', date: null, secret: true },
       { label: 'Born', text: '4 Dec 2016', date: '2016-12-04', secret: false },

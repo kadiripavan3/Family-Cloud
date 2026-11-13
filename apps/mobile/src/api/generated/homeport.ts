@@ -1962,6 +1962,10 @@ export interface BillResponse {
   chip: AudienceChip;
 }
 
+export interface AskAnswerRequest {
+  allow: boolean;
+}
+
 export type AskState = typeof AskState[keyof typeof AskState];
 
 
@@ -3766,7 +3770,11 @@ export interface EntryResponse {
   /** Alex added €150 */
   line: string;
   note: string;
-  day: string;
+  /**
+     * Null only for a line read from a sheet whose row has no day
+     * @nullable
+     */
+  day: string | null;
 }
 
 export interface GoalPaceResponse {
@@ -3797,6 +3805,12 @@ export interface SourceResponse {
   line: string;
   /** False while that place can't be read: the goal then shows what was put in by hand */
   live: boolean;
+  /**
+     * The thing the number is read from, to open from the row: the sheet. Null when you can't see it, and when it is no thing here (a challenge in Journey).
+     * @nullable
+     */
+  thingId: string | null;
+  thingKind: ThingKind | null;
 }
 
 export interface StepsResponse {
@@ -3850,6 +3864,8 @@ export interface GoalResponse {
   months: number[];
   /** The last few times something was put in */
   recent: EntryResponse[];
+  /** False when Add can't be done on this goal: its number is kept elsewhere and is not a sum of lines you can add to (a formula in a sheet, a sheet you may not change, a challenge in Journey). Offer to open source.thingId instead. True otherwise; for a goal that reads the sum of a sheet's column, what is added becomes a row there. */
+  addHere: boolean;
   updatedAt: string;
   mine: boolean;
   canEdit: boolean;
@@ -4514,6 +4530,11 @@ export interface ChoreWheelJob {
      * @nullable
      */
   lastDoneAt: string | null;
+  /**
+     * The reminder in Plan that rings for this job, when it has one you may see. Today then lists the job once, as the reminder.
+     * @nullable
+     */
+  reminderId: string | null;
 }
 
 export interface ChoreWheelView {
@@ -7018,6 +7039,23 @@ export interface NewBoardRequest {
   settings?: NewBoardRequestSettings;
 }
 
+/**
+ * What the template takes for this kind. See x-board-templates.
+ */
+export type NewBoardEntryRequestFields = {[key: string]: unknown};
+
+export interface NewBoardEntryRequest {
+  clientId: string;
+  /**
+     * The template's word for what is added: meal, letter, mark
+     * @minLength 0
+     * @maxLength 40
+     */
+  kind: string;
+  /** What the template takes for this kind. See x-board-templates. */
+  fields?: NewBoardEntryRequestFields;
+}
+
 export interface EntryAddedResponse {
   entryId: string;
   board: BoardResponse;
@@ -7037,6 +7075,22 @@ export interface ActRequest {
   verb: string;
   /** What the verb needs. See x-board-templates. */
   body?: ActRequestBody;
+}
+
+export interface BillShareRequest {
+  memberId: string;
+  /**
+     * Their part of the whole: 1 and 1 is half each. Left out: 1.
+     * @minimum 1
+     * @maximum 1000000
+     */
+  parts?: number;
+  /**
+     * Or their exact amount in cents. Then everyone needs one, and they must add up to the bill.
+     * @minimum 1
+     * @maximum 100000000000
+     */
+  cents?: number;
 }
 
 export interface NewBillRequest {
@@ -7115,7 +7169,20 @@ export interface NewBillRequest {
      * @minItems 0
      * @maxItems 30
      */
-  shares?: ShareRequest[];
+  shares?: BillShareRequest[];
+}
+
+export interface ReadBillRequest {
+  /**
+     * The lines of text the phone read off the photo or the PDF, top to bottom
+     * @minItems 0
+     * @maxItems 400
+     * @items.minLength 0
+     * @items.maxLength 500
+     */
+  lines: string[];
+  /** The day on the person's phone, for a due date written without its year. The API's own day when left out. */
+  day?: string;
 }
 
 export interface ReadTextResponse {
@@ -7536,6 +7603,57 @@ export interface ItemChange {
   removePlace?: boolean;
 }
 
+export interface AlbumBrief {
+  id?: string;
+  title?: string;
+}
+
+export interface Neighbours {
+  /** Taken after it, the nearest first */
+  newer?: ItemRow[];
+  /** Taken before it, the nearest first */
+  older?: ItemRow[];
+  /**
+     * Its place counted from the newest, starting at 1. Only inside a moment or an album.
+     * @nullable
+     */
+  position?: number | null;
+  /**
+     * How many there are. Only inside a moment or an album.
+     * @nullable
+     */
+  total?: number | null;
+}
+
+export interface LibraryItemResponse {
+  item: ItemRow;
+  /**
+     * Its picture at full size
+     * @nullable
+     */
+  largeUrl: string | null;
+  /** @nullable */
+  fileName: string | null;
+  contentType: string;
+  /** How much is kept for it, in bytes */
+  bytes: number;
+  /** @nullable */
+  lat: number | null;
+  /** @nullable */
+  lng: number | null;
+  /** @nullable */
+  country: string | null;
+  addedAt: string;
+  /** Who is in it, as tagged by hand */
+  about: PersonBrief[];
+  /** The albums it is in that you may see */
+  albums: AlbumBrief[];
+  loves: number;
+  lovedBy: PersonBrief[];
+  comments: number;
+  neighbours: Neighbours;
+}
+
 export interface JourneyDraftDayRequest {
   day: string;
   /**
@@ -7812,6 +7930,8 @@ export interface DocumentResponse {
   pictureUrl: string | null;
   /** True when the phone sent the words inside it, so it can be searched */
   hasText: boolean;
+  /** The words inside it as they are kept: what "change the words" starts with. Empty when the phone sent none. */
+  text: string;
   /** What was read from the words, to show and to correct */
   facts: Fact[];
   /** Every day found after a word that says what it means */
@@ -7951,7 +8071,7 @@ export interface BillChangeRequest {
      * @minItems 1
      * @maxItems 30
      */
-  shares?: ShareRequest[];
+  shares?: BillShareRequest[];
 }
 
 export interface AlbumChange {
@@ -8541,9 +8661,9 @@ export interface FreshCard {
 }
 
 export interface TodayAction {
-  /** What the button says: Pay */
+  /** What the button says: Pay, Remind, Settle */
   label?: string;
-  /** What kind of act it is: pay */
+  /** What kind of act it is. pay: mark your share of the bill paid (PUT /v1/bills/{id}/paid with dueOn). remind: remind whoever owes you in the split (PUT /v1/splits/{id}/reminders/{memberId} for each of them). settle: open the split to settle up (POST /v1/splits/{id}/payments). */
   act?: string;
 }
 
@@ -8614,10 +8734,17 @@ export interface TodayItem {
   /** True for something that comes round again: the repeat mark */
   repeats?: boolean;
   /**
-     * For a bill or a reminder: when it is due, and how Activity says it
+     * For a bill or a reminder: when it is due, and how Activity says it. For a reminder that is done: the due day that was ticked, to send back when taking the tick away.
      * @nullable
      */
   due?: TodayDue;
+  /** For a reminder: true when the signed-in person may tick it here, or, for a line that is done, take its tick away again (PUT /v1/reminders/{id}/done, with due.on as dueOn). False for everything else, which is ticked where it is kept. */
+  canTick?: boolean;
+  /**
+     * When this line is a job that is also kept as another thing (a job on the chore wheel that has its reminder in Plan): that thing. Today lists such a pair once, so a line that names another is only here when the other isn't on the list.
+     * @nullable
+     */
+  sameAs?: string | null;
 }
 
 export interface TodayResponse {
@@ -8941,11 +9068,22 @@ export interface PlanEntryResponse {
      * @nullable
      */
   done: boolean | null;
-  /** True when the signed-in person may tick it here. Send the line's day as dueOn. */
+  /** True when the signed-in person may tick it here, or, for a line that is done, take its tick away again. Send dueOn with the tick. */
   canTick: boolean;
+  /**
+     * For a job: the due day to send with a tick, or with taking one away. For a job that is done it is the due day that was ticked, which need not be the day the line stands on, and is null for a job that had no day. Null for anything else.
+     * @nullable
+     */
+  dueOn: string | null;
   /** The small line under the title: Weekdays · Alex drives */
   note: string;
   noteIcon: NoteIcon;
+  /** True for something that comes round again, also on a line that is done, where the note no longer says so */
+  repeats: boolean;
+  /** Its button, when there is something to do right here: a bill on the day it is due has its Pay, as on Today. Null for an event or a reminder. */
+  action: TodayAction | null;
+  /** For a line another place brought that is due rather than on (a bill): the day, the amount to the cent, and the small line Activity uses. Send its day as dueOn with the button's act. Null for an event or a reminder (a reminder has dueOn). */
+  due: TodayDue | null;
   /** Whose it is, for the coloured dot. Null: everyone's. */
   whose: WhoseResponse | null;
   /** The faces next to it, three at most */
@@ -9308,6 +9446,10 @@ export interface GoalRowResponse {
   reached: boolean;
   /** Where it reads its number, when not by hand */
   source: GoalSource | null;
+  /** What it counts: money, or a plain number of something */
+  unit: GoalUnit;
+  /** What is counted, when it isn't money: books, stars */
+  unitWords: string;
   /** Who put something in, whoever began first coming first */
   people: PersonBrief[];
   /** All four chip in. Empty when nobody has yet. */
@@ -9572,28 +9714,6 @@ export interface AccountDeletedResponse {
   signIn: SignInOutcome;
   /** What happened, in a sentence to show as it is */
   message: string;
-}
-
-export interface AlbumBrief {
-  id: string;
-  title: string;
-}
-
-export interface Neighbours {
-  /** Taken after it, the nearest first */
-  newer: ItemRow[];
-  /** Taken before it, the nearest first */
-  older: ItemRow[];
-  /**
-     * Its place counted from the newest, starting at 1. Only inside a moment or an album.
-     * @nullable
-     */
-  position: number | null;
-  /**
-     * How many there are. Only inside a moment or an album.
-     * @nullable
-     */
-  total: number | null;
 }
 
 export type GetTripParams = {
@@ -13975,6 +14095,78 @@ export const useAnswerEvent = <TError = unknown,
       return useMutation(getAnswerEventMutationOptions(options), queryClient);
     }
 
+export const getUnanswerEventUrl = (id: string,) => {
+
+
+
+
+  return `/v1/events/${id}/answer`
+}
+
+/**
+ * @summary Take your own answer back: you haven't answered again. Taking back what isn't there is fine.
+ */
+export const unanswerEvent = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<EventResponse> => {
+
+  return apiFetch<EventResponse>(getUnanswerEventUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnanswerEventMutationKey = () => ['unanswerEvent'] as const;
+
+export const getUnanswerEventMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unanswerEvent>>, TError,UnanswerEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unanswerEvent>>, TError,UnanswerEventMutationVariables, TContext> => {
+
+const mutationKey = getUnanswerEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unanswerEvent>>, UnanswerEventMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  unanswerEvent(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnanswerEventMutationResult = NonNullable<Awaited<ReturnType<typeof unanswerEvent>>>
+
+    export type UnanswerEventMutationError = unknown
+    export type UnanswerEventMutationVariables = {id: string}
+
+    /** @summary Take your own answer back: you haven't answered again. Taking back what isn't there is fine. */
+export const useUnanswerEvent = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unanswerEvent>>, TError,UnanswerEventMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unanswerEvent>>,
+        TError,
+        UnanswerEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnanswerEventMutationOptions(options), queryClient);
+    }
+
 export const getMarkShoppingListUrl = (id: string,) => {
 
 
@@ -15185,7 +15377,7 @@ export const getAnswerAskUrl = (id: string,) => {
  * @summary The owner's answer to an ask: allow, or not now
  */
 export const answerAsk = async (id: string,
-    answerRequest: AnswerRequest, options?: Parameters<typeof apiFetch>[1]): Promise<AskResponse> => {
+    askAnswerRequest: AskAnswerRequest, options?: Parameters<typeof apiFetch>[1]): Promise<AskResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -15206,7 +15398,7 @@ return apiFetch<AskResponse>(getAnswerAskUrl(id),
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(answerRequest)
+    body: JSON.stringify(askAnswerRequest)
   }
 );}
 
@@ -15244,9 +15436,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AnswerAskMutationResult = NonNullable<Awaited<ReturnType<typeof answerAsk>>>
-    export type AnswerAskMutationBody = AnswerRequest
+    export type AnswerAskMutationBody = AskAnswerRequest
     export type AnswerAskMutationError = unknown
-    export type AnswerAskMutationVariables = {id: string;data: AnswerRequest}
+    export type AnswerAskMutationVariables = {id: string;data: AskAnswerRequest}
 
     /**
  * Allowing has two steps, because only your phone can open a Vault item to someone: first share the item with them (PUT /v1/vault/items/{id}/sharing, with a key wrapped for them and the until or once they asked for), then say allow here. Until they can really open it, allow is refused with not_opened_yet.
@@ -21800,7 +21992,7 @@ export const getAddBoardEntryUrl = (id: string,
  * @summary Add one entry to a board
  */
 export const addBoardEntry = async (id: string,
-    newEntryRequest: NewEntryRequest,
+    newBoardEntryRequest: NewBoardEntryRequest,
     params?: AddBoardEntryParams, options?: Parameters<typeof apiFetch>[1]): Promise<EntryAddedResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -21822,7 +22014,7 @@ return apiFetch<EntryAddedResponse>(getAddBoardEntryUrl(id,params),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(newEntryRequest)
+    body: JSON.stringify(newBoardEntryRequest)
   }
 );}
 
@@ -21860,9 +22052,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AddBoardEntryMutationResult = NonNullable<Awaited<ReturnType<typeof addBoardEntry>>>
-    export type AddBoardEntryMutationBody = NewEntryRequest
+    export type AddBoardEntryMutationBody = NewBoardEntryRequest
     export type AddBoardEntryMutationError = unknown
-    export type AddBoardEntryMutationVariables = {id: string;data: NewEntryRequest;params?: AddBoardEntryParams}
+    export type AddBoardEntryMutationVariables = {id: string;data: NewBoardEntryRequest;params?: AddBoardEntryParams}
 
     /** @summary Add one entry to a board */
 export const useAddBoardEntry = <TError = unknown,
@@ -22069,7 +22261,7 @@ export const getReadBillUrl = () => {
 /**
  * @summary Read a bill from the text of a photo or a PDF: who to pay, how much, by when. It suggests; nothing is saved.
  */
-export const readBill = async (readRequest: ReadRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillReadingResponse> => {
+export const readBill = async (readBillRequest: ReadBillRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillReadingResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -22090,7 +22282,7 @@ return apiFetch<BillReadingResponse>(getReadBillUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(readRequest)
+    body: JSON.stringify(readBillRequest)
   }
 );}
 
@@ -22128,9 +22320,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ReadBillMutationResult = NonNullable<Awaited<ReturnType<typeof readBill>>>
-    export type ReadBillMutationBody = ReadRequest
+    export type ReadBillMutationBody = ReadBillRequest
     export type ReadBillMutationError = unknown
-    export type ReadBillMutationVariables = {data: ReadRequest}
+    export type ReadBillMutationVariables = {data: ReadBillRequest}
 
     /** @summary Read a bill from the text of a photo or a PDF: who to pay, how much, by when. It suggests; nothing is saved. */
 export const useReadBill = <TError = unknown,
@@ -24836,9 +25028,9 @@ export const getGetLibraryItemUrl = (id: string,
  * @summary One photo, video or document with everything its screen shows, and what stands either side of it under the wall's narrowing you came from
  */
 export const getLibraryItem = async (id: string,
-    params?: GetLibraryItemParams, options?: Parameters<typeof apiFetch>[1]): Promise<ItemResponse> => {
+    params?: GetLibraryItemParams, options?: Parameters<typeof apiFetch>[1]): Promise<LibraryItemResponse> => {
 
-  return apiFetch<ItemResponse>(getGetLibraryItemUrl(id,params),
+  return apiFetch<LibraryItemResponse>(getGetLibraryItemUrl(id,params),
   {
     ...options,
     method: 'GET'
@@ -24944,7 +25136,7 @@ export const getChangeLibraryItemUrl = (id: string,) => {
  * @summary Change a caption, or when and where it was taken
  */
 export const changeLibraryItem = async (id: string,
-    itemChange: ItemChange, options?: Parameters<typeof apiFetch>[1]): Promise<ItemResponse> => {
+    itemChange: ItemChange, options?: Parameters<typeof apiFetch>[1]): Promise<LibraryItemResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -24960,7 +25152,7 @@ export const changeLibraryItem = async (id: string,
     }
     return headers;
   };
-return apiFetch<ItemResponse>(getChangeLibraryItemUrl(id),
+return apiFetch<LibraryItemResponse>(getChangeLibraryItemUrl(id),
   {
     ...options,
     method: 'PATCH',

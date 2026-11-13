@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -249,6 +250,18 @@ public class ReminderStore {
               k.done_by as tick_done_by, k.done_for as tick_done_for, k.stars as tick_stars
             from reminder_ticks k where k.thing_id = :id order by k.done_at desc, k.id desc limit 1
             """).param("id", reminderId).query((rs, n) -> tick(rs)).optional();
+    }
+
+    /** The last tick of each of these reminders: the only one of its ticks that can be taken away. */
+    public Set<UUID> lastTicks(List<UUID> reminderIds) {
+        if (reminderIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(
+                jdbc.sql("""
+            select distinct on (k.thing_id) k.id from reminder_ticks k where k.thing_id in (:ids)
+            order by k.thing_id, k.done_at desc, k.id desc
+            """).param("ids", reminderIds).query(UUID.class).list());
     }
 
     public void removeTick(UUID tickId) {

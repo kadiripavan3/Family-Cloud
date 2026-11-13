@@ -45,15 +45,27 @@
           var sending = document.getElementById('sending');
           var recorder = null, chunks = [], started = 0, timer = null;
 
+          var canRecord = !!(navigator.mediaDevices && window.MediaRecorder);
+
+          // One button at a time: "Start talking" until someone talks, "I've finished" while they do, neither
+          // while the answer is on its way.
+          function show(moment) {
+            record.hidden = !(canRecord && moment === 'ready');
+            stop.hidden = moment !== 'talking';
+            clock.hidden = moment !== 'talking';
+          }
+
           function fail(words) {
             sending.hidden = true;
             problem.textContent = words || "That didn't work. Please try again.";
             problem.hidden = false;
+            show('ready');
           }
 
           function send(blob, seconds) {
             problem.hidden = true;
             sending.hidden = false;
+            show('sending');
             var type = (blob.type || 'audio/webm').split(';')[0];
             fetch('/s/' + token + '/upload', {
               method: 'POST',
@@ -82,9 +94,10 @@
             });
           }
 
-          if (navigator.mediaDevices && window.MediaRecorder) {
-            record.hidden = false;
+          show('ready');
+          if (canRecord) {
             record.addEventListener('click', function () {
+              problem.hidden = true;
               navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
                 chunks = [];
                 recorder = new MediaRecorder(stream);
@@ -96,9 +109,8 @@
                 });
                 recorder.start();
                 started = Date.now();
-                record.hidden = true;
-                stop.hidden = false;
-                clock.hidden = false;
+                clock.textContent = '0:00';
+                show('talking');
                 timer = setInterval(function () {
                   var s = Math.round((Date.now() - started) / 1000);
                   clock.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
@@ -108,7 +120,7 @@
               });
             });
             stop.addEventListener('click', function () {
-              stop.hidden = true;
+              show('sending');
               if (recorder) { recorder.stop(); }
             });
           }

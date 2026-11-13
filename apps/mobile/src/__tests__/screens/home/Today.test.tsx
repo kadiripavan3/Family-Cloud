@@ -16,11 +16,18 @@ jest.mock('@/api/generated/homeport', () => ({ useGetToday: jest.fn() }));
 // Journey's cards on Today have their own test (together/OnJourney): here every card is Today's own to draw.
 jest.mock('@/features/journeyLink/TodayJourneyCard', () => ({ JourneyOnToday: ({ cards, children }: { cards: unknown[]; children: (rest: unknown[]) => unknown }) => children(cards) }));
 // A bill's line ends in Money's own "Pay" button, which has its own test; here only that it is there matters.
-jest.mock('@/features/money/PayBill', () => ({ PayBillButton: (props: { billId: string; title: string }) => mockPay(props) }));
+jest.mock('@/features/money/PayBill', () => ({ PayBillButton: (props: { billId: string; title: string; label?: string }) => mockPay(props) }));
 
-function mockPay({ billId, title }: { billId: string; title: string }) {
+// The small mark of something that comes round again is an icon: here it says what it is.
+jest.mock('lucide-react-native', () => ({ ...jest.requireActual('lucide-react-native'), Repeat: () => mockMark() }));
+function mockMark() {
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return <Text>{`Pay ${title} ${billId}`}</Text>;
+  return <Text>the repeat mark</Text>;
+}
+
+function mockPay({ billId, title, label }: { billId: string; title: string; label?: string }) {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return <Text>{`${label} ${title} ${billId}`}</Text>;
 }
 
 const asked = jest.mocked(useGetToday) as unknown as jest.Mock;
@@ -32,8 +39,8 @@ const aDay = todayAnswer({
   done: 2,
   items: [
     { thingId: DENTIST, kind: 'event' as never, title: 'Dentist · Mia', note: 'Alex is taking her', lead: '15:30', done: null, minute: 930, avatarUrls: ['https://example.com/mia.jpg', 'https://example.com/alex.jpg'] },
-    { thingId: BINS, kind: 'checklist', title: 'Take the bins out', note: 'Tonight · your turn', lead: null, done: false, minute: 1440, avatarUrls: [] },
-    { thingId: BILL, kind: 'bill' as never, title: 'Electricity', note: 'Due tomorrow · split with Alex', lead: '€84', done: null, minute: 1440, avatarUrls: [] },
+    { thingId: BINS, kind: 'checklist', title: 'Take the bins out', note: 'Tonight · your turn', lead: null, done: false, minute: 1440, avatarUrls: [], repeats: true },
+    { thingId: BILL, kind: 'bill' as never, title: 'Electricity', note: 'Due tomorrow · split with Alex', lead: '€84', done: null, minute: 1440, avatarUrls: [], action: { label: 'Pay', act: 'pay' }, repeats: true, due: { on: '2026-11-12', amount: '€84.20', note: 'Your half is €42.10' } },
   ],
   fresh: [
     { thingId: 'dddddddd-1111-4111-8111-111111111111', kind: 'album' as never, title: 'Saturday at the lake', note: 'Alex, Mia and you', imageUrl: 'https://example.com/canoe.jpg', pill: '19 new' },
@@ -75,8 +82,23 @@ describe('3.1 Today', () => {
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'checklist', id: BINS } });
     await user.press(screen.getByRole('button', { name: '€84. Electricity. Due tomorrow · split with Alex' }));
     expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/[kind]/[id]', params: { kind: 'bill', id: BILL } });
-    // A bill's line carries "Pay" where the others carry faces.
+    // A line the API gives a button carries it, in the API's word, where the others carry faces.
     expect(screen.getByText(`Pay Electricity ${BILL}`)).toBeOnTheScreen();
+  });
+
+  it('ends a line in its button, its faces, or the mark of something that comes round again, as the API says', async () => {
+    const view = await render(onPhone(<TodayHome />));
+    // The bins come round again and have nobody's face: the small repeat mark. The bill repeats too, and carries its button instead.
+    expect(screen.getAllByText('the repeat mark')).toHaveLength(1);
+    // A bill the bank pays by itself has no button: nothing to tap.
+    asked.mockReturnValue(loaded(todayAnswer({ left: 1, items: [{ thingId: BILL, kind: 'bill' as never, title: 'Rent', note: 'Due tomorrow · standing order', lead: '€980', done: null, minute: 1440, avatarUrls: [], action: null as never, repeats: false }] })));
+    await view.rerender(onPhone(<TodayHome />));
+    expect(screen.queryByText(/^Pay /)).toBeNull();
+    expect(screen.queryByText('the repeat mark')).toBeNull();
+    // Whatever word the API sends is the button's.
+    asked.mockReturnValue(loaded(todayAnswer({ left: 1, items: [{ thingId: BILL, kind: 'bill' as never, title: 'Rent', note: 'Due today', lead: '€980', done: null, minute: 1440, avatarUrls: [], action: { label: 'Mark paid', act: 'pay' } }] })));
+    await view.rerender(onPhone(<TodayHome />));
+    expect(screen.getByText(`Mark paid Rent ${BILL}`)).toBeOnTheScreen();
   });
 
   it('shows what is new as a rail of cards, and the way to the library', async () => {

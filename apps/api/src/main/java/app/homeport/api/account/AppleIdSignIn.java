@@ -58,7 +58,7 @@ class AppleIdSignIn implements AppleSignIn {
         if (teamId.isBlank() || keyId.isBlank() || clientId.isBlank() || privateKey.isBlank()) {
             throw new IllegalStateException(
                     "homeport.apple.mode=apple needs APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_CLIENT_ID and APPLE_PRIVATE_KEY"
-                            + " (see docs/08-connect-services.md, step 5).");
+                            + " (see docs/09-connect-services.md, step 5).");
         }
         this.jdbc = jdbc;
         this.audience = url.replaceAll("/+$", "");

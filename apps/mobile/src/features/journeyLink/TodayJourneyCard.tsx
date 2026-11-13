@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Heart, Route } from 'lucide-react-native';
-import { Fragment, type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { useCache } from '@/api/cache';
@@ -9,6 +9,7 @@ import { messageFor } from '@/api/fetcher';
 import { type AtHomeResponse, type AwayResponse, type CircleResponse, type JourneyPastDay, loveJourneyEntry, type TodayCard, unloveJourneyEntry, useGetJourneyAtHome } from '@/api/generated/homeport';
 import { useCircle } from '@/features/circles/current';
 import { useOpenThing } from '@/features/things/open';
+import { CardLine } from '@/features/today/TodayCards';
 import { formatTime, today } from '@/lib/dates';
 import { firstName } from '@/lib/names';
 import { layout, radius, useTheme } from '@/theme';
@@ -71,8 +72,8 @@ export function waitsForBedtime(card: TodayCard, atHome: AtHomeResponse | undefi
  * How a card of Today is recognised as one the link with Journey draws itself: by its `look`. "journey_away"
  * is someone of the circle on a journey (it has no `thingId` and no `kind`: it is not a thing here), and
  * "journey_on_this_day" a day from a kept journey of an earlier year (its thing is the book's page). A
- * "goodnight" card is not one of these: Today draws it like any card with a picture; it is only held back
- * until bedtime (`useBedtimeHold`).
+ * "goodnight" card is not one of these: it is a thing here, drawn as a line like any card of Today, only
+ * held back until bedtime (`useBedtimeHold`) and then put first (`JourneyOnToday`).
  */
 export function isJourneyCard(card: TodayCard): boolean {
   return card.look === AWAY || card.look === PAST;
@@ -126,29 +127,34 @@ export function awayOf(card: TodayCard, away: readonly AwayResponse[] | undefine
 type Props = {
   /** Every card of Today, as the API sent them. */
   cards: readonly TodayCard[];
-  /** Draws the cards that are not Journey's, the way Today draws its cards. */
+  /** Draws the day with the cards that are not Journey's, the way Today lays its cards out. Called once. */
   children: (rest: TodayCard[]) => ReactNode;
 };
 
 /**
- * 10.8 Journey, at home: every card of Today in its own order, with Journey's among them. Someone of the
- * circle who is away gets a card of their own; days from kept journeys stand side by side under "On this
- * day"; a goodnight is held back until bedtime and is then one of Today's own cards. Everything that is not
- * Journey's is handed back to Today to draw (`children`), stretch by stretch.
+ * 10.8 Journey, at home: Today with Journey's cards around it. A goodnight whose bedtime has come stands
+ * first, as a line with its "Play"; someone of the circle who is away gets a card of their own; then the
+ * day; and the days from kept journeys stand side by side under "On this day", below it. Everything that is
+ * not Journey's is handed back to Today to lay out (`children`), in the order the API gave.
  */
 export function JourneyOnToday({ cards, children }: Props) {
   const held = useBedtimeHold(cards);
+  const parts = partsOf(cards, held);
+  const past = parts.flatMap((part) => (part.kind === 'past' ? part.cards : []));
+  const rest = parts.flatMap((part) => (part.kind === 'rest' ? part.cards : []));
+  const nights = rest.filter((card) => card.look === GOODNIGHT);
   return (
     <>
-      {partsOf(cards, held).map((part, index) =>
-        part.kind === 'away' ? (
-          <TodayJourneyCard key={`away-${part.at}`} card={part.card} />
-        ) : part.kind === 'past' ? (
-          <OnThisDay key={`past-${index}`} cards={part.cards} />
-        ) : (
-          <Fragment key={`rest-${index}`}>{children(part.cards)}</Fragment>
-        ),
-      )}
+      {nights.length ? (
+        <Card style={{ marginTop: 16, marginHorizontal: layout.barGutter, borderRadius: radius.card, overflow: 'hidden' }}>
+          {nights.map((card, index) => (
+            <CardLine key={`${card.thingId}-${index}`} card={card} first={index === 0} />
+          ))}
+        </Card>
+      ) : null}
+      {parts.map((part) => (part.kind === 'away' ? <TodayJourneyCard key={`away-${part.at}`} card={part.card} /> : null))}
+      {children(rest.filter((card) => card.look !== GOODNIGHT))}
+      {past.length ? <OnThisDay cards={past} /> : null}
     </>
   );
 }

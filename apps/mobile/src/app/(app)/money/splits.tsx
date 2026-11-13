@@ -11,7 +11,6 @@ import { createSplit, type SplitBriefResponse, useGetSplitsInfinite } from '@/ap
 import { more, paged, rows } from '@/api/pages';
 import { useCircle } from '@/features/circles/current';
 import { SplitRow } from '@/features/money/split/SplitRow';
-import { useWhileInFront } from '@/features/money/useWhileInFront';
 import { PageProblem } from '@/features/states/PageProblem';
 import { thingHref, useOpenThing } from '@/features/things/open';
 import { newClientId } from '@/lib/ids';
@@ -40,7 +39,7 @@ export default function Splits() {
   const open = useOpenThing();
   const splits = useGetSplitsInfinite(circle.id, undefined, { query: paged });
   const load = loadState(splits);
-  const list = rows(useWhileInFront(splits.data));
+  const list = rows(splits.data);
   const [starting, setStarting] = useState(false);
   const [title, setTitle] = useState('');
   const clientId = useRef(newClientId());

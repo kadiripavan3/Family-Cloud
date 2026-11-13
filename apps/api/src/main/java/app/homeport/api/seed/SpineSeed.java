@@ -21,6 +21,7 @@ class SpineSeed implements Seeder {
     @Override
     public void seed(SeedWorld w) {
         JdbcClient jdbc = w.jdbc();
+        w.afresh();
         person(w, "nora", "Nora Lind", "av-me.jpg");
         person(w, "alex", "Alex Strand", "av-alex.jpg");
         person(w, "lea", "Lea", "av-lea.jpg");

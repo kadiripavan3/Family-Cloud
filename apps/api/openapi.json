@@ -1417,6 +1417,32 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "events" ],
+        "summary" : "Take your own answer back: you haven't answered again. Taking back what isn't there is fine.",
+        "operationId" : "unanswerEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/circles/{id}/shopping-list" : {
@@ -1904,7 +1930,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/AnswerRequest"
+                "$ref" : "#/components/schemas/AskAnswerRequest"
               }
             }
           },
@@ -4301,7 +4327,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/NewEntryRequest"
+                "$ref" : "#/components/schemas/NewBoardEntryRequest"
               }
             }
           },
@@ -4406,7 +4432,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ReadRequest"
+                "$ref" : "#/components/schemas/ReadBillRequest"
               }
             }
           },
@@ -5474,7 +5500,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ItemResponse"
+                  "$ref" : "#/components/schemas/LibraryItemResponse"
                 }
               }
             }
@@ -5510,7 +5536,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ItemResponse"
+                  "$ref" : "#/components/schemas/LibraryItemResponse"
                 }
               }
             }
@@ -12919,6 +12945,15 @@
         },
         "required" : [ "cents", "paid", "paidAt", "paidBy", "parts", "person", "you" ]
       },
+      "AskAnswerRequest" : {
+        "type" : "object",
+        "properties" : {
+          "allow" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "allow" ]
+      },
       "AskResponse" : {
         "type" : "object",
         "properties" : {
@@ -16004,8 +16039,9 @@
             "type" : "string"
           },
           "day" : {
-            "type" : "string",
-            "format" : "date"
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Null only for a line read from a sheet whose row has no day"
           }
         },
         "required" : [ "amount", "by", "day", "id", "line", "note" ]
@@ -16164,6 +16200,10 @@
               "$ref" : "#/components/schemas/EntryResponse"
             }
           },
+          "addHere" : {
+            "type" : "boolean",
+            "description" : "False when Add can't be done on this goal: its number is kept elsewhere and is not a sum of lines you can add to (a formula in a sheet, a sheet you may not change, a challenge in Journey). Offer to open source.thingId instead. True otherwise; for a goal that reads the sum of a sheet's column, what is added becomes a row there."
+          },
           "updatedAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -16178,7 +16218,7 @@
             "$ref" : "#/components/schemas/AudienceChip"
           }
         },
-        "required" : [ "amountLine", "blurb", "byLabel", "canEdit", "cheer", "chip", "circleId", "coverUrl", "currency", "current", "currentLabel", "emoji", "how", "id", "line", "mine", "months", "pace", "people", "recent", "source", "startDay", "steps", "target", "targetDay", "targetLabel", "title", "unit", "unitWords", "updatedAt", "year" ]
+        "required" : [ "addHere", "amountLine", "blurb", "byLabel", "canEdit", "cheer", "chip", "circleId", "coverUrl", "currency", "current", "currentLabel", "emoji", "how", "id", "line", "mine", "months", "pace", "people", "recent", "source", "startDay", "steps", "target", "targetDay", "targetLabel", "title", "unit", "unitWords", "updatedAt", "year" ]
       },
       "SourceResponse" : {
         "type" : "object",
@@ -16196,9 +16236,21 @@
           "live" : {
             "type" : "boolean",
             "description" : "False while that place can't be read: the goal then shows what was put in by hand"
+          },
+          "thingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The thing the number is read from, to open from the row: the sheet. Null when you can't see it, and when it is no thing here (a challenge in Journey)."
+          },
+          "thingKind" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ThingKind"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "kind", "line", "live", "ref" ]
+        "required" : [ "kind", "line", "live", "ref", "thingId", "thingKind" ]
       },
       "StepsResponse" : {
         "type" : "object",
@@ -17500,6 +17552,27 @@
         },
         "required" : [ "circleId", "clientId", "template" ]
       },
+      "NewBoardEntryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string",
+            "description" : "The template's word for what is added: meal, letter, mark",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "fields" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What the template takes for this kind. See x-board-templates."
+          }
+        },
+        "required" : [ "clientId", "kind" ]
+      },
       "EntryAddedResponse" : {
         "type" : "object",
         "properties" : {
@@ -17529,6 +17602,30 @@
           }
         },
         "required" : [ "verb" ]
+      },
+      "BillShareRequest" : {
+        "type" : "object",
+        "properties" : {
+          "memberId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "parts" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Their part of the whole: 1 and 1 is half each. Left out: 1.",
+            "maximum" : 1000000,
+            "minimum" : 1
+          },
+          "cents" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Or their exact amount in cents. Then everyone needs one, and they must add up to the bill.",
+            "maximum" : 100000000000,
+            "minimum" : 1
+          }
+        },
+        "required" : [ "memberId" ]
       },
       "NewBillRequest" : {
         "type" : "object",
@@ -17627,13 +17724,35 @@
             "type" : "array",
             "description" : "Who pays. Left out: you pay all of it.",
             "items" : {
-              "$ref" : "#/components/schemas/ShareRequest"
+              "$ref" : "#/components/schemas/BillShareRequest"
             },
             "maxItems" : 30,
             "minItems" : 0
           }
         },
         "required" : [ "amountCents", "circleId", "clientId", "dueOn" ]
+      },
+      "ReadBillRequest" : {
+        "type" : "object",
+        "properties" : {
+          "lines" : {
+            "type" : "array",
+            "description" : "The lines of text the phone read off the photo or the PDF, top to bottom",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 500,
+              "minLength" : 0
+            },
+            "maxItems" : 400,
+            "minItems" : 0
+          },
+          "day" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day on the person's phone, for a due date written without its year. The API's own day when left out."
+          }
+        },
+        "required" : [ "lines" ]
       },
       "BillReadingResponse" : {
         "type" : "object",
@@ -18374,6 +18493,117 @@
           }
         }
       },
+      "AlbumBrief" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        }
+      },
+      "LibraryItemResponse" : {
+        "type" : "object",
+        "properties" : {
+          "item" : {
+            "$ref" : "#/components/schemas/ItemRow"
+          },
+          "largeUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "Its picture at full size"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "bytes" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How much is kept for it, in bytes"
+          },
+          "lat" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "lng" : {
+            "type" : [ "number", "null" ],
+            "format" : "double"
+          },
+          "country" : {
+            "type" : [ "string", "null" ]
+          },
+          "addedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "about" : {
+            "type" : "array",
+            "description" : "Who is in it, as tagged by hand",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "albums" : {
+            "type" : "array",
+            "description" : "The albums it is in that you may see",
+            "items" : {
+              "$ref" : "#/components/schemas/AlbumBrief"
+            }
+          },
+          "loves" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lovedBy" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonBrief"
+            }
+          },
+          "comments" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "neighbours" : {
+            "$ref" : "#/components/schemas/Neighbours"
+          }
+        },
+        "required" : [ "about", "addedAt", "albums", "bytes", "comments", "contentType", "country", "fileName", "item", "largeUrl", "lat", "lng", "lovedBy", "loves", "neighbours" ]
+      },
+      "Neighbours" : {
+        "type" : "object",
+        "properties" : {
+          "newer" : {
+            "type" : "array",
+            "description" : "Taken after it, the nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "older" : {
+            "type" : "array",
+            "description" : "Taken before it, the nearest first",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemRow"
+            }
+          },
+          "position" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Its place counted from the newest, starting at 1. Only inside a moment or an album."
+          },
+          "total" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "How many there are. Only inside a moment or an album."
+          }
+        }
+      },
       "JourneyDraftChangeRequest" : {
         "type" : "object",
         "properties" : {
@@ -18782,6 +19012,10 @@
             "type" : "boolean",
             "description" : "True when the phone sent the words inside it, so it can be searched"
           },
+          "text" : {
+            "type" : "string",
+            "description" : "The words inside it as they are kept: what \"change the words\" starts with. Empty when the phone sent none."
+          },
           "facts" : {
             "type" : "array",
             "description" : "What was read from the words, to show and to correct",
@@ -18816,7 +19050,7 @@
             } ]
           }
         },
-        "required" : [ "clash", "contentType", "dates", "document", "facts", "fileName", "hasText", "linked", "pictureUrl", "remindOn" ]
+        "required" : [ "clash", "contentType", "dates", "document", "facts", "fileName", "hasText", "linked", "pictureUrl", "remindOn", "text" ]
       },
       "Fact" : {
         "type" : "object",
@@ -19031,7 +19265,7 @@
             "type" : "array",
             "description" : "Who pays, all of them: this replaces the shares there were",
             "items" : {
-              "$ref" : "#/components/schemas/ShareRequest"
+              "$ref" : "#/components/schemas/BillShareRequest"
             },
             "maxItems" : 30,
             "minItems" : 1
@@ -20357,11 +20591,11 @@
         "properties" : {
           "label" : {
             "type" : "string",
-            "description" : "What the button says: Pay"
+            "description" : "What the button says: Pay, Remind, Settle"
           },
           "act" : {
             "type" : "string",
-            "description" : "What kind of act it is: pay"
+            "description" : "What kind of act it is. pay: mark your share of the bill paid (PUT /v1/bills/{id}/paid with dueOn). remind: remind whoever owes you in the split (PUT /v1/splits/{id}/reminders/{memberId} for each of them). settle: open the split to settle up (POST /v1/splits/{id}/payments)."
           }
         }
       },
@@ -20474,7 +20708,16 @@
           "due" : {
             "type" : "null",
             "$ref" : "#/components/schemas/TodayDue",
-            "description" : "For a bill or a reminder: when it is due, and how Activity says it"
+            "description" : "For a bill or a reminder: when it is due, and how Activity says it. For a reminder that is done: the due day that was ticked, to send back when taking the tick away."
+          },
+          "canTick" : {
+            "type" : "boolean",
+            "description" : "For a reminder: true when the signed-in person may tick it here, or, for a line that is done, take its tick away again (PUT /v1/reminders/{id}/done, with due.on as dueOn). False for everything else, which is ticked where it is kept."
+          },
+          "sameAs" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "When this line is a job that is also kept as another thing (a job on the chore wheel that has its reminder in Plan): that thing. Today lists such a pair once, so a line that names another is only here when the other isn't on the list."
           }
         }
       },
@@ -21205,7 +21448,12 @@
           },
           "canTick" : {
             "type" : "boolean",
-            "description" : "True when the signed-in person may tick it here. Send the line's day as dueOn."
+            "description" : "True when the signed-in person may tick it here, or, for a line that is done, take its tick away again. Send dueOn with the tick."
+          },
+          "dueOn" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "For a job: the due day to send with a tick, or with taking one away. For a job that is done it is the due day that was ticked, which need not be the day the line stands on, and is null for a job that had no day. Null for anything else."
           },
           "note" : {
             "type" : "string",
@@ -21213,6 +21461,26 @@
           },
           "noteIcon" : {
             "$ref" : "#/components/schemas/NoteIcon"
+          },
+          "repeats" : {
+            "type" : "boolean",
+            "description" : "True for something that comes round again, also on a line that is done, where the note no longer says so"
+          },
+          "action" : {
+            "description" : "Its button, when there is something to do right here: a bill on the day it is due has its Pay, as on Today. Null for an event or a reminder.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TodayAction"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "due" : {
+            "description" : "For a line another place brought that is due rather than on (a bill): the day, the amount to the cent, and the small line Activity uses. Send its day as dueOn with the button's act. Null for an event or a reminder (a reminder has dueOn).",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TodayDue"
+            }, {
+              "type" : "null"
+            } ]
           },
           "whose" : {
             "description" : "Whose it is, for the coloured dot. Null: everyone's.",
@@ -21249,7 +21517,7 @@
             } ]
           }
         },
-        "required" : [ "avatarUrls", "canEdit", "canTick", "chip", "day", "done", "kind", "lead", "leadEnd", "mine", "minute", "note", "noteIcon", "thingId", "title", "whose" ]
+        "required" : [ "action", "avatarUrls", "canEdit", "canTick", "chip", "day", "done", "due", "dueOn", "kind", "lead", "leadEnd", "mine", "minute", "note", "noteIcon", "repeats", "thingId", "title", "whose" ]
       },
       "PlanResponse" : {
         "type" : "object",
@@ -22106,6 +22374,14 @@
               "type" : "null"
             } ]
           },
+          "unit" : {
+            "$ref" : "#/components/schemas/GoalUnit",
+            "description" : "What it counts: money, or a plain number of something"
+          },
+          "unitWords" : {
+            "type" : "string",
+            "description" : "What is counted, when it isn't money: books, stars"
+          },
           "people" : {
             "type" : "array",
             "description" : "Who put something in, whoever began first coming first",
@@ -22131,7 +22407,7 @@
             "$ref" : "#/components/schemas/AudienceChip"
           }
         },
-        "required" : [ "canEdit", "cheer", "chip", "circleId", "coverUrl", "emoji", "id", "line", "mine", "people", "percent", "reached", "source", "title", "updatedAt" ]
+        "required" : [ "canEdit", "cheer", "chip", "circleId", "coverUrl", "emoji", "id", "line", "mine", "people", "percent", "reached", "source", "title", "unit", "unitWords", "updatedAt" ]
       },
       "PageDocumentCard" : {
         "type" : "object",
@@ -22572,19 +22848,6 @@
         "type" : "string",
         "enum" : [ "kept", "removed", "left_to_journey" ]
       },
-      "AlbumBrief" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "title" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "id", "title" ]
-      },
       "MealPlanSettings" : {
         "type" : "object",
         "properties" : {
@@ -22604,36 +22867,6 @@
           }
         },
         "required" : [ "cookingFor", "groceriesListId", "toGroceries" ]
-      },
-      "Neighbours" : {
-        "type" : "object",
-        "properties" : {
-          "newer" : {
-            "type" : "array",
-            "description" : "Taken after it, the nearest first",
-            "items" : {
-              "$ref" : "#/components/schemas/ItemRow"
-            }
-          },
-          "older" : {
-            "type" : "array",
-            "description" : "Taken before it, the nearest first",
-            "items" : {
-              "$ref" : "#/components/schemas/ItemRow"
-            }
-          },
-          "position" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "Its place counted from the newest, starting at 1. Only inside a moment or an album."
-          },
-          "total" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32",
-            "description" : "How many there are. Only inside a moment or an album."
-          }
-        },
-        "required" : [ "newer", "older", "position", "total" ]
       },
       "MealPlanDay" : {
         "type" : "object",
@@ -22920,9 +23153,14 @@
             "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "When it was last ticked in the week shown"
+          },
+          "reminderId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The reminder in Plan that rings for this job, when it has one you may see. Today then lists the job once, as the reminder."
           }
         },
-        "required" : [ "complete", "doneOn", "doneThisWeek", "doneToday", "emoji", "id", "lastDoneAt", "name", "next", "timesAWeek", "when", "who" ]
+        "required" : [ "complete", "doneOn", "doneThisWeek", "doneToday", "emoji", "id", "lastDoneAt", "name", "next", "reminderId", "timesAWeek", "when", "who" ]
       },
       "ChoreWheelPerson" : {
         "type" : "object",
@@ -27877,7 +28115,7 @@
       "name" : "Chore wheel",
       "settings" : "ChoreWheelSettings",
       "view" : "ChoreWheelView",
-      "guide" : [ "settings: people (member ids in the wheel's order; left out: everyone in the circle), stars ({stars, cents, currency, into} or null)", "entry job: name, emoji, when (words), timesAWeek (1 to 7)", "verb tick: jobId, done (true or false; left out: true), day (a date; left out: today)", "show: any day of the week to show, as a date. Left out: this week." ]
+      "guide" : [ "settings: people (member ids in the wheel's order; left out: everyone in the circle), stars ({stars, cents, currency, into} or null)", "entry job: name, emoji, when (words), timesAWeek (1 to 7), reminderId (a reminder of this circle that rings for the job, or null for none)", "verb tick: jobId, done (true or false; left out: true), day (a date; left out: today)", "show: any day of the week to show, as a date. Left out: this week." ]
     },
     "time_capsule" : {
       "name" : "Time capsule",

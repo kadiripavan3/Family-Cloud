@@ -62,9 +62,18 @@ class TiesSeedTest extends TiesTestBase {
                         "Alex added 19 photos to Saturday at Lake Bled",
                         "Leo fed Biscuit and earned a star | Chore wheel",
                         "Ines opened their guest pass | it ended at 23:30",
-                        "Alex and Mia changed Groceries | 9 things added, 5 ticked");
+                        "Alex and Mia changed Groceries | 9 things added, 5 ticked",
+                        // Kept in April, as the Library draws it, and dated then: the last line, with its cover.
+                        "Iceland ring road was kept from Journey | 214 originals, now in Trips");
         assertThat(JsonPath.<List<Boolean>>read(hers, "$.items[*].fresh"))
-                .containsExactly(true, true, false, false, false);
+                .containsExactly(true, true, false, false, false, false);
+        assertThat(JsonPath.<String>read(hers, "$.items[5].kind")).isEqualTo("kept");
+        assertThat(JsonPath.<String>read(hers, "$.items[5].thingKind")).isEqualTo("page");
+        assertThat(JsonPath.<String>read(hers, "$.items[5].imageUrl")).isNotNull();
+        assertThat(JsonPath.<List<Object>>read(hers, "$.items[5].people")).isEmpty();
+        assertThat(java.time.Instant.parse(JsonPath.<String>read(hers, "$.items[5].at")))
+                .as("when it was kept, not when the sample data was added")
+                .isBefore(java.time.Instant.now().minus(java.time.Duration.ofDays(100)));
         assertThat(JsonPath.<Integer>read(hers, "$.asks")).isEqualTo(1);
         assertThat(JsonPath.<Integer>read(hers, "$.fresh")).isEqualTo(2);
         assertThat(JsonPath.<List<String>>read(hers, "$.items[0].buttons[*].label"))
@@ -81,7 +90,8 @@ class TiesSeedTest extends TiesTestBase {
                 .containsExactly(
                         "Leo fed Biscuit and earned a star | Chore wheel",
                         "Ines opened their guest pass | it ended at 22:30",
-                        "Mia changed Groceries | 3 things added, 2 ticked");
+                        "Mia changed Groceries | 3 things added, 2 ticked",
+                        "Iceland ring road was kept from Journey | 214 originals, now in Trips");
         assertThat(jdbc.sql("select count(*) from pushes").query(Integer.class).single())
                 .isZero();
         // He can see the PIN is there and can't open it: so he could ask, and has.
@@ -98,8 +108,14 @@ class TiesSeedTest extends TiesTestBase {
                 .doesNotContain("Bins and recycling");
         assertThat(JsonPath.<Integer>read(home, "$.done")).isEqualTo(2);
         boolean schoolDay = today.getDayOfWeek().getValue() <= 5;
-        assertThat(JsonPath.<Integer>read(home, "$.left"))
-                .isEqualTo(3 + (schoolDay ? 1 : 0) + (today.getDayOfWeek() == DayOfWeek.THURSDAY ? 1 : 0));
+        // Three are left on the drawn day; a school day adds the school run, a Thursday the swimming, and a
+        // Friday what the week keeps for Fridays (pizza night among them).
+        int left = JsonPath.<Integer>read(home, "$.left");
+        if (today.getDayOfWeek() == DayOfWeek.FRIDAY) {
+            assertThat(left).isBetween(4, 7);
+        } else {
+            assertThat(left).isEqualTo(3 + (schoolDay ? 1 : 0) + (today.getDayOfWeek() == DayOfWeek.THURSDAY ? 1 : 0));
+        }
         assertThat(JsonPath.<List<String>>read(home, "$.items[?(@.title == 'Electricity')].action.label"))
                 .containsExactly("Pay");
         assertThat(JsonPath.<List<Boolean>>read(home, "$.items[?(@.title == 'Take the bins out')].repeats"))
@@ -122,6 +138,19 @@ class TiesSeedTest extends TiesTestBase {
         String norway = fetch("/v1/goals/" + JsonPath.<String>read(goals, "$[0].id") + "?day=" + today, nora);
         assertThat(JsonPath.<String>read(norway, "$.source.line")).isEqualTo("Reads “Saved” in Norway budget");
         assertThat(JsonPath.<Boolean>read(norway, "$.source.live")).isTrue();
+        // ...with everything its screen draws read from there: the ring, who chips in, and who put in what last.
+        assertThat(JsonPath.<String>read(norway, "$.amountLine")).isEqualTo("€5,600 of €8,000");
+        assertThat(JsonPath.<Integer>read(norway, "$.pace.percent")).isEqualTo(70);
+        assertThat(JsonPath.<String>read(norway, "$.cheer")).isEqualTo("All four chip in");
+        assertThat(JsonPath.<List<String>>read(norway, "$.recent[0:2].line"))
+                .containsExactly("Alex added €150", "Mia added €5");
+        assertThat(JsonPath.<List<String>>read(norway, "$.recent[0:2].note"))
+                .containsExactly("payday", "from her pocket money");
+        assertThat(JsonPath.<String>read(norway, "$.source.thingKind")).isEqualTo("sheet");
+        assertThat(JsonPath.<String>read(
+                        fetch("/v1/sheets/" + JsonPath.<String>read(norway, "$.source.thingId"), nora), "$.title"))
+                .isEqualTo("Norway budget");
+        assertThat(JsonPath.<Boolean>read(norway, "$.addHere")).isTrue();
 
         // The circle switcher, and what leaving would do.
         String sheet = fetch("/v1/home/circles", nora);

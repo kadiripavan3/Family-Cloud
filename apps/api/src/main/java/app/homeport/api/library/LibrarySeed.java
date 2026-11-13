@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component;
 class LibrarySeed implements Seeder {
 
     private static final Logger log = LoggerFactory.getLogger(LibrarySeed.class);
-    private static final ZoneId HOME_TIME = ZoneId.of("Europe/Ljubljana");
+    private static final ZoneId HOME_TIME = SeedWorld.HOME;
 
     /** A place, as a phone would name it. */
     private record Spot(String name, String country, double lat, double lng, ZoneId zone) {}
@@ -386,6 +386,12 @@ class LibrarySeed implements Seeder {
                 scan(w, "nora", "Mia's passport", "some", 1, now.minus(40, ChronoUnit.DAYS), passport, "av-mia.jpg");
         share(w, miasPassport, w.member("linds", "alex"), false);
         about(w, miasPassport, mia);
+        // What the passport's page shows from other places, when their sample data is there: the trip it is
+        // needed for (it runs out four months after), the reminder to renew it, and its entry in the Vault.
+        w.thing("document/mias-passport", miasPassport);
+        w.link("document/mias-passport", "event/norway-trip");
+        w.link("document/mias-passport", "reminder/renew-mias-passport");
+        w.link("document/mias-passport", "vault/mias-passport");
 
         UUID report = pdf(
                 w,

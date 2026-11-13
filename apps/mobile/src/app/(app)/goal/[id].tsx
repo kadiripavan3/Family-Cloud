@@ -233,7 +233,7 @@ function Loaded({ goal, onYear }: { goal: GoalResponse; onYear: (year: number) =
             </Txt>
           ) : null}
           {goal.recent.map((entry) => {
-            const under = words.common.join([formatDay(entry.day), entry.note]);
+            const under = words.common.join([entry.day ? formatDay(entry.day) : null, entry.note]);
             const content = (
               <>
                 <Avatar uri={entry.by?.avatarUrl} name={entry.by?.name ?? ''} size={40} />
@@ -259,7 +259,7 @@ function Loaded({ goal, onYear }: { goal: GoalResponse; onYear: (year: number) =
             );
           })}
           {goal.source ? (
-            <Tap accessibilityRole="button" accessibilityLabel={words.common.spoken([goal.source.line, says.source.note])} onPress={() => say(goal.source?.kind === 'journey' ? says.source.journeySoon : says.source.sheetSoon)} scaleTo={0.985} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 6, paddingHorizontal: layout.rowGutter }}>
+            <Tap accessibilityRole="button" accessibilityLabel={words.common.spoken([goal.source.line, says.source.note])} onPress={() => (goal.source?.thingId ? open({ kind: goal.source.thingKind, id: goal.source.thingId }) : say(goal.source?.kind === 'journey' ? says.source.journeySoon : says.source.sheetSoon))} scaleTo={0.985} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 6, paddingHorizontal: layout.rowGutter }}>
               <View style={{ width: 40, height: 40, borderRadius: radius.thumb, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}>
                 <Source size={20} color={colors.accentText} />
               </View>

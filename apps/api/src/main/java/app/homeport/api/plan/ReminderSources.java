@@ -7,6 +7,7 @@ import app.homeport.api.plan.ReminderStore.ReminderRow;
 import app.homeport.api.thing.GlanceSource;
 import app.homeport.api.thing.ThingKind;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,10 @@ class ReminderSources implements GlanceSource, GuestView {
         return glances;
     }
 
-    /** "Done", "Today 19:00", "Friday", "2 Jan", "Near the post office", or "Some time". */
+    /**
+     * "Done", "Today 19:00", "Friday", "2 Jan", "Near the post office", or "Some time". A day that isn't in
+     * this year says its year, "2 Jan 2027": a glance stands alone, with nothing near it to say which January.
+     */
     static String when(ReminderRow r) {
         if (r.doneAt() != null) {
             return "Done";
@@ -61,7 +65,12 @@ class ReminderSources implements GlanceSource, GuestView {
             return r.atPlace() ? "Near " + r.placeWords() : "Some time";
         }
         LocalDate today = LocalDate.now(PlanSql.storedZone(r.timeZone()));
-        return Words.capital(Words.weekdayNear(r.dueOn(), today))
+        return when(r, today);
+    }
+
+    static String when(ReminderRow r, LocalDate today) {
+        boolean near = Math.abs(ChronoUnit.DAYS.between(today, r.dueOn())) <= 6;
+        return Words.capital(near ? Words.weekdayNear(r.dueOn(), today) : Words.dateInYear(r.dueOn(), today))
                 + (r.dueTime() == null ? "" : " " + Words.time(r.dueTime()));
     }
 

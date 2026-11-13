@@ -92,6 +92,24 @@ class StoriesTest extends BoardTest {
                 .contains("Start talking")
                 .doesNotContain("The Linds")
                 .doesNotContain("trouble at school");
+        // One button at a time. Both are in the page, each hidden until its moment, and a stylesheet of the
+        // page keeps what is hidden out of sight: a button's own "display" would otherwise win over "hidden",
+        // and "Start talking" and "I've finished" would stand there together.
+        assertThat(ask)
+                .containsPattern("<button[^>]*id=\"record\"[^>]*hidden")
+                .containsPattern("<button[^>]*id=\"stop\"[^>]*hidden");
+        boolean hiddenStaysHidden = false;
+        java.util.regex.Matcher sheets = java.util.regex.Pattern.compile("<link rel=\"stylesheet\" href=\"([^\"]+)\"")
+                .matcher(ask);
+        while (sheets.find()) {
+            hiddenStaysHidden |=
+                    page(sheets.group(1)).replaceAll("\\s+", " ").contains("[hidden] { display: none !important; }");
+        }
+        assertThat(hiddenStaysHidden)
+                .as("one of the page's stylesheets says: what is hidden is not shown")
+                .isTrue();
+        // The page shows the button that fits the moment itself, and offers to start again after a failure.
+        assertThat(ask).contains("show('ready')").contains("show('talking')").contains("show('sending')");
         assertThat(page("/s/abcde-fghjk-mnpqr-stuvw")).contains("This link doesn't work any more");
         outside("/s/abcde-fghjk-mnpqr-stuvw/upload", "{\"contentType\":\"audio/webm\"}", 404);
 

@@ -162,15 +162,17 @@ public class DocumentStore {
                 .list();
     }
 
-    /** The documents of a circle with these words inside, whoever asks: who may see each is checked afterwards. */
-    public List<Found> inside(UUID circleId, String words, int limit) {
+    /** The documents of a circle the viewer may see with these words inside. */
+    public List<Found> inside(UUID circleId, UUID me, String words, int limit) {
         return jdbc.sql("""
                         select d.thing_id,
                           substring(d.text from greatest(position(lower(:plain) in lower(d.text)) - 30, 1) for 90) as around
-                        from documents d join library_items i on i.thing_id = d.thing_id
-                        where i.circle_id = :circle and d.text ilike :pattern order by i.created_at desc limit :limit
+                        from documents d join library_items i on i.thing_id = d.thing_id join things t on t.id = d.thing_id
+                        where i.circle_id = :circle and d.text ilike :pattern and\s""" + Rules.sees("t", ":me") + """
+                         order by i.created_at desc limit :limit
                         """)
                 .param("circle", circleId)
+                .param("me", me)
                 .param("pattern", Sql.anywhere(words))
                 .param("plain", words)
                 .param("limit", limit)

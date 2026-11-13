@@ -16,6 +16,7 @@ const ICONS: Record<string, LucideIcon> = {
   goal: Target,
   photo: Image,
   video: Video,
+  goodnight: Moon,
   file: File,
   document: File,
   album: Images,
@@ -28,7 +29,6 @@ const ICONS: Record<string, LucideIcon> = {
   password: KeyRound,
   id: IdCard,
   keepsake: Gift,
-  goodnight: Moon,
 };
 
 /** A kind's icon and what it is called: `name` on its own ("Page"), `a` in a sentence ("a page"). */

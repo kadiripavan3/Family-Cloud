@@ -42,6 +42,8 @@ exports.run = async function run(ctx) {
   const lib = (query) => ctx.api(nora, 'GET', `/v1/circles/${linds.id}/library?${query}`);
   const gone = (id) => ctx.api(nora, 'DELETE', `/v1/things/${id}`).catch(() => undefined);
 
+  /** The sample's own reminder for the passport, while it is off it. */
+  let sampleReminder = null;
   /** Takes away what a walk made: today's photos of Nora's, albums and documents named with a run's tag, what was linked to the passport. */
   const tidy = async () => {
     const mine = (await lib(`by=${linds.myMemberId}&limit=100`)).items.filter((item) => item.takenLocal.startsWith(isoToday));
@@ -51,7 +53,18 @@ exports.run = async function run(ctx) {
     const files = (await ctx.api(nora, 'GET', `/v1/circles/${linds.id}/files?limit=100`)).items;
     for (const file of files.filter((one) => /^Library card [a-z0-9]{5}$/.test(one.title))) await gone(file.id);
     const passport = files.find((one) => one.title === "Mia's passport");
-    if (passport) for (const linked of await ctx.api(nora, 'GET', `/v1/things/${passport.id}/links`)) if ((linked.kind === 'reminder' && linked.title.startsWith("Mia's passport:")) || (linked.kind === 'event' && linked.title === 'Norway 2027')) await gone(linked.id);
+    if (passport) {
+      for (const linked of await ctx.api(nora, 'GET', `/v1/things/${passport.id}/links`)) {
+        // A reminder an earlier walk made goes. The sample's own reminder ("Renew Mia's passport") is only
+        // taken off the passport, so that "Remind me" can be pressed in this walk; it stays in Plan, and
+        // `putBack` links it again at the end. The trip the passport is needed for is the sample's own.
+        if (linked.kind === 'reminder' && linked.title.startsWith("Mia's passport:")) await gone(linked.id);
+        else if (linked.kind === 'reminder') {
+          sampleReminder = linked.id;
+          await ctx.api(nora, 'DELETE', `/v1/things/${passport.id}/links/${linked.id}`);
+        }
+      }
+    }
     // The lake's first two photos are as the sample has them: Nora's heart on the canoe, nobody tagged and nothing said on the next.
     const [first, second] = (await lib('limit=2')).items;
     await ctx.api(nora, 'PUT', `/v1/library/${first.id}/love`);
@@ -187,7 +200,7 @@ exports.run = async function run(ctx) {
       const hers = await (await byMia).json();
       if (hers.items.length !== 11 || hers.items.some((item) => item.addedBy.name !== 'Mia')) throw new Error(`Mia's photos of the moment came back as ${hers.items.length}, not all hers`);
       await shot('moment-by-mia');
-      await R('button', { name: 'All 51', exact: true }).click();
+      await R('button', { name: /^All \d+$/ }).click();
       // Its other button drafts a journey from it: that is walked in 10-journey.
       await R('button', { name: 'Journey', exact: true }).waitFor();
     });
@@ -605,9 +618,7 @@ exports.run = async function run(ctx) {
     });
 
     await step('document', async () => {
-      // The trip it is needed for is linked from Plan's screens; here the link is made through the API.
-      const trip = await ctx.api(nora, 'POST', '/v1/events', { clientId: crypto.randomUUID(), circleId: linds.id, title: 'Norway 2027', day: '2027-04-03', endDay: '2027-04-17', timeZone: 'Europe/Ljubljana', audience: 'circle' });
-      await ctx.api(nora, 'PUT', `/v1/things/${passport.id}/links/${trip.id}`);
+      // The trip it is needed for is linked to it in the sample data ("Norway 2027", in Plan).
       await R('button', { name: /^Mia's passport\. ID\./ }).click();
       await R('heading', { name: "Mia's passport" }).waitFor();
       await T('Read from the scan').waitFor();
@@ -662,7 +673,9 @@ exports.run = async function run(ctx) {
   } finally {
     // Whatever happened: the second person leaves the family, and what the walk made is taken away.
     if (sam) await sam.close().catch(() => undefined);
-    await tidy().catch(() => undefined);
+    const passportNow = await tidy().catch(() => undefined);
+    // The sample is left as it was found: its reminder is on the passport again.
+    if (passportNow && sampleReminder) await ctx.api(nora, 'PUT', `/v1/things/${passportNow.id}/links/${sampleReminder}`).catch(() => undefined);
     fs.rmSync(folder, { recursive: true, force: true });
   }
 

@@ -45,6 +45,27 @@ public final class Words {
         return Math.abs(ChronoUnit.MONTHS.between(today, day)) >= 11 ? DATE_AND_YEAR.format(day) : DATE.format(day);
     }
 
+    /** "2 Jan", with the year when that isn't the year of today: "2 Jan 2027". */
+    public static String dateInYear(LocalDate day, LocalDate today) {
+        return day.getYear() == today.getYear() ? DATE.format(day) : DATE_AND_YEAR.format(day);
+    }
+
+    /**
+     * The days something lasts, said once: "3 to 17 April", "28 March to 4 April", and with the year when
+     * that isn't the year of today: "3 to 17 April 2027".
+     */
+    public static String days(LocalDate from, LocalDate to, LocalDate today) {
+        String year = to.getYear() == today.getYear() ? "" : " " + to.getYear();
+        if (from.getYear() != to.getYear()) {
+            return from.getDayOfMonth() + " " + MONTH.format(from) + " " + from.getYear() + " to " + to.getDayOfMonth()
+                    + " " + MONTH.format(to) + " " + to.getYear();
+        }
+        return from.getMonth() == to.getMonth()
+                ? from.getDayOfMonth() + " to " + to.getDayOfMonth() + " " + MONTH.format(to) + year
+                : from.getDayOfMonth() + " " + MONTH.format(from) + " to " + to.getDayOfMonth() + " " + MONTH.format(to)
+                        + year;
+    }
+
     /** "today", "tomorrow", "yesterday", or "Sat 14 Nov". */
     public static String near(LocalDate day, LocalDate today) {
         long away = ChronoUnit.DAYS.between(today, day);

@@ -114,6 +114,32 @@ class CrewTemplatesTest extends BoardTest {
                 .contains("Kai was nudged today already");
         assertThat(act(lea, board, "nudge", "{\"memberId\":\"%s\"}".formatted(noraId), 409))
                 .contains("They have answered already");
+        // The nudge reaches his phone: one push in the outbox for him, in the board's name, from whoever nudged.
+        // The second nudge of the day and the one that had nobody to nudge queued nothing.
+        assertThat(jdbc.sql("""
+                    select p.title || ' | ' || p.body || ' | ' || p.url from pushes p
+                    join members m on m.user_id = p.user_id and m.id = cast(:kai as uuid)
+                    where p.kind = 'nudge' and p.thing_id = cast(:board as uuid)
+                    """)
+                        .param("kai", kaiId)
+                        .param("board", board)
+                        .query(String.class)
+                        .list())
+                .containsExactly(
+                        "When can everyone? | A gentle nudge from Lea: tap the days you can. | /board/" + board);
+        assertThat(jdbc.sql("select count(*) from pushes where kind = 'nudge'")
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        // Asked for again the same day (as it would be if the day's memory of it were lost), it is still told once.
+        jdbc.sql("delete from board_entries where board_id = cast(:board as uuid) and kind = 'nudge'")
+                .param("board", board)
+                .update();
+        act(lea, board, "nudge", "{\"memberId\":\"%s\"}".formatted(kaiId), 200);
+        assertThat(jdbc.sql("select count(*) from pushes where kind = 'nudge'")
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
         assertThat(JsonPath.<String>read(today(kai), "$.cards[0].line"))
                 .isEqualTo("When can everyone? · the others are waiting for you");
         String cant = act(kai, board, "cant", "{}", 200);

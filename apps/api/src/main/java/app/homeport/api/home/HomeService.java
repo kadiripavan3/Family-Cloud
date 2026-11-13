@@ -22,7 +22,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /** What Home shows across every place: today, what is new, a search, and a person's page. */
@@ -160,6 +162,10 @@ public class HomeService {
             fresh.addAll(source.fresh(me, circleId));
             cards.addAll(source.cards(me, circleId, on));
         }
+        // A job kept in two places (a job on the chore wheel that has its reminder in Plan) is listed once: the
+        // line that names the other gives way when the other is on this person's list.
+        Set<UUID> listed = items.stream().map(TodayItem::thingId).collect(Collectors.toSet());
+        items.removeIf(item -> item.sameAs() != null && listed.contains(item.sameAs()));
         items.sort(Comparator.comparingInt(TodayItem::minute).thenComparing(TodayItem::title));
         int done =
                 (int) items.stream().filter(i -> Boolean.TRUE.equals(i.done())).count();
@@ -216,7 +222,7 @@ public class HomeService {
                 }
             }
         }
-        // One check of who may see what, for everything any place found.
+        // One more check of who may see what, for everything any place found.
         List<ThingRow> rows = thingStore.findAll(List.copyOf(snippets.keySet()), me).stream()
                 .sorted(Comparator.comparing(ThingRow::updatedAt).reversed())
                 .limit(MAX_FOUND)
