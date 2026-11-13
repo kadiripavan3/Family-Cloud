@@ -2,9 +2,8 @@ import { useMemo } from 'react';
 import { View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
+import { qrCode } from '@/lib/qr';
 import { radius, useTheme } from '@/theme';
-
-import { qrCode } from './qr';
 
 /** The light margin a reader needs around a code, in modules. */
 const QUIET = 4;

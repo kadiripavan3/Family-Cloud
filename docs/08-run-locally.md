@@ -2,7 +2,7 @@
 
 > Everything runs on your computer: the database, the Java API and the app. The only account you need is a free Expo login, so that Expo Go on your iPhone will open the app.
 >
-> **Status:** 12 Nov 2026. I built this in the cloud and checked it in a browser: a walk-through signs up new people, sets up each kind of circle and uses every built screen, in light and dark, as two people where sharing matters. I could not try it on a real iPhone from there, so your first run is that test. If a step fails, tell me what you saw.
+> **Status:** 13 Nov 2026. I built this in the cloud and checked it in a browser: a walk-through signs up new people, sets up each kind of circle and uses every built screen, in light and dark, as two people where sharing matters. I could not try it on a real iPhone from there, so your first run is that test. If a step fails, tell me what you saw.
 
 ## What works today
 
@@ -24,10 +24,12 @@ The app opens with **sample people and their circles**, so there is something in
 - **Plan and Jot:** the day's list, the month, events with answers, "Type it", reminders with turns and nudges, goals; the jot bar and what was filed where.
 - **Money:** bills that repeat, reading a bill from its lines, sheets with formulas you can read, a row as a card, the loan planner, splitting costs.
 - **Vault:** passwords, cards, IDs, Wi‑Fi and codes, scrambled in the app before they leave it; sharing one so someone can use it; the emergency plan; your Vault key and helpers.
-- **Templates that do work:** the meal plan, the chore wheel, the time capsule and seven keepsakes.
+- **Templates that do work:** the meal plan, the chore wheel, the time capsule and seven keepsakes; stars, perks and the piggy bank, and the fair-and-fun ones (the Saturday jar, the fair share, Secret Santa, the awards and more). Start any of them from the gallery under Notes.
+- **Every kind of circle has its own Today and its own templates:** a couple (the mystery date, tucked notes, settling up), a flat (the kitty, the heads-up board, the guest book, what is running low) and friends (find a date, where next, who owes whom).
+- **Activity:** what happened in the circle, what is waiting for you, asking to see something, and the Sunday summary.
+- **Export and leaving:** an export of what you keep, leaving a circle, deleting your account.
+- **With Journey:** one account for two apps, keeping a journey as a book, telling a moment or an album as a journey, a trip from start to finish, "Alex is on a journey" and On this day on Today, a goodnight from far away. Journey itself is a stand-in here with two sample journeys.
 - Light and dark, following your phone or your own choice.
-
-Being built as this is written, and listed on the hub when done: the fair-and-fun templates, the homes and templates for couples, housemates and friends, Activity with the Sunday summary, export and leaving, and the link with Journey.
 
 **Testing alone:** sign in as Nora in the app and as Alex in a browser (press `w`), or the other way round. What one shares, hides or ticks shows on the other's side.
 

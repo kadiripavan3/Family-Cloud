@@ -191,7 +191,7 @@ These are choices I made so the draft could exist. Each one is yours to overturn
 
 ## Questions for you
 
-Everything that is open after the build of 12 Nov, in one place. The build went ahead on the defaults (decision 6), so nothing here is blocking; each answer changes something that is already there. The order inside each part is how much it matters.
+Everything that is open after the build of 12 and 13 Nov, in one place. The build went ahead on the defaults (decision 6), so nothing here is blocking; each answer changes something that is already there. The order inside each part is how much it matters.
 
 ### Only you can do these, before real people use it
 
@@ -220,6 +220,10 @@ Everything that is open after the build of 12 Nov, in one place. The build went 
 20. **Journey on a couple's and a family's Today.** "Alex is on a journey" shows wherever Alex is in the circle; the couple's drawing has no such card. Keep it?
 21. **A goal that reads a sheet.** What you add on the goal's page is written into the sheet as a row, so the two never disagree; that needs the right to change the sheet.
 22. **Services that are stand-ins.** Speech to text (Grandma's stories typed out), the weather ("Dry until 4"), the phone's location ("when he lands", "near the shop"), mail forwarded in, a leak check for passwords, a map, reading a scan with the camera, recording inside the app. Each needs a service or a library chosen; tell me which matter first.
+23. **"Keep every journey I finish"** is not built: a journey is kept when you choose it. Keeping by itself needs Journey to tell Homeport that a journey ended (question 7).
+24. **On this day** brings back days from kept journeys only. The drawing also mixes in ordinary photos from earlier years ("Bonfire night · 12 photos"). Add those?
+25. **A journey you started telling and closed** is thrown away: there is no list of drafts to come back to. Keep drafts?
+26. **"Hide details in notifications"** starts off; the drawing shows it on. Which should a new account start with?
 
 ### Calls I made while building, each yours to overturn
 
@@ -254,7 +258,7 @@ Everything that is open after the build of 12 Nov, in one place. The build went 
 - **Activity's "Iceland ring road was kept"** is dated April where the Library draws it and "Sun" where Activity draws it. It is April in the sample, which Activity forgets after 90 days.
 - **The Sunday summary's row for someone's journey under way** ("Lofoten by bike · Day 6 of 9") is not built: the nightly job can't ask Journey as you (question 7, change 10).
 - **Every template's bar** has the More button next to the drawn one, and the audience chip moves into More where the bar is full.
-- **The QR codes** (the Vault key, the code by the door) are drawn by our own code and were never scanned by a real reader from here. Scan each once with your phone.
+- **The QR codes** (the Vault key, the code by the door) are drawn by our own code. A test holds it to another encoder's codes, square for square (the one Expo's command line uses); no real reader was pointed at one from here. Scan each once with your phone.
 
 ## A suggested order
 
