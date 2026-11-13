@@ -13,9 +13,12 @@
 // sample week as it was added (Friday's date still to come): on older data, run `fresh-db.sh` first.
 const { randomUUID } = require('crypto');
 
-/** The cards of a day, laid out the way Today lays them out (`partsOf` in the app). */
+/** The looks of the cards the link with Journey draws itself, around the day (walked in 10-journey). */
+const JOURNEYS = ['journey_away', 'journey_on_this_day', 'goodnight'];
+
+/** The cards of a day that are Today's own, laid out the way Today lays them out (`partsOf` in the app). */
 function partsOf(cards) {
-  const sorted = [...cards].sort((a, b) => a.order - b.order);
+  const sorted = cards.filter((card) => !JOURNEYS.includes(card.look)).sort((a, b) => a.order - b.order);
   const firstPicture = sorted.findIndex((card) => card.imageUrl);
   const before = firstPicture < 0 ? sorted : sorted.slice(0, firstPicture);
   const headline = before.find((card) => !card.figure && !card.imageUrl && !card.action) || null;
