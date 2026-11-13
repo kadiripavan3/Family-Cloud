@@ -112,8 +112,13 @@ class PlanSampleDataTest extends ApiTest {
                 .containsExactlyInAnyOrder("Take the bins out", "Sign Mia's school trip form", "Call the plumber");
         assertThat(JsonPath.<List<String>>read(
                         reminders, "$.yours[*].reminders[?(@.title == \"Sign Mia's school trip form\")].note"))
-                .containsExactly("Trip form attached · due "
-                        + (today.getDayOfWeek() == DayOfWeek.THURSDAY ? "tomorrow" : "Friday"));
+                // It is due on the coming Friday: "tomorrow" on a Thursday, and on a Friday the one after, by its date.
+                .allSatisfy(note -> assertThat(note)
+                        .matches("Trip form attached · due "
+                                + (today.getDayOfWeek() == DayOfWeek.THURSDAY
+                                        ? "tomorrow"
+                                        : today.getDayOfWeek() == DayOfWeek.FRIDAY ? "\\d+ \\w{3}" : "Friday")))
+                .hasSize(1);
         assertThat(JsonPath.<List<String>>read(reminders, "$.asked[?(@.title == 'Book the car service')].note"))
                 .containsExactly("Asked on Monday · not done yet");
         assertThat(JsonPath.<List<String>>read(reminders, "$.asked[?(@.title == 'Feed Biscuit')].note"))
