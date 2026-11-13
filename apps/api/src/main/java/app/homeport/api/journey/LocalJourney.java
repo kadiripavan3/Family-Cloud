@@ -137,7 +137,8 @@ public class LocalJourney implements JourneyPort {
             String originalHash) {}
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final String FOLDER = "journey-standin/";
+    /** Two folders deep, like every address the local stand-in for storage serves ({@code /media/a/b/file}). */
+    private static final String FOLDER = "journey/standin/";
 
     private final JdbcClient jdbc;
     private final MediaStorage storage;
