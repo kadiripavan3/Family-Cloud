@@ -1,12 +1,11 @@
 {
-  "phase": "Building · milestones 1 to 6 of 11 done",
-  "updated": "2026-11-12",
-  "summary": "**Milestones 1 to 6 are done:** the spine, the **Library**, **Plan** with **Jot**, **Notes** with the first templates, **Money** and the **Vault**. Every one of Home's six places is built from its drawings and walked through in a browser in light and dark, as two or more people where sharing matters. The API for everything that is left is written too (Activity, pushes, the Sunday summary, export and leaving, the templates for every kind of circle, the link with Journey); its screens are being built now.",
+  "phase": "Building · milestones 1 to 9 of 11 done",
+  "updated": "2026-11-13",
+  "summary": "**Milestones 1 to 9 are done.** Everything drawn for a family, a couple, a flat and a group of friends is built from its drawing and walked through in a browser in light and dark: the six places, the 36 templates that do work, the Today of each kind of circle, Activity with asks, the Sunday summary, export and leaving. The walk-through uses 610 screens per run, as two or more people where something is private. The screens of the link with Journey are built too and are being walked through now. Every open question is in one place: [What it does](01-requirements.md#questions-for-you).",
   "next": [
-    "Nothing is needed from you while the build runs. Each milestone ends with a short report in the chat and an update here.",
-    "The build stops when the account's usage limit is reached, as it did twice on 12 Nov. Nothing is lost when that happens; it carries on when you say so.",
-    "When it is done you get one list of every open question, in one place.",
-    "To let me reply inside a comment thread and close it, send the thread to Claude (reply on it with Send to Claude)."
+    "Read the questions in “What it does”: seven things only you can do before real people use it, nineteen product decisions, and the calls I made while building.",
+    "Run it on your Mac ([docs/08](08-run-locally.md)) and tell me what is wrong.",
+    "The build stops when the account's usage limit is reached, as it did three times on 12 Nov. Nothing is lost when that happens; it carries on when you say so."
   ],
   "open": [
     {
@@ -51,6 +50,10 @@
     }
   ],
   "updates": [
+    {
+      "date": "2026-11-13",
+      "text": "**Milestones 7, 8 and 9 are built and tested.** Fair and fun: whose turn, the piggy bank, secret missions, the Saturday jar, sleeps until, where is it, habit charts. For couples: our story, tucked notes, the anniversary questions, mystery date, both said yes, the fair share. For housemates: the kitty, a fairer split, heads-up, heard in the kitchen, the guest book with its page at the door, everyone who's lived here. For friends: when can everyone (also by link), Secret Santa, where next, the dictionary, predictions, the awards, a goal you walk together. Each kind of circle has its own Today. What is secret stays secret on the other person's phone, and the walk-through checks that as that person. What ties it together: Activity with its filters and asks (allowing one shares the password from your phone), pushes through one outbox that never names what you can't see, the Sunday summary, export, leaving a circle, and deleting the account with “only Homeport, or Journey too”. Two faults the walk-through found on the way were fixed: someone who deleted only Homeport could never come back, and a made-up address said “couldn't read that” in place of “not available”."
+    },
     {
       "date": "2026-11-12",
       "text": "**Milestones 5 and 6 are built and tested: Money and the Vault.** Money: bills that repeat with who pays what, reading a bill from its lines, sheets with formulas written as sentences, a row as a card, the loan planner, splitting costs with the fewest payments. Every figure is worked out by the API, so two phones never disagree. The Vault: passwords, cards, IDs, Wi‑Fi and codes scrambled in the app before they leave it; sharing one so someone can use it, see it or change it, once or until a day; the emergency plan with its wait; your Vault key, helpers who can let you back in, and a new phone. The walk-through reads the database as it goes and fails if a password, a key or a passcode is ever there in the clear. Honest limits, also on the screens: Face ID has never run on a phone (a browser uses a passcode), nothing fills a password into other apps yet, no leak check is connected, and the Vault still needs its outside review before real secrets go in. How to run it on your Mac and how to connect the real services are written (docs 08 and 09)."
