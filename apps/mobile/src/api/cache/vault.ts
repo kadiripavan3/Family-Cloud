@@ -50,7 +50,7 @@ export const vaultCache = (tools: CacheTools) => {
     },
 
     /** An item was deleted. */
-    vaultItemDeleted: (item: { id: string; circleId: string }) => Promise.all([tools.thingGone(item), myVault()]),
+    vaultItemDeleted: (item: { id: string; circleId: string }) => Promise.all([tools.thingGone(item), tools.staleWithout(item.id, '/v1/vault')]),
 
     /** An item was opened once and its key is used up, or it was handed out: where the person stands with it has changed. */
     vaultItemOpened: (item: { id: string }) => client.invalidateQueries({ queryKey: getGetVaultItemQueryKey(item.id) }),

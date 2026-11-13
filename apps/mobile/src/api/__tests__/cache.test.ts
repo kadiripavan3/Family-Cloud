@@ -221,6 +221,30 @@ describe('circles and their people', () => {
     expect(client.getQueryData(['/v1/members/m-alex'])).toBeUndefined();
     expect(stale(client, ['/v1/circles'])).toBe(true);
   });
+
+  it('a thing that was deleted is not asked for again while its own page is still closing, and the lists are', async () => {
+    const client = newClient();
+    const QueryObserver = jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query').QueryObserver;
+    client.setQueryData(['/v1/circles/c-linds/today'], {});
+    client.setQueryData(['/v1/vault/items'], []);
+    client.setQueryData(['/v1/vault/items/v-door'], { id: 'v-door' });
+    client.setQueryData(['/v1/things/v-door/audience'], {});
+    client.setQueryData(['/v1/things/v-other/audience'], {});
+    // Its page is still on screen, on its way out: it watches the item and who it is shared with.
+    const watching = [['/v1/vault/items/v-door'], ['/v1/things/v-door/audience']].map((queryKey) => new QueryObserver(client, { queryKey, queryFn: () => Promise.reject(new Error('not found')), enabled: false }).subscribe(() => undefined));
+
+    await cacheFor(client).vaultItemDeleted({ id: 'v-door', circleId: 'c-linds' });
+
+    expect(stale(client, ['/v1/vault/items/v-door'])).toBe(false);
+    expect(stale(client, ['/v1/things/v-door/audience'])).toBe(false);
+    expect(stale(client, ['/v1/vault/items'])).toBe(true);
+    expect(stale(client, ['/v1/circles/c-linds/today'])).toBe(true);
+    expect(stale(client, ['/v1/things/v-other/audience'])).toBe(true);
+    // Once the page has closed, what it showed is forgotten.
+    watching.forEach((stop) => stop());
+    expect(client.getQueryData(['/v1/vault/items/v-door'])).toBeUndefined();
+    expect(client.getQueryData(['/v1/things/v-door/audience'])).toBeUndefined();
+  });
 });
 
 describe('paged lists', () => {

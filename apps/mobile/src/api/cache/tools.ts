@@ -24,6 +24,13 @@ export function toolsFor(client: QueryClient) {
   /** Fetches again every loaded answer whose address starts with one of these. */
   const stale = (...addresses: string[]) => client.invalidateQueries({ predicate: from(addresses) });
 
+  /**
+   * Fetches again every loaded answer whose address starts with one of these, except the answers about
+   * `id`: for when the thing with that id is gone. Its own page may still be closing, and asking again for
+   * what it shows would only be answered "not found".
+   */
+  const staleWithout = (id: string, ...addresses: string[]) => client.invalidateQueries({ predicate: (query) => from(addresses)(query) && !about(id)(query) });
+
   /** Fetches again the loaded answers at exactly these addresses: `/v1/circles` is the list of circles, and not everything under it. */
   const staleOnly = (...addresses: string[]) => client.invalidateQueries({ predicate: (query) => query.queryKey.some((part) => typeof part === 'string' && addresses.includes(part)) });
 
@@ -86,6 +93,7 @@ export function toolsFor(client: QueryClient) {
     client,
     stale,
     staleOnly,
+    staleWithout,
     staleAbout,
     put,
     patch,
@@ -97,7 +105,8 @@ export function toolsFor(client: QueryClient) {
     /** A thing of any kind is gone. */
     thingGone: (thing: { id: string; circleId: string }) => {
       drop(thing.id);
-      return listsOf(thing.circleId);
+      // The lists it stood in, but nothing about the thing itself (see `staleWithout`).
+      return Promise.all([staleWithout(thing.id, `/v1/circles/${thing.circleId}/`, '/v1/members/', '/v1/things/'), staleOnly('/v1/circles', '/v1/me/overview')]);
     },
   };
 }

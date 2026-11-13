@@ -71,7 +71,7 @@ export const notesCache = (tools: CacheTools) => {
     },
 
     /** A page, a list or a folder of Notes was deleted. */
-    noteGone: (thing: { id: string; circleId: string }) => Promise.all([tools.thingGone(thing), stale('/v1/folders/')]),
+    noteGone: (thing: { id: string; circleId: string }) => Promise.all([tools.thingGone(thing), tools.staleWithout(thing.id, '/v1/folders/')]),
 
     /** The things in a folder, or the lists in a page, were given the audience of what holds them. */
     insideShared: (holder: { id: string; circleId: string }) => Promise.all([tools.thingChanged(holder), stale('/v1/folders/', '/v1/pages/', '/v1/checklists/')]),
