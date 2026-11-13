@@ -235,7 +235,7 @@ Milestone 10, with Journey: the link between the two apps (`src/features/journey
 | 10.5 Tell it as a journey | `/journey/tell/new?moment=<photo id>` or `?album=<id>`, then `/journey/tell/<draft id>` | `tellHref(...)` is the way in from anywhere; `tellOnly(ids)` first when only some of it is meant. Closing a draft throws it away. |
 | 10.6 Before it leaves home | `/journey/tell/<draft id>/check` | The three switches, what it starts as, every photo one by one, then sending with its progress. |
 | 10.7 A trip, start to finish | `/folder/<id>` | A folder that was given dates is drawn as a trip (`useTripOf`, `TripSpace`); `?as=folder` shows it the way Notes does. "Make it a trip" is in a folder's menu. |
-| 10.8 Journey, at home | `/` (Today), `/journey/at-home` | `TodayJourneyCard` draws the cards whose `look` is `journey_away` or `journey_on_this_day`; `useBedtimeHold` keeps a `goodnight` card back until bedtime. The page behind them (who is away, where home is, bedtime) is not drawn. |
+| 10.8 Journey, at home | `/` (Today), `/journey/at-home` | `JourneyOnToday` stands around Today's own layout: a goodnight whose bedtime has come first (`useBedtimeHold` keeps it back until then), a card for each person who is away, the day, then On this day. The page behind them (who is away, where home is, bedtime) is not drawn. |
 | 10.9 Goodnight from far away | `/goodnight/<id>` | Played by opening its file, as the Library's videos are. "Send one back" records with the phone's camera or takes a video file. |
 
 - **A job the API runs by itself** (keeping, sending) is followed with `useJourneyJob(started)` and drawn with `JobProgress`.

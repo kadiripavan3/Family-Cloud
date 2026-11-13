@@ -1,6 +1,6 @@
 # The build plan
 
-> **Status:** approved on 12 Nov 2026: "go ahead with the defaults", every milestone, one after another, under the name Homeport. Being built now; the hub's overview says which milestone is done. · **Written:** 12 Nov 2026
+> **Status:** approved on 12 Nov 2026: "go ahead with the defaults", every milestone, one after another, under the name Homeport. Milestones 1 to 10 were built on 12 and 13 Nov 2026 and checked in a browser. Milestone 11 is prepared (the pages on running it, connecting the services and what Journey needs; the checklist for the first build on a phone) and waits for your accounts and a phone. · **Written:** 12 Nov 2026
 >
 > **In one line:** the app is built the way Journey was: on one computer first, with stand-ins for the outside services, one milestone at a time, every screen from its design, each milestone ending with its tests green and a walk-through you can watch.
 

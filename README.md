@@ -2,7 +2,7 @@
 
 First called Family Cloud; the repository keeps that name. One private place for what a family, or a group of friends, keeps together: notes, photos and videos, the calendar, bills and budgets, goals, and the passwords everyone needs. The sister app of [Journey](https://github.com/kadiripavan3/Journey): one owner, one account, one design system.
 
-**Status:** built from the build plan, milestone by milestone, and checked in a browser against stand-ins for every outside service. It has not run on a phone or against a real service yet: [the questions for the owner](docs/01-requirements.md#questions-for-you) say what is left. The hub says where it stands.
+**Status:** milestones 1 to 10 of the build plan are built and checked in a browser, against stand-ins for every outside service. The last one, real services and real phones, is prepared and waits for the owner's accounts: nothing has run on a phone or against a real service yet. [The questions for the owner](docs/01-requirements.md#questions-for-you) say what is left. The hub says where it stands.
 
 **The hub** (screens, name, the link with Journey, requirements, tech and costs): https://claude.ai/artifact/Nj763e9HKBijnmANPhLLTA
 

@@ -2,7 +2,7 @@
 
 Homeport (first called Family Cloud; the repository keeps that name) is an app for iOS and Android where a family, or a group of friends, keeps things together: notes, photos and videos, the calendar, bills and budgets, goals, and passwords. Each thing is private until its owner shares it. It is the sister app of **Journey** (`kadiripavan3/Journey`): same owner, same account, same design system, same stack. The owner builds both with Claude Code and knows Java well.
 
-**Where it stands:** being built, milestone by milestone, from `docs/06-build-plan.md`. The owner chose the name **Homeport** on 12 Nov 2026 and told Claude to build every milestone on the plan's defaults. `design/hub/status.json` says which milestone is done.
+**Where it stands:** milestones 1 to 10 of `docs/06-build-plan.md` are built and checked in a browser (12 and 13 Nov 2026); milestone 11, real services and real phones, is prepared and waits for the owner's accounts. The owner chose the name **Homeport** on 12 Nov 2026 and told Claude to build every milestone on the plan's defaults. `design/hub/status.json` says where it stands, and `docs/01-requirements.md` ("Questions for you") holds everything that is open.
 
 ## At the start of every session
 
